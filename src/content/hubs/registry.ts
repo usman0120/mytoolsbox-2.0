@@ -18,7 +18,7 @@ export const hubRegistry: HubDefinition[] = [
       "scientific-calculator", "matrix-calculator", "equation-solver",
       "statistics-calculator", "study-timer", "quiz-generator", "flashcard-generator",
     ],
-    appIds: ["math-solver", "study-planner", "research-assistant", "quiz-maker", "ai-quiz-generator", "ai-notes-generator"],
+    appIds: ["math-solver", "study-planner", "research-assistant", "quiz-maker", "ai-quiz-generator", "ai-notes-generator", "ai-planning", "ai-project-ideas"],
   },
   {
     id: "developers",
@@ -35,7 +35,7 @@ export const hubRegistry: HubDefinition[] = [
       "text-cleaner", "case-converter", "word-counter", "lorem-ipsum",
       "url-shortener", "random-generator", "color-palette",
     ],
-    appIds: ["diagram-maker", "image-editor"],
+    appIds: ["diagram-maker", "image-editor", "ai-project-ideas"],
   },
   {
     id: "business",
@@ -56,7 +56,7 @@ export const hubRegistry: HubDefinition[] = [
       "business-name-generator", "proposal-generator", "contract-generator",
       "social-media-content-generator",
     ],
-    appIds: ["invoice-maker", "presentation-maker", "budget-planner", "certificate-maker", "video-editor"],
+    appIds: ["invoice-maker", "presentation-maker", "budget-planner", "certificate-maker", "video-editor", "ai-planning"],
   },
   {
     id: "designers",
@@ -138,7 +138,7 @@ export const hubRegistry: HubDefinition[] = [
       "color-palette", "notes-app", "pomodoro-timer", "stopwatch",
       "json-formatter", "base64-encoder", "url-encoder", "diff-checker",
     ],
-    appIds: ["image-editor", "habit-tracker", "budget-planner", "video-editor"],
+    appIds: ["image-editor", "habit-tracker", "budget-planner", "video-editor", "ai-planning", "ai-project-ideas"],
   },
 ];
 

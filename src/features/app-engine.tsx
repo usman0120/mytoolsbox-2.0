@@ -17,6 +17,8 @@ const engineMap: Record<string, React.ComponentType<unknown>> = {
   "ai-quiz-generator": dynamic(() => import("@/features/apps/ai-quiz-generator-engine").then((m) => ({ default: m.AIQuizGeneratorEngine })), { loading: EngineLoading }),
   "ai-notes-generator": dynamic(() => import("@/features/apps/ai-notes-generator-engine").then((m) => ({ default: m.AINotesGeneratorEngine })), { loading: EngineLoading }),
   "ai-diagram-generator": dynamic(() => import("@/features/apps/ai-diagram-generator-engine").then((m) => ({ default: m.AIDiagramGeneratorEngine })), { loading: EngineLoading }),
+  "ai-planning": dynamic(() => import("@/features/apps/ai-planning-engine").then((m) => ({ default: m.AIPlanningEngine })), { loading: EngineLoading }),
+  "ai-project-ideas": dynamic(() => import("@/features/apps/ai-project-ideas-engine").then((m) => ({ default: m.AIProjectIdeasEngine })), { loading: EngineLoading }),
 };
 
 function EngineLoading() {
