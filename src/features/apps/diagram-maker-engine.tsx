@@ -1,21 +1,23 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Workflow, Square, Circle, Diamond, ArrowRight, Type, Trash2,
-  Download, Copy, Undo2, Redo2, ZoomIn, ZoomOut, Move,
-  Minus, GitBranch, Hexagon, Triangle, MousePointer2, Palette
+  Download, Undo2, ZoomIn, ZoomOut,
+  GitBranch, Hexagon, Triangle, MousePointer2,
+  Brain, Database, GitMerge, Layers, Network
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
+// ─── Types ───────────────────────────────────────────────────────────────────
+
 interface Shape {
   id: string;
-  type: "rectangle" | "circle" | "diamond" | "rounded-rect" | "hexagon" | "triangle" | "text";
+  type: "rectangle" | "circle" | "diamond" | "rounded-rect" | "hexagon" | "triangle" | "text" | "cylinder" | "parallelogram" | "cloud";
   x: number;
   y: number;
   width: number;
@@ -30,6 +32,7 @@ interface Connection {
   fromId: string;
   toId: string;
   label: string;
+  lineStyle: "solid" | "dashed" | "dotted";
 }
 
 interface DiagramState {
@@ -37,18 +40,49 @@ interface DiagramState {
   connections: Connection[];
 }
 
-const SHAPE_COLORS = ["#0891b2", "#7c3aed", "#059669", "#dc2626", "#d97706", "#2563eb", "#db2777", "#0f172a"];
-const SHAPE_TYPES = [
-  { type: "rectangle" as const, icon: Square, label: "Rectangle" },
-  { type: "rounded-rect" as const, icon: Square, label: "Rounded" },
-  { type: "circle" as const, icon: Circle, label: "Circle" },
-  { type: "diamond" as const, icon: Diamond, label: "Diamond" },
-  { type: "hexagon" as const, icon: Hexagon, label: "Hexagon" },
-  { type: "triangle" as const, icon: Triangle, label: "Triangle" },
-];
+type DiagramMode = "flowchart" | "mindmap" | "er" | "sequence" | "architecture";
 
-export function DiagramMakerEngine() {
-  const [diagram, setDiagram] = useState<DiagramState>({
+// ─── Constants ───────────────────────────────────────────────────────────────
+
+const SHAPE_COLORS = ["#0891b2", "#7c3aed", "#059669", "#dc2626", "#d97706", "#2563eb", "#db2777", "#0f172a"];
+
+const MODE_SHAPES: Record<DiagramMode, { type: Shape["type"]; icon: React.ComponentType<{ className?: string }>; label: string }[]> = {
+  flowchart: [
+    { type: "rounded-rect", icon: Square, label: "Start/End" },
+    { type: "rectangle", icon: Square, label: "Process" },
+    { type: "diamond", icon: Diamond, label: "Decision" },
+    { type: "parallelogram", icon: Square, label: "I/O" },
+    { type: "circle", icon: Circle, label: "Connector" },
+  ],
+  mindmap: [
+    { type: "circle", icon: Circle, label: "Central" },
+    { type: "rounded-rect", icon: Square, label: "Topic" },
+    { type: "rectangle", icon: Square, label: "Subtopic" },
+    { type: "text", icon: Type, label: "Label" },
+  ],
+  er: [
+    { type: "rectangle", icon: Square, label: "Entity" },
+    { type: "diamond", icon: Diamond, label: "Relationship" },
+    { type: "circle", icon: Circle, label: "Attribute" },
+    { type: "text", icon: Type, label: "Label" },
+  ],
+  sequence: [
+    { type: "rectangle", icon: Square, label: "Participant" },
+    { type: "rounded-rect", icon: Square, label: "Action" },
+    { type: "diamond", icon: Diamond, label: "Condition" },
+    { type: "text", icon: Type, label: "Note" },
+  ],
+  architecture: [
+    { type: "rectangle", icon: Square, label: "Service" },
+    { type: "cylinder", icon: Square, label: "Database" },
+    { type: "cloud", icon: Square, label: "External" },
+    { type: "rounded-rect", icon: Square, label: "Component" },
+    { type: "hexagon", icon: Hexagon, label: "Gateway" },
+  ],
+};
+
+const MODE_TEMPLATES: Record<DiagramMode, DiagramState> = {
+  flowchart: {
     shapes: [
       { id: "1", type: "rounded-rect", x: 100, y: 200, width: 160, height: 60, text: "Start", color: "#059669", textColor: "#ffffff" },
       { id: "2", type: "rectangle", x: 350, y: 200, width: 160, height: 60, text: "Process", color: "#0891b2", textColor: "#ffffff" },
@@ -56,12 +90,104 @@ export function DiagramMakerEngine() {
       { id: "4", type: "rounded-rect", x: 600, y: 350, width: 160, height: 60, text: "End", color: "#dc2626", textColor: "#ffffff" },
     ],
     connections: [
-      { id: "c1", fromId: "1", toId: "2", label: "" },
-      { id: "c2", fromId: "2", toId: "3", label: "" },
-      { id: "c3", fromId: "3", toId: "4", label: "Yes" },
+      { id: "c1", fromId: "1", toId: "2", label: "", lineStyle: "solid" },
+      { id: "c2", fromId: "2", toId: "3", label: "", lineStyle: "solid" },
+      { id: "c3", fromId: "3", toId: "4", label: "Yes", lineStyle: "solid" },
     ],
-  });
+  },
+  mindmap: {
+    shapes: [
+      { id: "1", type: "circle", x: 350, y: 200, width: 100, height: 100, text: "Main Idea", color: "#7c3aed", textColor: "#ffffff" },
+      { id: "2", type: "rounded-rect", x: 100, y: 80, width: 140, height: 50, text: "Topic A", color: "#0891b2", textColor: "#ffffff" },
+      { id: "3", type: "rounded-rect", x: 100, y: 200, width: 140, height: 50, text: "Topic B", color: "#059669", textColor: "#ffffff" },
+      { id: "4", type: "rounded-rect", x: 100, y: 320, width: 140, height: 50, text: "Topic C", color: "#d97706", textColor: "#ffffff" },
+      { id: "5", type: "rounded-rect", x: 550, y: 80, width: 140, height: 50, text: "Topic D", color: "#dc2626", textColor: "#ffffff" },
+      { id: "6", type: "rounded-rect", x: 550, y: 200, width: 140, height: 50, text: "Topic E", color: "#2563eb", textColor: "#ffffff" },
+    ],
+    connections: [
+      { id: "c1", fromId: "1", toId: "2", label: "", lineStyle: "solid" },
+      { id: "c2", fromId: "1", toId: "3", label: "", lineStyle: "solid" },
+      { id: "c3", fromId: "1", toId: "4", label: "", lineStyle: "solid" },
+      { id: "c4", fromId: "1", toId: "5", label: "", lineStyle: "solid" },
+      { id: "c5", fromId: "1", toId: "6", label: "", lineStyle: "solid" },
+    ],
+  },
+  er: {
+    shapes: [
+      { id: "1", type: "rectangle", x: 100, y: 100, width: 180, height: 120, text: "User\n───────\nid (PK)\nname\nemail", color: "#0891b2", textColor: "#ffffff" },
+      { id: "2", type: "rectangle", x: 450, y: 100, width: 180, height: 120, text: "Order\n───────\nid (PK)\nuser_id (FK)\ntotal", color: "#7c3aed", textColor: "#ffffff" },
+      { id: "3", type: "rectangle", x: 450, y: 300, width: 180, height: 100, text: "Product\n───────\nid (PK)\nname\nprice", color: "#059669", textColor: "#ffffff" },
+      { id: "4", type: "diamond", x: 310, y: 115, width: 100, height: 60, text: "places", color: "#d97706", textColor: "#ffffff" },
+      { id: "5", type: "diamond", x: 310, y: 310, width: 100, height: 60, text: "contains", color: "#dc2626", textColor: "#ffffff" },
+    ],
+    connections: [
+      { id: "c1", fromId: "1", toId: "4", label: "1", lineStyle: "solid" },
+      { id: "c2", fromId: "4", toId: "2", label: "N", lineStyle: "solid" },
+      { id: "c3", fromId: "2", toId: "5", label: "N", lineStyle: "solid" },
+      { id: "c4", fromId: "5", toId: "3", label: "M", lineStyle: "solid" },
+    ],
+  },
+  sequence: {
+    shapes: [
+      { id: "1", type: "rectangle", x: 50, y: 30, width: 120, height: 50, text: "Client", color: "#0891b2", textColor: "#ffffff" },
+      { id: "2", type: "rectangle", x: 300, y: 30, width: 120, height: 50, text: "API Gateway", color: "#7c3aed", textColor: "#ffffff" },
+      { id: "3", type: "rectangle", x: 550, y: 30, width: 120, height: 50, text: "Service", color: "#059669", textColor: "#ffffff" },
+      { id: "4", type: "rectangle", x: 800, y: 30, width: 120, height: 50, text: "Database", color: "#d97706", textColor: "#ffffff" },
+      { id: "5", type: "rounded-rect", x: 50, y: 140, width: 200, height: 40, text: "POST /api/order", color: "#2563eb", textColor: "#ffffff" },
+      { id: "6", type: "rounded-rect", x: 300, y: 240, width: 200, height: 40, text: "Validate & Route", color: "#db2777", textColor: "#ffffff" },
+      { id: "7", type: "rounded-rect", x: 550, y: 340, width: 200, height: 40, text: "Process Order", color: "#0f172a", textColor: "#ffffff" },
+      { id: "8", type: "rounded-rect", x: 800, y: 440, width: 200, height: 40, text: "INSERT INTO orders", color: "#d97706", textColor: "#ffffff" },
+    ],
+    connections: [
+      { id: "c1", fromId: "5", toId: "6", label: "→", lineStyle: "dashed" },
+      { id: "c2", fromId: "6", toId: "7", label: "→", lineStyle: "dashed" },
+      { id: "c3", fromId: "7", toId: "8", label: "→", lineStyle: "dashed" },
+    ],
+  },
+  architecture: {
+    shapes: [
+      { id: "1", type: "cloud", x: 50, y: 80, width: 140, height: 70, text: "CDN", color: "#0891b2", textColor: "#ffffff" },
+      { id: "2", type: "hexagon", x: 280, y: 80, width: 140, height: 70, text: "API Gateway", color: "#7c3aed", textColor: "#ffffff" },
+      { id: "3", type: "rectangle", x: 100, y: 240, width: 140, height: 70, text: "Auth Service", color: "#059669", textColor: "#ffffff" },
+      { id: "4", type: "rectangle", x: 280, y: 240, width: 140, height: 70, text: "App Service", color: "#dc2626", textColor: "#ffffff" },
+      { id: "5", type: "rectangle", x: 460, y: 240, width: 140, height: 70, text: "Worker", color: "#d97706", textColor: "#ffffff" },
+      { id: "6", type: "cylinder", x: 100, y: 380, width: 140, height: 80, text: "Users DB", color: "#2563eb", textColor: "#ffffff" },
+      { id: "7", type: "cylinder", x: 280, y: 380, width: 140, height: 80, text: "App DB", color: "#db2777", textColor: "#ffffff" },
+      { id: "8", type: "cloud", x: 460, y: 380, width: 140, height: 80, text: "S3 Storage", color: "#0f172a", textColor: "#ffffff" },
+    ],
+    connections: [
+      { id: "c1", fromId: "1", toId: "2", label: "", lineStyle: "solid" },
+      { id: "c2", fromId: "2", toId: "3", label: "", lineStyle: "solid" },
+      { id: "c3", fromId: "2", toId: "4", label: "", lineStyle: "solid" },
+      { id: "c4", fromId: "4", toId: "5", label: "", lineStyle: "dashed" },
+      { id: "c5", fromId: "3", toId: "6", label: "", lineStyle: "solid" },
+      { id: "c6", fromId: "4", toId: "7", label: "", lineStyle: "solid" },
+      { id: "c7", fromId: "5", toId: "8", label: "", lineStyle: "dashed" },
+    ],
+  },
+};
 
+const MODE_ICONS: Record<DiagramMode, React.ComponentType<{ className?: string }>> = {
+  flowchart: Workflow,
+  mindmap: Brain,
+  er: Database,
+  sequence: GitMerge,
+  architecture: Layers,
+};
+
+const MODE_LABELS: Record<DiagramMode, string> = {
+  flowchart: "Flowchart",
+  mindmap: "Mind Map",
+  er: "ER Diagram",
+  sequence: "Sequence",
+  architecture: "Architecture",
+};
+
+// ─── Component ───────────────────────────────────────────────────────────────
+
+export function DiagramMakerEngine() {
+  const [mode, setMode] = useState<DiagramMode>("flowchart");
+  const [diagram, setDiagram] = useState<DiagramState>(MODE_TEMPLATES.flowchart);
   const [selectedShape, setSelectedShape] = useState<string | null>(null);
   const [selectedTool, setSelectedTool] = useState<Shape["type"]>("rectangle");
   const [connectingFrom, setConnectingFrom] = useState<string | null>(null);
@@ -84,6 +210,15 @@ export function DiagramMakerEngine() {
     setDiagram(prev);
   };
 
+  const switchMode = (newMode: DiagramMode) => {
+    setMode(newMode);
+    setDiagram(JSON.parse(JSON.stringify(MODE_TEMPLATES[newMode])));
+    setSelectedShape(null);
+    setConnectingFrom(null);
+    setUndoStack([]);
+    setSelectedTool(MODE_SHAPES[newMode][0].type);
+  };
+
   const addShape = (x: number, y: number) => {
     pushUndo();
     const newShape: Shape = {
@@ -91,8 +226,8 @@ export function DiagramMakerEngine() {
       type: selectedTool,
       x: (x - pan.x) / zoom - 80,
       y: (y - pan.y) / zoom - 30,
-      width: 160,
-      height: 60,
+      width: selectedTool === "cylinder" ? 140 : 160,
+      height: selectedTool === "cylinder" ? 80 : 60,
       text: selectedTool.charAt(0).toUpperCase() + selectedTool.slice(1),
       color: SHAPE_COLORS[diagram.shapes.length % SHAPE_COLORS.length],
       textColor: "#ffffff",
@@ -163,7 +298,7 @@ export function DiagramMakerEngine() {
       pushUndo();
       setDiagram((prev) => ({
         ...prev,
-        connections: [...prev.connections, { id: `c${Date.now()}`, fromId: connectingFrom, toId: shapeId, label: "" }],
+        connections: [...prev.connections, { id: `c${Date.now()}`, fromId: connectingFrom, toId: shapeId, label: "", lineStyle: "solid" }],
       }));
       setConnectingFrom(null);
     }
@@ -196,7 +331,8 @@ export function DiagramMakerEngine() {
       const y1 = from.y + from.height / 2;
       const x2 = to.x + to.width / 2;
       const y2 = to.y + to.height / 2;
-      return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead)" />`;
+      const dash = conn.lineStyle === "dashed" ? ' stroke-dasharray="8,4"' : conn.lineStyle === "dotted" ? ' stroke-dasharray="2,4"' : "";
+      return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#64748b" stroke-width="2"${dash} marker-end="url(#arrowhead)" />`;
     })
     .join("\n")}
   ${diagram.shapes
@@ -217,10 +353,30 @@ export function DiagramMakerEngine() {
         case "triangle":
           shapeSvg = `<polygon points="${shape.x + shape.width / 2},${shape.y} ${shape.x + shape.width},${shape.y + shape.height} ${shape.x},${shape.y + shape.height}" fill="${shape.color}" stroke="#1e293b" stroke-width="2"/>`;
           break;
+        case "cylinder":
+          shapeSvg = `<rect x="${shape.x}" y="${shape.y + 10}" width="${shape.width}" height="${shape.height - 20}" fill="${shape.color}" stroke="#1e293b" stroke-width="2"/>
+            <ellipse cx="${shape.x + shape.width / 2}" cy="${shape.y + 10}" rx="${shape.width / 2}" ry="10" fill="${shape.color}" stroke="#1e293b" stroke-width="2"/>
+            <ellipse cx="${shape.x + shape.width / 2}" cy="${shape.y + shape.height - 10}" rx="${shape.width / 2}" ry="10" fill="${shape.color}" stroke="#1e293b" stroke-width="2"/>`;
+          break;
+        case "cloud":
+          shapeSvg = `<ellipse cx="${shape.x + shape.width * 0.3}" cy="${shape.y + shape.height * 0.6}" rx="${shape.width * 0.35}" ry="${shape.height * 0.35}" fill="${shape.color}" stroke="#1e293b" stroke-width="2"/>
+            <ellipse cx="${shape.x + shape.width * 0.7}" cy="${shape.y + shape.height * 0.55}" rx="${shape.width * 0.3}" ry="${shape.height * 0.4}" fill="${shape.color}" stroke="#1e293b" stroke-width="2"/>
+            <ellipse cx="${shape.x + shape.width * 0.5}" cy="${shape.y + shape.height * 0.35}" rx="${shape.width * 0.4}" ry="${shape.height * 0.35}" fill="${shape.color}" stroke="#1e293b" stroke-width="2"/>`;
+          break;
+        case "parallelogram":
+          shapeSvg = `<polygon points="${shape.x + 20},${shape.y} ${shape.x + shape.width},${shape.y} ${shape.x + shape.width - 20},${shape.y + shape.height} ${shape.x},${shape.y + shape.height}" fill="${shape.color}" stroke="#1e293b" stroke-width="2"/>`;
+          break;
         default:
           shapeSvg = `<rect x="${shape.x}" y="${shape.y}" width="${shape.width}" height="${shape.height}" rx="${rx}" fill="${shape.color}" stroke="#1e293b" stroke-width="2"/>`;
       }
-      shapeSvg += `<text x="${shape.x + shape.width / 2}" y="${shape.y + shape.height / 2 + 5}" text-anchor="middle" fill="${shape.textColor}" font-size="14" font-family="Inter, sans-serif">${shape.text}</text>`;
+      const lines = shape.text.split("\n");
+      if (lines.length === 1) {
+        shapeSvg += `<text x="${shape.x + shape.width / 2}" y="${shape.y + shape.height / 2 + 5}" text-anchor="middle" fill="${shape.textColor}" font-size="14" font-family="Inter, sans-serif">${shape.text}</text>`;
+      } else {
+        lines.forEach((line, i) => {
+          shapeSvg += `<text x="${shape.x + shape.width / 2}" y="${shape.y + 20 + i * 18}" text-anchor="middle" fill="${shape.textColor}" font-size="12" font-family="Inter, sans-serif">${line}</text>`;
+        });
+      }
       return shapeSvg;
     })
     .join("\n")}
@@ -229,19 +385,73 @@ export function DiagramMakerEngine() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "diagram.svg";
+    a.download = `${mode}-diagram.svg`;
     a.click();
     URL.revokeObjectURL(url);
   };
 
   const selectedShapeData = diagram.shapes.find((s) => s.id === selectedShape);
+  const currentShapes = MODE_SHAPES[mode];
+
+  // Shape rendering helper
+  const getShapeStyle = (shape: Shape) => {
+    const base: React.CSSProperties = {
+      left: shape.x,
+      top: shape.y,
+      width: shape.width,
+      height: shape.height,
+      backgroundColor: shape.color,
+      color: shape.textColor,
+    };
+
+    switch (shape.type) {
+      case "circle":
+        return { ...base, borderRadius: "50%" };
+      case "rounded-rect":
+        return { ...base, borderRadius: "12px" };
+      case "diamond":
+        return { ...base, clipPath: "polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)" };
+      case "hexagon":
+        return { ...base, clipPath: "polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)" };
+      case "triangle":
+        return { ...base, clipPath: "polygon(50% 0%, 100% 100%, 0% 100%)" };
+      case "cylinder":
+        return { ...base, borderRadius: "8px 8px 0 0", borderBottom: "4px solid rgba(0,0,0,0.2)" };
+      case "parallelogram":
+        return { ...base, clipPath: "polygon(12% 0%, 100% 0%, 88% 100%, 0% 100%)" };
+      case "cloud":
+        return { ...base, borderRadius: "40px", backgroundColor: shape.color, opacity: 0.9 };
+      default:
+        return { ...base, borderRadius: "4px" };
+    }
+  };
 
   return (
     <div className="space-y-4">
-      {/* Toolbar */}
+      {/* ── Mode Selector ── */}
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
-          {SHAPE_TYPES.map((st) => (
+          {(Object.keys(MODE_TEMPLATES) as DiagramMode[]).map((m) => {
+            const Icon = MODE_ICONS[m];
+            return (
+              <Button
+                key={m}
+                variant={mode === m ? "default" : "ghost"}
+                size="sm"
+                className="h-8 gap-1.5"
+                onClick={() => switchMode(m)}
+              >
+                <Icon className="h-3.5 w-3.5" /> {MODE_LABELS[m]}
+              </Button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── Toolbar ── */}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
+          {currentShapes.map((st) => (
             <Button
               key={st.type}
               variant={selectedTool === st.type ? "default" : "ghost"}
@@ -261,7 +471,7 @@ export function DiagramMakerEngine() {
           onClick={() => setConnectingFrom(null)}
         >
           <GitBranch className="h-3.5 w-3.5" />
-          {connectingFrom ? "Connecting... (click target)" : "Connect"}
+          {connectingFrom ? "Connecting... (dbl-click target)" : "Connect"}
         </Button>
         <div className="flex-1" />
         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={undo} disabled={undoStack.length === 0}>
@@ -317,9 +527,11 @@ export function DiagramMakerEngine() {
                   const y1 = from.y + from.height / 2;
                   const x2 = to.x + to.width / 2;
                   const y2 = to.y + to.height / 2;
+                  const dashArray = conn.lineStyle === "dashed" ? "8,4" : conn.lineStyle === "dotted" ? "2,4" : undefined;
                   return (
                     <g key={conn.id}>
-                      <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="#64748b" strokeWidth="2" markerEnd="url(#arrowhead)" />
+                      <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="#64748b" strokeWidth="2"
+                        strokeDasharray={dashArray} markerEnd="url(#arrowhead)" />
                       {conn.label && (
                         <text x={(x1 + x2) / 2} y={(y1 + y2) / 2 - 8} textAnchor="middle" fill="#64748b" fontSize="12" fontFamily="Inter">
                           {conn.label}
@@ -340,35 +552,11 @@ export function DiagramMakerEngine() {
                     className={`absolute flex items-center justify-center cursor-move select-none transition-shadow ${
                       isSelected ? "ring-2 ring-primary ring-offset-2 z-10" : ""
                     } ${isConnecting ? "ring-2 ring-amber-500 ring-offset-2 z-10" : ""}`}
-                    style={{
-                      left: shape.x,
-                      top: shape.y,
-                      width: shape.width,
-                      height: shape.height,
-                      backgroundColor: shape.color,
-                      color: shape.textColor,
-                      borderRadius:
-                        shape.type === "circle"
-                          ? "50%"
-                          : shape.type === "rounded-rect"
-                          ? "12px"
-                          : shape.type === "diamond"
-                          ? "0"
-                          : "4px",
-                      transform: shape.type === "diamond" ? "rotate(0deg)" : "none",
-                      clipPath:
-                        shape.type === "diamond"
-                          ? `polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)`
-                          : shape.type === "hexagon"
-                          ? `polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)`
-                          : shape.type === "triangle"
-                          ? `polygon(50% 0%, 100% 100%, 0% 100%)`
-                          : "none",
-                    }}
+                    style={getShapeStyle(shape)}
                     onMouseDown={(e) => handleShapeMouseDown(e, shape.id)}
                     onDoubleClick={() => handleShapeDoubleClick(shape.id)}
                   >
-                    <span className="text-sm font-medium px-2 text-center pointer-events-none">
+                    <span className="text-sm font-medium px-2 text-center pointer-events-none whitespace-pre-line leading-tight">
                       {shape.text}
                     </span>
                   </div>
@@ -460,7 +648,7 @@ export function DiagramMakerEngine() {
                   const to = diagram.shapes.find((s) => s.id === conn.toId);
                   return (
                     <div key={conn.id} className="flex items-center gap-2 text-xs p-1.5 rounded hover:bg-muted/50">
-                      <span className="truncate flex-1">{from?.text || "?"} → {to?.text || "?"}</span>
+                      <span className="truncate flex-1">{from?.text?.split("\n")[0] || "?"} → {to?.text?.split("\n")[0] || "?"}</span>
                       <Button variant="ghost" size="icon" className="h-5 w-5 text-destructive" onClick={() => deleteConnection(conn.id)}>
                         <Trash2 className="h-3 w-3" />
                       </Button>

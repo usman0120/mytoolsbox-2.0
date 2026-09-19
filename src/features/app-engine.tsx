@@ -16,6 +16,7 @@ const engineMap: Record<string, React.ComponentType<unknown>> = {
   "farmer-ai": dynamic(() => import("@/features/apps/farmer-ai-engine").then((m) => ({ default: m.FarmerAIEngine })), { loading: EngineLoading }),
   "ai-quiz-generator": dynamic(() => import("@/features/apps/ai-quiz-generator-engine").then((m) => ({ default: m.AIQuizGeneratorEngine })), { loading: EngineLoading }),
   "ai-notes-generator": dynamic(() => import("@/features/apps/ai-notes-generator-engine").then((m) => ({ default: m.AINotesGeneratorEngine })), { loading: EngineLoading }),
+  "ai-diagram-generator": dynamic(() => import("@/features/apps/ai-diagram-generator-engine").then((m) => ({ default: m.AIDiagramGeneratorEngine })), { loading: EngineLoading }),
 };
 
 function EngineLoading() {

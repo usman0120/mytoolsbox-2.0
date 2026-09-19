@@ -56,7 +56,7 @@ export const hubRegistry: HubDefinition[] = [
       "business-name-generator", "proposal-generator", "contract-generator",
       "social-media-content-generator",
     ],
-    appIds: ["invoice-maker", "presentation-maker", "budget-planner", "certificate-maker"],
+    appIds: ["invoice-maker", "presentation-maker", "budget-planner", "certificate-maker", "video-editor"],
   },
   {
     id: "designers",
@@ -71,7 +71,7 @@ export const hubRegistry: HubDefinition[] = [
       "pdf-to-images", "images-to-pdf", "unit-converter", "text-cleaner",
       "lorem-ipsum", "random-generator",
     ],
-    appIds: ["image-editor", "diagram-maker", "presentation-maker", "certificate-maker"],
+    appIds: ["image-editor", "diagram-maker", "ai-diagram-generator", "presentation-maker", "certificate-maker", "video-editor"],
   },
   {
     id: "writers",
@@ -138,7 +138,7 @@ export const hubRegistry: HubDefinition[] = [
       "color-palette", "notes-app", "pomodoro-timer", "stopwatch",
       "json-formatter", "base64-encoder", "url-encoder", "diff-checker",
     ],
-    appIds: ["image-editor", "habit-tracker", "budget-planner"],
+    appIds: ["image-editor", "habit-tracker", "budget-planner", "video-editor"],
   },
 ];
 
