@@ -1,0 +1,81 @@
+"use client";
+
+import { useState } from "react";
+import { TextQuote, Copy, Check, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent } from "@/components/ui/card";
+import { countWords } from "@/features/tools/word-counter";
+
+export function WordCounterEngine() {
+  const [text, setText] = useState("");
+  const [copied, setCopied] = useState(false);
+
+  const result = text.trim() ? countWords(text) : null;
+  const stats = result?.stats;
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleClear = () => setText("");
+
+  const statCards = stats ? [
+    { label: "Words", value: stats.words.toLocaleString() },
+    { label: "Characters", value: stats.characters.toLocaleString() },
+    { label: "Characters (no spaces)", value: stats.charactersNoSpaces.toLocaleString() },
+    { label: "Sentences", value: stats.sentences.toLocaleString() },
+    { label: "Paragraphs", value: stats.paragraphs.toLocaleString() },
+    { label: "Lines", value: stats.lines.toLocaleString() },
+    { label: "Reading Time", value: `${stats.readingTimeMinutes} min` },
+    { label: "Speaking Time", value: `${stats.speakingTimeMinutes} min` },
+    { label: "Avg Word Length", value: stats.avgWordLength.toFixed(1) },
+  ] : [];
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <div className="flex items-center justify-between mb-1.5">
+          <label className="text-sm font-medium">Your Text</label>
+          <div className="flex gap-1">
+            <Button variant="ghost" size="sm" onClick={handleCopy} className="gap-1.5 h-7">
+              {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+              {copied ? "Copied" : "Copy"}
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleClear} className="gap-1.5 h-7">
+              <Trash2 className="h-3.5 w-3.5" /> Clear
+            </Button>
+          </div>
+        </div>
+        <Textarea
+          placeholder="Type or paste your text here..."
+          className="min-h-[200px]"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+        />
+      </div>
+
+      {stats && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {statCards.map((stat) => (
+            <Card key={stat.label}>
+              <CardContent className="p-3 text-center">
+                <p className="text-2xl font-bold">{stat.value}</p>
+                <p className="text-xs text-muted-foreground">{stat.label}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {!text.trim() && (
+        <div className="text-center py-8 text-muted-foreground">
+          <TextQuote className="h-10 w-10 mx-auto mb-3 opacity-30" />
+          <p>Start typing to see word and character counts</p>
+        </div>
+      )}
+    </div>
+  );
+}

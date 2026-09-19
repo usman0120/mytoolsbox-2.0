@@ -1,0 +1,238 @@
+"use client";
+
+import { useState, useCallback, useEffect, useRef } from "react";
+import { Play, Pause, RotateCcw, SkipForward, Volume2, VolumeX } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+
+type TimerState = "idle" | "working" | "short-break" | "long-break";
+
+function formatTime(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+}
+
+export function PomodoroTimerEngine() {
+  const [workDuration, setWorkDuration] = useState(25);
+  const [shortBreakDuration, setShortBreakDuration] = useState(5);
+  const [longBreakDuration, setLongBreakDuration] = useState(15);
+  const [sessionsBeforeLongBreak, setSessionsBeforeLongBreak] = useState(4);
+
+  const [state, setState] = useState<TimerState>("idle");
+  const [timeLeft, setTimeLeft] = useState(workDuration * 60);
+  const [running, setRunning] = useState(false);
+  const [completedSessions, setCompletedSessions] = useState(0);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const playSound = useCallback(() => {
+    if (!soundEnabled) return;
+    try {
+      const ctx = new AudioContext();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = 800;
+      gain.gain.value = 0.1;
+      osc.start();
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+      osc.stop(ctx.currentTime + 0.3);
+    } catch {
+      // Audio not supported
+    }
+  }, [soundEnabled]);
+
+  const getDuration = useCallback(
+    (s: TimerState) => {
+      switch (s) {
+        case "working": return workDuration * 60;
+        case "short-break": return shortBreakDuration * 60;
+        case "long-break": return longBreakDuration * 60;
+        default: return workDuration * 60;
+      }
+    },
+    [workDuration, shortBreakDuration, longBreakDuration]
+  );
+
+  const startTimer = useCallback(() => {
+    setRunning(true);
+    if (state === "idle") {
+      setState("working");
+      setTimeLeft(workDuration * 60);
+    }
+  }, [state, workDuration]);
+
+  const pauseTimer = useCallback(() => {
+    setRunning(false);
+  }, []);
+
+  const resetTimer = useCallback(() => {
+    setRunning(false);
+    setState("idle");
+    setTimeLeft(workDuration * 60);
+    setCompletedSessions(0);
+  }, [workDuration]);
+
+  const skipTimer = useCallback(() => {
+    playSound();
+    if (state === "working") {
+      const newCount = completedSessions + 1;
+      setCompletedSessions(newCount);
+      if (newCount % sessionsBeforeLongBreak === 0) {
+        setState("long-break");
+        setTimeLeft(longBreakDuration * 60);
+      } else {
+        setState("short-break");
+        setTimeLeft(shortBreakDuration * 60);
+      }
+    } else {
+      setState("working");
+      setTimeLeft(workDuration * 60);
+    }
+  }, [state, completedSessions, sessionsBeforeLongBreak, workDuration, shortBreakDuration, longBreakDuration, playSound]);
+
+  // Timer tick
+  useEffect(() => {
+    if (!running) {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      return;
+    }
+
+    intervalRef.current = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          playSound();
+          // Auto-transition
+          if (state === "working") {
+            const newCount = completedSessions + 1;
+            setCompletedSessions(newCount);
+            if (newCount % sessionsBeforeLongBreak === 0) {
+              setState("long-break");
+              return longBreakDuration * 60;
+            } else {
+              setState("short-break");
+              return shortBreakDuration * 60;
+            }
+          } else {
+            setState("working");
+            return workDuration * 60;
+          }
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [running, state, completedSessions, sessionsBeforeLongBreak, workDuration, shortBreakDuration, longBreakDuration, playSound]);
+
+  const progress = state !== "idle" ? 1 - timeLeft / getDuration(state) : 0;
+  const stateLabel = state === "idle" ? "Ready" : state === "working" ? "Focus" : state === "short-break" ? "Short Break" : "Long Break";
+  const stateColor = state === "working" ? "text-red-500" : state === "short-break" ? "text-green-500" : state === "long-break" ? "text-blue-500" : "text-muted-foreground";
+  const ringColor = state === "working" ? "stroke-red-500" : state === "short-break" ? "stroke-green-500" : state === "long-break" ? "stroke-blue-500" : "stroke-muted";
+
+  const circumference = 2 * Math.PI * 120;
+  const strokeDashoffset = circumference - progress * circumference;
+
+  return (
+    <div className="space-y-6">
+      {/* Timer Circle */}
+      <div className="flex flex-col items-center">
+        <div className="relative w-64 h-64">
+          <svg className="w-full h-full -rotate-90" viewBox="0 0 256 256">
+            <circle cx="128" cy="128" r="120" fill="none" stroke="currentColor" strokeWidth="8" className="stroke-muted/30" />
+            <circle
+              cx="128"
+              cy="128"
+              r="120"
+              fill="none"
+              strokeWidth="8"
+              strokeLinecap="round"
+              className={ringColor}
+              strokeDasharray={circumference}
+              strokeDashoffset={strokeDashoffset}
+              style={{ transition: "stroke-dashoffset 0.5s ease" }}
+            />
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className="font-mono text-5xl font-bold tracking-tighter tabular-nums">
+              {formatTime(timeLeft)}
+            </span>
+            <Badge variant="secondary" className={`mt-2 ${stateColor}`}>
+              {stateLabel}
+            </Badge>
+            <span className="text-xs text-muted-foreground mt-1">
+              Session {completedSessions + 1}
+            </span>
+          </div>
+        </div>
+
+        {/* Controls */}
+        <div className="flex items-center gap-3 mt-6">
+          {!running ? (
+            <Button onClick={startTimer} size="lg" className="gap-2 rounded-full px-8">
+              <Play className="h-5 w-5" /> Start
+            </Button>
+          ) : (
+            <Button onClick={pauseTimer} size="lg" variant="secondary" className="gap-2 rounded-full px-8">
+              <Pause className="h-5 w-5" /> Pause
+            </Button>
+          )}
+          <Button onClick={skipTimer} size="lg" variant="outline" className="gap-2 rounded-full px-6">
+            <SkipForward className="h-5 w-5" /> Skip
+          </Button>
+          <Button onClick={resetTimer} size="lg" variant="outline" className="gap-2 rounded-full px-6">
+            <RotateCcw className="h-5 w-5" /> Reset
+          </Button>
+          <Button
+            onClick={() => setSoundEnabled(!soundEnabled)}
+            size="icon"
+            variant="ghost"
+            className="rounded-full"
+          >
+            {soundEnabled ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}
+          </Button>
+        </div>
+      </div>
+
+      {/* Settings */}
+      <Card>
+        <CardContent className="p-4 space-y-4">
+          <h3 className="text-sm font-medium">Timer Settings</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs">Work: {workDuration} min</Label>
+              </div>
+              <Slider value={[workDuration]} onValueChange={(v) => { const val = Array.isArray(v) ? v[0] : v; setWorkDuration(val); if (state === "idle") setTimeLeft(val * 60); }} min={1} max={60} step={1} />
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs">Short Break: {shortBreakDuration} min</Label>
+              </div>
+              <Slider value={[shortBreakDuration]} onValueChange={(v) => setShortBreakDuration(Array.isArray(v) ? v[0] : v)} min={1} max={30} step={1} />
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs">Long Break: {longBreakDuration} min</Label>
+              </div>
+              <Slider value={[longBreakDuration]} onValueChange={(v) => setLongBreakDuration(Array.isArray(v) ? v[0] : v)} min={1} max={60} step={1} />
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs">Sessions before long break: {sessionsBeforeLongBreak}</Label>
+              </div>
+              <Slider value={[sessionsBeforeLongBreak]} onValueChange={(v) => setSessionsBeforeLongBreak(Array.isArray(v) ? v[0] : v)} min={1} max={8} step={1} />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

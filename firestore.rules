@@ -1,0 +1,84 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // -----------------------------------------------------------------------
+    // User data — only the owning user can read/write their own data
+    // -----------------------------------------------------------------------
+    match /users/{userId} {
+
+      // Only the authenticated user matching the userId can access their data
+      function isOwner() {
+        return request.auth != null && request.auth.uid == userId;
+      }
+
+      // Profile: owner read/write
+      match /profile/{doc} {
+        allow read, write: if isOwner();
+      }
+
+      // Preferences: owner read/write
+      match /preferences/{doc} {
+        allow read, write: if isOwner();
+      }
+
+      // Favorites: owner read/write, create with valid data
+      match /favorites/{doc} {
+        allow read, delete: if isOwner();
+        allow create: if isOwner()
+          && request.resource.data.keys().hasAll(['toolId', 'toolName', 'toolSlug', 'category', 'addedAt']);
+      }
+
+      // History: owner read/write, create with valid data
+      match /history/{doc} {
+        allow read, delete: if isOwner();
+        allow create: if isOwner()
+          && request.resource.data.keys().hasAll(['toolId', 'toolName', 'toolSlug', 'category', 'action', 'timestamp']);
+      }
+
+      // Usage: owner read, server-side write only (incremented by client)
+      // In production, usage should be updated via a server-side API or Cloud Function
+      match /usage/{doc} {
+        allow read: if isOwner();
+        allow write: if isOwner();
+      }
+
+      // Saved items: owner read/write
+      match /saved/{doc} {
+        allow read, delete: if isOwner();
+        allow create: if isOwner()
+          && request.resource.data.keys().hasAll(['toolId', 'toolName', 'toolSlug', 'category', 'title', 'resultData', 'createdAt']);
+      }
+    }
+
+    // -----------------------------------------------------------------------
+    // Public collections — read-only for authenticated users
+    // -----------------------------------------------------------------------
+    match /publicTemplates/{doc} {
+      allow read: if request.auth != null;
+      allow write: if false; // managed via admin/Firebase console only
+    }
+
+    match /publicTools/{doc} {
+      allow read: if request.auth != null;
+      allow write: if false; // managed via admin/Firebase console only
+    }
+
+    // -----------------------------------------------------------------------
+    // Feedback — any authenticated user can submit
+    // -----------------------------------------------------------------------
+    match /feedback/{doc} {
+      allow read: if false; // private — only viewable in Firebase console
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasAll(['userId', 'message', 'createdAt']);
+    }
+
+    // -----------------------------------------------------------------------
+    // Default deny
+    // -----------------------------------------------------------------------
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,100 @@
+"use client";
+
+import { useState } from "react";
+import { Ruler, Copy, Check } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { convertUnit, getUnits, UnitCategory } from "@/features/tools/unit-converter";
+
+const CATEGORIES: { id: UnitCategory; label: string }[] = [
+  { id: "length", label: "Length" },
+  { id: "weight", label: "Weight" },
+  { id: "temperature", label: "Temperature" },
+  { id: "volume", label: "Volume" },
+  { id: "area", label: "Area" },
+  { id: "speed", label: "Speed" },
+];
+
+export function UnitConverterEngine() {
+  const [category, setCategory] = useState<UnitCategory>("length");
+  const [value, setValue] = useState("");
+  const [fromUnit, setFromUnit] = useState("m");
+  const [toUnit, setToUnit] = useState("ft");
+  const [result, setResult] = useState<number | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const units = getUnits(category);
+
+  const handleConvert = () => {
+    const v = parseFloat(value);
+    if (isNaN(v)) return;
+    const r = convertUnit(v, fromUnit, toUnit, category);
+    setResult(r);
+  };
+
+  const handleCopy = async () => {
+    if (result !== null) {
+      await navigator.clipboard.writeText(result.toString());
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-2 flex-wrap">
+        {CATEGORIES.map((c) => (
+          <Button key={c.id} variant={category === c.id ? "default" : "outline"} size="sm" onClick={() => { setCategory(c.id); setResult(null); }}>
+            {c.label}
+          </Button>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+        <div>
+          <Label className="text-sm mb-1.5 block">Value</Label>
+          <Input type="number" value={value} onChange={(e) => setValue(e.target.value)} />
+        </div>
+        <div>
+          <Label className="text-sm mb-1.5 block">From</Label>
+          <select
+            className="w-full h-9 rounded-md border bg-background px-3 text-sm"
+            value={fromUnit}
+            onChange={(e) => setFromUnit(e.target.value)}
+          >
+            {units.map((u) => <option key={u} value={u}>{u}</option>)}
+          </select>
+        </div>
+        <div>
+          <Label className="text-sm mb-1.5 block">To</Label>
+          <select
+            className="w-full h-9 rounded-md border bg-background px-3 text-sm"
+            value={toUnit}
+            onChange={(e) => setToUnit(e.target.value)}
+          >
+            {units.map((u) => <option key={u} value={u}>{u}</option>)}
+          </select>
+        </div>
+      </div>
+
+      <Button onClick={handleConvert} className="w-full gap-2" disabled={!value}>
+        <Ruler className="h-4 w-4" /> Convert
+      </Button>
+
+      {result !== null && (
+        <div className="p-4 rounded-lg bg-muted text-center">
+          <div className="flex items-center justify-center gap-2">
+            <p className="text-2xl font-bold">{result.toFixed(4)}</p>
+            <Button variant="ghost" size="sm" onClick={handleCopy} className="gap-1.5 h-7">
+              {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+            </Button>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            {value} {fromUnit} = {result.toFixed(4)} {toUnit}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
