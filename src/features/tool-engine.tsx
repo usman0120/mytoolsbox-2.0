@@ -179,6 +179,44 @@ const engineMap: Record<string, React.ComponentType<any>> = {
   "citation-generator": dynamic(() => import("@/features/tools/citation-generator-engine").then((m) => ({ default: m.CitationGeneratorEngine })), {
     loading: () => <EngineLoading />,
   }),
+
+  // Business Hub
+  "invoice-generator": dynamic(() => import("@/features/tools/invoice-generator-engine").then((m) => ({ default: m.InvoiceGeneratorEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "quotation-generator": dynamic(() => import("@/features/tools/quotation-generator-engine").then((m) => ({ default: m.QuotationGeneratorEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "profit-calculator": dynamic(() => import("@/features/tools/profit-calculator-engine").then((m) => ({ default: m.ProfitCalculatorEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "margin-calculator": dynamic(() => import("@/features/tools/margin-calculator-engine").then((m) => ({ default: m.MarginCalculatorEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "tax-calculator": dynamic(() => import("@/features/tools/tax-calculator-engine").then((m) => ({ default: m.TaxCalculatorEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "salary-calculator": dynamic(() => import("@/features/tools/salary-calculator-engine").then((m) => ({ default: m.SalaryCalculatorEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "roi-calculator": dynamic(() => import("@/features/tools/roi-calculator-engine").then((m) => ({ default: m.ROICalculatorEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "break-even-calculator": dynamic(() => import("@/features/tools/break-even-calculator-engine").then((m) => ({ default: m.BreakEvenCalculatorEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "business-name-generator": dynamic(() => import("@/features/tools/business-name-generator-engine").then((m) => ({ default: m.BusinessNameGeneratorEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "proposal-generator": dynamic(() => import("@/features/tools/proposal-generator-engine").then((m) => ({ default: m.ProposalGeneratorEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "contract-generator": dynamic(() => import("@/features/tools/contract-generator-engine").then((m) => ({ default: m.ContractGeneratorEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "social-media-content-generator": dynamic(() => import("@/features/tools/social-media-content-generator-engine").then((m) => ({ default: m.SocialMediaContentGeneratorEngine })), {
+    loading: () => <EngineLoading />,
+  }),
 };
 
 function EngineLoading() {
