@@ -13,6 +13,7 @@ const engineMap: Record<string, React.ComponentType<unknown>> = {
   "image-editor": dynamic(() => import("@/features/apps/image-editor-engine").then((m) => ({ default: m.ImageEditorEngine })), { loading: EngineLoading }),
   "video-editor": dynamic(() => import("@/features/apps/video-editor-engine").then((m) => ({ default: m.VideoEditorEngine })), { loading: EngineLoading }),
   "research-assistant": dynamic(() => import("@/features/apps/research-assistant-engine").then((m) => ({ default: m.ResearchAssistantEngine })), { loading: EngineLoading }),
+  "farmer-ai": dynamic(() => import("@/features/apps/farmer-ai-engine").then((m) => ({ default: m.FarmerAIEngine })), { loading: EngineLoading }),
 };
 
 function EngineLoading() {

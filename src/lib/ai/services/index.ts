@@ -36,3 +36,6 @@ export type { CodeExplainInput, CodeExplainOutput } from "./code-explainer";
 
 export { chat } from "./chat";
 export type { ChatInput, ChatOutput, ChatMessage } from "./chat";
+
+export { askFarmingExpert } from "./farming-assistant";
+export type { FarmingAssistantInput, FarmingAssistantOutput } from "./farming-assistant";
