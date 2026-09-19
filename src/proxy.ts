@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 // Paths that require authentication
-const PROTECTED_PATHS = ["/dashboard", "/settings", "/favorites", "/history"];
+const PROTECTED_PATHS = ["/dashboard", "/settings", "/favorites", "/history", "/account"];
 
 // Paths that redirect to home if already authenticated
 const AUTH_PATHS = ["/signin", "/signup"];

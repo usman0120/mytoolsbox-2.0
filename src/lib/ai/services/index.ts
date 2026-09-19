@@ -39,3 +39,18 @@ export type { ChatInput, ChatOutput, ChatMessage } from "./chat";
 
 export { askFarmingExpert } from "./farming-assistant";
 export type { FarmingAssistantInput, FarmingAssistantOutput } from "./farming-assistant";
+
+export { buildRegex } from "./regex-builder";
+export type { RegexBuilderInput, RegexBuilderOutput } from "./regex-builder";
+
+export { sqlAssist } from "./sql-assistant";
+export type { SQLAssistantInput, SQLAssistantOutput } from "./sql-assistant";
+
+export { generateDocs } from "./doc-generator";
+export type { DocGeneratorInput, DocGeneratorOutput } from "./doc-generator";
+
+export { explainError } from "./error-explainer";
+export type { ErrorExplainerInput, ErrorExplainerOutput } from "./error-explainer";
+
+export { generateAPIDocs } from "./api-doc-generator";
+export type { APIDocGeneratorInput, APIDocGeneratorOutput } from "./api-doc-generator";

@@ -53,6 +53,54 @@ const engineMap: Record<string, React.ComponentType<any>> = {
   "diff-checker": dynamic(() => import("@/features/tools/diff-checker-engine").then((m) => ({ default: m.DiffCheckerEngine })), {
     loading: () => <EngineLoading />,
   }),
+  "uuid-generator": dynamic(() => import("@/features/tools/uuid-generator-engine").then((m) => ({ default: m.UUIDGeneratorEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "timestamp-converter": dynamic(() => import("@/features/tools/timestamp-converter-engine").then((m) => ({ default: m.TimestampConverterEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "cron-helper": dynamic(() => import("@/features/tools/cron-helper-engine").then((m) => ({ default: m.CronHelperEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "html-formatter": dynamic(() => import("@/features/tools/html-formatter-engine").then((m) => ({ default: m.HTMLFormatterEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "css-formatter": dynamic(() => import("@/features/tools/css-formatter-engine").then((m) => ({ default: m.CSSFormatterEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "color-converter": dynamic(() => import("@/features/tools/color-converter-engine").then((m) => ({ default: m.ColorConverterEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "http-status": dynamic(() => import("@/features/tools/http-status-engine").then((m) => ({ default: m.HTTPStatusEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "mime-types": dynamic(() => import("@/features/tools/mime-types-engine").then((m) => ({ default: m.MimeTypesEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "user-agent-parser": dynamic(() => import("@/features/tools/user-agent-parser-engine").then((m) => ({ default: m.UserAgentParserEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "api-request-builder": dynamic(() => import("@/features/tools/api-request-builder-engine").then((m) => ({ default: m.APIRequestBuilderEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "webhook-tester": dynamic(() => import("@/features/tools/webhook-tester-engine").then((m) => ({ default: m.WebhookTesterEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "ai-regex-builder": dynamic(() => import("@/features/tools/ai-regex-builder-engine").then((m) => ({ default: m.AIRegexBuilderEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "ai-sql-assistant": dynamic(() => import("@/features/tools/ai-sql-assistant-engine").then((m) => ({ default: m.AISQLAssistantEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "ai-doc-generator": dynamic(() => import("@/features/tools/ai-doc-generator-engine").then((m) => ({ default: m.AIDocumentationGeneratorEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "ai-error-explainer": dynamic(() => import("@/features/tools/ai-error-explainer-engine").then((m) => ({ default: m.AIErrorExplainerEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "ai-api-doc-generator": dynamic(() => import("@/features/tools/ai-api-doc-generator-engine").then((m) => ({ default: m.AIAPIDocumentationGeneratorEngine })), {
+    loading: () => <EngineLoading />,
+  }),
   // Writing tools
   "word-counter": dynamic(() => import("@/features/tools/word-counter-engine").then((m) => ({ default: m.WordCounterEngine })), {
     loading: () => <EngineLoading />,
