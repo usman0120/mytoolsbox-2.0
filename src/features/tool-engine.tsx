@@ -151,6 +151,34 @@ const engineMap: Record<string, React.ComponentType<any>> = {
   "password-generator": dynamic(() => import("@/features/tools/password-generator-engine").then((m) => ({ default: m.PasswordGeneratorEngine })), {
     loading: () => <EngineLoading />,
   }),
+  // Academic tools
+  "scientific-calculator": dynamic(() => import("@/features/tools/scientific-calculator-engine").then((m) => ({ default: m.ScientificCalculatorEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "matrix-calculator": dynamic(() => import("@/features/tools/matrix-calculator-engine").then((m) => ({ default: m.MatrixCalculatorEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "equation-solver": dynamic(() => import("@/features/tools/equation-solver-engine").then((m) => ({ default: m.EquationSolverEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "statistics-calculator": dynamic(() => import("@/features/tools/statistics-calculator-engine").then((m) => ({ default: m.StatisticsCalculatorEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "study-timer": dynamic(() => import("@/features/tools/study-timer-engine").then((m) => ({ default: m.StudyTimerEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "quiz-generator": dynamic(() => import("@/features/tools/quiz-generator-engine").then((m) => ({ default: m.QuizGeneratorEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "flashcard-generator": dynamic(() => import("@/features/tools/flashcard-generator-engine").then((m) => ({ default: m.FlashcardGeneratorEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "gpa-calculator": dynamic(() => import("@/features/tools/gpa-calculator-engine").then((m) => ({ default: m.GPACalculatorEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "citation-generator": dynamic(() => import("@/features/tools/citation-generator-engine").then((m) => ({ default: m.CitationGeneratorEngine })), {
+    loading: () => <EngineLoading />,
+  }),
 };
 
 function EngineLoading() {

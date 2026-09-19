@@ -15,8 +15,10 @@ export const hubRegistry: HubDefinition[] = [
       "qr-generator", "image-compressor", "image-resizer", "image-converter",
       "pdf-merger", "pdf-splitter", "pdf-compressor", "notes-app", "pomodoro-timer",
       "stopwatch", "color-palette", "password-generator", "diff-checker",
+      "scientific-calculator", "matrix-calculator", "equation-solver",
+      "statistics-calculator", "study-timer", "quiz-generator", "flashcard-generator",
     ],
-    appIds: ["math-solver", "study-planner", "research-assistant", "quiz-maker"],
+    appIds: ["math-solver", "study-planner", "research-assistant", "quiz-maker", "ai-quiz-generator", "ai-notes-generator"],
   },
   {
     id: "developers",

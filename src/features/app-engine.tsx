@@ -14,6 +14,8 @@ const engineMap: Record<string, React.ComponentType<unknown>> = {
   "video-editor": dynamic(() => import("@/features/apps/video-editor-engine").then((m) => ({ default: m.VideoEditorEngine })), { loading: EngineLoading }),
   "research-assistant": dynamic(() => import("@/features/apps/research-assistant-engine").then((m) => ({ default: m.ResearchAssistantEngine })), { loading: EngineLoading }),
   "farmer-ai": dynamic(() => import("@/features/apps/farmer-ai-engine").then((m) => ({ default: m.FarmerAIEngine })), { loading: EngineLoading }),
+  "ai-quiz-generator": dynamic(() => import("@/features/apps/ai-quiz-generator-engine").then((m) => ({ default: m.AIQuizGeneratorEngine })), { loading: EngineLoading }),
+  "ai-notes-generator": dynamic(() => import("@/features/apps/ai-notes-generator-engine").then((m) => ({ default: m.AINotesGeneratorEngine })), { loading: EngineLoading }),
 };
 
 function EngineLoading() {
