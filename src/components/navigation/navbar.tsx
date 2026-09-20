@@ -62,13 +62,14 @@ export function Navbar() {
         </Link>
 
         {/* Desktop Nav */}
-        <nav className="hidden md:flex items-center gap-0.5">
+        <nav className="hidden md:flex items-center gap-0.5" aria-label="Main navigation">
           {NAV_ITEMS.map((item) => {
-            const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
+            const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
             return (
               <Link
                 key={item.href}
                 href={item.href}
+                aria-current={isActive ? "page" : undefined}
                 className={cn(
                   "relative px-3 py-1.5 text-sm rounded-lg transition-colors hover:bg-accent/60",
                   isActive
@@ -116,11 +117,12 @@ export function Navbar() {
               size="icon"
               className="md:hidden rounded-lg h-9 w-9"
               onClick={() => setMobileOpen(true)}
+              aria-label="Open navigation menu"
             >
               <Menu className="h-5 w-5" />
             </Button>
-            <SheetContent side="right" className="w-72 p-0">
-              <div className="flex flex-col gap-1 p-6">
+            <SheetContent side="right" className="w-72 p-0" aria-label="Mobile navigation">
+              <nav aria-label="Mobile navigation" className="flex flex-col gap-1 p-6">
                 <div className="flex items-center gap-2 mb-6">
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-linear-to-br from-primary/20 to-primary/10 ring-1 ring-primary/20">
                     <img
@@ -135,7 +137,7 @@ export function Navbar() {
                   <SearchCommand variant="navbar" onClose={() => setMobileOpen(false)} />
                 </div>
                 {NAV_ITEMS.map((item) => {
-                  const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
+                  const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
                   return (
                     <Link
                       key={item.href}
@@ -175,7 +177,7 @@ export function Navbar() {
                     </Button>
                   )}
                 </div>
-              </div>
+              </nav>
             </SheetContent>
           </Sheet>
         </div>

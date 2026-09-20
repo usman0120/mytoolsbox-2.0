@@ -8,7 +8,8 @@ const GEMINI_MODELS: Record<string, string> = {
 };
 
 export function createGeminiAdapter(): AIProviderAdapter {
-  const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+  // Prefer server-side key, fall back to public key for backward compatibility
+  const apiKey = process.env.GEMINI_API_KEY ?? process.env.NEXT_PUBLIC_GEMINI_API_KEY;
 
   return {
     name: "gemini",

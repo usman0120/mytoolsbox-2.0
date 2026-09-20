@@ -14,17 +14,18 @@ export function ToolCard({ tool, className }: ToolCardProps) {
   const IconComponent = (Icons as any)[tool.icon] || Icons.Wrench;
 
   return (
-    <Link href={`/${tool.productType}s/${tool.slug}`}>
+    <Link href={`/${tool.productType}s/${tool.slug}`} className="block group">
       <Card
         className={cn(
-          "group card-lift cursor-pointer h-full border-border/50 hover:border-primary/30 overflow-hidden",
+          "card-lift cursor-pointer h-full border-border/60 hover:border-brand/25 transition-all duration-200",
           className
         )}
       >
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent text-primary ring-1 ring-primary/10 group-hover:scale-110 transition-transform duration-300">
-              <IconComponent className="h-5 w-5" />
+            {/* Icon — subtle, not a giant gradient blob */}
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted text-muted-foreground group-hover:bg-brand-muted group-hover:text-brand transition-colors duration-200">
+              <IconComponent className="size-[18px]" />
             </div>
             <div className="flex gap-1.5">
               {tool.status === "beta" && (
@@ -39,10 +40,10 @@ export function ToolCard({ tool, className }: ToolCardProps) {
               )}
             </div>
           </div>
-          <CardTitle className="text-base mt-3 group-hover:text-primary transition-colors">
+          <CardTitle className="text-sm font-medium mt-2.5 group-hover:text-brand transition-colors duration-200">
             {tool.name}
           </CardTitle>
-          <CardDescription className="text-sm line-clamp-2 leading-relaxed">
+          <CardDescription className="text-xs line-clamp-2 leading-relaxed">
             {tool.shortDescription}
           </CardDescription>
         </CardHeader>

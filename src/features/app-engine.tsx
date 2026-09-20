@@ -19,6 +19,10 @@ const engineMap: Record<string, React.ComponentType<unknown>> = {
   "ai-diagram-generator": dynamic(() => import("@/features/apps/ai-diagram-generator-engine").then((m) => ({ default: m.AIDiagramGeneratorEngine })), { loading: EngineLoading }),
   "ai-planning": dynamic(() => import("@/features/apps/ai-planning-engine").then((m) => ({ default: m.AIPlanningEngine })), { loading: EngineLoading }),
   "ai-project-ideas": dynamic(() => import("@/features/apps/ai-project-ideas-engine").then((m) => ({ default: m.AIProjectIdeasEngine })), { loading: EngineLoading }),
+  "quiz-maker": dynamic(() => import("@/features/apps/quiz-maker-engine").then((m) => ({ default: m.QuizMakerEngine })), { loading: EngineLoading }),
+  "budget-planner": dynamic(() => import("@/features/apps/budget-planner-engine").then((m) => ({ default: m.BudgetPlannerEngine })), { loading: EngineLoading }),
+  "habit-tracker": dynamic(() => import("@/features/apps/habit-tracker-engine").then((m) => ({ default: m.HabitTrackerEngine })), { loading: EngineLoading }),
+  "certificate-maker": dynamic(() => import("@/features/apps/certificate-maker-engine").then((m) => ({ default: m.CertificateMakerEngine })), { loading: EngineLoading }),
 };
 
 function EngineLoading() {

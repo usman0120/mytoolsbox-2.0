@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,6 +7,7 @@ import { Navbar } from "@/components/navigation";
 import { Footer } from "@/components/navigation";
 import { AuthProvider } from "@/lib/auth";
 import { SITE_CONFIG } from "@/lib/constants";
+import { SkipLink } from "@/components/common/accessibility";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -18,6 +19,15 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#fafbff" },
+    { media: "(prefers-color-scheme: dark)", color: "#1a1d2e" },
+  ],
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_CONFIG.url),
@@ -67,13 +77,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
+        <SkipLink />
         <ThemeProvider>
           <AuthProvider>
             <TooltipProvider>
               <Suspense fallback={null}>
                 <Navbar />
               </Suspense>
-              <main className="flex-1">{children}</main>
+              <main id="main-content" className="flex-1" role="main">
+                {children}
+              </main>
               <Footer />
             </TooltipProvider>
           </AuthProvider>

@@ -1,38 +1,153 @@
 import { ProcessingStatus } from "@/lib/processing/types";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
+import { cn } from "@/lib/utils";
+import {
+  Loader2,
+  CheckCircle2,
+  XCircle,
+  AlertTriangle,
+  Upload,
+  Ban,
+  Clock,
+  ShieldAlert,
+} from "lucide-react";
+
+// ---------------------------------------------------------------------------
+// Human-readable labels & icons for all 8 processing states
+// ---------------------------------------------------------------------------
+
+const STATUS_CONFIG: Record<
+  ProcessingStatus,
+  { label: string; icon: React.ComponentType<{ className?: string }>; variant: "default" | "secondary" | "destructive" | "outline"; className?: string }
+> = {
+  idle: {
+    label: "Ready",
+    icon: Clock,
+    variant: "outline",
+  },
+  uploading: {
+    label: "Uploading",
+    icon: Upload,
+    variant: "secondary",
+    className: "animate-pulse",
+  },
+  processing: {
+    label: "Processing",
+    icon: Loader2,
+    variant: "secondary",
+    className: "animate-spin",
+  },
+  success: {
+    label: "Done",
+    icon: CheckCircle2,
+    variant: "default",
+    className: "bg-green-500 hover:bg-green-500",
+  },
+  error: {
+    label: "Error",
+    icon: XCircle,
+    variant: "destructive",
+  },
+  cancelled: {
+    label: "Cancelled",
+    icon: Ban,
+    variant: "secondary",
+  },
+  unsupported: {
+    label: "Unsupported",
+    icon: AlertTriangle,
+    variant: "secondary",
+  },
+  "limit-exceeded": {
+    label: "Limit Exceeded",
+    icon: ShieldAlert,
+    variant: "destructive",
+  },
+};
+
+// ---------------------------------------------------------------------------
+// User-friendly error messages for each state
+// ---------------------------------------------------------------------------
+
+const STATUS_MESSAGES: Record<ProcessingStatus, string> = {
+  idle: "Ready to process",
+  uploading: "Uploading your file...",
+  processing: "Processing your file. This may take a moment.",
+  success: "Your file has been processed successfully!",
+  error: "Something went wrong. Please try again.",
+  cancelled: "Processing was cancelled.",
+  unsupported: "This file type is not supported yet.",
+  "limit-exceeded": "You've reached your limit. Upgrade to Pro for more.",
+};
+
+// ---------------------------------------------------------------------------
+// Components
+// ---------------------------------------------------------------------------
 
 interface ProcessingStatusBadgeProps {
   status: ProcessingStatus;
 }
 
 export function ProcessingStatusBadge({ status }: ProcessingStatusBadgeProps) {
-  switch (status) {
-    case "processing":
-      return (
-        <Badge variant="secondary" className="gap-1">
-          <Loader2 className="h-3 w-3 animate-spin" /> Processing
-        </Badge>
-      );
-    case "success":
-      return (
-        <Badge variant="default" className="gap-1 bg-green-500">
-          <CheckCircle2 className="h-3 w-3" /> Done
-        </Badge>
-      );
-    case "error":
-      return (
-        <Badge variant="destructive" className="gap-1">
-          <XCircle className="h-3 w-3" /> Error
-        </Badge>
-      );
-    case "unsupported":
-      return (
-        <Badge variant="secondary" className="gap-1">
-          <AlertTriangle className="h-3 w-3" /> Unsupported
-        </Badge>
-      );
-    default:
-      return null;
-  }
+  const config = STATUS_CONFIG[status];
+  if (!config) return null;
+
+  const Icon = config.icon;
+  const isSpinner = status === "processing";
+
+  return (
+    <Badge variant={config.variant} className={cn("gap-1", config.className)}>
+      <Icon className={cn("h-3 w-3", isSpinner && "animate-spin")} />
+      {config.label}
+    </Badge>
+  );
+}
+
+interface ProcessingStatusMessageProps {
+  status: ProcessingStatus;
+  customMessage?: string;
+}
+
+export function ProcessingStatusMessage({
+  status,
+  customMessage,
+}: ProcessingStatusMessageProps) {
+  const message = customMessage ?? STATUS_MESSAGES[status] ?? "";
+
+  if (!message) return null;
+
+  const isError = status === "error" || status === "limit-exceeded";
+  const isSuccess = status === "success";
+
+  return (
+    <p
+      className={cn(
+        "text-sm mt-2",
+        isError && "text-destructive",
+        isSuccess && "text-green-600 dark:text-green-400",
+        !isError && !isSuccess && "text-muted-foreground"
+      )}
+      role={isError ? "alert" : "status"}
+      aria-live={isError ? "assertive" : "polite"}
+    >
+      {message}
+    </p>
+  );
+}
+
+interface ProcessingStatusIndicatorProps {
+  status: ProcessingStatus;
+  message?: string;
+}
+
+export function ProcessingStatusIndicator({
+  status,
+  message,
+}: ProcessingStatusIndicatorProps) {
+  return (
+    <div className="flex flex-col items-center gap-2 py-4">
+      <ProcessingStatusBadge status={status} />
+      <ProcessingStatusMessage status={status} customMessage={message} />
+    </div>
+  );
 }

@@ -8,7 +8,8 @@ const GROQ_MODELS: Record<string, string> = {
 };
 
 export function createGroqAdapter(): AIProviderAdapter {
-  const apiKey = process.env.NEXT_PUBLIC_GROQ_API_KEY;
+  // Prefer server-side key, fall back to public key for backward compatibility
+  const apiKey = process.env.GROQ_API_KEY ?? process.env.NEXT_PUBLIC_GROQ_API_KEY;
 
   return {
     name: "groq",

@@ -75,3 +75,22 @@ export interface SavedItem {
   resultData: string; // JSON-stringified result payload
   createdAt: number;
 }
+
+// ---------------------------------------------------------------------------
+// Feedback / Contact form submissions
+// ---------------------------------------------------------------------------
+
+export type FeedbackType = "suggestion" | "bug" | "feedback" | "question";
+
+export type FeedbackStatus = "new" | "investigating" | "resolved" | "closed";
+
+export interface FeedbackItem {
+  id: string;
+  type: FeedbackType;
+  message: string;
+  name: string;
+  email: string;
+  status: FeedbackStatus;
+  createdAt: number;
+  updatedAt: number;
+}

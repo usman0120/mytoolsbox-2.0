@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -20,12 +20,6 @@ export function AccountPageClient() {
   const [showSignIn, setShowSignIn] = useState(false);
   const [upgrading, setUpgrading] = useState(false);
 
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.push("/?signin=true");
-    }
-  }, [authLoading, user, router]);
-
   if (authLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -34,7 +28,32 @@ export function AccountPageClient() {
     );
   }
 
-  if (!user) return null;
+  if (!user) {
+    return (
+      <div className="container max-w-4xl mx-auto py-8 px-4 space-y-8">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Account</h1>
+          <p className="text-muted-foreground mt-1">
+            Sign in to manage your account and unlock more features.
+          </p>
+        </div>
+        <Card>
+          <CardContent className="py-12 text-center">
+            <Shield className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+            <h3 className="text-lg font-medium mb-2">Please log in first</h3>
+            <p className="text-muted-foreground mb-4">
+              Create an account or sign in to save favorites, track history, and access your settings across devices.
+            </p>
+            <Button onClick={() => setShowSignIn(true)}>
+              <LogIn className="mr-2 h-4 w-4" />
+              Sign In
+            </Button>
+          </CardContent>
+        </Card>
+        <SignInDialog open={showSignIn} onOpenChange={setShowSignIn} />
+      </div>
+    );
+  }
 
   const isPro = false; // TODO: wire to subscription check
 

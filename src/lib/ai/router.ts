@@ -10,6 +10,7 @@ import {
   createGroqAdapter,
   createClaudeAdapter,
 } from "./adapters";
+import { tierToCreditOperation, getCreditCost, type CreditOperation } from "./credits";
 
 const adapterFactories: Record<AIProvider, () => AIProviderAdapter> = {
   openai: createOpenAIAdapter,
@@ -40,6 +41,49 @@ export function getAvailableProviders(): AIProvider[] {
   });
 }
 
+/**
+ * Get the recommended provider for a given tier.
+ * Prefers cheaper providers for "cheap" tier, reasoning-capable for "reasoning".
+ */
+export function getRecommendedProvider(tier: string): AIProvider | undefined {
+  const available = getAvailableProviders();
+  if (available.length === 0) return undefined;
+
+  switch (tier) {
+    case "cheap":
+      // Prefer Groq (fastest/cheapest), then Gemini, then OpenAI
+      if (available.includes("groq")) return "groq";
+      if (available.includes("gemini")) return "gemini";
+      return available[0];
+    case "reasoning":
+      // Prefer Claude (best reasoning), then OpenAI, then Groq (DeepSeek)
+      if (available.includes("claude")) return "claude";
+      if (available.includes("openai")) return "openai";
+      if (available.includes("groq")) return "groq";
+      return available[0];
+    case "vision":
+      // Prefer OpenAI (GPT-4o vision), then Gemini, then Claude
+      if (available.includes("openai")) return "openai";
+      if (available.includes("gemini")) return "gemini";
+      if (available.includes("claude")) return "claude";
+      return available[0];
+    case "image":
+      // Only OpenAI supports image generation
+      if (available.includes("openai")) return "openai";
+      return undefined;
+    default:
+      return available[0];
+  }
+}
+
+/**
+ * Get the credit cost for a given AI request.
+ */
+export function getRequestCreditCost(request: AIRequest): number {
+  const operation = tierToCreditOperation(request.tier ?? "cheap");
+  return getCreditCost(operation);
+}
+
 export async function complete(request: AIRequest): Promise<AIResponse> {
   // If a specific provider is requested, use it
   if (request.provider) {
@@ -50,7 +94,7 @@ export async function complete(request: AIRequest): Promise<AIResponse> {
     return adapter.complete(request);
   }
 
-  // Otherwise, try providers in order of preference
+  // Otherwise, try providers in order of preference based on tier
   const available = getAvailableProviders();
   if (available.length === 0) {
     throw new Error(
@@ -58,9 +102,15 @@ export async function complete(request: AIRequest): Promise<AIResponse> {
     );
   }
 
+  // Use tier-based routing
+  const recommended = getRecommendedProvider(request.tier ?? "cheap");
+  const orderedProviders = recommended
+    ? [recommended, ...available.filter((p) => p !== recommended)]
+    : available;
+
   // Try each provider until one succeeds
   const errors: string[] = [];
-  for (const provider of available) {
+  for (const provider of orderedProviders) {
     try {
       const adapter = getAdapter(provider);
       return await adapter.complete({ ...request, provider });

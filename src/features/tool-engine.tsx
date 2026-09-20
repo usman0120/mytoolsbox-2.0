@@ -217,6 +217,59 @@ const engineMap: Record<string, React.ComponentType<any>> = {
   "social-media-content-generator": dynamic(() => import("@/features/tools/social-media-content-generator-engine").then((m) => ({ default: m.SocialMediaContentGeneratorEngine })), {
     loading: () => <EngineLoading />,
   }),
+  // Additional developer tools
+  "json-validator": dynamic(() => import("@/features/tools/json-validator-engine").then((m) => ({ default: m.JSONValidatorEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "hash-generator": dynamic(() => import("@/features/tools/hash-generator-engine").then((m) => ({ default: m.HashGeneratorEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "jwt-decoder": dynamic(() => import("@/features/tools/jwt-decoder-engine").then((m) => ({ default: m.JWTDecoderEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "sql-formatter": dynamic(() => import("@/features/tools/sql-formatter-engine").then((m) => ({ default: m.SQLFormatterEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "code-explainer": dynamic(() => import("@/features/tools/code-explainer-engine").then((m) => ({ default: m.CodeExplainerEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  // Media tools
+  "barcode-generator": dynamic(() => import("@/features/tools/barcode-generator-engine").then((m) => ({ default: m.BarcodeGeneratorEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "currency-converter": dynamic(() => import("@/features/tools/currency-converter-engine").then((m) => ({ default: m.CurrencyConverterEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "random-generator": dynamic(() => import("@/features/tools/random-generator-engine").then((m) => ({ default: m.RandomGeneratorEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "url-shortener": dynamic(() => import("@/features/tools/url-shortener-engine").then((m) => ({ default: m.URLShortenerEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "mp3-cutter": dynamic(() => import("@/features/tools/mp3-cutter-engine").then((m) => ({ default: m.MP3CutterEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "text-to-speech": dynamic(() => import("@/features/tools/text-to-speech-engine").then((m) => ({ default: m.TextToSpeechEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "video-to-gif": dynamic(() => import("@/features/tools/video-to-gif-engine").then((m) => ({ default: m.VideoToGifEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "screen-recorder": dynamic(() => import("@/features/tools/screen-recorder-engine").then((m) => ({ default: m.ScreenRecorderEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "markdown-preview": dynamic(() => import("@/features/tools/markdown-preview-engine").then((m) => ({ default: m.MarkdownPreviewEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "color-contrast": dynamic(() => import("@/features/tools/color-contrast-engine").then((m) => ({ default: m.ColorContrastEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "grammar-checker": dynamic(() => import("@/features/tools/grammar-checker-engine").then((m) => ({ default: m.GrammarCheckerEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "paraphrase-tool": dynamic(() => import("@/features/tools/paraphrase-tool-engine").then((m) => ({ default: m.ParaphraseToolEngine })), {
+    loading: () => <EngineLoading />,
+  }),
 };
 
 function EngineLoading() {

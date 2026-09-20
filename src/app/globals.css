@@ -4,41 +4,74 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* ==========================================================================
+   Design Tokens — MyToolsBox
+   ==========================================================================
+   Philosophy:
+   - Neutral foundation with one distinctive brand accent (blue-violet)
+   - Rounded but not excessively rounded (radius: 0.625rem base)
+   - Subtle shadows, clean typography, large whitespace
+   - Small, purposeful animations
+   - Dark + light themes with consistent token mapping
+   ========================================================================== */
+
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  /* ---- Typography ---- */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-geist-sans);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
+
+  /* ---- Color tokens (mapped to CSS variables) ---- */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
   --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* ---- Brand colors (beyond shadcn) ---- */
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-brand-muted: var(--brand-muted);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+
+  /* ---- Chart colors ---- */
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  /* ---- Sidebar ---- */
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* ---- Border radius scale (base: 0.625rem — rounded but not excessive) ---- */
+  --radius: 0.625rem;
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -46,100 +79,199 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* ---- Shadows ---- */
+  --shadow-xs: 0 1px 2px 0 oklch(0 0 0 / 0.04);
+  --shadow-sm:
+    0 1px 3px 0 oklch(0 0 0 / 0.06), 0 1px 2px -1px oklch(0 0 0 / 0.04);
+  --shadow-md:
+    0 4px 6px -1px oklch(0 0 0 / 0.06), 0 2px 4px -2px oklch(0 0 0 / 0.04);
+  --shadow-lg:
+    0 10px 15px -3px oklch(0 0 0 / 0.06), 0 4px 6px -4px oklch(0 0 0 / 0.04);
+  --shadow-xl:
+    0 20px 25px -5px oklch(0 0 0 / 0.06), 0 8px 10px -6px oklch(0 0 0 / 0.04);
 }
 
-/* ===== LIGHT MODE — Vibrant & Modern ===== */
+/* ==========================================================================
+   Light Mode — Clean & Airy
+   ========================================================================== */
 :root {
-  --background: oklch(0.985 0.002 240);
+  /* Neutral foundation */
+  --background: oklch(0.985 0.002 260);
   --foreground: oklch(0.18 0.02 260);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.18 0.02 260);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.18 0.02 260);
-  --primary: oklch(0.55 0.22 265);
+
+  /* Brand accent — distinctive blue-violet */
+  --primary: oklch(0.52 0.22 265);
   --primary-foreground: oklch(0.99 0 0);
-  --secondary: oklch(0.96 0.01 260);
+  --brand: oklch(0.52 0.22 265);
+  --brand-foreground: oklch(0.99 0 0);
+  --brand-muted: oklch(0.94 0.04 265);
+
+  /* Surfaces */
+  --secondary: oklch(0.96 0.008 260);
   --secondary-foreground: oklch(0.25 0.03 265);
-  --muted: oklch(0.965 0.005 260);
+  --muted: oklch(0.965 0.004 260);
   --muted-foreground: oklch(0.48 0.03 265);
-  --accent: oklch(0.94 0.04 265);
+  --accent: oklch(0.94 0.03 265);
   --accent-foreground: oklch(0.25 0.05 265);
+
+  /* Semantic */
   --destructive: oklch(0.55 0.22 20);
-  --border: oklch(0.91 0.01 260);
-  --input: oklch(0.91 0.01 260);
-  --ring: oklch(0.55 0.22 265);
-  --chart-1: oklch(0.55 0.22 265);
+  --destructive-foreground: oklch(0.99 0 0);
+  --success: oklch(0.55 0.18 145);
+  --success-foreground: oklch(0.99 0 0);
+  --warning: oklch(0.65 0.18 75);
+  --warning-foreground: oklch(0.15 0.02 75);
+  --info: oklch(0.55 0.15 240);
+  --info-foreground: oklch(0.99 0 0);
+
+  /* Borders & inputs */
+  --border: oklch(0.9 0.01 260);
+  --input: oklch(0.9 0.01 260);
+  --ring: oklch(0.52 0.22 265);
+
+  /* Charts */
+  --chart-1: oklch(0.52 0.22 265);
   --chart-2: oklch(0.5 0.2 180);
   --chart-3: oklch(0.6 0.22 40);
   --chart-4: oklch(0.55 0.22 330);
   --chart-5: oklch(0.5 0.2 130);
-  --radius: 0.75rem;
-  --sidebar: oklch(0.985 0.002 240);
+
+  /* Sidebar */
+  --sidebar: oklch(0.985 0.002 260);
   --sidebar-foreground: oklch(0.18 0.02 260);
-  --sidebar-primary: oklch(0.55 0.22 265);
+  --sidebar-primary: oklch(0.52 0.22 265);
   --sidebar-primary-foreground: oklch(0.99 0 0);
-  --sidebar-accent: oklch(0.94 0.04 265);
+  --sidebar-accent: oklch(0.94 0.03 265);
   --sidebar-accent-foreground: oklch(0.25 0.05 265);
-  --sidebar-border: oklch(0.91 0.01 260);
-  --sidebar-ring: oklch(0.55 0.22 265);
+  --sidebar-border: oklch(0.9 0.01 260);
+  --sidebar-ring: oklch(0.52 0.22 265);
 }
 
-/* ===== DARK MODE — Deep & Rich ===== */
+/* ==========================================================================
+   Dark Mode — Deep & Rich
+   ========================================================================== */
 .dark {
-  --background: oklch(0.15 0.015 265);
-  --foreground: oklch(0.93 0.01 260);
-  --card: oklch(0.19 0.02 265);
-  --card-foreground: oklch(0.93 0.01 260);
-  --popover: oklch(0.19 0.02 265);
-  --popover-foreground: oklch(0.93 0.01 260);
-  --primary: oklch(0.65 0.2 265);
-  --primary-foreground: oklch(0.13 0.02 265);
-  --secondary: oklch(0.22 0.025 265);
-  --secondary-foreground: oklch(0.93 0.01 260);
-  --muted: oklch(0.22 0.025 265);
-  --muted-foreground: oklch(0.6 0.03 265);
-  --accent: oklch(0.25 0.04 265);
-  --accent-foreground: oklch(0.93 0.01 260);
-  --destructive: oklch(0.55 0.2 20);
-  --border: oklch(0.28 0.025 265);
-  --input: oklch(0.28 0.025 265);
-  --ring: oklch(0.65 0.2 265);
-  --chart-1: oklch(0.65 0.2 265);
+  --background: oklch(0.145 0.012 265);
+  --foreground: oklch(0.93 0.008 260);
+  --card: oklch(0.18 0.018 265);
+  --card-foreground: oklch(0.93 0.008 260);
+  --popover: oklch(0.18 0.018 265);
+  --popover-foreground: oklch(0.93 0.008 260);
+
+  --primary: oklch(0.68 0.18 265);
+  --primary-foreground: oklch(0.12 0.02 265);
+  --brand: oklch(0.68 0.18 265);
+  --brand-foreground: oklch(0.12 0.02 265);
+  --brand-muted: oklch(0.22 0.04 265);
+
+  --secondary: oklch(0.22 0.02 265);
+  --secondary-foreground: oklch(0.93 0.008 260);
+  --muted: oklch(0.22 0.02 265);
+  --muted-foreground: oklch(0.6 0.025 265);
+  --accent: oklch(0.25 0.035 265);
+  --accent-foreground: oklch(0.93 0.008 260);
+
+  --destructive: oklch(0.55 0.18 20);
+  --destructive-foreground: oklch(0.99 0 0);
+  --success: oklch(0.6 0.16 145);
+  --success-foreground: oklch(0.12 0.02 145);
+  --warning: oklch(0.7 0.16 75);
+  --warning-foreground: oklch(0.12 0.02 75);
+  --info: oklch(0.6 0.14 240);
+  --info-foreground: oklch(0.12 0.02 240);
+
+  --border: oklch(0.27 0.02 265);
+  --input: oklch(0.27 0.02 265);
+  --ring: oklch(0.68 0.18 265);
+
+  --chart-1: oklch(0.68 0.18 265);
   --chart-2: oklch(0.6 0.18 180);
-  --chart-3: oklch(0.68 0.2 40);
-  --chart-4: oklch(0.65 0.2 330);
-  --chart-5: oklch(0.6 0.18 130);
-  --sidebar: oklch(0.17 0.02 265);
-  --sidebar-foreground: oklch(0.93 0.01 260);
-  --sidebar-primary: oklch(0.65 0.2 265);
-  --sidebar-primary-foreground: oklch(0.13 0.02 265);
-  --sidebar-accent: oklch(0.25 0.04 265);
-  --sidebar-accent-foreground: oklch(0.93 0.01 260);
-  --sidebar-border: oklch(0.28 0.025 265);
-  --sidebar-ring: oklch(0.65 0.2 265);
+  --chart-3: oklch(0.7 0.18 40);
+  --chart-4: oklch(0.65 0.18 330);
+  --chart-5: oklch(0.6 0.16 130);
+
+  --sidebar: oklch(0.16 0.018 265);
+  --sidebar-foreground: oklch(0.93 0.008 260);
+  --sidebar-primary: oklch(0.68 0.18 265);
+  --sidebar-primary-foreground: oklch(0.12 0.02 265);
+  --sidebar-accent: oklch(0.25 0.035 265);
+  --sidebar-accent-foreground: oklch(0.93 0.008 260);
+  --sidebar-border: oklch(0.27 0.02 265);
+  --sidebar-ring: oklch(0.68 0.18 265);
 }
 
+/* ==========================================================================
+   Base Styles
+   ========================================================================== */
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
   body {
     @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
   html {
     @apply font-sans scroll-smooth;
   }
+
+  /* Subtle selection color */
+  ::selection {
+    background: oklch(0.52 0.22 265 / 0.18);
+    color: var(--foreground);
+  }
+  .dark ::selection {
+    background: oklch(0.68 0.18 265 / 0.25);
+  }
 }
 
-/* ===== Utility animations ===== */
+/* ==========================================================================
+   Utility Animations — Small & Purposeful
+   ========================================================================== */
 @keyframes fade-in-up {
   from {
     opacity: 0;
-    transform: translateY(12px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
   }
 }
 
@@ -152,21 +284,34 @@
   }
 }
 
-@keyframes float {
-  0%,
-  100% {
-    transform: translateY(0px);
-  }
-  50% {
-    transform: translateY(-6px);
-  }
+.animate-fade-in-up {
+  animation: fade-in-up 0.4s ease-out forwards;
 }
 
-.animate-fade-in-up {
-  animation: fade-in-up 0.5s ease-out forwards;
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out forwards;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.2s ease-out forwards;
+}
+
+.animate-slide-in-left {
+  animation: slide-in-left 0.3s ease-out forwards;
 }
 
 .animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    oklch(1 0 0 / 0.06),
+    transparent
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+.dark .animate-shimmer {
   background: linear-gradient(
     90deg,
     transparent,
@@ -174,29 +319,123 @@
     transparent
   );
   background-size: 200% 100%;
-  animation: shimmer 2s infinite;
 }
 
-.animate-float {
-  animation: float 3s ease-in-out infinite;
+/* Stagger children */
+.stagger-children > * {
+  opacity: 0;
+  animation: fade-in-up 0.4s ease-out forwards;
+}
+.stagger-children > *:nth-child(1) {
+  animation-delay: 0ms;
+}
+.stagger-children > *:nth-child(2) {
+  animation-delay: 60ms;
+}
+.stagger-children > *:nth-child(3) {
+  animation-delay: 120ms;
+}
+.stagger-children > *:nth-child(4) {
+  animation-delay: 180ms;
+}
+.stagger-children > *:nth-child(5) {
+  animation-delay: 240ms;
+}
+.stagger-children > *:nth-child(6) {
+  animation-delay: 300ms;
+}
+.stagger-children > *:nth-child(7) {
+  animation-delay: 360ms;
+}
+.stagger-children > *:nth-child(8) {
+  animation-delay: 420ms;
+}
+.stagger-children > *:nth-child(9) {
+  animation-delay: 480ms;
+}
+.stagger-children > *:nth-child(10) {
+  animation-delay: 540ms;
+}
+.stagger-children > *:nth-child(11) {
+  animation-delay: 600ms;
+}
+.stagger-children > *:nth-child(12) {
+  animation-delay: 660ms;
 }
 
-/* ===== Glass morphism utilities ===== */
+/* ==========================================================================
+   Reduced Motion — Respect user preference
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .animate-fade-in-up,
+  .animate-fade-in,
+  .animate-scale-in,
+  .animate-slide-in-left,
+  .animate-shimmer,
+  .page-enter {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .stagger-children > * {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+
+  .card-lift:hover {
+    transform: none !important;
+  }
+}
+
+/* ==========================================================================
+   Screen Reader Only — Content for assistive technology
+   ========================================================================== */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* ==========================================================================
+   Glass Surface — Subtle, not gaudy
+   ========================================================================== */
 .glass {
-  background: oklch(1 0 0 / 0.6);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid oklch(1 0 0 / 0.1);
+  background: oklch(1 0 0 / 0.55);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid oklch(0 0 0 / 0.06);
 }
 
 .dark .glass {
-  background: oklch(0 0 0 / 0.4);
-  border: 1px solid oklch(1 0 0 / 0.08);
+  background: oklch(0 0 0 / 0.35);
+  border: 1px solid oklch(1 0 0 / 0.06);
 }
 
-/* ===== Gradient text ===== */
+/* ==========================================================================
+   Gradient Text — Brand accent only
+   ========================================================================== */
 .gradient-text {
-  background: linear-gradient(135deg, oklch(0.55 0.22 265), oklch(0.5 0.2 300));
+  background: linear-gradient(
+    135deg,
+    oklch(0.52 0.22 265),
+    oklch(0.48 0.2 300)
+  );
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -205,15 +444,58 @@
 .dark .gradient-text {
   background: linear-gradient(
     135deg,
-    oklch(0.7 0.18 265),
-    oklch(0.65 0.16 300)
+    oklch(0.72 0.16 265),
+    oklch(0.65 0.14 300)
   );
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-/* ===== Hero glow ===== */
+/* ==========================================================================
+   Card Hover — Subtle lift, not dramatic
+   ========================================================================== */
+.card-lift {
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.card-lift:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px oklch(0 0 0 / 0.06);
+}
+.dark .card-lift:hover {
+  box-shadow: 0 4px 20px oklch(0 0 0 / 0.25);
+}
+
+/* ==========================================================================
+   Focus ring — Consistent across the app
+   ========================================================================== */
+.focus-ring {
+  @apply outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+}
+
+/* ==========================================================================
+   Page transitions
+   ========================================================================== */
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-enter {
+  animation: page-enter 0.3s ease-out forwards;
+}
+
+/* ==========================================================================
+   Hero Glow — Decorative background blobs
+   ========================================================================== */
 .hero-glow {
   position: absolute;
   border-radius: 50%;
@@ -224,18 +506,4 @@
 
 .dark .hero-glow {
   opacity: 0.2;
-}
-
-/* ===== Card hover lift ===== */
-.card-lift {
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease;
-}
-.card-lift:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 30px oklch(0 0 0 / 0.08);
-}
-.dark .card-lift:hover {
-  box-shadow: 0 8px 30px oklch(0 0 0 / 0.3);
 }

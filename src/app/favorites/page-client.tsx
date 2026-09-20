@@ -8,15 +8,17 @@ import { getFavorites, removeFavorite } from "@/lib/firebase/user-service";
 import type { FavoriteItem } from "@/types/user";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Heart, Trash2, Loader2, ExternalLink, ArrowLeft } from "lucide-react";
+import { Heart, Trash2, Loader2, ExternalLink, ArrowLeft, LogIn } from "lucide-react";
 import { toast } from "sonner";
 import { CATEGORIES } from "@/lib/constants";
+import { SignInDialog } from "@/components/auth/signin-dialog";
 
 export function FavoritesPageClient() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showSignIn, setShowSignIn] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -52,7 +54,7 @@ export function FavoritesPageClient() {
     }
   };
 
-  if (authLoading || loading) {
+  if (authLoading || (user && loading)) {
     return (
       <div className="container mx-auto px-4 py-16 flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -60,7 +62,33 @@ export function FavoritesPageClient() {
     );
   }
 
-  if (!user) return null;
+  if (!user) {
+    return (
+      <div className="container mx-auto px-4 py-16 max-w-3xl">
+        <div className="mb-8">
+          <Link href="/tools" className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1 mb-3">
+            <ArrowLeft className="h-3 w-3" /> Browse tools
+          </Link>
+          <h1 className="text-3xl font-bold mb-2">Favorites</h1>
+          <p className="text-muted-foreground">Your saved tools</p>
+        </div>
+        <Card>
+          <CardContent className="py-12 text-center">
+            <Heart className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+            <h3 className="text-lg font-medium mb-2">Please log in first</h3>
+            <p className="text-muted-foreground mb-4">
+              Sign in to save your favorite tools and access them across devices.
+            </p>
+            <Button onClick={() => setShowSignIn(true)}>
+              <LogIn className="mr-2 h-4 w-4" />
+              Sign In
+            </Button>
+          </CardContent>
+        </Card>
+        <SignInDialog open={showSignIn} onOpenChange={setShowSignIn} />
+      </div>
+    );
+  }
 
   const getCategoryName = (catId: string) =>
     CATEGORIES.find((c) => c.id === catId)?.name ?? catId;

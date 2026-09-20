@@ -21,10 +21,11 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  User, Settings, Palette, Bell, Shield, Loader2, Save, Trash2,
+  User, Settings, Palette, Bell, Shield, Loader2, Save, Trash2, LogIn,
 } from "lucide-react";
 import { toast } from "sonner";
 import { CATEGORIES } from "@/lib/constants";
+import { SignInDialog } from "@/components/auth/signin-dialog";
 
 export function SettingsPageClient() {
   const { user, loading: authLoading } = useAuth();
@@ -34,6 +35,7 @@ export function SettingsPageClient() {
   const [profile, setProfile] = useState<UserProfile>(DEFAULT_PROFILE);
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [showSignIn, setShowSignIn] = useState(false);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -83,7 +85,7 @@ export function SettingsPageClient() {
     }
   }, [user, profile]);
 
-  if (authLoading || !loaded) {
+  if (authLoading || (user && !loaded)) {
     return (
       <div className="container mx-auto px-4 py-16 flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -91,7 +93,30 @@ export function SettingsPageClient() {
     );
   }
 
-  if (!user) return null;
+  if (!user) {
+    return (
+      <div className="container mx-auto px-4 py-16 max-w-3xl">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2">Settings</h1>
+          <p className="text-muted-foreground">Manage your account, preferences, and profile.</p>
+        </div>
+        <Card>
+          <CardContent className="py-12 text-center">
+            <Settings className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+            <h3 className="text-lg font-medium mb-2">Please log in first</h3>
+            <p className="text-muted-foreground mb-4">
+              Sign in to customize your settings and preferences.
+            </p>
+            <Button onClick={() => setShowSignIn(true)}>
+              <LogIn className="mr-2 h-4 w-4" />
+              Sign In
+            </Button>
+          </CardContent>
+        </Card>
+        <SignInDialog open={showSignIn} onOpenChange={setShowSignIn} />
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-3xl">

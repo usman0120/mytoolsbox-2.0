@@ -8,15 +8,17 @@ import { getHistory, clearHistory, removeHistoryEntry } from "@/lib/firebase/use
 import type { HistoryItem } from "@/types/user";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Clock, Trash2, Loader2, ExternalLink, History } from "lucide-react";
+import { Clock, Trash2, Loader2, ExternalLink, History, LogIn } from "lucide-react";
 import { toast } from "sonner";
 import { CATEGORIES } from "@/lib/constants";
+import { SignInDialog } from "@/components/auth/signin-dialog";
 
 export function HistoryPageClient() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showSignIn, setShowSignIn] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -63,7 +65,7 @@ export function HistoryPageClient() {
     }
   };
 
-  if (authLoading || loading) {
+  if (authLoading || (user && loading)) {
     return (
       <div className="container mx-auto px-4 py-16 flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -71,7 +73,30 @@ export function HistoryPageClient() {
     );
   }
 
-  if (!user) return null;
+  if (!user) {
+    return (
+      <div className="container mx-auto px-4 py-16 max-w-3xl">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold mb-2">History</h1>
+          <p className="text-muted-foreground">Your tool usage history</p>
+        </div>
+        <Card>
+          <CardContent className="py-12 text-center">
+            <History className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+            <h3 className="text-lg font-medium mb-2">Please log in first</h3>
+            <p className="text-muted-foreground mb-4">
+              Sign in to save and view your tool usage history across sessions.
+            </p>
+            <Button onClick={() => setShowSignIn(true)}>
+              <LogIn className="mr-2 h-4 w-4" />
+              Sign In
+            </Button>
+          </CardContent>
+        </Card>
+        <SignInDialog open={showSignIn} onOpenChange={setShowSignIn} />
+      </div>
+    );
+  }
 
   const getCategoryName = (catId: string) =>
     CATEGORIES.find((c) => c.id === catId)?.name ?? catId;

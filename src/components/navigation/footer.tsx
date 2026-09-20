@@ -4,12 +4,12 @@ import { Heart, Globe, ExternalLink } from "lucide-react";
 
 export function Footer() {
   return (
-    <footer className="border-t border-border/50 bg-card/30 backdrop-blur-sm">
+    <footer className="border-t border-border/50 bg-card/30 backdrop-blur-sm" role="contentinfo">
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
-            <Link href="/" className="inline-flex items-center gap-2.5 mb-4 group">
+            <Link href="/" className="inline-flex items-center gap-2.5 mb-4 group" aria-label={`${SITE_CONFIG.name} home`}>
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-linear-to-br from-primary/20 to-primary/10 ring-1 ring-primary/20 group-hover:scale-105 transition-transform">
                 <img
                   src="/mytoolsbox logo.png"
@@ -43,7 +43,7 @@ export function Footer() {
           </div>
 
           {/* Platform */}
-          <div>
+          <nav aria-label="Platform links">
             <h4 className="font-semibold mb-4 text-xs uppercase tracking-wider text-muted-foreground">
               Platform
             </h4>
@@ -64,10 +64,10 @@ export function Footer() {
                 Resources
               </Link>
             </div>
-          </div>
+          </nav>
 
           {/* Categories */}
-          <div>
+          <nav aria-label="Category links">
             <h4 className="font-semibold mb-4 text-xs uppercase tracking-wider text-muted-foreground">
               Categories
             </h4>
@@ -88,10 +88,10 @@ export function Footer() {
                 Writing
               </Link>
             </div>
-          </div>
+          </nav>
 
           {/* Resources */}
-          <div>
+          <nav aria-label="Resource links">
             <h4 className="font-semibold mb-4 text-xs uppercase tracking-wider text-muted-foreground">
               Resources
             </h4>
@@ -109,10 +109,10 @@ export function Footer() {
                 Blog
               </Link>
             </div>
-          </div>
+          </nav>
 
           {/* Company */}
-          <div>
+          <nav aria-label="Company links">
             <h4 className="font-semibold mb-4 text-xs uppercase tracking-wider text-muted-foreground">
               Company
             </h4>
@@ -130,7 +130,7 @@ export function Footer() {
                 Contact
               </Link>
             </div>
-          </div>
+          </nav>
         </div>
 
         {/* Bottom bar */}

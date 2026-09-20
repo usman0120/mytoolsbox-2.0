@@ -7,7 +7,7 @@ import {
 import { getFirebaseFirestore } from "@/lib/firebase/config";
 import type {
   UserPreferences, FavoriteItem, HistoryItem, UserProfile,
-  UsageRecord, SavedItem,
+  UsageRecord, SavedItem, FeedbackItem, FeedbackStatus,
 } from "@/types/user";
 import { DEFAULT_PREFERENCES, DEFAULT_PROFILE } from "@/types/user";
 
@@ -225,4 +225,48 @@ export async function removeSavedItem(userId: string, savedId: string): Promise<
   const firestore = db();
   if (!firestore) return;
   await deleteDoc(doc(firestore, "users", userId, "saved", savedId));
+}
+
+// ---------------------------------------------------------------------------
+// Feedback / Contact form submissions
+// ---------------------------------------------------------------------------
+
+export async function submitFeedback(
+  item: Omit<FeedbackItem, "id" | "status" | "createdAt" | "updatedAt">,
+): Promise<string> {
+  const firestore = db();
+  if (!firestore) throw new Error("Firestore not available");
+  const col = collection(firestore, "feedback");
+  const docRef = await addDoc(col, {
+    ...item,
+    status: "new",
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  });
+  return docRef.id;
+}
+
+export async function getFeedback(): Promise<FeedbackItem[]> {
+  const firestore = db();
+  if (!firestore) return [];
+  const col = collection(firestore, "feedback");
+  const q = query(col, orderBy("createdAt", "desc"), limit(100));
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as FeedbackItem));
+}
+
+export async function updateFeedbackStatus(
+  feedbackId: string,
+  status: FeedbackStatus,
+): Promise<void> {
+  const firestore = db();
+  if (!firestore) return;
+  const ref = doc(firestore, "feedback", feedbackId);
+  await updateDoc(ref, { status, updatedAt: Date.now() });
+}
+
+export async function deleteFeedback(feedbackId: string): Promise<void> {
+  const firestore = db();
+  if (!firestore) return;
+  await deleteDoc(doc(firestore, "feedback", feedbackId));
 }
