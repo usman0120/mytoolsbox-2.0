@@ -108,7 +108,7 @@ export function PDFSignEngine() {
       }
 
       const pdfBytes = await pdfDoc.save();
-      const blob = new Blob([pdfBytes], { type: "application/pdf" });
+      const blob = new Blob([pdfBytes as unknown as BlobPart], { type: "application/pdf" });
       setResultBlob(blob);
       toast.success("Document signed successfully.");
     } catch (err) {

@@ -61,7 +61,7 @@ export function CSVToExcelEngine() {
             <div className="flex items-center gap-3">
               <FileSpreadsheet className="h-8 w-8 text-green-600" />
               <div>
-                <p className="font-medium text-sm truncate max-w-[200px]">{file.name}</p>
+                <p className="font-medium text-sm truncate max-w-50">{file.name}</p>
                 <p className="text-xs text-muted-foreground">{(file.size / 1024).toFixed(1)} KB</p>
               </div>
             </div>

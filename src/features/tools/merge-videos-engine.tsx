@@ -314,11 +314,9 @@ export function MergeVideosEngine() {
                   <p className="text-xs text-muted-foreground">merged_video.webm</p>
                 </div>
               </div>
-              <Button asChild size="sm" className="gap-1.5">
-                <a href={outputUrl} download="merged_video.webm">
-                  <Download className="h-3.5 w-3.5" />
-                  Download
-                </a>
+              <Button size="sm" className="gap-1.5" onClick={() => { const a = document.createElement("a"); a.href = outputUrl; a.download = "merged_video.webm"; a.click(); }}>
+                <Download className="h-3.5 w-3.5" />
+                Download
               </Button>
             </div>
           </CardContent>

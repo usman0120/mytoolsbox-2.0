@@ -206,7 +206,7 @@ export function ParagraphRewriterEngine() {
           <Label className="text-sm font-medium">Original Text</Label>
           <Textarea
             placeholder="Paste or type text to rewrite..."
-            className="min-h-[150px]"
+            className="min-h-37.5"
             value={input}
             onChange={(e) => handleInputChange(e.target.value)}
           />

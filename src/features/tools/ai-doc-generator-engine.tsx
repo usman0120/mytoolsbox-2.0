@@ -50,8 +50,8 @@ export function AIDocumentationGeneratorEngine() {
         const r = await generateDocs({
           code: input.trim(),
           language: language === "auto" ? undefined : language,
-          style: style === "auto" ? undefined : (style as any),
-          detail: detail as any,
+          style: style === "auto" ? undefined : (style as "jsdoc" | "godoc" | "docstring" | "rubydoc"),
+          detail: detail as "brief" | "standard" | "detailed",
         });
         setResult(r);
       } else {
@@ -78,14 +78,14 @@ export function AIDocumentationGeneratorEngine() {
           placeholder="function calculateTotal(items) { return items.reduce((sum, i) => sum + i.price, 0); }"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          className="min-h-[150px] font-mono text-sm"
+          className="min-h-37.5 font-mono text-sm"
         />
       </div>
 
       {/* Options */}
       <div className="flex gap-2 flex-wrap">
-        <Select value={language} onValueChange={setLanguage}>
-          <SelectTrigger className="w-[130px] h-8 text-xs">
+        <Select value={language} onValueChange={(v) => setLanguage(v ?? "")}>
+          <SelectTrigger className="w-32.5 h-8 text-xs">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -94,8 +94,8 @@ export function AIDocumentationGeneratorEngine() {
             ))}
           </SelectContent>
         </Select>
-        <Select value={style} onValueChange={setStyle}>
-          <SelectTrigger className="w-[120px] h-8 text-xs">
+        <Select value={style} onValueChange={(v) => setStyle(v ?? "")}>
+          <SelectTrigger className="w-30 h-8 text-xs">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -104,8 +104,8 @@ export function AIDocumentationGeneratorEngine() {
             ))}
           </SelectContent>
         </Select>
-        <Select value={detail} onValueChange={setDetail}>
-          <SelectTrigger className="w-[120px] h-8 text-xs">
+        <Select value={detail} onValueChange={(v) => setDetail(v ?? "")}>
+          <SelectTrigger className="w-30 h-8 text-xs">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -140,7 +140,7 @@ export function AIDocumentationGeneratorEngine() {
                   Copy
                 </Button>
               </div>
-              <pre className="text-sm font-mono whitespace-pre-wrap bg-muted p-3 rounded-lg overflow-x-auto max-h-[300px] overflow-y-auto">
+              <pre className="text-sm font-mono whitespace-pre-wrap bg-muted p-3 rounded-lg overflow-x-auto max-h-75 overflow-y-auto">
                 {result.documentedCode}
               </pre>
             </CardContent>

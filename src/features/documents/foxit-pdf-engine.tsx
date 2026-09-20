@@ -23,7 +23,7 @@ export function FoxitPDFEngine() {
         <span className="text-xs text-muted-foreground">Batch processing for JPG ↔ PDF conversion</span>
       </div>
 
-      <Card className="border-border/50 bg-gradient-to-br from-red-500/5 to-rose-500/5">
+      <Card className="border-border/50 bg-linear-to-br from-red-500/5 to-rose-500/5">
         <CardContent className="p-6">
           <div className="flex items-start gap-4">
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-red-500/10 ring-1 ring-red-500/20 shrink-0">

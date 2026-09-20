@@ -64,7 +64,7 @@ export function FarmerAIEngine() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <Tabs value={calcTab} onValueChange={setCalcTab}>
+          <Tabs value={calcTab} onValueChange={(v) => setCalcTab(v ?? "")}>
             <TabsList className="w-full overflow-x-auto flex-nowrap mb-4">
               {CALCULATOR_TABS.map((tab) => (
                 <TabsTrigger key={tab.value} value={tab.value} className="gap-1.5 text-xs whitespace-nowrap">
@@ -100,7 +100,7 @@ export function FarmerAIEngine() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <Tabs value={assistantTab} onValueChange={setAssistantTab}>
+          <Tabs value={assistantTab} onValueChange={(v) => setAssistantTab(v ?? "")}>
             <TabsList className="w-full overflow-x-auto flex-nowrap mb-4">
               {ASSISTANT_TABS.map((tab) => (
                 <TabsTrigger key={tab.value} value={tab.value} className="gap-1.5 text-xs">

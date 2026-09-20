@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, Calculator, GraduationCap } from "lucide-react";
@@ -119,7 +119,7 @@ export function GPACalculatorEngine() {
   return (
     <div className="space-y-4">
       {/* Scale selector */}
-      <div className="w-[150px]">
+      <div className="w-37.5">
         <Label className="text-xs mb-1 block">GPA Scale</Label>
         <Select value={scale} onValueChange={(v) => setScale(v || "4.0")}>
           <SelectTrigger className="h-9">
@@ -148,7 +148,7 @@ export function GPACalculatorEngine() {
                   className="h-8 text-sm flex-1"
                 />
                 <Select value={course.grade} onValueChange={v => updateCourse(course.id, "grade", v || "A")}>
-                  <SelectTrigger className="h-8 w-[80px]">
+                  <SelectTrigger className="h-8 w-20">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -163,7 +163,7 @@ export function GPACalculatorEngine() {
                   type="number"
                   min="0.5"
                   step="0.5"
-                  className="h-8 w-[70px] text-sm"
+                  className="h-8 w-17.5 text-sm"
                   placeholder="Credits"
                 />
                 <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => removeCourse(course.id)}>

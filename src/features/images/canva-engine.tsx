@@ -163,7 +163,7 @@ export function CanvaEngine() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <ImageIcon className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium truncate max-w-[200px]">{file.name}</span>
+              <span className="text-sm font-medium truncate max-w-50">{file.name}</span>
             </div>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={handleReset}>
@@ -177,11 +177,11 @@ export function CanvaEngine() {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Preview */}
-            <div className="lg:col-span-2 bg-muted/30 rounded-lg p-2 flex items-center justify-center min-h-[300px]">
+            <div className="lg:col-span-2 bg-muted/30 rounded-lg p-2 flex items-center justify-center min-h-75">
               <img
                 src={preview}
                 alt="Design preview"
-                className="max-w-full max-h-[400px] object-contain rounded"
+                className="max-w-full max-h-100 object-contain rounded"
               />
               <canvas ref={canvasRef} className="hidden" />
             </div>

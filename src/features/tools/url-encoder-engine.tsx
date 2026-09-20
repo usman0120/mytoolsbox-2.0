@@ -38,7 +38,7 @@ export function URLEncoderEngine() {
         <label className="text-sm font-medium mb-1.5 block">{mode === "encode" ? "Text" : "Encoded URL"}</label>
         <Textarea
           placeholder={mode === "encode" ? "Enter text to URL-encode..." : "Enter URL-encoded string..."}
-          className="min-h-[100px] font-mono text-sm"
+          className="min-h-25 font-mono text-sm"
           value={input}
           onChange={(e) => setInput(e.target.value)}
         />

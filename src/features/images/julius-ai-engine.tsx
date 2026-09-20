@@ -223,7 +223,7 @@ export function JuliusAIEngine() {
             </div>
           </div>
 
-          <Tabs value={mode} onValueChange={setMode}>
+          <Tabs value={mode} onValueChange={(v) => setMode(v ?? "")}>
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="describe" className="gap-1"><ImageIcon className="h-3.5 w-3.5" /> Describe</TabsTrigger>
               <TabsTrigger value="objects" className="gap-1"><Bot className="h-3.5 w-3.5" /> Objects</TabsTrigger>
@@ -244,7 +244,7 @@ export function JuliusAIEngine() {
         </div>
       )}
 
-      {status === "success" && result?.data && (
+      {status === "success" && result?.data != null && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="font-medium text-sm flex items-center gap-2">
@@ -255,7 +255,7 @@ export function JuliusAIEngine() {
               {copied ? "Copied!" : "Copy"}
             </Button>
           </div>
-          <div className="border rounded-lg p-4 bg-muted/30 max-h-[400px] overflow-y-auto">
+          <div className="border rounded-lg p-4 bg-muted/30 max-h-100 overflow-y-auto">
             <pre className="text-sm whitespace-pre-wrap font-sans">{String(result.data)}</pre>
           </div>
           <Button variant="outline" size="sm" onClick={handleReset}>Analyze Another</Button>

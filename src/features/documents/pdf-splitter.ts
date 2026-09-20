@@ -47,8 +47,8 @@ export async function splitPDF(
       outputUrl: url,
       message: `Successfully extracted ${newPdf.getPageCount()} pages from PDF.`,
     };
-  } catch (err: any) {
-    return { status: "error", error: err.message || "Failed to split PDF." };
+  } catch (err: unknown) {
+    return { status: "error", error: err instanceof Error ? err.message : "Failed to split PDF." };
   }
 }
 
@@ -77,7 +77,7 @@ export async function extractAllPages(file: File): Promise<ProcessingResult> {
       message: `Extracted ${totalPages} individual pages.`,
       data: { urls, totalPages },
     };
-  } catch (err: any) {
-    return { status: "error", error: err.message || "Failed to extract pages." };
+  } catch (err: unknown) {
+    return { status: "error", error: err instanceof Error ? err.message : "Failed to extract pages." };
   }
 }

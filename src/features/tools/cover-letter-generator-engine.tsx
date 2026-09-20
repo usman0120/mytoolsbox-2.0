@@ -170,7 +170,7 @@ ${fullName || "[Your Name]"}`;
 
   return (
     <div className="space-y-4">
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v ?? "")}>
         <div className="flex items-center justify-between">
           <TabsList>
             <TabsTrigger value="edit" className="gap-1.5"><FileText className="h-3.5 w-3.5" /> Edit</TabsTrigger>
@@ -232,7 +232,7 @@ ${fullName || "[Your Name]"}`;
             <Label className="text-sm font-medium">Opening Paragraph</Label>
             <Textarea
               placeholder="Write your opening paragraph..."
-              className="min-h-[100px]"
+              className="min-h-25"
               value={data.opening}
               onChange={(e) => updateField("opening", e.target.value)}
             />
@@ -242,7 +242,7 @@ ${fullName || "[Your Name]"}`;
             <Label className="text-sm font-medium">Body Paragraph(s)</Label>
             <Textarea
               placeholder="Write the body of your letter..."
-              className="min-h-[150px]"
+              className="min-h-37.5"
               value={data.body}
               onChange={(e) => updateField("body", e.target.value)}
             />
@@ -252,7 +252,7 @@ ${fullName || "[Your Name]"}`;
             <Label className="text-sm font-medium">Closing Paragraph</Label>
             <Textarea
               placeholder="Write your closing paragraph..."
-              className="min-h-[100px]"
+              className="min-h-25"
               value={data.closing}
               onChange={(e) => updateField("closing", e.target.value)}
             />

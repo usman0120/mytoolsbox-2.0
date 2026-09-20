@@ -252,7 +252,7 @@ export function ImageToTextOCREngine() {
         </div>
       )}
 
-      {status === "success" && result?.data && (
+      {status === "success" && result?.data != null && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="font-medium text-sm flex items-center gap-2">
@@ -268,7 +268,7 @@ export function ImageToTextOCREngine() {
               </Button>
             </div>
           </div>
-          <div className="border rounded-lg p-4 bg-muted/30 max-h-[400px] overflow-y-auto">
+          <div className="border rounded-lg p-4 bg-muted/30 max-h-100 overflow-y-auto">
             <pre className="text-sm whitespace-pre-wrap font-sans">{String(result.data)}</pre>
           </div>
           <div className="flex gap-2">

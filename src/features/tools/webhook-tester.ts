@@ -79,10 +79,10 @@ export async function sendWebhook(config: WebhookConfig): Promise<ProcessingResu
       message: `${response.status} ${response.statusText} (${result.time}ms)`,
       data: result,
     };
-  } catch (err: any) {
+  } catch (err: unknown) {
     return {
       status: "error",
-      error: err.message || "Webhook request failed.",
+      error: err instanceof Error ? err.message : "Webhook request failed.",
     };
   }
 }

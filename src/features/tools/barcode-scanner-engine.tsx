@@ -219,7 +219,7 @@ export function BarcodeScannerEngine() {
 
   return (
     <div className="space-y-4">
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v ?? "")}>
         <TabsList className="w-full">
           <TabsTrigger value="camera" className="flex-1 gap-1.5"><Camera className="h-3.5 w-3.5" /> Camera</TabsTrigger>
           <TabsTrigger value="upload" className="flex-1 gap-1.5"><Upload className="h-3.5 w-3.5" /> Upload</TabsTrigger>

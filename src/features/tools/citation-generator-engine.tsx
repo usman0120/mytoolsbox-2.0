@@ -5,8 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Copy, Check, BookOpen, Globe, User, Calendar } from "lucide-react";
 
 type CitationStyle = "apa" | "mla" | "chicago";
@@ -100,6 +99,30 @@ const EMPTY_FIELDS: CitationFields = {
   journal: "", volume: "", issue: "", pages: "", doi: "", accessedDate: "",
 };
 
+function FieldRow({ field, label, icon: Icon, placeholder, fields, updateField }: {
+  field: keyof CitationFields;
+  label: string;
+  icon?: React.ComponentType<{ className?: string }>;
+  placeholder?: string;
+  fields: CitationFields;
+  updateField: (field: keyof CitationFields, value: string) => void;
+}) {
+  return (
+    <div>
+      <Label className="text-xs mb-1 flex items-center gap-1">
+        {Icon && <Icon className="h-3 w-3" />}
+        {label}
+      </Label>
+      <Input
+        value={fields[field]}
+        onChange={e => updateField(field, e.target.value)}
+        placeholder={placeholder}
+        className="h-8 text-sm"
+      />
+    </div>
+  );
+}
+
 export function CitationGeneratorEngine() {
   const [style, setStyle] = useState<CitationStyle>("apa");
   const [fields, setFields] = useState<CitationFields>(EMPTY_FIELDS);
@@ -126,21 +149,6 @@ export function CitationGeneratorEngine() {
     setCitation("");
   };
 
-  const FieldRow = ({ field, label, icon: Icon, placeholder }: { field: keyof CitationFields; label: string; icon?: React.ComponentType<{ className?: string }>; placeholder?: string }) => (
-    <div>
-      <Label className="text-xs mb-1 flex items-center gap-1">
-        {Icon && <Icon className="h-3 w-3" />}
-        {label}
-      </Label>
-      <Input
-        value={fields[field]}
-        onChange={e => updateField(field, e.target.value)}
-        placeholder={placeholder}
-        className="h-8 text-sm"
-      />
-    </div>
-  );
-
   return (
     <div className="space-y-4">
       {/* Style selector */}
@@ -157,17 +165,17 @@ export function CitationGeneratorEngine() {
 
       {/* Fields */}
       <div className="grid grid-cols-2 gap-3">
-        <FieldRow field="author" label="Author(s)" icon={User} placeholder="e.g. Smith, J." />
-        <FieldRow field="year" label="Year" icon={Calendar} placeholder="e.g. 2024" />
-        <FieldRow field="title" label="Title" icon={BookOpen} placeholder="Article or book title" />
-        <FieldRow field="journal" label="Journal" placeholder="Journal name" />
-        <FieldRow field="volume" label="Volume" placeholder="e.g. 15" />
-        <FieldRow field="issue" label="Issue" placeholder="e.g. 3" />
-        <FieldRow field="pages" label="Pages" placeholder="e.g. 45-67" />
-        <FieldRow field="publisher" label="Publisher" placeholder="Publisher name" />
-        <FieldRow field="doi" label="DOI" placeholder="e.g. 10.1000/xyz" />
-        <FieldRow field="url" label="URL" icon={Globe} placeholder="https://..." />
-        <FieldRow field="accessedDate" label="Accessed" icon={Calendar} placeholder="e.g. Jan 15, 2024" />
+        <FieldRow field="author" label="Author(s)" icon={User} placeholder="e.g. Smith, J." fields={fields} updateField={updateField} />
+        <FieldRow field="year" label="Year" icon={Calendar} placeholder="e.g. 2024" fields={fields} updateField={updateField} />
+        <FieldRow field="title" label="Title" icon={BookOpen} placeholder="Article or book title" fields={fields} updateField={updateField} />
+        <FieldRow field="journal" label="Journal" placeholder="Journal name" fields={fields} updateField={updateField} />
+        <FieldRow field="volume" label="Volume" placeholder="e.g. 15" fields={fields} updateField={updateField} />
+        <FieldRow field="issue" label="Issue" placeholder="e.g. 3" fields={fields} updateField={updateField} />
+        <FieldRow field="pages" label="Pages" placeholder="e.g. 45-67" fields={fields} updateField={updateField} />
+        <FieldRow field="publisher" label="Publisher" placeholder="Publisher name" fields={fields} updateField={updateField} />
+        <FieldRow field="doi" label="DOI" placeholder="e.g. 10.1000/xyz" fields={fields} updateField={updateField} />
+        <FieldRow field="url" label="URL" icon={Globe} placeholder="https://..." fields={fields} updateField={updateField} />
+        <FieldRow field="accessedDate" label="Accessed" icon={Calendar} placeholder="e.g. Jan 15, 2024" fields={fields} updateField={updateField} />
       </div>
 
       <div className="flex gap-2">

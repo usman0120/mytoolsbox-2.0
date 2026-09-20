@@ -45,7 +45,7 @@ export function AIAPIDocumentationGeneratorEngine() {
         const r = await generateAPIDocs({
           code: input.trim(),
           language: language === "auto" ? undefined : language,
-          format: format === "auto" ? undefined : (format as any),
+          format: format === "auto" ? undefined : (format as "openapi" | "swagger" | "markdown"),
         });
         setResult(r);
       } else {
@@ -72,13 +72,13 @@ export function AIAPIDocumentationGeneratorEngine() {
           placeholder="app.get('/users', (req, res) => { ... })"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          className="min-h-[150px] font-mono text-sm"
+          className="min-h-37.5 font-mono text-sm"
         />
       </div>
 
       <div className="flex gap-2">
-        <Select value={language} onValueChange={setLanguage}>
-          <SelectTrigger className="w-[130px] h-8 text-xs">
+        <Select value={language} onValueChange={(v) => setLanguage(v ?? "")}>
+          <SelectTrigger className="w-32.5 h-8 text-xs">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -87,8 +87,8 @@ export function AIAPIDocumentationGeneratorEngine() {
             ))}
           </SelectContent>
         </Select>
-        <Select value={format} onValueChange={setFormat}>
-          <SelectTrigger className="w-[130px] h-8 text-xs">
+        <Select value={format} onValueChange={(v) => setFormat(v ?? "")}>
+          <SelectTrigger className="w-32.5 h-8 text-xs">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -191,7 +191,7 @@ export function AIAPIDocumentationGeneratorEngine() {
                     Copy
                   </Button>
                 </div>
-                <pre className="text-xs font-mono whitespace-pre-wrap bg-muted p-3 rounded-lg max-h-[300px] overflow-y-auto">
+                <pre className="text-xs font-mono whitespace-pre-wrap bg-muted p-3 rounded-lg max-h-75 overflow-y-auto">
                   {result.markdown}
                 </pre>
               </CardContent>

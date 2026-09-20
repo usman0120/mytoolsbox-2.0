@@ -169,7 +169,7 @@ export function SearchPageClient() {
           {results.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {results.map((result, i) => {
-                const IconComponent = (Icons as any)[result.item.icon] || Wrench;
+                const IconComponent = (Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[result.item.icon] || Wrench;
                 const href = result.type === "tool" ? `/tools/${result.item.slug}` : `/apps/${result.item.slug}`;
                 return (
                   <Link key={`${result.type}:${result.item.slug}`} href={href}>

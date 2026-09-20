@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Upload, FileText, Download, Trash2, FileImage, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -32,13 +32,16 @@ export function PDFToImagesEngine() {
     await process(() => pdfToImages(file, format));
   };
 
-  useEffect(() => {
-    if (result?.data) {
-      const data = result.data as any;
-      setTotalPages(data.totalPages || 0);
-      setPdfUrl(data.pdfUrl || null);
-    }
-  }, [result]);
+  // Compute derived state from result during render
+  const derivedTotalPages = result?.data ? (result.data as { totalPages?: number }).totalPages || 0 : 0;
+  const derivedPdfUrl = result?.data ? (result.data as { pdfUrl?: string }).pdfUrl || null : null;
+  // Sync state when result changes
+  const [prevResultKey, setPrevResultKey] = useState<unknown>(null);
+  if (result !== prevResultKey) {
+    setPrevResultKey(result);
+    if (derivedTotalPages !== totalPages) setTotalPages(derivedTotalPages);
+    if (derivedPdfUrl !== pdfUrl) setPdfUrl(derivedPdfUrl);
+  }
 
   const renderCurrentPage = async () => {
     if (!pdfUrl) return;
@@ -164,12 +167,12 @@ export function PDFToImagesEngine() {
           </div>
 
           <Card className="overflow-hidden">
-            <CardContent className="p-4 flex items-center justify-center min-h-[300px] bg-muted/30">
+            <CardContent className="p-4 flex items-center justify-center min-h-75 bg-muted/30">
               {pageImages.has(currentPage) ? (
                 <img
                   src={pageImages.get(currentPage)}
                   alt={`Page ${currentPage}`}
-                  className="max-w-full max-h-[500px] rounded-lg shadow-lg"
+                  className="max-w-full max-h-125 rounded-lg shadow-lg"
                 />
               ) : (
                 <div className="text-center">

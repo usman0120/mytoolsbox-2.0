@@ -241,7 +241,7 @@ export function AIPresentationMakerEngine() {
 
   return (
     <div className="space-y-4">
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v ?? "")}>
         <div className="flex items-center justify-between">
           <TabsList>
             <TabsTrigger value="edit" className="gap-1.5"><FileText className="h-3.5 w-3.5" /> Setup</TabsTrigger>
@@ -311,7 +311,7 @@ export function AIPresentationMakerEngine() {
                 <Textarea
                   value={slide.content}
                   onChange={(e) => updateSlide(slide.id, "content", e.target.value)}
-                  className="min-h-[80px]"
+                  className="min-h-20"
                   placeholder="Slide content"
                 />
               </CardContent>

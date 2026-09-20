@@ -9,7 +9,7 @@ export function testRegex(pattern: string, text: string, flags: string = ""): Pr
       message: matches ? `Found ${matches.length} match(es)` : "No matches found",
       data: matches,
     };
-  } catch (e: any) {
-    return { status: "error", message: e.message || "Invalid regex" };
+  } catch (e: unknown) {
+    return { status: "error", message: e instanceof Error ? e.message : "Invalid regex" };
   }
 }

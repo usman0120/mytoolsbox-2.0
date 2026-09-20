@@ -48,7 +48,7 @@ export async function imagesToPDF(files: File[]): Promise<ProcessingResult> {
       outputUrl: url,
       message: `Created PDF with ${pdf.getPageCount()} page(s) from ${imageFiles.length} image(s).`,
     };
-  } catch (err: any) {
-    return { status: "error", error: err.message || "Failed to create PDF from images." };
+  } catch (err: unknown) {
+    return { status: "error", error: err instanceof Error ? err.message : "Failed to create PDF from images." };
   }
 }

@@ -17,7 +17,7 @@ interface ToolPageClientProps {
 }
 
 export function ToolPageClient({ tool }: ToolPageClientProps) {
-  const IconComponent = (Icons as any)[tool.icon] || Icons.Wrench;
+  const IconComponent = (Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[tool.icon] || Icons.Wrench;
   const relatedTools = tool.relatedTools
     .map((slug) => getToolsByCategory(tool.category).find((t) => t.slug === slug))
     .filter(Boolean) as ToolDefinition[];

@@ -23,6 +23,12 @@ import {
   downloadDataUrl, generateSRT, generateVTT
 } from "@/features/apps/video-editor-utils";
 
+// Extended HTMLVideoElement with captureStream (not yet in standard TS types)
+type VideoElementWithCapture = HTMLVideoElement & {
+  captureStream?: () => MediaStream;
+  mozCaptureStream?: () => MediaStream;
+};
+
 // ============ Sub-components ============
 
 function EmptyState({ onUpload }: { onUpload: () => void }) {
@@ -388,7 +394,7 @@ function SpeedPanel({ speed, onSpeedChange }: { speed: number; onSpeedChange: (s
         </div>
         <div className="flex items-center gap-2">
           <span className="text-xs text-muted-foreground">{speed}x</span>
-          <Slider value={[speed * 25]} onValueChange={([v]) => onSpeedChange(v / 25)} min={6.25} max={100} step={6.25} className="flex-1" />
+          <Slider value={[speed * 25]} onValueChange={(v) => { const arr = v as number[]; if (arr.length > 0) onSpeedChange(arr[0] / 25); }} min={6.25} max={100} step={6.25} className="flex-1" />
         </div>
       </CardContent>
     </Card>
@@ -455,7 +461,7 @@ function ThumbnailPanel({
             onChange={(e) => onTimeChange(parseFloat(e.target.value) || 0)} className="h-8 text-xs flex-1" />
           <span className="text-xs text-muted-foreground">sec</span>
         </div>
-        <Slider value={[thumbnailTime]} onValueChange={([v]) => onTimeChange(v)} min={0} max={duration} step={0.1} />
+        <Slider value={[thumbnailTime]} onValueChange={(v) => { const arr = v as number[]; if (arr.length > 0) onTimeChange(arr[0]); }} min={0} max={duration} step={0.1} />
       </CardContent>
     </Card>
   );
@@ -548,7 +554,7 @@ function WatermarkPanel({
         </div>
         <div className="flex items-center gap-2">
           <Label className="text-xs w-16">Opacity</Label>
-          <Slider value={[opacity * 100]} onValueChange={([v]) => setOpacity(v / 100)} min={10} max={100} step={5} className="flex-1" />
+          <Slider value={[opacity * 100]} onValueChange={(v) => { const arr = v as number[]; if (arr.length > 0) setOpacity(arr[0] / 100); }} min={10} max={100} step={5} className="flex-1" />
           <span className="text-xs text-muted-foreground w-8">{Math.round(opacity * 100)}%</span>
         </div>
         <div className="flex items-center gap-2">
@@ -713,8 +719,8 @@ export function VideoEditorEngine() {
     setIsProcessing(true);
     setProcessingMessage("Trimming video...");
     try {
-      const video = videoRef.current!;
-      const stream = (video as any).captureStream?.() || (video as any).mozCaptureStream?.();
+      const video = videoRef.current! as VideoElementWithCapture;
+      const stream = video.captureStream?.() || video.mozCaptureStream?.();
       if (!stream) { setProcessingMessage("Trim ready. Use the trimmed range for export."); setIsProcessing(false); return; }
       const chunks: Blob[] = [];
       const recorder = new MediaRecorder(stream, { mimeType: "video/webm" });
@@ -738,9 +744,9 @@ export function VideoEditorEngine() {
     setIsProcessing(true);
     setProcessingMessage("Extracting audio...");
     try {
-      const video = videoRef.current!;
+      const video = videoRef.current! as VideoElementWithCapture;
       const audioCtx = new AudioContext();
-      const stream = (video as any).captureStream?.() || (video as any).mozCaptureStream?.();
+      const stream = video.captureStream?.() || video.mozCaptureStream?.();
       if (!stream) throw new Error("Stream capture not supported");
       const source = audioCtx.createMediaStreamSource(stream);
       const dest = audioCtx.createMediaStreamDestination();
@@ -768,8 +774,8 @@ export function VideoEditorEngine() {
     setIsProcessing(true);
     setProcessingMessage("Creating muted version...");
     try {
-      const video = videoRef.current!;
-      const stream = (video as any).captureStream?.() || (video as any).mozCaptureStream?.();
+      const video = videoRef.current! as VideoElementWithCapture;
+      const stream = video.captureStream?.() || video.mozCaptureStream?.();
       if (!stream) throw new Error("Stream capture not supported");
       const mutedStream = new MediaStream(stream.getVideoTracks());
       const chunks: Blob[] = [];

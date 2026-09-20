@@ -135,7 +135,7 @@ export function AIImageGeneratorEngine() {
             <Label className="text-sm mb-1.5 block">Describe the image you want</Label>
             <Textarea
               placeholder="A serene mountain lake at sunset with pine trees..."
-              className="min-h-[80px]"
+              className="min-h-20"
               value={prompt}
               onChange={(e) => { setPrompt(e.target.value); setError(""); }}
             />
@@ -186,7 +186,7 @@ export function AIImageGeneratorEngine() {
               <img
                 src={imageUrl}
                 alt={prompt}
-                className="w-full h-auto max-h-[400px] object-contain mx-auto"
+                className="w-full h-auto max-h-100 object-contain mx-auto"
               />
             </div>
             <div className="flex gap-2">

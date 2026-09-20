@@ -227,7 +227,7 @@ export function RunwayEngine() {
             </div>
           </div>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v ?? "")}>
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="enhance" className="gap-1"><Wand className="h-3.5 w-3.5" /> Enhance</TabsTrigger>
               <TabsTrigger value="background" className="gap-1"><Scissors className="h-3.5 w-3.5" /> Remove BG</TabsTrigger>
@@ -284,7 +284,7 @@ export function RunwayEngine() {
       {status === "success" && result?.outputUrl && (
         <div className="space-y-4">
           <div className="border rounded-lg overflow-hidden bg-muted/30 p-2">
-            <img src={result.outputUrl} alt="Enhanced" className="w-full h-auto max-h-[400px] object-contain rounded" />
+            <img src={result.outputUrl} alt="Enhanced" className="w-full h-auto max-h-100 object-contain rounded" />
           </div>
           <div className="flex gap-2">
             <Button onClick={handleDownload} className="gap-2">

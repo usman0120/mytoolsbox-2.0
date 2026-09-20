@@ -157,7 +157,7 @@ export function PDFToMarkdownEngine() {
               <Download className="h-3 w-3" />Download .md
             </Button>
           </div>
-          <div className="p-4 bg-muted/30 rounded-xl max-h-[400px] overflow-y-auto">
+          <div className="p-4 bg-muted/30 rounded-xl max-h-100 overflow-y-auto">
             <pre className="text-sm whitespace-pre-wrap font-mono">{markdown}</pre>
           </div>
         </div>

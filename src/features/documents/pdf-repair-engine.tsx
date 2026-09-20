@@ -76,7 +76,7 @@ export function PDFRepairEngine() {
           useObjectStreams: true,
           addDefaultPage: false,
         });
-        const blob = new Blob([repairedBytes], { type: "application/pdf" });
+        const blob = new Blob([repairedBytes as unknown as BlobPart], { type: "application/pdf" });
         setResultBlob(blob);
         toast.success("PDF repaired successfully.");
       } catch (pdfErr) {
@@ -105,7 +105,7 @@ export function PDFRepairEngine() {
           }
 
           const salvagedBytes = await newPdf.save();
-          const blob = new Blob([salvagedBytes], { type: "application/pdf" });
+          const blob = new Blob([salvagedBytes as unknown as BlobPart], { type: "application/pdf" });
           setResultBlob(blob);
           toast.success("PDF salvaged with recoverable content.");
         } catch {

@@ -113,7 +113,7 @@ export function RFPMonkeyEngine() {
             placeholder="Brief description of what you're procuring..."
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            className="rounded-xl mt-1 min-h-[80px]"
+            className="rounded-xl mt-1 min-h-20"
           />
         </div>
       </div>
@@ -170,7 +170,7 @@ export function RFPMonkeyEngine() {
           </div>
           <Card className="border-border/50">
             <CardContent className="p-4">
-              <pre className="text-sm whitespace-pre-wrap font-mono bg-muted/30 p-4 rounded-xl max-h-[400px] overflow-y-auto">
+              <pre className="text-sm whitespace-pre-wrap font-mono bg-muted/30 p-4 rounded-xl max-h-100 overflow-y-auto">
                 {generatedRFP}
               </pre>
             </CardContent>

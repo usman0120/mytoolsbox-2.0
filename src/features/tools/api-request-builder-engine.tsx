@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { sendAPIRequest, formatHeaders, HTTP_METHODS, CONTENT_TYPES } from "@/features/tools/api-request";
+import { sendAPIRequest, formatHeaders, HTTP_METHODS, CONTENT_TYPES, type APIResponse } from "@/features/tools/api-request";
 
 export function APIRequestBuilderEngine() {
   const [method, setMethod] = useState("GET");
@@ -17,7 +17,7 @@ export function APIRequestBuilderEngine() {
   const [headersText, setHeadersText] = useState("");
   const [body, setBody] = useState("");
   const [contentType, setContentType] = useState("application/json");
-  const [response, setResponse] = useState<any>(null);
+  const [response, setResponse] = useState<APIResponse | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState("");
@@ -34,7 +34,7 @@ export function APIRequestBuilderEngine() {
     if (r.status === "error") {
       setError(r.error || "Request failed");
     } else {
-      setResponse(r.data);
+      setResponse(r.data as APIResponse);
     }
   };
 
@@ -50,8 +50,8 @@ export function APIRequestBuilderEngine() {
     <div className="space-y-4">
       {/* Method + URL */}
       <div className="flex gap-2">
-        <Select value={method} onValueChange={setMethod}>
-          <SelectTrigger className="w-[110px] shrink-0">
+        <Select value={method} onValueChange={(v) => setMethod(v ?? "")}>
+          <SelectTrigger className="w-27.5 shrink-0">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -93,7 +93,7 @@ export function APIRequestBuilderEngine() {
             placeholder="Content-Type: application/json&#10;Authorization: Bearer token123"
             value={headersText}
             onChange={(e) => setHeadersText(e.target.value)}
-            className="mt-1 min-h-[80px] font-mono text-xs"
+            className="mt-1 min-h-20 font-mono text-xs"
           />
         )}
       </div>
@@ -112,8 +112,8 @@ export function APIRequestBuilderEngine() {
               Body
             </Button>
             {showBody && (
-              <Select value={contentType} onValueChange={setContentType}>
-                <SelectTrigger className="h-7 w-[180px] text-xs">
+              <Select value={contentType} onValueChange={(v) => setContentType(v ?? "")}>
+                <SelectTrigger className="h-7 w-45 text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -129,7 +129,7 @@ export function APIRequestBuilderEngine() {
               placeholder='{"key": "value"}'
               value={body}
               onChange={(e) => setBody(e.target.value)}
-              className="mt-1 min-h-[100px] font-mono text-xs"
+              className="mt-1 min-h-25 font-mono text-xs"
             />
           )}
         </div>
@@ -169,7 +169,7 @@ export function APIRequestBuilderEngine() {
                   )}
                 </Button>
               </div>
-              <pre className="text-xs font-mono max-h-[150px] overflow-y-auto whitespace-pre-wrap">
+              <pre className="text-xs font-mono max-h-37.5 overflow-y-auto whitespace-pre-wrap">
                 {JSON.stringify(response.headers, null, 2)}
               </pre>
             </CardContent>
@@ -193,7 +193,7 @@ export function APIRequestBuilderEngine() {
                   )}
                 </Button>
               </div>
-              <pre className="text-xs font-mono max-h-[300px] overflow-y-auto whitespace-pre-wrap">
+              <pre className="text-xs font-mono max-h-75 overflow-y-auto whitespace-pre-wrap">
                 {response.body}
               </pre>
             </CardContent>

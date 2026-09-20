@@ -67,7 +67,7 @@ export function PresentationMakerEngine() {
 
   const addSlide = (type: Slide["type"]) => {
     const newSlide: Slide = {
-      id: Date.now().toString(),
+      id: crypto.randomUUID(),
       type,
       title: "New Slide",
       content: "",
@@ -222,7 +222,7 @@ export function PresentationMakerEngine() {
               ))}
             </div>
           </div>
-          <div className="space-y-1.5 max-h-[500px] overflow-y-auto">
+          <div className="space-y-1.5 max-h-125 overflow-y-auto">
             {data.slides.map((s, i) => (
               <div
                 key={s.id}

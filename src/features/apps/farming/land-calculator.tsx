@@ -34,9 +34,10 @@ export function LandAreaCalculator() {
 
   const crops = getCropList();
 
-  const handleShapeChange = (s: string) => {
-    setShape(s);
-    const count = DIMENSION_LABELS[s].length;
+  const handleShapeChange = (s: string | null) => {
+    const shapeValue = s || "rectangle";
+    setShape(shapeValue);
+    const count = DIMENSION_LABELS[shapeValue].length;
     setDimensions(Array(count).fill(""));
     setResult(null);
   };
@@ -88,7 +89,7 @@ export function LandAreaCalculator() {
 
       <div className="space-y-1.5">
         <Label className="text-xs">Crop (optional — to estimate plant count)</Label>
-        <Select value={crop} onValueChange={setCrop}>
+        <Select value={crop} onValueChange={(v) => setCrop(v ?? "")}>
           <SelectTrigger>
             <SelectValue placeholder="Select crop..." />
           </SelectTrigger>

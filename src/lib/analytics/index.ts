@@ -17,8 +17,9 @@ export function trackEvent(event: AnalyticsEvent, data?: Record<string, unknown>
   if (typeof window === "undefined") return;
 
   // Send to Google Analytics if available
-  if (typeof (window as any).gtag === "function") {
-    (window as any).gtag("event", event, data);
+  const win = window as unknown as { gtag?: (cmd: string, event: string, data?: Record<string, unknown>) => void };
+  if (typeof win.gtag === "function") {
+    win.gtag("event", event, data);
   }
 
   // Log in development

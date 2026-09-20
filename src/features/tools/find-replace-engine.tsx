@@ -69,7 +69,7 @@ export function FindReplaceEngine() {
         <Button variant={useRegex ? "default" : "outline"} size="sm" onClick={() => setUseRegex(!useRegex)} className="rounded-xl text-xs">.* Regex</Button>
       </div>
 
-      <div className="p-3 bg-muted/20 rounded-xl min-h-[80px] max-h-48 overflow-y-auto text-sm whitespace-pre-wrap">
+      <div className="p-3 bg-muted/20 rounded-xl min-h-20 max-h-48 overflow-y-auto text-sm whitespace-pre-wrap">
         {find ? highlightMatches() : text || <span className="text-muted-foreground">Enter text above...</span>}
       </div>
 

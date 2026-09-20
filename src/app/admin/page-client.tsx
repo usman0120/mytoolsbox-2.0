@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useAuth } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -81,9 +81,10 @@ export function AdminPageClient() {
   const router = useRouter();
   const [adminData, setAdminData] = useState<AdminData | null>(null);
   const [feedback, setFeedback] = useState<FeedbackItem[]>([]);
-  const [feedbackLoading, setFeedbackLoading] = useState(false);
+  const [feedbackLoading, setFeedbackLoading] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
+  const initialLoadDone = useRef(false);
 
   const fetchAdminData = useCallback(async () => {
     try {
@@ -117,11 +118,17 @@ export function AdminPageClient() {
   useEffect(() => {
     if (!loading && !user) {
       router.push("/?signin=true");
-      return;
     }
-    fetchAdminData();
-    fetchFeedback();
-  }, [loading, user, router, fetchAdminData, fetchFeedback]);
+  }, [loading, user, router]);
+
+  // Initial data load — uses ref to avoid set-state-in-effect lint error
+  useEffect(() => {
+    if (user && !initialLoadDone.current) {
+      initialLoadDone.current = true;
+      fetchAdminData();
+      fetchFeedback();
+    }
+  }, [user, fetchAdminData, fetchFeedback]);
 
   const handleUnblockIP = async (ip: string) => {
     try {
@@ -197,7 +204,7 @@ export function AdminPageClient() {
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v ?? "")}>
         <TabsList className="mb-8 flex-wrap h-auto gap-1">
           <TabsTrigger value="overview" className="gap-2">
             <BarChart3 className="h-4 w-4" />

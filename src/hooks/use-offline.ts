@@ -50,11 +50,11 @@ export function canWorkOffline(pathname: string): boolean {
 // ---------------------------------------------------------------------------
 
 export function useOnlineStatus(): OfflineState {
-  const [state, setState] = useState<OfflineState>({
+  const [state, setState] = useState<OfflineState>(() => ({
     isOnline: typeof navigator !== "undefined" ? navigator.onLine : true,
     wasOnline: true,
     lastChecked: Date.now(),
-  });
+  }));
 
   useEffect(() => {
     // Only run in browser

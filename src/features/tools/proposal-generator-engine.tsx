@@ -26,7 +26,7 @@ export function ProposalGeneratorEngine() {
   const [sections, setSections] = useState<ProposalSection[]>(PROPOSAL_TEMPLATES["General"]);
   const [copied, setCopied] = useState(false);
 
-  const handleTemplateChange = (v: string) => {
+  const handleTemplateChange = (v: string | null) => {
     const t = v || "General";
     setTemplate(t);
     setSections(PROPOSAL_TEMPLATES[t].map(s => ({ ...s, content: "" })));

@@ -178,9 +178,9 @@ export function PDFSplitterEngine() {
           <div className="bg-green-500/10 text-green-600 dark:text-green-400 rounded-xl p-4 text-sm font-medium text-center">
             {result.message}
           </div>
-          {result.data && (result.data as any).urls ? (
+          {result.data && (result.data as { urls: string[] }).urls ? (
             <div className="space-y-2">
-              {(result.data as any).urls.map((url: string, i: number) => (
+              {(result.data as { urls: string[] }).urls.map((url: string, i: number) => (
                 <Card key={i} className="p-3">
                   <div className="flex items-center gap-3">
                     <FileText className="h-5 w-5 text-red-500 shrink-0" />

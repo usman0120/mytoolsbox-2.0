@@ -41,7 +41,7 @@ export function ImageResizerEngine() {
 
   const handleResize = async () => {
     if (!file) return;
-    const options: any = {};
+    const options: { percentage?: number; width?: number; height?: number; maintainAspectRatio?: boolean } = {};
     if (mode === "percentage" && percentage) {
       options.percentage = parseInt(percentage);
     } else {
@@ -157,7 +157,7 @@ export function ImageResizerEngine() {
           {result.outputUrl && (
             <Card className="overflow-hidden">
               <CardContent className="p-4 flex items-center justify-center bg-muted/30">
-                <img src={result.outputUrl} alt="Resized" className="max-w-full max-h-[400px] rounded-lg shadow-lg" />
+                <img src={result.outputUrl} alt="Resized" className="max-w-full max-h-100 rounded-lg shadow-lg" />
               </CardContent>
             </Card>
           )}

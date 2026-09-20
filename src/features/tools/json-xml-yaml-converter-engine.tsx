@@ -147,7 +147,7 @@ export function JSONXMLYAMLConverterEngine() {
               <Button variant="ghost" size="sm" onClick={handleDownload} className="rounded-xl text-xs"><Download className="h-3 w-3 mr-1" />Download</Button>
             </div>
           </div>
-          <pre className="p-3 bg-muted/30 rounded-xl text-xs font-mono max-h-[300px] overflow-y-auto whitespace-pre-wrap">{output}</pre>
+          <pre className="p-3 bg-muted/30 rounded-xl text-xs font-mono max-h-75 overflow-y-auto whitespace-pre-wrap">{output}</pre>
         </div>
       )}
     </div>

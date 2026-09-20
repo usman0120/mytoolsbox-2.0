@@ -12,8 +12,8 @@ export function encodeBase64(text: string): ProcessingResult {
       status: "success",
       message: `Encoded (${encoded.length} characters)`,
     };
-  } catch (err: any) {
-    return { status: "error", error: err.message };
+  } catch (err: unknown) {
+    return { status: "error", error: err instanceof Error ? err.message : "Encoding failed." };
   }
 }
 
@@ -28,7 +28,7 @@ export function decodeBase64(text: string): ProcessingResult {
       status: "success",
       message: `Decoded (${decoded.length} characters)`,
     };
-  } catch (err: any) {
+  } catch {
     return { status: "error", error: "Invalid Base64 string. Please check your input." };
   }
 }

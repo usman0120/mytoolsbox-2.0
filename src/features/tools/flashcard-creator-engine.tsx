@@ -130,7 +130,7 @@ export function FlashcardCreatorEngine() {
           className="cursor-pointer perspective-1000"
         >
           <div
-            className={`relative min-h-[250px] rounded-xl border-2 transition-all duration-500 transform-style-3d ${
+            className={`relative min-h-62.5 rounded-xl border-2 transition-all duration-500 transform-style-3d ${
               isFlipped ? "rotate-y-180" : ""
             }`}
           >
@@ -199,7 +199,7 @@ export function FlashcardCreatorEngine() {
               value={frontInput}
               onChange={(e) => setFrontInput(e.target.value)}
               placeholder="Enter the question or term..."
-              className="min-h-[80px]"
+              className="min-h-20"
             />
           </div>
           <div className="space-y-1.5">
@@ -208,7 +208,7 @@ export function FlashcardCreatorEngine() {
               value={backInput}
               onChange={(e) => setBackInput(e.target.value)}
               placeholder="Enter the answer or definition..."
-              className="min-h-[80px]"
+              className="min-h-20"
             />
           </div>
           <Button onClick={addCard} className="w-full gap-1.5">
@@ -246,7 +246,7 @@ export function FlashcardCreatorEngine() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2 max-h-[300px] overflow-y-auto">
+            <div className="space-y-2 max-h-75 overflow-y-auto">
               {cards.map((card, idx) => (
                 <div key={card.id} className="flex items-start gap-2 p-2 rounded-md bg-muted/50">
                   <span className="text-xs text-muted-foreground w-6 pt-0.5">{idx + 1}.</span>

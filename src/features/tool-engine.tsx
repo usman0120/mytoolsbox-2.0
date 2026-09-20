@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { ToolDefinition } from "@/types";
 
 // Dynamic imports for all tool engines
-const engineMap: Record<string, React.ComponentType<any>> = {
+const engineMap: Record<string, React.ComponentType<Record<string, unknown>>> = {
   // Document tools
   "pdf-merger": dynamic(() => import("@/features/documents/pdf-merger-engine").then((m) => ({ default: m.PDFMergerEngine })), {
     loading: () => <EngineLoading />,

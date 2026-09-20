@@ -96,7 +96,7 @@ export function AppsPageClient() {
       ) : viewMode === "grid" ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredApps.map((app, i) => {
-            const IconComponent = (Icons as any)[app.icon] || Icons.Layout;
+            const IconComponent = (Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[app.icon] || Icons.Layout;
             return (
               <Link key={app.id} href={`/apps/${app.slug}`}>
                 <Card
@@ -140,7 +140,7 @@ export function AppsPageClient() {
       ) : (
         <div className="flex flex-col gap-2">
           {filteredApps.map((app, i) => {
-            const IconComponent = (Icons as any)[app.icon] || Icons.Layout;
+            const IconComponent = (Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[app.icon] || Icons.Layout;
             return (
               <Link
                 key={app.id}

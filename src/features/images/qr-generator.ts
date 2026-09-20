@@ -34,7 +34,7 @@ export async function generateQR(options: QROptions): Promise<ProcessingResult> 
       outputUrl: url,
       message: "QR code generated successfully.",
     };
-  } catch (err: any) {
-    return { status: "error", error: err.message || "Failed to generate QR code." };
+  } catch (err: unknown) {
+    return { status: "error", error: err instanceof Error ? err.message : "Failed to generate QR code." };
   }
 }

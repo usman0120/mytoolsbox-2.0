@@ -7,13 +7,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   generateDeckId, generateCardId, shuffleCards, getMasteryStats,
   parseFlashcardsFromText, SAMPLE_DECKS,
   type Flashcard, type FlashcardDeck,
 } from "@/features/tools/flashcard-generator";
-import { Plus, Trash2, Shuffle, RotateCcw, Check, X, ChevronLeft, ChevronRight, Copy, Upload } from "lucide-react";
+import { Plus, Trash2, RotateCcw, Check, X, ChevronLeft, ChevronRight, Upload } from "lucide-react";
 
 export function FlashcardGeneratorEngine() {
   const [deck, setDeck] = useState<FlashcardDeck>({
@@ -149,7 +148,7 @@ export function FlashcardGeneratorEngine() {
               <Textarea
                 value={bulkInput}
                 onChange={e => setBulkInput(e.target.value)}
-                className="font-mono text-xs min-h-[60px]"
+                className="font-mono text-xs min-h-15"
                 placeholder="Front | Back&#10;Front : Back&#10;Front - Back"
               />
               <Button onClick={importBulk} variant="outline" size="sm" className="gap-2">
@@ -215,10 +214,10 @@ export function FlashcardGeneratorEngine() {
 
           {/* Flashcard */}
           <div
-            className="relative min-h-[200px] cursor-pointer perspective-1000"
+            className="relative min-h-50 cursor-pointer perspective-1000"
             onClick={flipCard}
           >
-            <Card className={`w-full min-h-[200px] flex items-center justify-center p-6 transition-all duration-300 ${isFlipped ? "bg-green-500/10 border-green-500/30" : "bg-card"}`}>
+            <Card className={`w-full min-h-50 flex items-center justify-center p-6 transition-all duration-300 ${isFlipped ? "bg-green-500/10 border-green-500/30" : "bg-card"}`}>
               <CardContent className="text-center">
                 <p className="text-xs text-muted-foreground mb-2">
                   {isFlipped ? "Answer" : "Question"} (click to flip)

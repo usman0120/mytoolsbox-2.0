@@ -109,7 +109,7 @@ export function PhotopeaEngine() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <ImageIcon className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium truncate max-w-[200px]">{file.name}</span>
+              <span className="text-sm font-medium truncate max-w-50">{file.name}</span>
               <span className="text-xs text-muted-foreground">{(file.size / 1024).toFixed(1)} KB</span>
             </div>
             <div className="flex gap-2">
@@ -124,12 +124,12 @@ export function PhotopeaEngine() {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Canvas preview */}
-            <div className="lg:col-span-2 bg-muted/30 rounded-lg p-2 flex items-center justify-center min-h-[300px]">
+            <div className="lg:col-span-2 bg-muted/30 rounded-lg p-2 flex items-center justify-center min-h-75">
               {preview && (
                 <img
                   src={preview}
                   alt="Preview"
-                  className="max-w-full max-h-[400px] object-contain rounded"
+                  className="max-w-full max-h-100 object-contain rounded"
                   style={{
                     filter: `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%) blur(${blur}px)`,
                     transform: `rotate(${rotation}deg)`,

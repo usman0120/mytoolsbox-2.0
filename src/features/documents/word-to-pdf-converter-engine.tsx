@@ -67,14 +67,14 @@ export function WordToPDFConverterEngine() {
         y = pageHeight - margin;
       };
 
-      const wrapText = (text: string, maxWidth: number, font: any, size: number): string[] => {
+      const wrapText = (text: string, maxWidth: number, font: { widthOfText: (t: string, s: number) => number }, size: number): string[] => {
         const words = text.split(" ");
         const lines: string[] = [];
         let currentLine = "";
 
         for (const word of words) {
           const testLine = currentLine ? `${currentLine} ${word}` : word;
-          const width = font.widthOfTextAtSize(testLine, size);
+          const width = font.widthOfText(testLine, size);
           if (width > maxWidth && currentLine) {
             lines.push(currentLine);
             currentLine = word;
@@ -98,7 +98,7 @@ export function WordToPDFConverterEngine() {
         if (displayText === "") {
           y -= lineHeight;
         } else {
-          const wrappedLines = wrapText(displayText, maxWidth, useFont, useSize);
+          const wrappedLines = wrapText(displayText, maxWidth, useFont as unknown as { widthOfText: (t: string, s: number) => number }, useSize);
           for (const wl of wrappedLines) {
             if (y < margin + lineHeight) addNewPage();
             currentPage.drawText(wl, {
@@ -167,7 +167,7 @@ export function WordToPDFConverterEngine() {
               <div className="flex items-center gap-3">
                 <FileText className="h-8 w-8 text-blue-500" />
                 <div>
-                  <p className="font-medium text-sm truncate max-w-[200px]">{file.name}</p>
+                  <p className="font-medium text-sm truncate max-w-50">{file.name}</p>
                   <p className="text-xs text-muted-foreground">{(file.size / 1024).toFixed(1)} KB</p>
                 </div>
               </div>

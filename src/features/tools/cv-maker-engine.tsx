@@ -305,7 +305,7 @@ export function CVMakerEngine() {
 
   return (
     <div className="space-y-4">
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v ?? "")}>
         <div className="flex items-center justify-between">
           <TabsList>
             <TabsTrigger value="edit" className="gap-1.5"><FileText className="h-3.5 w-3.5" /> Edit</TabsTrigger>
@@ -342,7 +342,7 @@ export function CVMakerEngine() {
               <Input placeholder="Website" value={data.website} onChange={(e) => updateField("website", e.target.value)} />
               <Input placeholder="LinkedIn URL" value={data.linkedin} onChange={(e) => updateField("linkedin", e.target.value)} className="sm:col-span-2" />
             </div>
-            <Textarea placeholder="Professional summary..." className="min-h-[80px]" value={data.summary} onChange={(e) => updateField("summary", e.target.value)} />
+            <Textarea placeholder="Professional summary..." className="min-h-20" value={data.summary} onChange={(e) => updateField("summary", e.target.value)} />
           </CardContent></Card>
 
           {(["skills", "languages", "certifications"] as const).map((field) => (
@@ -375,7 +375,7 @@ export function CVMakerEngine() {
                   <Input placeholder="Start Date" value={exp.startDate} onChange={(e) => updateExperience(i, "startDate", e.target.value)} className="h-8 text-sm" />
                   <Input placeholder="End Date" value={exp.endDate} onChange={(e) => updateExperience(i, "endDate", e.target.value)} className="h-8 text-sm" />
                 </div>
-                <Textarea placeholder="Description..." className="min-h-[60px] text-sm" value={exp.description} onChange={(e) => updateExperience(i, "description", e.target.value)} />
+                <Textarea placeholder="Description..." className="min-h-15 text-sm" value={exp.description} onChange={(e) => updateExperience(i, "description", e.target.value)} />
                 <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-7 w-7" onClick={() => removeExperience(i)}><X className="h-3.5 w-3.5" /></Button>
               </div>
             ))}

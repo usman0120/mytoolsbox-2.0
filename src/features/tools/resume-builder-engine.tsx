@@ -290,7 +290,7 @@ export function ResumeBuilderEngine() {
 
   return (
     <div className="space-y-4">
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v ?? "")}>
         <div className="flex items-center justify-between">
           <TabsList>
             <TabsTrigger value="edit" className="gap-1.5">
@@ -343,7 +343,7 @@ export function ResumeBuilderEngine() {
               </div>
               <Textarea
                 placeholder="Professional summary..."
-                className="min-h-[80px]"
+                className="min-h-20"
                 value={data.summary}
                 onChange={(e) => updateField("summary", e.target.value)}
               />
@@ -396,7 +396,7 @@ export function ResumeBuilderEngine() {
                   </div>
                   <Textarea
                     placeholder="Description..."
-                    className="min-h-[60px] text-sm"
+                    className="min-h-15 text-sm"
                     value={exp.description}
                     onChange={(e) => updateExperience(i, "description", e.target.value)}
                   />

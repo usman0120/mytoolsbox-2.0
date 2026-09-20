@@ -28,7 +28,7 @@ export async function compressPDF(file: File, options: { quality?: number } = {}
       outputUrl: url,
       message: `Compressed from ${(originalSize / 1024).toFixed(0)} KB to ${(compressedSize / 1024).toFixed(0)} KB (${reduction}% reduction)`,
     };
-  } catch (err: any) {
-    return { status: "error", error: err.message || "Failed to compress PDF." };
+  } catch (err: unknown) {
+    return { status: "error", error: err instanceof Error ? err.message : "Failed to compress PDF." };
   }
 }

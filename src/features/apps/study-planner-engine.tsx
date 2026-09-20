@@ -222,7 +222,7 @@ export function StudyPlannerEngine() {
     <div className="space-y-6">
       {/* Stats Bar */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Card className="bg-gradient-to-br from-cyan-500/5 to-blue-500/5">
+        <Card className="bg-linear-to-br from-cyan-500/5 to-blue-500/5">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-1">
               <Flame className="h-4 w-4 text-orange-500" />
@@ -231,7 +231,7 @@ export function StudyPlannerEngine() {
             <p className="text-2xl font-bold">{streak} <span className="text-sm font-normal text-muted-foreground">days</span></p>
           </CardContent>
         </Card>
-        <Card className="bg-gradient-to-br from-green-500/5 to-emerald-500/5">
+        <Card className="bg-linear-to-br from-green-500/5 to-emerald-500/5">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-1">
               <Clock className="h-4 w-4 text-green-500" />
@@ -240,7 +240,7 @@ export function StudyPlannerEngine() {
             <p className="text-2xl font-bold">{todayMinutes} <span className="text-sm font-normal text-muted-foreground">min</span></p>
           </CardContent>
         </Card>
-        <Card className="bg-gradient-to-br from-purple-500/5 to-violet-500/5">
+        <Card className="bg-linear-to-br from-purple-500/5 to-violet-500/5">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-1">
               <BarChart3 className="h-4 w-4 text-purple-500" />
@@ -249,7 +249,7 @@ export function StudyPlannerEngine() {
             <p className="text-2xl font-bold">{overallProgress}<span className="text-sm font-normal text-muted-foreground">%</span></p>
           </CardContent>
         </Card>
-        <Card className="bg-gradient-to-br from-amber-500/5 to-yellow-500/5">
+        <Card className="bg-linear-to-br from-amber-500/5 to-yellow-500/5">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-1">
               <Trophy className="h-4 w-4 text-amber-500" />
@@ -260,7 +260,7 @@ export function StudyPlannerEngine() {
         </Card>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v ?? "")}>
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="schedule" className="gap-1.5"><Calendar className="h-3.5 w-3.5" /> Schedule</TabsTrigger>
           <TabsTrigger value="subjects" className="gap-1.5"><BookOpen className="h-3.5 w-3.5" /> Subjects</TabsTrigger>
@@ -496,7 +496,7 @@ export function StudyPlannerEngine() {
                     }
                     setPomodoroActive(!pomodoroActive);
                   }}
-                  className="gap-2 min-w-[120px]"
+                  className="gap-2 min-w-30"
                 >
                   {pomodoroActive ? (
                     <><RotateCcw className="h-4 w-4" /> Pause</>

@@ -83,7 +83,7 @@ export function MatrixCalculatorEngine() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-3 items-end">
-        <div className="w-[180px]">
+        <div className="w-45">
           <Label className="text-xs mb-1 block">Operation</Label>
           <Select value={operation} onValueChange={(v) => setOperation(v || "add")}>
             <SelectTrigger className="h-9">
@@ -97,7 +97,7 @@ export function MatrixCalculatorEngine() {
           </Select>
         </div>
         {needsScalar && (
-          <div className="w-[100px]">
+          <div className="w-25">
             <Label className="text-xs mb-1 block">Scalar k</Label>
             <Input value={scalar} onChange={e => setScalar(e.target.value)} className="h-9" />
           </div>
@@ -113,7 +113,7 @@ export function MatrixCalculatorEngine() {
           <Textarea
             value={matrixA}
             onChange={e => setMatrixA(e.target.value)}
-            className="font-mono text-xs min-h-[100px]"
+            className="font-mono text-xs min-h-25"
             placeholder="1 2 3&#10;4 5 6&#10;7 8 9"
           />
         </div>
@@ -123,7 +123,7 @@ export function MatrixCalculatorEngine() {
             <Textarea
               value={matrixB}
               onChange={e => setMatrixB(e.target.value)}
-              className="font-mono text-xs min-h-[100px]"
+              className="font-mono text-xs min-h-25"
               placeholder="9 8 7&#10;6 5 4&#10;3 2 1"
             />
           </div>

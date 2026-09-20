@@ -670,7 +670,7 @@ export function ImageEditorEngine() {
       {/* ── Tool-specific settings ── */}
       {activeTool === "text" && (
         <div className="flex flex-wrap items-center gap-3 p-2 bg-muted/30 rounded-lg">
-          <Input placeholder="Type text..." value={newText} onChange={(e) => setNewText(e.target.value)} className="max-w-[200px] h-8" />
+          <Input placeholder="Type text..." value={newText} onChange={(e) => setNewText(e.target.value)} className="max-w-50 h-8" />
           <span className="text-xs">Color:</span>
           <input type="color" value={textColor} onChange={(e) => setTextColor(e.target.value)} className="w-7 h-7 rounded cursor-pointer" />
           <span className="text-xs">Size:</span>
@@ -731,7 +731,7 @@ export function ImageEditorEngine() {
 
       {activeTool === "crop" && !isCropping && (
         <div className="p-2 bg-muted/30 rounded-lg text-xs text-muted-foreground">
-          Click and drag on the canvas to select crop area, then click "Apply Crop"
+          Click and drag on the canvas to select crop area, then click &quot;Apply Crop&quot;
         </div>
       )}
 
@@ -754,7 +754,7 @@ export function ImageEditorEngine() {
             </div>
           ) : (
             <div
-              className="w-full h-[400px] rounded-xl border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-muted-foreground/50 transition-colors"
+              className="w-full h-100 rounded-xl border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-muted-foreground/50 transition-colors"
               onClick={() => fileInputRef.current?.click()}
             >
               <ImagePlus className="h-12 w-12 text-muted-foreground/50" />

@@ -63,7 +63,7 @@ function generateId(): string {
 }
 
 export function KanbanBoardEngine() {
-  const [board, setBoard] = useState<KanbanBoard>({ columns: DEFAULT_COLUMNS });
+  const [board, setBoard] = useState<KanbanBoard>(() => loadBoard());
   const [addingToColumn, setAddingToColumn] = useState<string | null>(null);
   const [newCardTitle, setNewCardTitle] = useState("");
   const [editingColumn, setEditingColumn] = useState<string | null>(null);
@@ -73,10 +73,6 @@ export function KanbanBoardEngine() {
     sourceColumnId: string;
   } | null>(null);
   const [dragOverColumnId, setDragOverColumnId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setBoard(loadBoard());
-  }, []);
 
   const persist = useCallback((newBoard: KanbanBoard) => {
     setBoard(newBoard);
@@ -269,11 +265,11 @@ export function KanbanBoardEngine() {
       </div>
 
       {/* Board */}
-      <div className="flex gap-4 overflow-x-auto pb-4 min-h-[400px]">
+      <div className="flex gap-4 overflow-x-auto pb-4 min-h-100">
         {board.columns.map((column) => (
           <div
             key={column.id}
-            className="flex-shrink-0 w-72 flex flex-col"
+            className="shrink-0 w-72 flex flex-col"
             onDragOver={(e) => handleDragOver(e, column.id)}
             onDragLeave={handleDragLeave}
             onDrop={() => handleDrop(column.id)}
@@ -340,7 +336,7 @@ export function KanbanBoardEngine() {
             </div>
 
             {/* Cards */}
-            <div className="flex-1 p-2 space-y-2 rounded-b-xl border-x border-b border-border/50 bg-muted/10 min-h-[100px]">
+            <div className="flex-1 p-2 space-y-2 rounded-b-xl border-x border-b border-border/50 bg-muted/10 min-h-25">
               {column.cards.map((card) => (
                 <Card
                   key={card.id}
@@ -431,10 +427,10 @@ export function KanbanBoardEngine() {
         ))}
 
         {/* Add Column */}
-        <div className="flex-shrink-0 w-72">
+        <div className="shrink-0 w-72">
           <Button
             variant="outline"
-            className="w-full h-full min-h-[100px] border-dashed gap-2 text-muted-foreground hover:text-foreground"
+            className="w-full h-full min-h-25 border-dashed gap-2 text-muted-foreground hover:text-foreground"
             onClick={handleAddColumn}
           >
             <Plus className="h-4 w-4" /> Add Column

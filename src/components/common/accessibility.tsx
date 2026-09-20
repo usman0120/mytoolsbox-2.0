@@ -27,7 +27,7 @@ export function SkipLink({
     <a
       href={`#${targetId}`}
       className={cn(
-        "sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100]",
+        "sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-100",
         "focus:inline-flex focus:items-center focus:px-4 focus:py-2",
         "focus:rounded-lg focus:bg-primary focus:text-primary-foreground",
         "focus:text-sm focus:font-medium focus:shadow-lg",
@@ -152,7 +152,7 @@ export function TouchTarget({ children, className }: TouchTargetProps) {
   return (
     <span
       className={cn(
-        "inline-flex items-center justify-center min-h-[44px] min-w-[44px]",
+        "inline-flex items-center justify-center min-h-11 min-w-11",
         className
       )}
     >

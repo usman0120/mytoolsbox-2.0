@@ -8,8 +8,8 @@ export function formatCSS(input: string, indentSize: number = 2): ProcessingResu
   try {
     const formatted = beautifyCSS(input, indentSize);
     return { status: "success", message: formatted };
-  } catch (err: any) {
-    return { status: "error", error: err.message || "Failed to format CSS." };
+  } catch (err: unknown) {
+    return { status: "error", error: err instanceof Error ? err.message : "Failed to format CSS." };
   }
 }
 
@@ -26,8 +26,8 @@ export function minifyCSS(input: string): ProcessingResult {
       .replace(/;}/g, "}")
       .trim();
     return { status: "success", message: minified };
-  } catch (err: any) {
-    return { status: "error", error: err.message || "Failed to minify CSS." };
+  } catch (err: unknown) {
+    return { status: "error", error: err instanceof Error ? err.message : "Failed to minify CSS." };
   }
 }
 
@@ -43,7 +43,7 @@ function beautifyCSS(css: string, indentSize: number): string {
   const tokens = css.split(/([{};])/g).filter(Boolean);
 
   for (let i = 0; i < tokens.length; i++) {
-    let token = tokens[i].trim();
+    const token = tokens[i].trim();
     if (!token) continue;
 
     if (token === "{") {

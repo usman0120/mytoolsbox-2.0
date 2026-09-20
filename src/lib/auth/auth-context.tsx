@@ -41,12 +41,14 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => {
+    // If auth isn't available (SSR or not configured), skip loading state
+    return typeof window !== "undefined" && getFirebaseAuth() !== null;
+  });
 
   useEffect(() => {
     const auth = getFirebaseAuth();
     if (!auth) {
-      setLoading(false);
       return;
     }
 

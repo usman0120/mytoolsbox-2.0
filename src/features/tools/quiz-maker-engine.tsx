@@ -257,7 +257,7 @@ export function QuizMakerEngine() {
               value={questionInput}
               onChange={(e) => setQuestionInput(e.target.value)}
               placeholder="Enter your question..."
-              className="min-h-[60px]"
+              className="min-h-15"
             />
           </div>
 
@@ -267,7 +267,7 @@ export function QuizMakerEngine() {
               value={optionsInput}
               onChange={(e) => setOptionsInput(e.target.value)}
               placeholder={"Option A\nOption B\nOption C\nOption D"}
-              className="min-h-[100px]"
+              className="min-h-25"
             />
           </div>
 
@@ -313,7 +313,7 @@ export function QuizMakerEngine() {
             <CardTitle className="text-base">Questions ({questions.length})</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2 max-h-[300px] overflow-y-auto">
+            <div className="space-y-2 max-h-75 overflow-y-auto">
               {questions.map((q, idx) => (
                 <div key={q.id} className="flex items-start gap-2 p-2 rounded-md bg-muted/50">
                   <span className="text-xs text-muted-foreground w-6 pt-0.5">{idx + 1}.</span>

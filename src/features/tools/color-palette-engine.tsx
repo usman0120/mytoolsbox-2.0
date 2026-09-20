@@ -104,14 +104,14 @@ const harmonyLabels: Record<HarmonyRule, string> = {
 
 export function ColorPaletteEngine() {
   const [mounted, setMounted] = useState(false);
-  const [baseColor, setBaseColor] = useState("#1662E3");
+  const [baseColor, setBaseColor] = useState(() => randomHex());
   const [rule, setRule] = useState<HarmonyRule>("analogous");
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
-  useEffect(() => {
+  // Mark as mounted on first render
+  if (!mounted) {
     setMounted(true);
-    setBaseColor(randomHex());
-  }, []);
+  }
 
   const palette = generatePalette(baseColor, rule);
 

@@ -164,7 +164,7 @@ export function HabitTrackerEngine() {
 
   return (
     <div className="space-y-6">
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v ?? "")}>
         <TabsList className="w-full grid grid-cols-3">
           <TabsTrigger value="today" className="gap-1"><CheckCircle2 className="h-3.5 w-3.5" /> Today</TabsTrigger>
           <TabsTrigger value="habits" className="gap-1"><Target className="h-3.5 w-3.5" /> Habits</TabsTrigger>

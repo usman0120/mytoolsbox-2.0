@@ -2,39 +2,37 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   formatTime, formatDuration, getProgressPercent,
   getTodayTotal, getWeekTotal, getStreak,
   SUBJECT_COLORS, PRESET_TIMES, type StudySession,
 } from "@/features/tools/study-timer";
-import { Play, Pause, RotateCcw, Plus, Trash2, Clock, Flame, BarChart3, Timer } from "lucide-react";
+import { Play, Pause, RotateCcw, Trash2, Clock, Flame, BarChart3 } from "lucide-react";
 
 export function StudyTimerEngine() {
   const [subject, setSubject] = useState("Math");
-  const [customSubject, setCustomSubject] = useState("");
+  const [customSubject] = useState("");
   const [targetMinutes, setTargetMinutes] = useState("25");
   const [isRunning, setIsRunning] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [elapsed, setElapsed] = useState(0);
-  const [sessions, setSessions] = useState<StudySession[]>([]);
+  const [sessions, setSessions] = useState<StudySession[]>(() => {
+    // Load sessions from localStorage on init
+    try {
+      const saved = localStorage.getItem("study-timer-sessions");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const targetSeconds = (parseInt(targetMinutes) || 25) * 60;
   const progress = getProgressPercent(elapsed, targetSeconds);
   const activeSubject = customSubject || subject;
-
-  useEffect(() => {
-    // Load sessions from localStorage
-    try {
-      const saved = localStorage.getItem("study-timer-sessions");
-      if (saved) setSessions(JSON.parse(saved));
-    } catch {}
-  }, []);
 
   useEffect(() => {
     localStorage.setItem("study-timer-sessions", JSON.stringify(sessions));
@@ -214,7 +212,7 @@ export function StudyTimerEngine() {
             <CardTitle className="text-sm">Recent Sessions</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="divide-y divide-border/50 max-h-[200px] overflow-y-auto">
+            <div className="divide-y divide-border/50 max-h-50 overflow-y-auto">
               {sessions.slice(0, 20).map(session => (
                 <div key={session.id} className="flex items-center justify-between px-3 py-2">
                   <div className="flex items-center gap-2">

@@ -13,14 +13,15 @@ export function formatJSON(input: string): ProcessingResult {
       message: `Valid JSON (${formatted.length} characters formatted)`,
       outputUrl: undefined,
     };
-  } catch (err: any) {
+  } catch (err: unknown) {
     // Extract line/column info from error
-    const match = err.message.match(/at position (\d+)/);
-    let detail = err.message;
+    const message = err instanceof Error ? err.message : String(err);
+    const match = message.match(/at position (\d+)/);
+    let detail = message;
     if (match) {
       const pos = parseInt(match[1]);
       const lines = input.substring(0, pos).split("\n");
-      detail = `Syntax error at line ${lines.length}, column ${lines[lines.length - 1].length + 1}: ${err.message}`;
+      detail = `Syntax error at line ${lines.length}, column ${lines[lines.length - 1].length + 1}: ${message}`;
     }
     return { status: "error", error: detail };
   }
@@ -34,13 +35,14 @@ export function validateJSON(input: string): ProcessingResult {
   try {
     JSON.parse(input);
     return { status: "success", message: "✓ Valid JSON syntax" };
-  } catch (err: any) {
-    const match = err.message.match(/at position (\d+)/);
-    let detail = err.message;
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    const match = message.match(/at position (\d+)/);
+    let detail = message;
     if (match) {
       const pos = parseInt(match[1]);
       const lines = input.substring(0, pos).split("\n");
-      detail = `Error at line ${lines.length}, column ${lines[lines.length - 1].length + 1}: ${err.message}`;
+      detail = `Error at line ${lines.length}, column ${lines[lines.length - 1].length + 1}: ${message}`;
     }
     return { status: "error", error: detail };
   }
@@ -58,7 +60,7 @@ export function minifyJSON(input: string): ProcessingResult {
       status: "success",
       message: `Minified (${minified.length} characters)`,
     };
-  } catch (err: any) {
-    return { status: "error", error: err.message };
+  } catch (err: unknown) {
+    return { status: "error", error: err instanceof Error ? err.message : String(err) };
   }
 }

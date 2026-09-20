@@ -30,7 +30,7 @@ export function WeatherPlanner() {
 
   const handleAnalyze = () => {
     const r = analyzeWeather(
-      crop || undefined,
+      crop || "",
       parseFloat(temperature) || 30,
       parseFloat(humidity) || 60,
       parseFloat(rainfall) || 0,
@@ -69,7 +69,7 @@ export function WeatherPlanner() {
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs">Forecast</Label>
-          <Select value={forecast} onValueChange={setForecast}>
+          <Select value={forecast} onValueChange={(v) => setForecast(v ?? "")}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
@@ -82,7 +82,7 @@ export function WeatherPlanner() {
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs">Crop (optional)</Label>
-          <Select value={crop} onValueChange={setCrop}>
+          <Select value={crop} onValueChange={(v) => setCrop(v ?? "")}>
             <SelectTrigger>
               <SelectValue placeholder="Any crop" />
             </SelectTrigger>

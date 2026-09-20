@@ -11,12 +11,13 @@ import { useEffect, useState, useCallback, useRef } from "react";
 // ---------------------------------------------------------------------------
 
 export function useReducedMotion(): boolean {
-  const [reducedMotion, setReducedMotion] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  });
 
   useEffect(() => {
     const mql = window.matchMedia("(prefers-reduced-motion: reduce)");
-    setReducedMotion(mql.matches);
-
     const handler = (e: MediaQueryListEvent) => setReducedMotion(e.matches);
     mql.addEventListener("change", handler);
     return () => mql.removeEventListener("change", handler);
@@ -195,10 +196,9 @@ export function useFocusVisible(): boolean {
 let idCounter = 0;
 
 export function useA11yId(prefix = "a11y"): string {
-  const ref = useRef<string>("");
-  if (!ref.current) {
+  const [id] = useState(() => {
     idCounter += 1;
-    ref.current = `${prefix}-${idCounter}`;
-  }
-  return ref.current;
+    return `${prefix}-${idCounter}`;
+  });
+  return id;
 }

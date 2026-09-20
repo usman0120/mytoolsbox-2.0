@@ -124,7 +124,7 @@ export function KnowledgeAssistant() {
       {/* Language Selector */}
       <div className="flex items-center gap-2">
         <Globe className="h-4 w-4 text-muted-foreground shrink-0" />
-        <Select value={language} onValueChange={setLanguage}>
+        <Select value={language} onValueChange={(v) => setLanguage(v ?? "")}>
           <SelectTrigger className="h-8 text-xs w-45">
             <SelectValue />
           </SelectTrigger>

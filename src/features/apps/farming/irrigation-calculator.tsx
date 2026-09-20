@@ -46,7 +46,7 @@ export function IrrigationCalculator() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="space-y-1.5">
           <Label className="text-xs">Crop</Label>
-          <Select value={crop} onValueChange={setCrop}>
+          <Select value={crop} onValueChange={(v) => setCrop(v ?? "")}>
             <SelectTrigger>
               <SelectValue placeholder="Select crop..." />
             </SelectTrigger>
@@ -63,7 +63,7 @@ export function IrrigationCalculator() {
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs">Soil Type</Label>
-          <Select value={soilType} onValueChange={setSoilType}>
+          <Select value={soilType} onValueChange={(v) => setSoilType(v ?? "")}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
@@ -76,7 +76,7 @@ export function IrrigationCalculator() {
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs">Season</Label>
-          <Select value={season} onValueChange={setSeason}>
+          <Select value={season} onValueChange={(v) => setSeason(v ?? "")}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>

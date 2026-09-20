@@ -8,8 +8,8 @@ export function formatHTML(input: string, indentSize: number = 2): ProcessingRes
   try {
     const formatted = beautifyHTML(input, indentSize);
     return { status: "success", message: formatted };
-  } catch (err: any) {
-    return { status: "error", error: err.message || "Failed to format HTML." };
+  } catch (err: unknown) {
+    return { status: "error", error: err instanceof Error ? err.message : "Failed to format HTML." };
   }
 }
 
@@ -21,12 +21,12 @@ export function minifyHTML(input: string): ProcessingResult {
   try {
     const minified = input
       .replace(/<!--[\s\S]*?-->/g, "")
+      .replace(/\s+/g, " ")
       .replace(/>\s+</g, "><")
-      .replace(/\s{2,}/g, " ")
       .trim();
     return { status: "success", message: minified };
-  } catch (err: any) {
-    return { status: "error", error: err.message || "Failed to minify HTML." };
+  } catch (err: unknown) {
+    return { status: "error", error: err instanceof Error ? err.message : "Failed to minify HTML." };
   }
 }
 

@@ -9,29 +9,22 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
 export function OnlineNotepadEngine() {
-  const [content, setContent] = useState("");
+  // Load saved content from localStorage on mount (lazy initializer)
+  const [content, setContent] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return localStorage.getItem("online-notepad-content") || "";
+  });
   const [copied, setCopied] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [wordCount, setWordCount] = useState(0);
-  const [charCount, setCharCount] = useState(0);
-  const [lastSaved, setLastSaved] = useState<string | null>(null);
+  const [lastSaved, setLastSaved] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    return localStorage.getItem("online-notepad-saved-at") || null;
+  });
 
-  // Load saved content from localStorage on mount
-  useEffect(() => {
-    const saved = localStorage.getItem("online-notepad-content");
-    const savedAt = localStorage.getItem("online-notepad-saved-at");
-    if (saved) {
-      setContent(saved);
-      if (savedAt) setLastSaved(savedAt);
-    }
-  }, []);
-
-  // Update stats on content change
-  useEffect(() => {
-    const trimmed = content.trim();
-    setCharCount(content.length);
-    setWordCount(trimmed ? trimmed.split(/\s+/).filter((w) => w.length > 0).length : 0);
-  }, [content]);
+  // Compute stats during render
+  const trimmed = content.trim();
+  const charCount = content.length;
+  const wordCount = trimmed ? trimmed.split(/\s+/).filter((w) => w.length > 0).length : 0;
 
   // Auto-save every 30 seconds
   useEffect(() => {
@@ -154,7 +147,7 @@ export function OnlineNotepadEngine() {
       {/* Editor */}
       <Textarea
         placeholder="Start typing here... (auto-saves every 30 seconds)"
-        className="min-h-[350px] rounded-xl font-mono text-sm leading-relaxed"
+        className="min-h-87.5 rounded-xl font-mono text-sm leading-relaxed"
         value={content}
         onChange={(e) => setContent(e.target.value)}
       />

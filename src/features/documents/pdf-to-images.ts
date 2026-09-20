@@ -21,8 +21,8 @@ export async function pdfToImages(
       message: `PDF has ${totalPages} pages. Use the preview below to save each page as an image.`,
       data: { pdfUrl, totalPages, format },
     };
-  } catch (err: any) {
-    return { status: "error", error: err.message || "Failed to process PDF." };
+  } catch (err: unknown) {
+    return { status: "error", error: err instanceof Error ? err.message : "Failed to process PDF." };
   }
 }
 
@@ -38,7 +38,8 @@ export async function renderPageToImage(
 
     const renderPage = async () => {
       try {
-        const pdfjsLib = (window as any).pdfjsLib;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const pdfjsLib = (window as unknown as { pdfjsLib?: any }).pdfjsLib;
         if (!pdfjsLib) { resolve(null); return; }
 
         const loadingTask = pdfjsLib.getDocument(pdfUrl);

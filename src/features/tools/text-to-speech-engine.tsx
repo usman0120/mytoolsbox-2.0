@@ -116,7 +116,7 @@ export function TextToSpeechEngine() {
         </div>
         <Textarea
           placeholder="Enter text to convert to speech..."
-          className="min-h-[120px]"
+          className="min-h-30"
           value={text}
           onChange={(e) => { setText(e.target.value); updateStats(e.target.value); }}
           maxLength={5000}
@@ -205,7 +205,7 @@ export function TextToSpeechEngine() {
         <CardContent className="p-4">
           <p className="text-xs text-muted-foreground">
             <strong>Tip:</strong> For best results, use shorter sentences and add punctuation. 
-            The browser's built-in speech synthesis is used — voice quality varies by browser and OS.
+            The browser&apos;s built-in speech synthesis is used — voice quality varies by browser and OS.
             Chrome and Edge provide the best voices on Windows and macOS.
           </p>
         </CardContent>

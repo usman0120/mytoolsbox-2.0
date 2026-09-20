@@ -242,7 +242,7 @@ export function ResourcesPageClient() {
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v ?? "")} className="w-full">
         <TabsList className="mb-8 rounded-xl p-1 bg-muted/50 w-full justify-start overflow-x-auto">
           <TabsTrigger value="guides" className="rounded-lg data-[state=active]:shadow-sm gap-1.5">
             <BookOpen className="h-3.5 w-3.5" />

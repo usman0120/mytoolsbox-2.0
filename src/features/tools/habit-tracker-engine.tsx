@@ -125,7 +125,7 @@ export function HabitTrackerEngine() {
     toast.success("Habit removed.");
   }, []);
 
-  const handleExport = useCallback(() => {
+  const handleExport = () => {
     const rows = [["Habit", ...DAY_LABELS]];
     for (const habit of habits) {
       const row = [habit.name];
@@ -144,11 +144,11 @@ export function HabitTrackerEngine() {
     a.click();
     URL.revokeObjectURL(url);
     toast.success("Exported as CSV!");
-  }, [habits, entries, weekDates]);
+  };
 
   const getStreak = (habitId: string): number => {
     let streak = 0;
-    const d = new Date();
+    const d = new Date(today);
     while (true) {
       const dateStr = getDateString(d);
       const entry = entries.find((e) => e.habitId === habitId && e.date === dateStr);
@@ -169,7 +169,7 @@ export function HabitTrackerEngine() {
     if (!firstEntry) return 0;
     const daysSinceCreation = Math.max(
       1,
-      Math.ceil((Date.now() - firstEntry.createdAt) / (1000 * 60 * 60 * 24))
+      Math.ceil((today.getTime() - firstEntry.createdAt) / (1000 * 60 * 60 * 24))
     );
     return Math.round((habitEntries.length / Math.min(daysSinceCreation, 30)) * 100);
   };
@@ -249,7 +249,7 @@ export function HabitTrackerEngine() {
           <table className="w-full">
             <thead>
               <tr>
-                <th className="text-left text-xs font-medium text-muted-foreground pb-2 pr-4 min-w-[120px]">
+                <th className="text-left text-xs font-medium text-muted-foreground pb-2 pr-4 min-w-30">
                   Habit
                 </th>
                 {DAY_LABELS.map((day, i) => (
@@ -277,7 +277,7 @@ export function HabitTrackerEngine() {
                     <td className="py-2 pr-4">
                       <div className="flex items-center gap-2">
                         <span className="text-lg">{habit.emoji}</span>
-                        <span className="text-sm font-medium truncate max-w-[100px]">
+                        <span className="text-sm font-medium truncate max-w-25">
                           {habit.name}
                         </span>
                       </div>

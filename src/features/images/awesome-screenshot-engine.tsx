@@ -142,7 +142,7 @@ export function AwesomeScreenshotEngine() {
             <img
               src={capturedImage}
               alt="Screenshot"
-              className="w-full h-auto max-h-[500px] object-contain"
+              className="w-full h-auto max-h-125 object-contain"
             />
             <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none" />
           </div>

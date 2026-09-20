@@ -194,7 +194,7 @@ export function JPGToPDFMergerEngine() {
       {images.length > 0 && (
         <div className="space-y-2">
           <p className="text-sm font-medium">{images.length} image(s) selected</p>
-          <div className="space-y-2 max-h-[300px] overflow-y-auto">
+          <div className="space-y-2 max-h-75 overflow-y-auto">
             {images.map((img, idx) => (
               <div key={img.id} className="flex items-center gap-3 p-2 bg-muted/30 rounded-xl">
                 <img src={img.preview} alt={img.file.name} className="h-12 w-12 object-cover rounded-lg" />

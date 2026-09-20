@@ -66,7 +66,7 @@ export function CaseConverterEngine() {
         </div>
         <Textarea
           placeholder="Type or paste your text here..."
-          className="min-h-[120px]"
+          className="min-h-30"
           value={input}
           onChange={(e) => setInput(e.target.value)}
         />

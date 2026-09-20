@@ -7,11 +7,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { parseUserAgent } from "@/features/tools/user-agent-parser";
+import { parseUserAgent, type ParsedUA } from "@/features/tools/user-agent-parser";
 
 export function UserAgentParserEngine() {
   const [input, setInput] = useState("");
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<ParsedUA | null>(null);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState("");
 
@@ -22,7 +22,7 @@ export function UserAgentParserEngine() {
       setError(r.error || "Error");
       setResult(null);
     } else {
-      setResult(r.data);
+      setResult(r.data as ParsedUA);
     }
   };
 
@@ -56,7 +56,7 @@ export function UserAgentParserEngine() {
           placeholder="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36..."
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          className="min-h-[80px] font-mono text-xs"
+          className="min-h-20 font-mono text-xs"
         />
       </div>
 

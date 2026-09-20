@@ -243,7 +243,7 @@ export function PDFHighlighterNotesEngine() {
                 value={noteText}
                 onChange={(e) => setNoteText(e.target.value)}
                 placeholder="Add a note..."
-                className="min-h-[60px]"
+                className="min-h-15"
               />
             </div>
 
@@ -294,7 +294,7 @@ export function PDFHighlighterNotesEngine() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="max-h-[400px] overflow-y-auto">
+            <div className="max-h-100 overflow-y-auto">
               {renderHighlightedText()}
             </div>
           </CardContent>
@@ -356,14 +356,14 @@ function extractTextFromPDF(data: Uint8Array): string {
 
   // Look for text between BT and ET markers (PDF text objects)
   const textBlocks: string[] = [];
-  const btRegex = /BT\s*(.*?)\s*ET/gs;
+  const btRegex = /BT\s*([\s\S]*?)\s*ET/g;
   let match;
 
   while ((match = btRegex.exec(text)) !== null) {
     const block = match[1];
     // Extract text from Tj, TJ, ' operators
     const tjRegex = /\((.*?)\)\s*Tj/g;
-    const tjArrayRegex = /\[(.*?)\]\s*TJ/gs;
+    const tjArrayRegex = /\[([\s\S]*?)\]\s*TJ/g;
 
     let tjMatch;
     while ((tjMatch = tjRegex.exec(block)) !== null) {

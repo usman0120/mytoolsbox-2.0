@@ -4,14 +4,33 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import {
   parseData, calculateStatistics, generateHistogram,
   EXAMPLE_DATASETS, type StatisticsResult,
 } from "@/features/tools/statistics-calculator";
-import { BarChart3, Calculator, Copy, Check } from "lucide-react";
+import { Calculator, Copy, Check } from "lucide-react";
+
+function StatRow({ label, value, copied, onCopy }: { label: string; value: string | number; copied: string; onCopy: (text: string, key: string) => void }) {
+  return (
+    <div className="flex justify-between items-center py-1.5 border-b border-border/50 last:border-0">
+      <span className="text-sm text-muted-foreground">{label}</span>
+      <div className="flex items-center gap-2">
+        <span className="text-sm font-mono font-medium">{value}</span>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6"
+          onClick={() => onCopy(String(value), label)}
+        >
+          {copied === label ? <Check className="h-3 w-3 text-green-400" /> : <Copy className="h-3 w-3" />}
+        </Button>
+      </div>
+    </div>
+  );
+}
 
 export function StatisticsCalculatorEngine() {
   const [dataInput, setDataInput] = useState("");
@@ -45,23 +64,6 @@ export function StatisticsCalculatorEngine() {
   const histogram = stats ? generateHistogram(stats.sortedData, Number(bins) || 10) : [];
   const maxHistCount = Math.max(...histogram.map(h => h.count), 1);
 
-  const StatRow = ({ label, value }: { label: string; value: string | number }) => (
-    <div className="flex justify-between items-center py-1.5 border-b border-border/50 last:border-0">
-      <span className="text-sm text-muted-foreground">{label}</span>
-      <div className="flex items-center gap-2">
-        <span className="text-sm font-mono font-medium">{value}</span>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-6 w-6"
-          onClick={() => handleCopy(String(value), label)}
-        >
-          {copied === label ? <Check className="h-3 w-3 text-green-400" /> : <Copy className="h-3 w-3" />}
-        </Button>
-      </div>
-    </div>
-  );
-
   return (
     <div className="space-y-4">
       {/* Dataset examples */}
@@ -85,7 +87,7 @@ export function StatisticsCalculatorEngine() {
         <Textarea
           value={dataInput}
           onChange={e => setDataInput(e.target.value)}
-          className="font-mono text-xs min-h-[80px]"
+          className="font-mono text-xs min-h-20"
           placeholder="78, 82, 91, 65, 88, 72, 95, 84, 79, 87"
         />
       </div>
@@ -111,19 +113,19 @@ export function StatisticsCalculatorEngine() {
           <TabsContent value="summary" className="mt-3">
             <Card>
               <CardContent className="p-3 divide-y divide-border/50">
-                <StatRow label="Count" value={stats.count} />
-                <StatRow label="Sum" value={stats.sum} />
-                <StatRow label="Mean" value={stats.mean.toFixed(4)} />
-                <StatRow label="Median" value={stats.median} />
-                <StatRow label="Mode" value={stats.mode.length > 0 ? stats.mode.join(", ") : "None"} />
-                <StatRow label="Min" value={stats.min} />
-                <StatRow label="Max" value={stats.max} />
-                <StatRow label="Range" value={stats.range} />
-                <StatRow label="Q1 (25th)" value={stats.q1.toFixed(4)} />
-                <StatRow label="Q3 (75th)" value={stats.q3.toFixed(4)} />
-                <StatRow label="IQR" value={stats.iqr.toFixed(4)} />
-                <StatRow label="Variance" value={stats.variance.toFixed(4)} />
-                <StatRow label="Std Dev" value={stats.stdDev.toFixed(4)} />
+                <StatRow label="Count" value={stats.count} copied={copied} onCopy={handleCopy} />
+                <StatRow label="Sum" value={stats.sum} copied={copied} onCopy={handleCopy} />
+                <StatRow label="Mean" value={stats.mean.toFixed(4)} copied={copied} onCopy={handleCopy} />
+                <StatRow label="Median" value={stats.median} copied={copied} onCopy={handleCopy} />
+                <StatRow label="Mode" value={stats.mode.length > 0 ? stats.mode.join(", ") : "None"} copied={copied} onCopy={handleCopy} />
+                <StatRow label="Min" value={stats.min} copied={copied} onCopy={handleCopy} />
+                <StatRow label="Max" value={stats.max} copied={copied} onCopy={handleCopy} />
+                <StatRow label="Range" value={stats.range} copied={copied} onCopy={handleCopy} />
+                <StatRow label="Q1 (25th)" value={stats.q1.toFixed(4)} copied={copied} onCopy={handleCopy} />
+                <StatRow label="Q3 (75th)" value={stats.q3.toFixed(4)} copied={copied} onCopy={handleCopy} />
+                <StatRow label="IQR" value={stats.iqr.toFixed(4)} copied={copied} onCopy={handleCopy} />
+                <StatRow label="Variance" value={stats.variance.toFixed(4)} copied={copied} onCopy={handleCopy} />
+                <StatRow label="Std Dev" value={stats.stdDev.toFixed(4)} copied={copied} onCopy={handleCopy} />
               </CardContent>
             </Card>
           </TabsContent>

@@ -125,7 +125,7 @@ export async function pptToPDF(file: File): Promise<ProcessingResult> {
       message: `Converted PPT to PDF with ${slides.length} slide(s) extracted`,
       data: { downloadName: file.name.replace(/\.pptx?$/i, "") + ".pdf" },
     };
-  } catch (err: any) {
-    return { status: "error", error: err.message || "Failed to convert PPT to PDF." };
+  } catch (err: unknown) {
+    return { status: "error", error: err instanceof Error ? err.message : "Failed to convert PPT to PDF." };
   }
 }

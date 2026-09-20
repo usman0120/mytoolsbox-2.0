@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -57,21 +57,22 @@ export function AIChat() {
   const hasAnyProvider = availableProviders.length > 0;
 
   // Fetch credit balance on mount
-  const fetchCredits = useCallback(async () => {
-    try {
-      const res = await fetch("/api/ai/credits");
-      if (res.ok) {
-        const data = await res.json();
-        setCreditsRemaining(data.remaining);
-      }
-    } catch {
-      // Silently fail — credits display is non-critical
-    }
-  }, []);
-
   useEffect(() => {
+    let cancelled = false;
+    const fetchCredits = async () => {
+      try {
+        const res = await fetch("/api/ai/credits");
+        if (res.ok) {
+          const data = await res.json();
+          if (!cancelled) setCreditsRemaining(data.remaining);
+        }
+      } catch {
+        // Silently fail — credits display is non-critical
+      }
+    };
     fetchCredits();
-  }, [fetchCredits]);
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -138,7 +139,7 @@ export function AIChat() {
       {/* Header */}
       <div className="flex items-center justify-between mb-4 pb-3 border-b border-border/50">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500/10 to-purple-500/10 ring-1 ring-violet-500/20">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-linear-to-br from-violet-500/10 to-purple-500/10 ring-1 ring-violet-500/20">
             <Bot className="h-4 w-4 text-violet-500" />
           </div>
           <div>
@@ -197,7 +198,7 @@ export function AIChat() {
       <ScrollArea className="flex-1 pr-4" ref={scrollRef}>
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500/10 to-purple-500/10 ring-1 ring-violet-500/20">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-linear-to-br from-violet-500/10 to-purple-500/10 ring-1 ring-violet-500/20">
               <Sparkles className="h-8 w-8 text-violet-500" />
             </div>
             <div className="text-center">
@@ -254,7 +255,7 @@ export function AIChat() {
               >
                 {msg.role === "assistant" && (
                   <Avatar className="h-8 w-8 shrink-0 ring-2 ring-violet-500/20">
-                    <AvatarFallback className="bg-gradient-to-br from-violet-500/10 to-purple-500/10">
+                    <AvatarFallback className="bg-linear-to-br from-violet-500/10 to-purple-500/10">
                       <Bot className="h-4 w-4 text-violet-500" />
                     </AvatarFallback>
                   </Avatar>
@@ -306,7 +307,7 @@ export function AIChat() {
             {isLoading && (
               <div className="flex gap-3">
                 <Avatar className="h-8 w-8 shrink-0 ring-2 ring-violet-500/20">
-                  <AvatarFallback className="bg-gradient-to-br from-violet-500/10 to-purple-500/10">
+                  <AvatarFallback className="bg-linear-to-br from-violet-500/10 to-purple-500/10">
                     <Bot className="h-4 w-4 text-violet-500" />
                   </AvatarFallback>
                 </Avatar>
@@ -330,7 +331,7 @@ export function AIChat() {
               ? "Type a message... (Enter to send, Shift+Enter for new line)"
               : "Configure an API key to start chatting..."
           }
-          className="min-h-[52px] max-h-32 resize-none rounded-xl border-border/60 focus-visible:ring-primary/30"
+          className="min-h-13 max-h-32 resize-none rounded-xl border-border/60 focus-visible:ring-primary/30"
           rows={2}
           disabled={!hasAnyProvider || isLoading}
         />
@@ -338,7 +339,7 @@ export function AIChat() {
           onClick={handleSend}
           disabled={!input.trim() || isLoading || !hasAnyProvider}
           size="icon"
-          className="h-[52px] w-[52px] shrink-0 rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all"
+          className="h-13 w-13 shrink-0 rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all"
         >
           {isLoading ? (
             <Loader2 className="h-4 w-4 animate-spin" />

@@ -37,7 +37,7 @@ export function ImageConverterEngine() {
 
   const handleDownload = () => {
     if (result?.outputUrl) {
-      const ext = (result.data as any)?.extension || targetFormat.split("/")[1].replace("jpeg", "jpg");
+      const ext = (result.data as { extension?: string })?.extension || targetFormat.split("/")[1].replace("jpeg", "jpg");
       const a = document.createElement("a");
       a.href = result.outputUrl;
       a.download = `converted.${ext}`;
@@ -124,7 +124,7 @@ export function ImageConverterEngine() {
           {result.outputUrl && (
             <Card className="overflow-hidden">
               <CardContent className="p-4 flex items-center justify-center bg-muted/30">
-                <img src={result.outputUrl} alt="Converted" className="max-w-full max-h-[400px] rounded-lg shadow-lg" />
+                <img src={result.outputUrl} alt="Converted" className="max-w-full max-h-100 rounded-lg shadow-lg" />
               </CardContent>
             </Card>
           )}

@@ -119,7 +119,7 @@ export function ImageCropperEngine() {
 
           {preview && (
             <div ref={containerRef} className="relative inline-block max-w-full overflow-hidden rounded-lg border border-border/50 select-none">
-              <img src={preview} alt="Crop preview" className="max-w-full max-h-[400px]" draggable={false} />
+              <img src={preview} alt="Crop preview" className="max-w-full max-h-100" draggable={false} />
               <div
                 className="absolute border-2 border-primary bg-primary/10 cursor-move"
                 style={{ left: crop.x, top: crop.y, width: crop.width, height: crop.height }}
@@ -154,7 +154,7 @@ export function ImageCropperEngine() {
           {result.outputUrl && (
             <Card className="overflow-hidden">
               <CardContent className="p-4 flex items-center justify-center bg-muted/30">
-                <img src={result.outputUrl} alt="Cropped" className="max-w-full max-h-[400px] rounded-lg shadow-lg" />
+                <img src={result.outputUrl} alt="Cropped" className="max-w-full max-h-100 rounded-lg shadow-lg" />
               </CardContent>
             </Card>
           )}

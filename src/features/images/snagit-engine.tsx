@@ -133,7 +133,7 @@ export function SnagitEngine() {
           {capturedImage && (
             <div className="space-y-4">
               <div className="border rounded-lg overflow-hidden bg-muted/30">
-                <img src={capturedImage} alt="Captured" className="w-full h-auto max-h-[500px] object-contain" />
+                <img src={capturedImage} alt="Captured" className="w-full h-auto max-h-125 object-contain" />
               </div>
               <div className="flex gap-2">
                 <Button onClick={handleDownloadImage} className="gap-2">
@@ -175,7 +175,7 @@ export function SnagitEngine() {
           {recordedVideo && (
             <div className="space-y-4">
               <div className="border rounded-lg overflow-hidden bg-black">
-                <video src={recordedVideo} controls className="w-full max-h-[500px]" />
+                <video src={recordedVideo} controls className="w-full max-h-125" />
               </div>
               <div className="flex gap-2">
                 <Button onClick={handleDownloadVideo} className="gap-2">

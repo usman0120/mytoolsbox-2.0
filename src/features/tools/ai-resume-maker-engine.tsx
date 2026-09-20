@@ -196,7 +196,7 @@ export function AIResumeMakerEngine() {
 
   return (
     <div className="space-y-4">
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v ?? "")}>
         <div className="flex items-center justify-between">
           <TabsList>
             <TabsTrigger value="edit" className="gap-1.5"><FileText className="h-3.5 w-3.5" /> Input</TabsTrigger>
@@ -236,27 +236,27 @@ export function AIResumeMakerEngine() {
 
           <Card><CardContent className="p-4 space-y-3">
             <Label className="text-sm font-medium">Professional Summary (leave blank for AI-generated)</Label>
-            <Textarea placeholder="Brief professional summary..." className="min-h-[80px]" value={data.summary} onChange={(e) => updateField("summary", e.target.value)} />
+            <Textarea placeholder="Brief professional summary..." className="min-h-20" value={data.summary} onChange={(e) => updateField("summary", e.target.value)} />
           </CardContent></Card>
 
           <Card><CardContent className="p-4 space-y-3">
             <Label className="text-sm font-medium">Skills (comma-separated)</Label>
-            <Textarea placeholder="e.g. JavaScript, React, Node.js, Python, Project Management..." className="min-h-[60px]" value={data.skills} onChange={(e) => updateField("skills", e.target.value)} />
+            <Textarea placeholder="e.g. JavaScript, React, Node.js, Python, Project Management..." className="min-h-15" value={data.skills} onChange={(e) => updateField("skills", e.target.value)} />
           </CardContent></Card>
 
           <Card><CardContent className="p-4 space-y-3">
             <Label className="text-sm font-medium">Experience (one per line)</Label>
-            <Textarea placeholder="Led team of 5 developers to deliver...&#10;Increased revenue by 30% through...&#10;Developed and launched..." className="min-h-[120px]" value={data.experience} onChange={(e) => updateField("experience", e.target.value)} />
+            <Textarea placeholder="Led team of 5 developers to deliver...&#10;Increased revenue by 30% through...&#10;Developed and launched..." className="min-h-30" value={data.experience} onChange={(e) => updateField("experience", e.target.value)} />
           </CardContent></Card>
 
           <Card><CardContent className="p-4 space-y-3">
             <Label className="text-sm font-medium">Education (one per line)</Label>
-            <Textarea placeholder="Bachelor of Science in Computer Science, University of...&#10;Master of Business Administration, ..." className="min-h-[80px]" value={data.education} onChange={(e) => updateField("education", e.target.value)} />
+            <Textarea placeholder="Bachelor of Science in Computer Science, University of...&#10;Master of Business Administration, ..." className="min-h-20" value={data.education} onChange={(e) => updateField("education", e.target.value)} />
           </CardContent></Card>
 
           <Card><CardContent className="p-4 space-y-3">
             <Label className="text-sm font-medium">Job Description (for AI tailoring, optional)</Label>
-            <Textarea placeholder="Paste the job description here to tailor your resume..." className="min-h-[100px]" value={data.jobDescription} onChange={(e) => updateField("jobDescription", e.target.value)} />
+            <Textarea placeholder="Paste the job description here to tailor your resume..." className="min-h-25" value={data.jobDescription} onChange={(e) => updateField("jobDescription", e.target.value)} />
           </CardContent></Card>
 
           <Button onClick={handleGenerate} disabled={isGenerating || !data.fullName.trim()} className="w-full gap-2" size="lg">
@@ -273,7 +273,7 @@ export function AIResumeMakerEngine() {
           ) : (
             <div className="text-center py-12 text-muted-foreground">
               <Sparkles className="h-12 w-12 mx-auto mb-3 opacity-30" />
-              <p>Fill in your details and click "Generate" to create your AI-enhanced resume.</p>
+              <p>Fill in your details and click &quot;Generate&quot; to create your AI-enhanced resume.</p>
             </div>
           )}
         </TabsContent>

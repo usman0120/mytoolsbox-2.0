@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Webhook, Copy, Check, Send, Plus, X, Clock, FileJson } from "lucide-react";
+import { Copy, Check, Send, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,23 +9,24 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { sendWebhook, generateWebhookPayload, WEBHOOK_TEMPLATES } from "@/features/tools/webhook-tester";
+import { sendWebhook, generateWebhookPayload, WEBHOOK_TEMPLATES, type WebhookResponse } from "@/features/tools/webhook-tester";
 
 export function WebhookTesterEngine() {
   const [url, setUrl] = useState("");
-  const [method, setMethod] = useState("POST");
+  const [method] = useState("POST");
   const [body, setBody] = useState("");
   const [contentType, setContentType] = useState("application/json");
   const [template, setTemplate] = useState("custom");
-  const [response, setResponse] = useState<any>(null);
+  const [response, setResponse] = useState<WebhookResponse | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState("");
-  const [history, setHistory] = useState<any[]>([]);
+  const [history, setHistory] = useState<WebhookResponse[]>([]);
 
-  const handleTemplateChange = (value: string) => {
-    setTemplate(value);
-    setBody(generateWebhookPayload(value));
+  const handleTemplateChange = (value: string | null) => {
+    const val = value || "custom";
+    setTemplate(val);
+    setBody(generateWebhookPayload(val));
   };
 
   const handleSend = async () => {
@@ -37,8 +38,8 @@ export function WebhookTesterEngine() {
     if (r.status === "error") {
       setError(r.error || "Request failed");
     } else {
-      setResponse(r.data);
-      setHistory((prev) => [r.data, ...prev].slice(0, 10));
+      setResponse(r.data as WebhookResponse);
+      setHistory((prev) => [r.data as WebhookResponse, ...prev].slice(0, 10));
     }
   };
 
@@ -72,7 +73,7 @@ export function WebhookTesterEngine() {
       {/* Template + Content Type */}
       <div className="flex gap-2">
         <Select value={template} onValueChange={handleTemplateChange}>
-          <SelectTrigger className="w-[160px]">
+          <SelectTrigger className="w-40">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -81,8 +82,8 @@ export function WebhookTesterEngine() {
             ))}
           </SelectContent>
         </Select>
-        <Select value={contentType} onValueChange={setContentType}>
-          <SelectTrigger className="w-[180px]">
+        <Select value={contentType} onValueChange={(v) => setContentType(v ?? "")}>
+          <SelectTrigger className="w-45">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -99,7 +100,7 @@ export function WebhookTesterEngine() {
         <Textarea
           value={body}
           onChange={(e) => setBody(e.target.value)}
-          className="min-h-[150px] font-mono text-xs"
+          className="min-h-37.5 font-mono text-xs"
         />
       </div>
 
@@ -137,7 +138,7 @@ export function WebhookTesterEngine() {
                   )}
                 </Button>
               </div>
-              <pre className="text-xs font-mono max-h-[250px] overflow-y-auto whitespace-pre-wrap">
+              <pre className="text-xs font-mono max-h-62.5 overflow-y-auto whitespace-pre-wrap">
                 {response.body}
               </pre>
             </CardContent>

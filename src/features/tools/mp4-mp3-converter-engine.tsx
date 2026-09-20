@@ -214,7 +214,7 @@ export function MP4MP3ConverterEngine() {
               <div className="space-y-2">
                 <Upload className="h-8 w-8 text-muted-foreground mx-auto" />
                 <p className="font-medium">
-                  {mode === "mp4-to-mp4" ? "Drop MP4 video here or click to browse" : "Drop MP3 audio here or click to browse"}
+                  {mode === "mp4-to-mp3" ? "Drop MP4 video here or click to browse" : "Drop MP3 audio here or click to browse"}
                 </p>
                 <p className="text-sm text-muted-foreground">Max 500MB</p>
               </div>
@@ -264,11 +264,9 @@ export function MP4MP3ConverterEngine() {
                   <p className="text-xs text-muted-foreground">{outputName}</p>
                 </div>
               </div>
-              <Button asChild size="sm" className="gap-1.5">
-                <a href={outputUrl} download={outputName}>
-                  <Download className="h-3.5 w-3.5" />
-                  Download
-                </a>
+              <Button size="sm" className="gap-1.5" onClick={() => { const a = document.createElement("a"); a.href = outputUrl; a.download = outputName; a.click(); }}>
+                <Download className="h-3.5 w-3.5" />
+                Download
               </Button>
             </div>
           </CardContent>

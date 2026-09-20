@@ -46,28 +46,6 @@ export function CountdownTimerEngine() {
   const [finished, setFinished] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const calculateTimeLeft = useCallback(() => {
-    if (!targetDate) return null;
-    const target = new Date(`${targetDate}T${targetTime}:00`);
-    const now = new Date();
-    const diff = Math.max(0, Math.floor((target.getTime() - now.getTime()) / 1000));
-
-    if (diff === 0) {
-      setFinished(true);
-      setRunning(false);
-      if (soundEnabled) playAlarm();
-      return { days: 0, hours: 0, minutes: 0, seconds: 0, total: 0 };
-    }
-
-    return {
-      days: Math.floor(diff / 86400),
-      hours: Math.floor((diff % 86400) / 3600),
-      minutes: Math.floor((diff % 3600) / 60),
-      seconds: diff % 60,
-      total: diff,
-    };
-  }, [targetDate, targetTime, soundEnabled]);
-
   const playAlarm = useCallback(() => {
     try {
       const ctx = new AudioContext();
@@ -88,6 +66,28 @@ export function CountdownTimerEngine() {
       // Audio not supported
     }
   }, []);
+
+  const calculateTimeLeft = useCallback(() => {
+    if (!targetDate) return null;
+    const target = new Date(`${targetDate}T${targetTime}:00`);
+    const now = new Date();
+    const diff = Math.max(0, Math.floor((target.getTime() - now.getTime()) / 1000));
+
+    if (diff === 0) {
+      setFinished(true);
+      setRunning(false);
+      if (soundEnabled) playAlarm();
+      return { days: 0, hours: 0, minutes: 0, seconds: 0, total: 0 };
+    }
+
+    return {
+      days: Math.floor(diff / 86400),
+      hours: Math.floor((diff % 86400) / 3600),
+      minutes: Math.floor((diff % 3600) / 60),
+      seconds: diff % 60,
+      total: diff,
+    };
+  }, [targetDate, targetTime, soundEnabled, playAlarm]);
 
   const startTimer = useCallback(() => {
     const left = calculateTimeLeft();

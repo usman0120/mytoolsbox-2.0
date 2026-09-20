@@ -114,7 +114,7 @@ export function PDFCompareEngine() {
       {differences.length > 0 && (
         <div className="space-y-2">
           <p className="text-sm font-medium">{differences.length} difference(s) found</p>
-          <div className="space-y-1 max-h-[300px] overflow-y-auto">
+          <div className="space-y-1 max-h-75 overflow-y-auto">
             {differences.map((diff, i) => (
               <div key={i} className="p-2 bg-muted/30 rounded-lg text-xs">
                 <span className="text-muted-foreground">{diff}</span>

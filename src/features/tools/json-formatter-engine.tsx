@@ -110,7 +110,7 @@ export function JSONFormatterEngine() {
         <label className="text-sm font-medium mb-1.5 block">Input</label>
         <Textarea
           placeholder='{"hello": "world"}'
-          className="font-mono text-sm min-h-[160px]"
+          className="font-mono text-sm min-h-40"
           value={input}
           onChange={(e) => setInput(e.target.value)}
         />

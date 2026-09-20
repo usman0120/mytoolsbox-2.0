@@ -131,7 +131,7 @@ export function JWTDecoderEngine() {
         <Label className="text-sm font-medium">JWT Token</Label>
         <Textarea
           placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
-          className="font-mono text-xs min-h-[100px]"
+          className="font-mono text-xs min-h-25"
           value={token}
           onChange={(e) => { setToken(e.target.value); setDecoded(null); setError(""); }}
         />

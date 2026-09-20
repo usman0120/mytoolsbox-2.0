@@ -22,66 +22,17 @@ export function SpeechToTextEngine() {
   const chunksRef = useRef<Blob[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const startRecording = useCallback(async () => {
-    try {
-      setError(null);
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? "audio/webm;codecs=opus" : "audio/webm",
-      });
-
-      chunksRef.current = [];
-      mediaRecorder.ondataavailable = (e) => chunksRef.current.push(e.data);
-      mediaRecorder.onstop = async () => {
-        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
-        const file = new File([blob], "recording.webm", { type: "audio/webm" });
-        setAudioFile(file);
-        stream.getTracks().forEach((t) => t.stop());
-        await processAudio(file);
-      };
-
-      mediaRecorder.start();
-      mediaRecorderRef.current = mediaRecorder;
-      setIsRecording(true);
-      toast.success("Recording started...");
-    } catch (err) {
-      setError("Microphone access denied. Please allow microphone access or upload an audio file instead.");
-      toast.error("Microphone access denied");
-    }
-  }, []);
-
-  const stopRecording = useCallback(() => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-      toast.success("Recording stopped. Processing...");
-    }
-  }, []);
-
-  const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setError(null);
-
-    const validTypes = ["audio/mpeg", "audio/wav", "audio/webm", "audio/ogg", "audio/mp4"];
-    if (!validTypes.includes(file.type) && !file.name.match(/\.(mp3|wav|webm|ogg|m4a)$/i)) {
-      setError("Please select a valid audio file (MP3, WAV, WebM, OGG, M4A).");
-      return;
-    }
-
-    setAudioFile(file);
-    await processAudio(file);
-  }, []);
-
   const processAudio = useCallback(async (file: File) => {
     setIsProcessing(true);
     setError(null);
 
     try {
       // Use Web Speech API for recognition
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const win = window as unknown as { SpeechRecognition?: new () => any; webkitSpeechRecognition?: new () => any };
+      const SpeechRecognitionAPI = win.SpeechRecognition || win.webkitSpeechRecognition;
 
-      if (!SpeechRecognition) {
+      if (!SpeechRecognitionAPI) {
         // Fallback: provide a message about browser support
         setText(
           "Speech recognition is not supported in this browser. " +
@@ -113,6 +64,57 @@ export function SpeechToTextEngine() {
       setIsProcessing(false);
     }
   }, []);
+
+  const startRecording = useCallback(async () => {
+    try {
+      setError(null);
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? "audio/webm;codecs=opus" : "audio/webm",
+      });
+
+      chunksRef.current = [];
+      mediaRecorder.ondataavailable = (e) => chunksRef.current.push(e.data);
+      mediaRecorder.onstop = async () => {
+        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+        const file = new File([blob], "recording.webm", { type: "audio/webm" });
+        setAudioFile(file);
+        stream.getTracks().forEach((t) => t.stop());
+        await processAudio(file);
+      };
+
+      mediaRecorder.start();
+      mediaRecorderRef.current = mediaRecorder;
+      setIsRecording(true);
+      toast.success("Recording started...");
+    } catch (err) {
+      setError("Microphone access denied. Please allow microphone access or upload an audio file instead.");
+      toast.error("Microphone access denied");
+    }
+  }, [processAudio]);
+
+  const stopRecording = useCallback(() => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      toast.success("Recording stopped. Processing...");
+    }
+  }, []);
+
+  const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setError(null);
+
+    const validTypes = ["audio/mpeg", "audio/wav", "audio/webm", "audio/ogg", "audio/mp4"];
+    if (!validTypes.includes(file.type) && !file.name.match(/\.(mp3|wav|webm|ogg|m4a)$/i)) {
+      setError("Please select a valid audio file (MP3, WAV, WebM, OGG, M4A).");
+      return;
+    }
+
+    setAudioFile(file);
+    await processAudio(file);
+  }, [processAudio]);
 
   const handleCopy = useCallback(async () => {
     await navigator.clipboard.writeText(text);

@@ -494,7 +494,7 @@ export function DiagramMakerEngine() {
         <div className="lg:col-span-3">
           <div
             ref={canvasRef}
-            className="canvas-bg relative w-full h-[500px] rounded-xl border-2 border-dashed border-muted-foreground/20 overflow-hidden bg-[radial-gradient(circle,#e5e7eb_1px,transparent_1px)] dark:bg-[radial-gradient(circle,#1e293b_1px,transparent_1px)] bg-[size:20px_20px] cursor-crosshair"
+            className="canvas-bg relative w-full h-125 rounded-xl border-2 border-dashed border-muted-foreground/20 overflow-hidden bg-[radial-gradient(circle,#e5e7eb_1px,transparent_1px)] dark:bg-[radial-gradient(circle,#1e293b_1px,transparent_1px)] bg-size-[20px_20px] cursor-crosshair"
             onClick={handleCanvasClick}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}

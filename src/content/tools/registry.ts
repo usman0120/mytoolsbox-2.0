@@ -1,4 +1,4 @@
-import { ToolDefinition } from "@/types";
+import { ToolDefinition, type ToolAudience } from "@/types";
 
 export const toolRegistry: ToolDefinition[] = [
   // ============ DOCUMENTS ============
@@ -3613,8 +3613,8 @@ export function getToolsByCategory(category: string): ToolDefinition[] {
   return toolRegistry.filter((t) => t.category === category);
 }
 
-export function getToolsByAudience(audience: string): ToolDefinition[] {
-  return toolRegistry.filter((t) => t.audiences.includes(audience as any));
+export function getToolsByAudience(audience: ToolAudience): ToolDefinition[] {
+  return toolRegistry.filter((t) => t.audiences.includes(audience));
 }
 
 export function searchTools(query: string): ToolDefinition[] {

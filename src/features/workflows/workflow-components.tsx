@@ -24,7 +24,7 @@ interface WorkflowCardProps {
 }
 
 export function WorkflowCard({ workflow, className, onClick }: WorkflowCardProps) {
-  const IconComponent = (Icons as any)[workflow.icon] || Icons.Workflow;
+  const IconComponent = (Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[workflow.icon] || Icons.Workflow;
 
   return (
     <Card
@@ -153,7 +153,7 @@ function PipelineStep({
   isProcessing,
   progress,
 }: PipelineStepProps) {
-  const IconComponent = (Icons as any)[getStepIcon(step)] || Icons.ChevronRight;
+  const IconComponent = (Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[getStepIcon(step)] || Icons.ChevronRight;
 
   return (
     <div
@@ -258,7 +258,7 @@ interface WorkflowDetailProps {
 }
 
 export function WorkflowDetail({ workflow, onStart, className }: WorkflowDetailProps) {
-  const IconComponent = (Icons as any)[workflow.icon] || Icons.Workflow;
+  const IconComponent = (Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[workflow.icon] || Icons.Workflow;
 
   return (
     <div className={cn("space-y-8", className)}>

@@ -293,7 +293,7 @@ export function DailyPlannerEngine() {
           <Label className="text-sm font-medium">Notes</Label>
           <Textarea
             placeholder="Any additional notes, reminders, or thoughts..."
-            className="min-h-[100px]"
+            className="min-h-25"
             value={planner.notes}
             onChange={(e) => setPlanner((p) => ({ ...p, notes: e.target.value }))}
           />

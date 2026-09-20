@@ -11,7 +11,7 @@ interface ToolCardProps {
 }
 
 export function ToolCard({ tool, className }: ToolCardProps) {
-  const IconComponent = (Icons as any)[tool.icon] || Icons.Wrench;
+  const IconComponent = (Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[tool.icon] || Icons.Wrench;
 
   return (
     <Link href={`/${tool.productType}s/${tool.slug}`} className="block group">
@@ -25,7 +25,7 @@ export function ToolCard({ tool, className }: ToolCardProps) {
           <div className="flex items-start justify-between">
             {/* Icon — subtle, not a giant gradient blob */}
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted text-muted-foreground group-hover:bg-brand-muted group-hover:text-brand transition-colors duration-200">
-              <IconComponent className="size-[18px]" />
+              <IconComponent className="size-4.5" />
             </div>
             <div className="flex gap-1.5">
               {tool.status === "beta" && (

@@ -107,7 +107,7 @@ export function ToolsPageClient() {
           All Categories
         </Badge>
         {CATEGORIES.map((cat) => {
-          const IconComponent = (Icons as any)[cat.icon] || Icons.Folder;
+          const IconComponent = (Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[cat.icon] || Icons.Folder;
           const count = allTools.filter((t) => t.category === cat.id).length;
           return (
             <Badge
@@ -171,7 +171,7 @@ export function ToolsPageClient() {
       ) : (
         <div className="flex flex-col gap-2">
           {filteredTools.map((tool, i) => {
-            const IconComponent = (Icons as any)[tool.icon] || Icons.Wrench;
+            const IconComponent = (Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[tool.icon] || Icons.Wrench;
             return (
               <Link
                 key={tool.id}

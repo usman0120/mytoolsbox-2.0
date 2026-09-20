@@ -627,7 +627,7 @@ export function AIDiagramGeneratorEngine() {
                 placeholder={`Describe your ${DIAGRAM_TYPES.find((d) => d.type === diagramType)?.label.toLowerCase()}...\n\ne.g., "User login flow with email verification and password reset"`}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="flex-1 min-h-[60px] resize-none"
+                className="flex-1 min-h-15 resize-none"
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
                     handleGenerate();
@@ -706,7 +706,7 @@ export function AIDiagramGeneratorEngine() {
           {hasDiagram ? (
             <div
               ref={canvasRef}
-              className="canvas-bg relative w-full h-[500px] rounded-xl border-2 border-dashed border-muted-foreground/20 overflow-hidden bg-[radial-gradient(circle,#e5e7eb_1px,transparent_1px)] dark:bg-[radial-gradient(circle,#1e293b_1px,transparent_1px)] bg-[size:20px_20px] cursor-crosshair"
+              className="canvas-bg relative w-full h-125 rounded-xl border-2 border-dashed border-muted-foreground/20 overflow-hidden bg-[radial-gradient(circle,#e5e7eb_1px,transparent_1px)] dark:bg-[radial-gradient(circle,#1e293b_1px,transparent_1px)] bg-size-[20px_20px] cursor-crosshair"
               onClick={handleCanvasClick}
               onMouseMove={handleMouseMove}
               onMouseUp={handleMouseUp}
@@ -777,7 +777,7 @@ export function AIDiagramGeneratorEngine() {
               </div>
             </div>
           ) : (
-            <div className="w-full h-[500px] rounded-xl border-2 border-dashed border-muted-foreground/20 flex flex-col items-center justify-center gap-3 bg-muted/10">
+            <div className="w-full h-125 rounded-xl border-2 border-dashed border-muted-foreground/20 flex flex-col items-center justify-center gap-3 bg-muted/10">
               <Brain className="h-12 w-12 text-muted-foreground/40" />
               <p className="text-muted-foreground text-sm">Describe your diagram above and click Generate</p>
               <p className="text-xs text-muted-foreground/70">AI will create the diagram, then you can edit it here</p>

@@ -39,7 +39,7 @@ export function QRGeneratorEngine() {
             <Label className="text-sm mb-1.5 block">Text or URL</Label>
             <Textarea
               placeholder="https://example.com or any text..."
-              className="min-h-[80px]"
+              className="min-h-20"
               value={text}
               onChange={(e) => setText(e.target.value)}
             />

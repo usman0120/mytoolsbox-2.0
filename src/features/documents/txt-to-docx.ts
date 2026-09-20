@@ -86,7 +86,7 @@ export async function txtToDocx(file: File): Promise<ProcessingResult> {
       message: `Converted TXT to DOCX-compatible format (${lines.length} lines)`,
       data: { downloadName: file.name.replace(/\.txt$/i, "") + ".docx" },
     };
-  } catch (err: any) {
-    return { status: "error", error: err.message || "Failed to convert TXT to DOCX." };
+  } catch (err: unknown) {
+    return { status: "error", error: err instanceof Error ? err.message : "Failed to convert TXT to DOCX." };
   }
 }

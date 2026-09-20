@@ -292,7 +292,7 @@ export function AINotesGeneratorEngine() {
                 </div>
 
                 {/* Content */}
-                <div className="bg-muted/50 rounded-lg p-3 max-h-[300px] overflow-y-auto">
+                <div className="bg-muted/50 rounded-lg p-3 max-h-75 overflow-y-auto">
                   <pre className="text-xs font-mono whitespace-pre-wrap">{generatedNote.content}</pre>
                 </div>
               </CardContent>

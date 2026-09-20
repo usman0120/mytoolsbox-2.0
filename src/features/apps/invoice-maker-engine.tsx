@@ -50,7 +50,7 @@ function formatCurrency(amount: number, currency: string): string {
 }
 
 export function InvoiceMakerEngine() {
-  const [data, setData] = useState<InvoiceData>({
+  const [data, setData] = useState<InvoiceData>(() => ({
     invoiceNumber: `INV-${new Date().getFullYear()}-001`,
     date: new Date().toISOString().split("T")[0],
     dueDate: new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0],
@@ -69,7 +69,7 @@ export function InvoiceMakerEngine() {
     notes: "Thank you for your business!",
     currency: "USD",
     accentColor: "#0891b2",
-  });
+  }));
   const invoiceRef = useRef<HTMLDivElement>(null);
 
   const updateField = <K extends keyof InvoiceData>(field: K, value: InvoiceData[K]) => {

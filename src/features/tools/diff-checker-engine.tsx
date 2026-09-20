@@ -38,7 +38,7 @@ export function DiffCheckerEngine() {
           <Label className="text-sm mb-1.5 block">Original</Label>
           <Textarea
             placeholder="Paste original text..."
-            className="min-h-[150px] font-mono text-sm"
+            className="min-h-37.5 font-mono text-sm"
             value={text1}
             onChange={(e) => setText1(e.target.value)}
           />
@@ -47,7 +47,7 @@ export function DiffCheckerEngine() {
           <Label className="text-sm mb-1.5 block">Modified</Label>
           <Textarea
             placeholder="Paste modified text..."
-            className="min-h-[150px] font-mono text-sm"
+            className="min-h-37.5 font-mono text-sm"
             value={text2}
             onChange={(e) => setText2(e.target.value)}
           />

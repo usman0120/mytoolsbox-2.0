@@ -336,11 +336,9 @@ export function VideoResizerEngine() {
                   <p className="text-xs text-muted-foreground">{outputName}</p>
                 </div>
               </div>
-              <Button asChild size="sm" className="gap-1.5">
-                <a href={outputUrl} download={outputName}>
-                  <Download className="h-3.5 w-3.5" />
-                  Download
-                </a>
+              <Button size="sm" className="gap-1.5" onClick={() => { const a = document.createElement("a"); a.href = outputUrl; a.download = outputName; a.click(); }}>
+                <Download className="h-3.5 w-3.5" />
+                Download
               </Button>
             </div>
           </CardContent>

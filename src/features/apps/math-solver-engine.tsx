@@ -85,20 +85,29 @@ export function MathSolverEngine() {
   const [stepReveal, setStepReveal] = useState<Set<number>>(new Set());
   const [copiedStep, setCopiedStep] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const animatingSolutionRef = useRef<string | undefined>(undefined);
+  const timersRef = useRef<NodeJS.Timeout[]>([]);
 
-  // Reveal steps one by one with animation
+  // Reveal steps one by one with animation (imperative timers via effect)
   useEffect(() => {
-    if (currentSolution && currentSolution.steps.length > 0) {
-      setStepReveal(new Set());
-      const timers: NodeJS.Timeout[] = [];
+    if (!currentSolution || currentSolution.id === animatingSolutionRef.current) return;
+    // Clear previous timers
+    timersRef.current.forEach(clearTimeout);
+    timersRef.current = [];
+    animatingSolutionRef.current = currentSolution.id;
+    setStepReveal(new Set());
+    if (currentSolution.steps.length > 0) {
       currentSolution.steps.forEach((_, i) => {
-        timers.push(setTimeout(() => {
+        timersRef.current.push(setTimeout(() => {
           setStepReveal((prev) => new Set([...prev, i]));
         }, i * 200 + 300));
       });
-      return () => timers.forEach(clearTimeout);
     }
-  }, [currentSolution?.id]);
+    return () => {
+      timersRef.current.forEach(clearTimeout);
+      timersRef.current = [];
+    };
+  }, [currentSolution]);
 
   // -----------------------------------------------------------------------
   // Handlers
@@ -239,7 +248,7 @@ export function MathSolverEngine() {
 
   return (
     <div className="space-y-6">
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v ?? "")}>
         <TabsList className="grid w-full max-w-md grid-cols-3">
           <TabsTrigger value="solve" className="gap-1.5">
             <Calculator className="h-3.5 w-3.5" />

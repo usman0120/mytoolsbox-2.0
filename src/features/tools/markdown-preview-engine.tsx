@@ -141,7 +141,7 @@ export function MarkdownPreviewEngine() {
       {/* Toolbar */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v ?? "")}>
             <TabsList>
               <TabsTrigger value="split" className="text-xs gap-1">
                 <Columns className="h-3 w-3" /> Split
@@ -184,7 +184,7 @@ export function MarkdownPreviewEngine() {
               </div>
               <Textarea
                 placeholder="Type or paste your Markdown here..."
-                className="min-h-[400px] font-mono text-sm"
+                className="min-h-100 font-mono text-sm"
                 value={markdown}
                 onChange={(e) => setMarkdown(e.target.value)}
               />
@@ -213,7 +213,7 @@ export function MarkdownPreviewEngine() {
                 </div>
               </div>
               <div
-                className="min-h-[400px] p-4 rounded-lg border border-border bg-background prose prose-sm dark:prose-invert max-w-none overflow-auto"
+                className="min-h-100 p-4 rounded-lg border border-border bg-background prose prose-sm dark:prose-invert max-w-none overflow-auto"
                 dangerouslySetInnerHTML={{ __html: html || "<p class='text-muted-foreground text-sm'>Click <strong>Render Preview</strong> to see the output...</p>" }}
               />
             </CardContent>

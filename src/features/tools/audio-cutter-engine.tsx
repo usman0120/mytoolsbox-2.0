@@ -240,7 +240,7 @@ export function AudioCutterEngine() {
                     min={0}
                     max={endTime - 0.1}
                     step={0.01}
-                    onValueChange={([v]) => setStartTime(v)}
+                    onValueChange={(v) => { const arr = v as number[]; if (arr.length > 0) setStartTime(arr[0]); }}
                   />
                 </div>
 
@@ -252,7 +252,7 @@ export function AudioCutterEngine() {
                     min={startTime + 0.1}
                     max={duration}
                     step={0.01}
-                    onValueChange={([v]) => setEndTime(v)}
+                    onValueChange={(v) => { const arr = v as number[]; if (arr.length > 0) setEndTime(arr[0]); }}
                   />
                 </div>
 
@@ -307,15 +307,13 @@ export function AudioCutterEngine() {
                 <div>
                   <p className="font-medium text-sm">Cut Complete!</p>
                   <p className="text-xs text-muted-foreground">
-                    {formatTime(endTime - startTime)} — {file?.name.replace(/\.[^.]+$/, "_cut.wav")}
+                    {formatTime(endTime - startTime)} — {file?.name?.replace(/\.[^.]+$/, "_cut.wav") ?? "cut.wav"}
                   </p>
                 </div>
               </div>
-              <Button asChild size="sm" className="gap-1.5">
-                <a href={outputUrl} download={file?.name.replace(/\.[^.]+$/, "_cut.wav")}>
-                  <Download className="h-3.5 w-3.5" />
-                  Download
-                </a>
+              <Button size="sm" className="gap-1.5" onClick={() => { const a = document.createElement("a"); a.href = outputUrl; a.download = file?.name?.replace(/\.[^.]+$/, "_cut.wav") ?? "cut.wav"; a.click(); }}>
+                <Download className="h-3.5 w-3.5" />
+                Download
               </Button>
             </div>
           </CardContent>

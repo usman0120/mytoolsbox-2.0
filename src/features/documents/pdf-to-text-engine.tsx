@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { FileText, Upload, Download, Loader2, AlertCircle, Copy } from "lucide-react";
+import { FileText, Upload, Download, Loader2, AlertCircle, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -156,7 +156,7 @@ export function PDFToTextEngine() {
               </Button>
             </div>
           </div>
-          <div className="p-4 bg-muted/30 rounded-xl max-h-[400px] overflow-y-auto">
+          <div className="p-4 bg-muted/30 rounded-xl max-h-100 overflow-y-auto">
             <pre className="text-sm whitespace-pre-wrap font-sans">{extractedText}</pre>
           </div>
         </div>

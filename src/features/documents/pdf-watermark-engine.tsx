@@ -40,7 +40,7 @@ export function PDFWatermarkEngine() {
     setError(null);
 
     try {
-      const { PDFDocument, rgb, StandardFonts } = await import("pdf-lib");
+      const { PDFDocument, rgb, StandardFonts, degrees } = await import("pdf-lib");
       const arrayBuffer = await file.arrayBuffer();
       const pdfDoc = await PDFDocument.load(arrayBuffer);
       const font = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
@@ -63,14 +63,14 @@ export function PDFWatermarkEngine() {
               font,
               color: rgb(0.7, 0.7, 0.7),
               opacity: opacityValue,
-              rotate: { type: "degrees", angle: 45 },
+              rotate: degrees(45),
             });
           }
         }
       }
 
       const pdfBytes = await pdfDoc.save();
-      const blob = new Blob([pdfBytes], { type: "application/pdf" });
+      const blob = new Blob([pdfBytes as unknown as BlobPart], { type: "application/pdf" });
       setResultBlob(blob);
       toast.success("Watermark applied successfully.");
     } catch (err) {

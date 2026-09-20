@@ -58,7 +58,7 @@ export function RegexTesterEngine() {
         <Label className="text-sm mb-1.5 block">Test String</Label>
         <Textarea
           placeholder="Enter text to test against..."
-          className="min-h-[120px] font-mono text-sm"
+          className="min-h-30 font-mono text-sm"
           value={text}
           onChange={(e) => setText(e.target.value)}
         />

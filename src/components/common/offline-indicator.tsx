@@ -3,7 +3,7 @@
 import { Wifi, WifiOff, RefreshCw } from "lucide-react";
 import { useOnlineStatus, useOfflineQueue } from "@/hooks/use-offline";
 import { cn } from "@/lib/utils";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 // ---------------------------------------------------------------------------
 // OfflineIndicator — subtle banner shown when offline
@@ -11,23 +11,23 @@ import { useEffect, useState } from "react";
 
 export function OfflineIndicator() {
   const { isOnline, wasOnline } = useOnlineStatus();
-  const [visible, setVisible] = useState(false);
-  const [showReconnected, setShowReconnected] = useState(false);
+  const [reconnectTimer, setReconnectTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    if (!isOnline) {
-      setVisible(true);
-      setShowReconnected(false);
-    } else if (!wasOnline && isOnline) {
-      // Just reconnected — show success briefly
-      setShowReconnected(true);
-      const timer = setTimeout(() => {
-        setShowReconnected(false);
-        setVisible(false);
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [isOnline, wasOnline]);
+  // Compute visibility during render
+  const visible = !isOnline;
+  const showReconnected = !wasOnline && isOnline;
+
+  // Manage reconnection timer
+  if (showReconnected && !reconnectTimer) {
+    const timer = setTimeout(() => {
+      setReconnectTimer(null);
+    }, 3000);
+    setReconnectTimer(timer);
+  }
+  if (!showReconnected && reconnectTimer) {
+    clearTimeout(reconnectTimer);
+    setReconnectTimer(null);
+  }
 
   if (!visible && !showReconnected) return null;
 

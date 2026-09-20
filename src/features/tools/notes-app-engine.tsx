@@ -52,15 +52,11 @@ function generateId(): string {
 }
 
 export function NotesAppEngine() {
-  const [notes, setNotes] = useState<Note[]>([]);
+  const [notes, setNotes] = useState<Note[]>(() => loadNotes());
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [editingTitle, setEditingTitle] = useState(false);
   const [tagInput, setTagInput] = useState("");
-
-  useEffect(() => {
-    setNotes(loadNotes());
-  }, []);
 
   const selectedNote = notes.find((n) => n.id === selectedId) || null;
 
@@ -184,7 +180,7 @@ export function NotesAppEngine() {
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 min-h-[500px]">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 min-h-125">
       {/* Sidebar */}
       <div className="md:col-span-1 space-y-3">
         <div className="flex items-center gap-2">
@@ -202,7 +198,7 @@ export function NotesAppEngine() {
           </Button>
         </div>
 
-        <div className="space-y-1 max-h-[400px] overflow-y-auto">
+        <div className="space-y-1 max-h-100 overflow-y-auto">
           {filteredNotes.length === 0 && (
             <p className="text-sm text-muted-foreground text-center py-8">
               {searchQuery ? "No notes found" : "No notes yet. Create one!"}
@@ -337,7 +333,7 @@ export function NotesAppEngine() {
               value={selectedNote.content}
               onChange={(e) => handleUpdate("content", e.target.value)}
               placeholder="Start writing... (Markdown supported)"
-              className="min-h-[300px] resize-y font-mono text-sm"
+              className="min-h-75 resize-y font-mono text-sm"
             />
 
             <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -346,7 +342,7 @@ export function NotesAppEngine() {
             </div>
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center h-full min-h-[400px] text-muted-foreground border-2 border-dashed border-border/50 rounded-xl">
+          <div className="flex flex-col items-center justify-center h-full min-h-100 text-muted-foreground border-2 border-dashed border-border/50 rounded-xl">
             <StickyNote className="h-12 w-12 mb-3 opacity-30" />
             <p className="font-medium">Select a note or create a new one</p>
             <Button onClick={handleCreate} variant="outline" className="mt-3 gap-2">

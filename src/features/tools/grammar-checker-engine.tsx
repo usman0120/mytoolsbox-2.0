@@ -246,7 +246,7 @@ export function GrammarCheckerEngine() {
 
       {/* Results */}
       {(output || issues.length > 0) && (
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v ?? "")}>
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="corrected" className="gap-1.5">
               <Check className="h-3.5 w-3.5" /> Corrected

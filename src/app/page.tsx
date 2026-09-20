@@ -96,9 +96,9 @@ export default function Home() {
       <section className="relative overflow-hidden">
         {/* Animated background */}
         <div className="absolute inset-0 bg-linear-to-b from-primary/5 via-background to-background dark:from-primary/10 dark:via-background dark:to-background" />
-        <div className="hero-glow size-[125px] bg-primary -top-32 -left-32" />
-        <div className="hero-glow size-[100px] bg-violet-500 top-20 -right-20" />
-        <div className="hero-glow size-[75px] bg-cyan-500 bottom-0 left-1/4" />
+        <div className="hero-glow size-31.25 bg-primary -top-32 -left-32" />
+        <div className="hero-glow size-25 bg-violet-500 top-20 -right-20" />
+        <div className="hero-glow size-18.75 bg-cyan-500 bottom-0 left-1/4" />
 
         <div className="container mx-auto px-4 pt-20 pb-16 md:pt-28 md:pb-24 relative">
           <div className="text-center max-w-3xl mx-auto animate-fade-in-up">
@@ -331,7 +331,7 @@ export default function Home() {
       {/* ===== CTA ===== */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-linear-to-r from-primary/5 via-primary/10 to-violet-500/5" />
-        <div className="hero-glow size-[256px] bg-primary -bottom-20 -right-20" />
+        <div className="hero-glow size-64 bg-primary -bottom-20 -right-20" />
         <div className="container mx-auto px-4 py-20 text-center relative">
           <div className="max-w-lg mx-auto animate-fade-in-up">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium mb-6">

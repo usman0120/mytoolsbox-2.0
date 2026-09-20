@@ -81,10 +81,10 @@ export async function sendAPIRequest(config: APIRequestConfig): Promise<Processi
       message: `${response.status} ${response.statusText} (${result.time}ms)`,
       data: result,
     };
-  } catch (err: any) {
+  } catch (err: unknown) {
     return {
       status: "error",
-      error: err.message || "Request failed. Check the URL and try again.",
+      error: err instanceof Error ? err.message : "Request failed. Check the URL and try again.",
     };
   }
 }

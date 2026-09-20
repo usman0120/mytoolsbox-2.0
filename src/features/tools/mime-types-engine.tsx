@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { FileType, Search, Copy, Check, ChevronRight } from "lucide-react";
+import { Search, Copy, Check, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,10 +9,12 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { lookupMimeType, searchMimeTypes, MIME_TYPES, getMimeCategories } from "@/features/tools/mime-types";
 
+type MimeTypeEntry = { extension: string; mimeType: string; description: string; category: string };
+
 export function MimeTypesEngine() {
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<any[] | null>(null);
-  const [selected, setSelected] = useState<any>(null);
+  const [results, setResults] = useState<MimeTypeEntry[] | null>(null);
+  const [selected, setSelected] = useState<MimeTypeEntry | null>(null);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState("");
   const [category, setCategory] = useState("");
@@ -27,13 +29,13 @@ export function MimeTypesEngine() {
     // Try exact extension lookup
     const r = lookupMimeType(query);
     if (r.status === "success") {
-      setSelected(r.data);
+      setSelected(r.data as MimeTypeEntry);
       setResults(null);
       return;
     }
     const sr = searchMimeTypes(query);
     if (sr.status === "success") {
-      setResults(sr.data as any[]);
+      setResults(sr.data as MimeTypeEntry[]);
     }
   };
 
@@ -119,7 +121,7 @@ export function MimeTypesEngine() {
 
       {/* Results list */}
       {filteredResults && filteredResults.length > 0 && (
-        <div className="space-y-1 max-h-[400px] overflow-y-auto">
+        <div className="space-y-1 max-h-100 overflow-y-auto">
           {filteredResults.map((s) => (
             <Card
               key={s.extension}

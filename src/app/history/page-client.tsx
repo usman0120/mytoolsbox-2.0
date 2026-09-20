@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -19,6 +19,7 @@ export function HistoryPageClient() {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showSignIn, setShowSignIn] = useState(false);
+  const errorRef = useRef(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -26,22 +27,31 @@ export function HistoryPageClient() {
     }
   }, [authLoading, user, router]);
 
-  const loadHistory = useCallback(async () => {
+  useEffect(() => {
     if (!user) return;
-    setLoading(true);
-    try {
-      const items = await getHistory(user.uid);
-      setHistory(items);
-    } catch {
-      toast.error("Failed to load history");
-    } finally {
-      setLoading(false);
-    }
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (!cancelled) setLoading(true);
+    });
+    getHistory(user.uid)
+      .then((items) => {
+        if (!cancelled) {
+          errorRef.current = false;
+          setHistory(items);
+        }
+      })
+      .catch(() => { if (!cancelled) errorRef.current = true; })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
   }, [user]);
 
+  // Show error toast outside the setState flow
   useEffect(() => {
-    loadHistory();
-  }, [loadHistory]);
+    if (!loading && errorRef.current) {
+      toast.error("Failed to load history");
+      errorRef.current = false;
+    }
+  }, [loading]);
 
   const handleClearAll = async () => {
     if (!user) return;
@@ -153,7 +163,7 @@ export function HistoryPageClient() {
             <Card key={item.id} className="group">
               <CardContent className="flex items-center justify-between p-3">
                 <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <Clock className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                  <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <Link
@@ -162,7 +172,7 @@ export function HistoryPageClient() {
                       >
                         {item.toolName}
                       </Link>
-                      <span className="text-xs text-muted-foreground capitalize flex-shrink-0">
+                      <span className="text-xs text-muted-foreground capitalize shrink-0">
                         {item.action}
                       </span>
                     </div>

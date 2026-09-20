@@ -74,12 +74,6 @@ export function TextAnnotatorEngine() {
     toast.success("Annotation removed.");
   }, []);
 
-  const handleCopy = useCallback(async () => {
-    const annotatedText = renderAnnotatedText();
-    await navigator.clipboard.writeText(annotatedText);
-    toast.success("Annotated text copied!");
-  }, [input, annotations]);
-
   const renderAnnotatedText = useCallback(() => {
     if (annotations.length === 0) return input;
 
@@ -98,6 +92,12 @@ export function TextAnnotatorEngine() {
 
     return result;
   }, [input, annotations]);
+
+  const handleCopy = useCallback(async () => {
+    const annotatedText = renderAnnotatedText();
+    await navigator.clipboard.writeText(annotatedText);
+    toast.success("Annotated text copied!");
+  }, [renderAnnotatedText]);
 
   // Render text with highlighted spans
   const renderHighlightedText = () => {
@@ -164,7 +164,7 @@ export function TextAnnotatorEngine() {
             onMouseUp={handleTextSelect}
             onKeyUp={handleTextSelect}
             placeholder="Paste or type your text here. Select text to annotate..."
-            className="min-h-[150px]"
+            className="min-h-37.5"
           />
         </CardContent>
       </Card>
@@ -183,7 +183,7 @@ export function TextAnnotatorEngine() {
                 value={noteText}
                 onChange={(e) => setNoteText(e.target.value)}
                 placeholder="Add a note for this annotation..."
-                className="min-h-[60px]"
+                className="min-h-15"
               />
             </div>
 

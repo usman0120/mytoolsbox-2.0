@@ -58,7 +58,7 @@ export async function textToPDF(
       y = pageHeight - margin;
     };
 
-    const wrapText = (text: string, maxWidth: number, font: any, size: number): string[] => {
+    const wrapText = (text: string, maxWidth: number, font: { widthOfTextAtSize: (t: string, s: number) => number }, size: number): string[] => {
       const words = text.split(" ");
       const result: string[] = [];
       let currentLine = "";
@@ -129,7 +129,7 @@ export async function textToPDF(
       message: `Created PDF with ${pdf.getPageCount()} page(s)`,
       data: { downloadName: file.name.replace(/\.[^.]+$/, "") + ".pdf" },
     };
-  } catch (err: any) {
-    return { status: "error", error: err.message || "Failed to create PDF from text." };
+  } catch (err: unknown) {
+    return { status: "error", error: err instanceof Error ? err.message : "Failed to create PDF from text." };
   }
 }

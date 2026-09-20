@@ -55,7 +55,7 @@ export function CSSFormatterEngine() {
           placeholder="body { color: red; font-size: 16px; }"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          className="min-h-[150px] font-mono text-sm"
+          className="min-h-37.5 font-mono text-sm"
         />
       </div>
 
@@ -79,7 +79,7 @@ export function CSSFormatterEngine() {
               </Button>
             </div>
           </div>
-          <Textarea value={output} readOnly className="min-h-[150px] font-mono text-sm" />
+          <Textarea value={output} readOnly className="min-h-37.5 font-mono text-sm" />
         </div>
       )}
     </div>

@@ -150,9 +150,8 @@ interface SearchCommandProps {
 export function SearchCommand({ className, variant = "hero", onClose }: SearchCommandProps) {
   const router = useRouter();
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<SearchResult[]>([]);
-  const [isOpen, setIsOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [isOpen, setIsOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -169,18 +168,14 @@ export function SearchCommand({ className, variant = "hero", onClose }: SearchCo
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // Search effect
-  useEffect(() => {
-    if (query.length >= 2) {
-      const found = searchAll(query);
-      setResults(found);
-      setIsOpen(true);
-      setSelectedIndex(0);
-    } else if (query.length === 0) {
-      setResults([]);
-      setIsOpen(false);
-    }
-  }, [query]);
+  // Compute search results during render
+  const results = query.length >= 2 ? searchAll(query) : [];
+  // Reset selectedIndex when results change
+  const [prevResultsLen, setPrevResultsLen] = useState(0);
+  if (results.length !== prevResultsLen) {
+    setPrevResultsLen(results.length);
+    setSelectedIndex(0);
+  }
 
   // Click outside
   useEffect(() => {
@@ -290,7 +285,6 @@ export function SearchCommand({ className, variant = "hero", onClose }: SearchCo
           <button
             onClick={() => {
               setQuery("");
-              setResults([]);
               setIsOpen(false);
               inputRef.current?.focus();
             }}
@@ -316,7 +310,7 @@ export function SearchCommand({ className, variant = "hero", onClose }: SearchCo
             <>
               <div ref={listRef} className="max-h-80 overflow-y-auto py-1">
                 {results.map((result, i) => {
-                  const IconComponent = (Icons as any)[result.item.icon] || Wrench;
+                  const IconComponent = (Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[result.item.icon] || Wrench;
                   const isSelected = i === selectedIndex;
                   return (
                     <button

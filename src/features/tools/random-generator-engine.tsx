@@ -108,13 +108,13 @@ export function RandomGeneratorEngine() {
 
   return (
     <div className="space-y-6">
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v ?? "")}>
         <TabsList className="w-full grid grid-cols-3 sm:grid-cols-6">
           <TabsTrigger value="number" className="text-xs gap-1"><Hash className="h-3 w-3" /> Number</TabsTrigger>
           <TabsTrigger value="string" className="text-xs gap-1"><Type className="h-3 w-3" /> String</TabsTrigger>
           <TabsTrigger value="dice" className="text-xs gap-1"><Dice5 className="h-3 w-3" /> Dice</TabsTrigger>
           <TabsTrigger value="uuid" className="text-xs gap-1"><Shuffle className="h-3 w-3" /> UUID</TabsTrigger>
-          <TabsTrigger value="color" className="text-xs gap-1"><div className="h-3 w-3 rounded-full bg-gradient-to-br from-red-500 to-blue-500" /> Color</TabsTrigger>
+          <TabsTrigger value="color" className="text-xs gap-1"><div className="h-3 w-3 rounded-full bg-linear-to-br from-red-500 to-blue-500" /> Color</TabsTrigger>
           <TabsTrigger value="list" className="text-xs gap-1"><List className="h-3 w-3" /> Pick</TabsTrigger>
         </TabsList>
 

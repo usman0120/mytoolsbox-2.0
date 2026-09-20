@@ -128,8 +128,8 @@ export function MP3CutterEngine() {
 
       URL.revokeObjectURL(url);
       audioContext.close();
-    } catch (err: any) {
-      setError("Failed to cut audio: " + (err.message || "Unknown error"));
+    } catch (err: unknown) {
+      setError("Failed to cut audio: " + (err instanceof Error ? err.message : "Unknown error"));
     }
   };
 

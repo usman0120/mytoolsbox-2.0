@@ -97,8 +97,8 @@ export function VideoToGifEngine() {
       setGifUrl(canvas.toDataURL("image/gif"));
 
       setProgress(100);
-    } catch (err: any) {
-      setError("Conversion failed: " + (err.message || "Unknown error"));
+    } catch (err: unknown) {
+      setError("Conversion failed: " + (err instanceof Error ? err.message : "Unknown error"));
     } finally {
       setIsConverting(false);
     }
@@ -181,7 +181,7 @@ export function VideoToGifEngine() {
                   <Label className="text-xs">FPS: {settings.fps}</Label>
                   <Slider
                     value={[settings.fps]}
-                    onValueChange={([v]) => setSettings((s) => ({ ...s, fps: v }))}
+                    onValueChange={(v) => setSettings((s) => ({ ...s, fps: Array.isArray(v) ? v[0] : v }))}
                     min={5}
                     max={30}
                     step={1}
@@ -191,7 +191,7 @@ export function VideoToGifEngine() {
                   <Label className="text-xs">Width: {settings.width}px</Label>
                   <Slider
                     value={[settings.width]}
-                    onValueChange={([v]) => setSettings((s) => ({ ...s, width: v }))}
+                    onValueChange={(v) => setSettings((s) => ({ ...s, width: Array.isArray(v) ? v[0] : v }))}
                     min={160}
                     max={640}
                     step={16}

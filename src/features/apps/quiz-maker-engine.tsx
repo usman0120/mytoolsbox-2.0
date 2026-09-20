@@ -56,7 +56,7 @@ export function QuizMakerEngine() {
     setQuestions((prev) => prev.filter((q) => q.id !== id));
   };
 
-  const updateQuestion = (id: string, field: keyof Question, value: any) => {
+  const updateQuestion = (id: string, field: keyof Question, value: string | string[]) => {
     setQuestions((prev) =>
       prev.map((q) => (q.id === id ? { ...q, [field]: value } : q))
     );
@@ -179,7 +179,7 @@ export function QuizMakerEngine() {
                     {q.options.map((opt, oi) => (
                       <div key={oi} className="flex items-center gap-2">
                         <button
-                          onClick={() => updateQuestion(q.id, "correctIndex", oi)}
+                          onClick={() => updateQuestion(q.id, "correctIndex", String(oi))}
                           className={`h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
                             q.correctIndex === oi
                               ? "border-green-500 bg-green-500 text-white"
@@ -218,7 +218,11 @@ export function QuizMakerEngine() {
 
         {/* Take Quiz Tab */}
         <TabsContent value="take" className="space-y-4 mt-4">
-          {!quizState.isFinished ? (
+          {quizState.questions.length === 0 ? (
+            <p className="text-muted-foreground text-sm text-center py-8">
+              Add questions and click "Start Quiz" to begin.
+            </p>
+          ) : !quizState.isFinished ? (
             <>
               {/* Progress */}
               <div className="flex items-center justify-between">

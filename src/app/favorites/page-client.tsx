@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -26,22 +26,26 @@ export function FavoritesPageClient() {
     }
   }, [authLoading, user, router]);
 
-  const loadFavorites = useCallback(async () => {
-    if (!user) return;
-    setLoading(true);
-    try {
-      const items = await getFavorites(user.uid);
-      setFavorites(items);
-    } catch {
-      toast.error("Failed to load favorites");
-    } finally {
-      setLoading(false);
-    }
-  }, [user]);
-
   useEffect(() => {
-    loadFavorites();
-  }, [loadFavorites]);
+    if (!user) return;
+
+    let cancelled = false;
+    getFavorites(user.uid)
+      .then((items) => {
+        if (!cancelled) {
+          setFavorites(items);
+          setLoading(false);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          toast.error("Failed to load favorites");
+          setLoading(false);
+        }
+      });
+
+    return () => { cancelled = true; };
+  }, [user]);
 
   const handleRemove = async (item: FavoriteItem) => {
     if (!user) return;
@@ -133,7 +137,7 @@ export function FavoritesPageClient() {
                     >
                       {item.toolName}
                     </Link>
-                    <ExternalLink className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                    <ExternalLink className="h-3 w-3 text-muted-foreground shrink-0" />
                   </div>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <span className="px-2 py-0.5 rounded-full bg-muted text-xs">

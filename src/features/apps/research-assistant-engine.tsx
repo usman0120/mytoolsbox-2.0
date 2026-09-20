@@ -331,7 +331,7 @@ export function ResearchAssistantEngine() {
 
       {/* Search & Filter */}
       <div className="flex gap-2 flex-wrap">
-        <div className="relative flex-1 min-w-[200px]">
+        <div className="relative flex-1 min-w-50">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search sources and notes..."
@@ -352,7 +352,7 @@ export function ResearchAssistantEngine() {
         ))}
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v ?? "")}>
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="sources" className="gap-1.5"><Library className="h-3.5 w-3.5" /> Sources</TabsTrigger>
           <TabsTrigger value="notes" className="gap-1.5"><Bookmark className="h-3.5 w-3.5" /> Notes</TabsTrigger>
@@ -390,7 +390,7 @@ export function ResearchAssistantEngine() {
               </div>
               <Textarea placeholder="Notes about this source..." value={newSource.notes} onChange={(e) => setNewSource((prev) => ({ ...prev, notes: e.target.value }))} rows={2} />
               <div className="flex gap-2 items-center">
-                <Input placeholder="Add tag..." value={newSourceTag} onChange={(e) => setNewSourceTag(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addSourceTag()} className="max-w-[200px]" />
+                <Input placeholder="Add tag..." value={newSourceTag} onChange={(e) => setNewSourceTag(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addSourceTag()} className="max-w-50" />
                 <Button variant="outline" size="sm" onClick={addSourceTag}><Plus className="h-3.5 w-3.5 mr-1" /> Tag</Button>
                 <div className="flex gap-1 flex-wrap">
                   {(newSource.tags || []).map((tag) => (
@@ -479,7 +479,7 @@ export function ResearchAssistantEngine() {
                     <option key={s.id} value={s.id}>{s.title}</option>
                   ))}
                 </select>
-                <Input placeholder="Add tag..." value={newNoteTag} onChange={(e) => setNewNoteTag(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addNoteTag()} className="max-w-[150px]" />
+                <Input placeholder="Add tag..." value={newNoteTag} onChange={(e) => setNewNoteTag(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addNoteTag()} className="max-w-37.5" />
                 <Button variant="outline" size="sm" onClick={addNoteTag}><Plus className="h-3.5 w-3.5 mr-1" /> Tag</Button>
                 <div className="flex gap-1 flex-wrap">
                   {newNote.tags.map((tag) => (

@@ -53,7 +53,7 @@ export function AISQLAssistantEngine() {
       if (hasAIProvider) {
         const r = await sqlAssist({
           query: input.trim(),
-          action: action as any,
+          action: action as "explain" | "generate" | "optimize" | "format",
           dialect: dialect || undefined,
         });
         setResult(r);
@@ -102,7 +102,7 @@ export function AISQLAssistantEngine() {
           }
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          className="min-h-[120px] font-mono text-sm"
+          className="min-h-30 font-mono text-sm"
         />
       </div>
 

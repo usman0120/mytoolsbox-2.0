@@ -145,7 +145,7 @@ export function FileZipperEngine() {
       {resultFiles.length > 0 && (
         <div className="space-y-2">
           <p className="text-sm font-medium">{resultFiles.length} extracted file(s)</p>
-          <div className="space-y-1 max-h-[300px] overflow-y-auto">
+          <div className="space-y-1 max-h-75 overflow-y-auto">
             {resultFiles.map((f, i) => (
               <div key={i} className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
                 <span className="text-xs truncate flex-1">{f.name}</span>

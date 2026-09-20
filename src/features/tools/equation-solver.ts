@@ -24,8 +24,8 @@ export function solveEquation(equation: string): EquationSolution {
 
 function solveSingle(equation: string): EquationSolution {
   // Parse: move everything to left side
-  let [left, right] = equation.split("=");
-  if (!right) right = "0";
+  const [left, rightPart] = equation.split("=");
+  const right = rightPart || "0";
 
   // Detect degree by looking for x^3, x^2 patterns
   const hasX3 = /x\^3/.test(left) || /x\^3/.test(right);
@@ -46,12 +46,12 @@ function solveSingle(equation: string): EquationSolution {
 function parseCoefficients(left: string, right: string): { a: number; b: number; c: number } {
   // Move all terms to left: left - right = 0
   // Simple parser for ax^2 + bx + c form
-  let expr = `(${left})-(${right})`;
+  const expr = `(${left})-(${right})`;
   // Replace x^2, x with evaluated forms
   // We'll evaluate at x=0, x=1, x=-1 to find coefficients
 
   const evalAt = (x: number): number => {
-    let e = expr
+    const e = expr
       .replace(/x\^3/g, `(${x}*${x}*${x})`)
       .replace(/x\^2/g, `(${x}*${x})`)
       .replace(/(?<!\^)x(?!\^)/g, `(${x})`);
@@ -96,16 +96,10 @@ function solveLinear(left: string, right: string): EquationSolution {
 }
 
 function solveQuadratic(left: string, right: string): EquationSolution {
-  const { a, b, c } = parseCoefficients(left, right);
-  const coeffA = a;
-  const coeffB = b;
-  const coeffC = b + c; // Wait, let me reconsider. parseCoefficients gives a,b,c where ax^2+bx+c=0
-  // Actually the parser gives a,b,c from the expression. Let me fix this.
-
   // Re-evaluate properly
-  let expr = `(${left})-(${right})`;
+  const expr = `(${left})-(${right})`;
   const evalAt = (x: number): number => {
-    let e = expr
+    const e = expr
       .replace(/x\^2/g, `(${x}*${x})`)
       .replace(/(?<!\^)x(?!\^)/g, `(${x})`);
     try {
@@ -180,10 +174,10 @@ function solveQuadratic(left: string, right: string): EquationSolution {
 function solveCubic(left: string, right: string): EquationSolution {
   // For cubic, use numerical approach (Newton's method) to find one real root,
   // then reduce to quadratic
-  let expr = `(${left})-(${right})`;
+  const expr = `(${left})-(${right})`;
 
   const f = (x: number): number => {
-    let e = expr
+    const e = expr
       .replace(/x\^3/g, `(${x}*${x}*${x})`)
       .replace(/x\^2/g, `(${x}*${x})`)
       .replace(/(?<!\^)x(?!\^)/g, `(${x})`);

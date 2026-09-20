@@ -270,7 +270,7 @@ export function HashGeneratorEngine() {
         <Label className="text-sm font-medium">Input Text</Label>
         <Textarea
           placeholder="Enter text to hash..."
-          className="font-mono text-sm min-h-[100px]"
+          className="font-mono text-sm min-h-25"
           value={input}
           onChange={(e) => { setInput(e.target.value); setHash(""); }}
         />
@@ -330,7 +330,7 @@ export function HashGeneratorEngine() {
       {history.length > 0 && (
         <div className="space-y-2">
           <Label className="text-sm font-medium">Recent Hashes</Label>
-          <div className="space-y-1 max-h-[200px] overflow-auto">
+          <div className="space-y-1 max-h-50 overflow-auto">
             {history.map((item, i) => (
               <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-muted/30 text-xs">
                 <Badge variant="outline" className="shrink-0 text-[10px]">{item.algo}</Badge>

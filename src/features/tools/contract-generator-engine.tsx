@@ -28,7 +28,7 @@ export function ContractGeneratorEngine() {
   );
   const [copied, setCopied] = useState(false);
 
-  const handleTemplateChange = (v: string) => {
+  const handleTemplateChange = (v: string | null) => {
     const t = v || "Service Agreement";
     setTemplate(t);
     const newClauses = CONTRACT_TEMPLATES[t].clauses;

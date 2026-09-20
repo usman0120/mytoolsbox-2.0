@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Play, Pause, RotateCcw, Flag, TimerReset } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -39,26 +39,30 @@ export function StopwatchEngine() {
   const [countdownInput, setCountdownInput] = useState({ min: 1, sec: 0 });
   const startRef = useRef<number>(0);
   const rafRef = useRef<number>(0);
+  const tickRef = useRef<() => void>(() => {});
 
-  const tick = useCallback(() => {
-    if (mode === "stopwatch") {
-      setElapsed(Date.now() - startRef.current);
-    } else {
-      const remaining = countdownTarget - (Date.now() - startRef.current);
-      if (remaining <= 0) {
-        setCountdownRemaining(0);
-        setRunning(false);
-        return;
+  // Keep tickRef.current updated without triggering re-renders
+  useEffect(() => {
+    tickRef.current = () => {
+      if (mode === "stopwatch") {
+        setElapsed(Date.now() - startRef.current);
+      } else {
+        const remaining = countdownTarget - (Date.now() - startRef.current);
+        if (remaining <= 0) {
+          setCountdownRemaining(0);
+          setRunning(false);
+          return;
+        }
+        setCountdownRemaining(remaining);
       }
-      setCountdownRemaining(remaining);
-    }
-    rafRef.current = requestAnimationFrame(tick);
-  }, [mode, countdownTarget]);
+      rafRef.current = requestAnimationFrame(tickRef.current);
+    };
+  });
 
   useEffect(() => {
     if (running) {
       startRef.current = Date.now() - (mode === "stopwatch" ? elapsed : countdownTarget - countdownRemaining);
-      rafRef.current = requestAnimationFrame(tick);
+      rafRef.current = requestAnimationFrame(tickRef.current);
     }
     return () => cancelAnimationFrame(rafRef.current);
   }, [running]);

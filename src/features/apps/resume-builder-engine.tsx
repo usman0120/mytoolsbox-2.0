@@ -83,7 +83,7 @@ export function ResumeBuilderEngine() {
   const addSection = (type: ResumeSection["type"]) => {
     const sectionType = SECTION_TYPES.find((s) => s.type === type)!;
     const newSection: ResumeSection = {
-      id: Date.now().toString(),
+      id: crypto.randomUUID(),
       type,
       title: sectionType.label,
       content: "",

@@ -20,7 +20,7 @@ const EXAMPLES = [
 
 export function CronHelperEngine() {
   const [expression, setExpression] = useState("");
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<{ description: string; nextRuns: string[]; fields: string[] } | null>(null);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState("");
 
@@ -31,7 +31,7 @@ export function CronHelperEngine() {
       setError(r.error || "Invalid expression");
       setResult(null);
     } else {
-      setResult(r.data);
+      setResult(r.data as { description: string; nextRuns: string[]; fields: string[] });
     }
   };
 

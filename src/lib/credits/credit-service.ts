@@ -52,6 +52,7 @@ function getCreditDocPath(userId: string): string {
  */
 export async function getUserCredits(userId: string): Promise<UserCreditState> {
   const db = getFirebaseFirestore();
+  if (!db) throw new Error("Firestore not initialized");
   const docRef = doc(db, getCreditDocPath(userId));
   const snapshot = await getDoc(docRef);
 
@@ -132,6 +133,7 @@ export async function deductCredits(
   }
 
   const db = getFirebaseFirestore();
+  if (!db) throw new Error("Firestore not initialized");
   const docRef = doc(db, getCreditDocPath(userId));
 
   await updateDoc(docRef, {
@@ -161,6 +163,7 @@ export async function upgradeUserTier(
   newTier: SubscriptionTier
 ): Promise<UserCreditState> {
   const db = getFirebaseFirestore();
+  if (!db) throw new Error("Firestore not initialized");
   const docRef = doc(db, getCreditDocPath(userId));
   const plan = SUBSCRIPTION_PLANS[newTier];
   const { start, end } = getCurrentPeriod();

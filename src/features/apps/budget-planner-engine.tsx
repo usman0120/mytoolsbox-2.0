@@ -88,7 +88,7 @@ export function BudgetPlannerEngine() {
 
   return (
     <div className="space-y-6">
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v ?? "")}>
         <TabsList className="w-full grid grid-cols-3">
           <TabsTrigger value="overview" className="gap-1"><BarChart3 className="h-3.5 w-3.5" /> Overview</TabsTrigger>
           <TabsTrigger value="add" className="gap-1"><Plus className="h-3.5 w-3.5" /> Add</TabsTrigger>

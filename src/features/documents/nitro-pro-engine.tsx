@@ -23,7 +23,7 @@ export function NitroProEngine() {
         <span className="text-xs text-muted-foreground">PDF customization & OCR powerhouse</span>
       </div>
 
-      <Card className="border-border/50 bg-gradient-to-br from-amber-500/5 to-orange-500/5">
+      <Card className="border-border/50 bg-linear-to-br from-amber-500/5 to-orange-500/5">
         <CardContent className="p-6">
           <div className="flex items-start gap-4">
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/10 ring-1 ring-amber-500/20 shrink-0">

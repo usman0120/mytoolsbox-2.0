@@ -32,6 +32,18 @@ export function ScreenRecorderEngine() {
     };
   }, [recordedUrl]);
 
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      mediaRecorderRef.current.stop();
+    }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    }
+    setIsRecording(false);
+    setIsPaused(false);
+  };
+
   const startRecording = useCallback(async () => {
     setError("");
     setRecordedBlob(null);
@@ -80,23 +92,11 @@ export function ScreenRecorderEngine() {
       timerRef.current = setInterval(() => {
         setDuration((d) => d + 1);
       }, 1000);
-    } catch (err: any) {
-      if (err.name === "AbortError") return;
-      setError(err.message || "Failed to start screen recording. Please grant screen sharing permission.");
+    } catch (err: unknown) {
+      if (err instanceof DOMException && err.name === "AbortError") return;
+      setError(err instanceof Error ? err.message : "Failed to start screen recording. Please grant screen sharing permission.");
     }
-  }, [includeAudio, recordingMode]);
-
-  const stopRecording = useCallback(() => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-      mediaRecorderRef.current.stop();
-    }
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((t) => t.stop());
-      streamRef.current = null;
-    }
-    setIsRecording(false);
-    setIsPaused(false);
-  }, []);
+  }, [includeAudio, recordingMode, stopRecording]);
 
   const handlePauseResume = () => {
     if (!mediaRecorderRef.current) return;

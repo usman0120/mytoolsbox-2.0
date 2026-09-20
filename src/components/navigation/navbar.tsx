@@ -33,11 +33,10 @@ export function Navbar() {
   }, []);
 
   // Auto-open sign-in dialog when redirected from proxy
-  useEffect(() => {
-    if (searchParams.get("signin") === "true") {
-      setSignInOpen(true);
-    }
-  }, [searchParams]);
+  const shouldOpenSignIn = searchParams.get("signin") === "true";
+  if (shouldOpenSignIn && !signInOpen) {
+    setSignInOpen(true);
+  }
 
   return (
     <header

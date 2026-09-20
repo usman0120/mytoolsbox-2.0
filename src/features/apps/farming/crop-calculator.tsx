@@ -42,7 +42,7 @@ export function CropCalculator() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="space-y-1.5">
           <Label className="text-xs">Crop</Label>
-          <Select value={crop} onValueChange={setCrop}>
+          <Select value={crop} onValueChange={(v) => setCrop(v ?? "")}>
             <SelectTrigger>
               <SelectValue placeholder="Select crop..." />
             </SelectTrigger>
@@ -66,7 +66,7 @@ export function CropCalculator() {
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs">Soil Quality</Label>
-          <Select value={soilQuality} onValueChange={setSoilQuality}>
+          <Select value={soilQuality} onValueChange={(v) => setSoilQuality(v ?? "")}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>

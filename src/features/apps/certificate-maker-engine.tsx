@@ -32,7 +32,7 @@ const ACCENT_COLORS = ["#1a56db", "#7c3aed", "#059669", "#dc2626", "#d97706", "#
 
 export function CertificateMakerEngine() {
   const [activeTab, setActiveTab] = useState<"edit" | "preview">("edit");
-  const [data, setData] = useState<CertificateData>({
+  const [data, setData] = useState<CertificateData>(() => ({
     recipientName: "",
     title: "Certificate of Achievement",
     description: "This certificate is proudly presented to recognize outstanding performance and dedication.",
@@ -42,7 +42,7 @@ export function CertificateMakerEngine() {
     organization: "",
     template: "classic",
     accentColor: "#1a56db",
-  });
+  }));
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const updateField = (field: keyof CertificateData, value: string) => {
@@ -240,7 +240,7 @@ export function CertificateMakerEngine() {
               <Textarea
                 value={data.description}
                 onChange={(e) => updateField("description", e.target.value)}
-                className="min-h-[80px]"
+                className="min-h-20"
               />
             </div>
             <div className="space-y-1.5">

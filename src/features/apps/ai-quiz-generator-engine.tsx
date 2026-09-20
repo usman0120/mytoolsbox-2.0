@@ -280,7 +280,7 @@ export function AIQuizGeneratorEngine() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                <div className="space-y-2 max-h-75 overflow-y-auto">
                   {generatedQuiz.questions.map((q, i) => (
                     <div key={q.id} className="text-sm p-2 rounded bg-muted/50">
                       <p className="font-medium">Q{i + 1}: {q.question}</p>

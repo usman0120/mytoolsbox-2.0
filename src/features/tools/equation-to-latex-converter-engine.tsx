@@ -150,7 +150,7 @@ export function EquationToLatexConverterEngine() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Enter a mathematical expression, e.g.: x^2 + 2x + 1 = 0 or int(0,1) x^2 dx"
-            className="min-h-[120px] font-mono"
+            className="min-h-30 font-mono"
           />
         </CardContent>
       </Card>

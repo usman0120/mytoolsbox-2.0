@@ -50,7 +50,7 @@ export function YieldCalculator() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="space-y-1.5">
           <Label className="text-xs">Crop</Label>
-          <Select value={crop} onValueChange={setCrop}>
+          <Select value={crop} onValueChange={(v) => setCrop(v ?? "")}>
             <SelectTrigger>
               <SelectValue placeholder="Select crop..." />
             </SelectTrigger>
@@ -71,7 +71,7 @@ export function YieldCalculator() {
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs">Irrigation Type</Label>
-          <Select value={irrigation} onValueChange={setIrrigation}>
+          <Select value={irrigation} onValueChange={(v) => setIrrigation(v ?? "")}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
@@ -86,7 +86,7 @@ export function YieldCalculator() {
 
       <div className="space-y-1.5">
         <Label className="text-xs">Pest/Disease Damage</Label>
-        <Select value={pestDamage} onValueChange={setPestDamage}>
+        <Select value={pestDamage} onValueChange={(v) => setPestDamage(v ?? "")}>
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>

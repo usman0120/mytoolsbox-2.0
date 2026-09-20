@@ -98,7 +98,7 @@ export function AIErrorExplainerEngine() {
           placeholder="Paste your error message here..."
           value={errorInput}
           onChange={(e) => setErrorInput(e.target.value)}
-          className="min-h-[80px] font-mono text-sm"
+          className="min-h-20 font-mono text-sm"
         />
       </div>
 

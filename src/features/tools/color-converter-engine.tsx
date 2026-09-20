@@ -10,7 +10,7 @@ import { convertColor } from "@/features/tools/color-converter";
 
 export function ColorConverterEngine() {
   const [input, setInput] = useState("");
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<Record<string, string> | null>(null);
   const [error, setError] = useState("");
   const [copiedKey, setCopiedKey] = useState("");
 
@@ -21,7 +21,7 @@ export function ColorConverterEngine() {
       setError(r.error || "Invalid color");
       setResult(null);
     } else {
-      setResult(r.data);
+      setResult(r.data as Record<string, string>);
     }
   };
 

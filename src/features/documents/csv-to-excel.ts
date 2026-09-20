@@ -153,7 +153,7 @@ export async function csvToExcel(file: File): Promise<ProcessingResult> {
       message: `Converted CSV with ${rows.length} row(s) and ${Math.max(...rows.map((r) => r.length))} column(s)`,
       data: { downloadName: file.name.replace(/\.csv$/i, "") + ".xlsx" },
     };
-  } catch (err: any) {
-    return { status: "error", error: err.message || "Failed to convert CSV to Excel." };
+  } catch (err: unknown) {
+    return { status: "error", error: err instanceof Error ? err.message : "Failed to convert CSV to Excel." };
   }
 }

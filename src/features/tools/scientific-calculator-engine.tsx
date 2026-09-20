@@ -2,7 +2,6 @@
 
 import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { evaluateExpression, SCIENTIFIC_BUTTONS, type TrigUnit } from "@/features/tools/scientific-calculator";
@@ -101,7 +100,7 @@ export function ScientificCalculatorEngine() {
         {/* Display */}
         <Card>
           <CardContent className="p-3">
-            <div className="text-right font-mono text-sm text-muted-foreground min-h-[20px] break-all">
+            <div className="text-right font-mono text-sm text-muted-foreground min-h-5 break-all">
               {display || "\u00A0"}
             </div>
             <div className="text-right font-mono text-2xl font-bold break-all mt-1">

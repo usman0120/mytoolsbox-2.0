@@ -345,7 +345,7 @@ export function AIPlanningEngine() {
                     <ul className="space-y-1">
                       {milestone.tasks.map((task, j) => (
                         <li key={j} className="text-sm flex items-start gap-2">
-                          <CheckCircle2 className="h-3.5 w-3.5 mt-0.5 text-muted-foreground flex-shrink-0" />
+                          <CheckCircle2 className="h-3.5 w-3.5 mt-0.5 text-muted-foreground shrink-0" />
                           {task}
                         </li>
                       ))}
@@ -375,7 +375,7 @@ export function AIPlanningEngine() {
                         <ul className="space-y-1">
                           {week.tasks.map((task, j) => (
                             <li key={j} className="text-sm flex items-start gap-2">
-                              <ListChecks className="h-3.5 w-3.5 mt-0.5 text-muted-foreground flex-shrink-0" />
+                              <ListChecks className="h-3.5 w-3.5 mt-0.5 text-muted-foreground shrink-0" />
                               {task}
                             </li>
                           ))}
@@ -405,7 +405,7 @@ export function AIPlanningEngine() {
                   className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
                   onClick={() => toggleChecklistItem(item.id)}
                 >
-                  <div className={`h-5 w-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${item.completed ? "bg-emerald-500 border-emerald-500" : "border-muted-foreground/30"}`}>
+                  <div className={`h-5 w-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${item.completed ? "bg-emerald-500 border-emerald-500" : "border-muted-foreground/30"}`}>
                     {item.completed && <CheckCircle2 className="h-3.5 w-3.5 text-white" />}
                   </div>
                   <span className={`text-sm ${item.completed ? "line-through text-muted-foreground" : ""}`}>{item.text}</span>
@@ -421,7 +421,7 @@ export function AIPlanningEngine() {
                   <ul className="space-y-2">
                     {plan.resources.map((r, i) => (
                       <li key={i} className="text-sm flex items-start gap-2">
-                        <BookOpen className="h-4 w-4 mt-0.5 text-blue-500 flex-shrink-0" />
+                        <BookOpen className="h-4 w-4 mt-0.5 text-blue-500 shrink-0" />
                         {r}
                       </li>
                     ))}
@@ -434,7 +434,7 @@ export function AIPlanningEngine() {
                   <ul className="space-y-2">
                     {plan.tips.map((tip, i) => (
                       <li key={i} className="text-sm flex items-start gap-2">
-                        <Sparkles className="h-4 w-4 mt-0.5 text-yellow-500 flex-shrink-0" />
+                        <Sparkles className="h-4 w-4 mt-0.5 text-yellow-500 shrink-0" />
                         {tip}
                       </li>
                     ))}

@@ -82,7 +82,7 @@ function TreeNode({ node, depth = 0 }: { node: JSONNode; depth?: number }) {
 
 export function JSONValidatorEngine() {
   const [input, setInput] = useState("");
-  const [parsed, setParsed] = useState<any>(null);
+  const [parsed, setParsed] = useState<unknown>(null);
   const [tree, setTree] = useState<JSONNode | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<{ keys: number; depth: number; size: string } | null>(null);
@@ -203,7 +203,7 @@ export function JSONValidatorEngine() {
         </div>
         <Textarea
           placeholder='{"name": "John", "age": 30, "items": [1, 2, 3]}'
-          className="font-mono text-sm min-h-[160px]"
+          className="font-mono text-sm min-h-40"
           value={input}
           onChange={(e) => setInput(e.target.value)}
         />
@@ -244,7 +244,7 @@ export function JSONValidatorEngine() {
           <div className="flex items-center justify-between">
             <Label className="text-sm font-medium">Structure</Label>
             <div className="flex gap-1">
-              <Button variant="ghost" size="sm" className="gap-1 text-xs" onClick={() => handleCopy(JSON.stringify(parsed as any, null, 2))}>
+              <Button variant="ghost" size="sm" className="gap-1 text-xs" onClick={() => handleCopy(JSON.stringify(parsed as object, null, 2))}>
                 <Copy className="h-3 w-3" /> Copy
               </Button>
               <Button variant="ghost" size="sm" className="gap-1 text-xs" onClick={handleDownload}>
@@ -253,7 +253,7 @@ export function JSONValidatorEngine() {
             </div>
           </div>
           <Card>
-            <CardContent className="p-3 max-h-[400px] overflow-auto">
+            <CardContent className="p-3 max-h-100 overflow-auto">
               <TreeNode node={tree} />
             </CardContent>
           </Card>
@@ -278,7 +278,7 @@ export function JSONValidatorEngine() {
           </div>
           {searchResults.length > 0 && (
             <Card>
-              <CardContent className="p-3 max-h-[200px] overflow-auto">
+              <CardContent className="p-3 max-h-50 overflow-auto">
                 <p className="text-xs text-muted-foreground mb-2">{searchResults.length} result(s)</p>
                 {searchResults.map((r, i) => (
                   <p key={i} className="text-sm font-mono py-0.5">{r}</p>

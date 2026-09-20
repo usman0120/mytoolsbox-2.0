@@ -20,11 +20,12 @@ import {
 } from "lucide-react";
 import { getActiveTools, getToolsByAudience } from "@/content/tools/registry";
 import { getActiveApps } from "@/content/apps/registry";
+import type { ToolAudience } from "@/types";
 
 interface HubData {
   icon: LucideIcon;
   name: string;
-  audience: string;
+  audience: ToolAudience;
   description: string;
   gradient: string;
   ringColor: string;
@@ -119,9 +120,9 @@ export function HubsPageClient() {
   const allTools = getActiveTools();
   const allApps = getActiveApps();
 
-  const getHubItems = (audience: string) => {
+  const getHubItems = (audience: ToolAudience) => {
     const tools = getToolsByAudience(audience);
-    const apps = allApps.filter((a) => a.audiences.includes(audience as any));
+    const apps = allApps.filter((a) => a.audiences.includes(audience));
     return { tools, apps, total: tools.length + apps.length };
   };
 

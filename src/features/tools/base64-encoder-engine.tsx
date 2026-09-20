@@ -91,7 +91,7 @@ export function Base64EncoderEngine() {
         </label>
         <Textarea
           placeholder={mode === "encode" ? "Enter text to encode..." : "Enter Base64 string to decode..."}
-          className="min-h-[120px] font-mono text-sm"
+          className="min-h-30 font-mono text-sm"
           value={input}
           onChange={(e) => setInput(e.target.value)}
         />

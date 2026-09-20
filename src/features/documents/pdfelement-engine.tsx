@@ -23,7 +23,7 @@ export function PDFElementEngine() {
         <span className="text-xs text-muted-foreground">User-friendly PDF editor for beginners</span>
       </div>
 
-      <Card className="border-border/50 bg-gradient-to-br from-violet-500/5 to-purple-500/5">
+      <Card className="border-border/50 bg-linear-to-br from-violet-500/5 to-purple-500/5">
         <CardContent className="p-6">
           <div className="flex items-start gap-4">
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-500/10 ring-1 ring-violet-500/20 shrink-0">

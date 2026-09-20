@@ -15,7 +15,7 @@ interface AppPageClientProps {
 }
 
 export function AppPageClient({ app }: AppPageClientProps) {
-  const IconComponent = (Icons as any)[app.icon] || Icons.Layout;
+  const IconComponent = (Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[app.icon] || Icons.Layout;
 
   return (
     <div className="container mx-auto px-4 py-10">

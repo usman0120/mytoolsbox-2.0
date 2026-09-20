@@ -15,6 +15,12 @@ export function MathImageUpload({ onTextExtracted, isProcessing }: MathImageUplo
   const [extractedText, setExtractedText] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const simulateOCR = useCallback(async (_dataUrl: string) => {
+    // In production: send to vision model (GPT-4V, Gemini Vision, Claude Vision)
+    // For now, show a prompt for the user to type what they see
+    setExtractedText(null);
+  }, []);
+
   const handleFile = useCallback((file: File) => {
     if (!file.type.startsWith("image/")) return;
 
@@ -26,13 +32,7 @@ export function MathImageUpload({ onTextExtracted, isProcessing }: MathImageUplo
       simulateOCR(dataUrl);
     };
     reader.readAsDataURL(file);
-  }, []);
-
-  const simulateOCR = async (_dataUrl: string) => {
-    // In production: send to vision model (GPT-4V, Gemini Vision, Claude Vision)
-    // For now, show a prompt for the user to type what they see
-    setExtractedText(null);
-  };
+  }, [simulateOCR]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();

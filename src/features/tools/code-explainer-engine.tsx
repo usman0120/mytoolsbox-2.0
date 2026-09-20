@@ -198,7 +198,7 @@ export function CodeExplainerEngine() {
 
       {/* Results */}
       {result && (
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v ?? "")}>
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="summary" className="gap-1.5">
               <Lightbulb className="h-3.5 w-3.5" /> Summary
@@ -228,7 +228,7 @@ export function CodeExplainerEngine() {
           </TabsContent>
 
           <TabsContent value="linebyline" className="mt-4">
-            <div className="space-y-1 max-h-[500px] overflow-y-auto">
+            <div className="space-y-1 max-h-125 overflow-y-auto">
               {result.lineByLine.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-8">Line-by-line analysis not available. Use AI for detailed breakdown.</p>
               ) : (
@@ -237,7 +237,7 @@ export function CodeExplainerEngine() {
                     <span className="text-muted-foreground w-8 text-right shrink-0 font-mono text-xs pt-0.5">
                       {item.line}
                     </span>
-                    <code className="font-mono text-xs shrink-0 min-w-[120px] max-w-[300px] truncate">
+                    <code className="font-mono text-xs shrink-0 min-w-30 max-w-75 truncate">
                       {item.code}
                     </code>
                     <span className="text-muted-foreground text-xs flex-1">

@@ -364,7 +364,7 @@ export function AIProjectIdeasEngine() {
 
           {/* Skills */}
           <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-2"><Wrench className="h-4 w-4" /> Skills You'll Practice</CardTitle></CardHeader>
+            <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-2"><Wrench className="h-4 w-4" /> Skills You&apos;ll Practice</CardTitle></CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-2">
                 {project.skills.map((skill, i) => (
@@ -381,7 +381,7 @@ export function AIProjectIdeasEngine() {
               <ul className="space-y-1.5">
                 {project.features.map((feature, i) => (
                   <li key={i} className="text-sm flex items-start gap-2">
-                    <ArrowRight className="h-3.5 w-3.5 mt-0.5 text-emerald-500 flex-shrink-0" />
+                    <ArrowRight className="h-3.5 w-3.5 mt-0.5 text-emerald-500 shrink-0" />
                     {feature}
                   </li>
                 ))}
@@ -458,7 +458,7 @@ export function AIProjectIdeasEngine() {
               <ul className="space-y-1.5">
                 {project.stretchFeatures.map((feature, i) => (
                   <li key={i} className="text-sm flex items-start gap-2">
-                    <Sparkles className="h-3.5 w-3.5 mt-0.5 text-purple-500 flex-shrink-0" />
+                    <Sparkles className="h-3.5 w-3.5 mt-0.5 text-purple-500 shrink-0" />
                     {feature}
                   </li>
                 ))}

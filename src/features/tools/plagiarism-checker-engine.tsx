@@ -146,7 +146,7 @@ export function PlagiarismCheckerEngine() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Paste the text you want to check for plagiarism..."
-            className="min-h-[200px]"
+            className="min-h-50"
           />
           <p className="text-xs text-muted-foreground mt-2">
             {wordCount} word{wordCount !== 1 ? "s" : ""} — {input.length} character{input.length !== 1 ? "s" : ""}
