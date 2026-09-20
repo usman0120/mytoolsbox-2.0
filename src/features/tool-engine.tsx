@@ -37,6 +37,37 @@ const engineMap: Record<string, React.ComponentType<any>> = {
   "qr-generator": dynamic(() => import("@/features/images/qr-generator-engine").then((m) => ({ default: m.QRGeneratorEngine })), {
     loading: () => <EngineLoading />,
   }),
+  // Image & Media tools (Phase 5)
+  "photopea": dynamic(() => import("@/features/images/photopea-engine").then((m) => ({ default: m.PhotopeaEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "awesome-screenshot": dynamic(() => import("@/features/images/awesome-screenshot-engine").then((m) => ({ default: m.AwesomeScreenshotEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "snagit": dynamic(() => import("@/features/images/snagit-engine").then((m) => ({ default: m.SnagitEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "canva": dynamic(() => import("@/features/images/canva-engine").then((m) => ({ default: m.CanvaEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "image-to-text-ocr": dynamic(() => import("@/features/images/image-to-text-ocr-engine").then((m) => ({ default: m.ImageToTextOCREngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "runway": dynamic(() => import("@/features/images/runway-engine").then((m) => ({ default: m.RunwayEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "julius-ai": dynamic(() => import("@/features/images/julius-ai-engine").then((m) => ({ default: m.JuliusAIEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "softcolor-auto-enhance": dynamic(() => import("@/features/images/softcolor-auto-enhance-engine").then((m) => ({ default: m.SoftColorAutoEnhanceEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "photolemur": dynamic(() => import("@/features/images/photolemur-engine").then((m) => ({ default: m.PhotolemurEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "perfectly-clear": dynamic(() => import("@/features/images/perfectly-clear-engine").then((m) => ({ default: m.PerfectlyClearEngine })), {
+    loading: () => <EngineLoading />,
+  }),
   // Developer tools
   "json-formatter": dynamic(() => import("@/features/tools/json-formatter-engine").then((m) => ({ default: m.JSONFormatterEngine })), {
     loading: () => <EngineLoading />,
@@ -230,9 +261,6 @@ const engineMap: Record<string, React.ComponentType<any>> = {
   "sql-formatter": dynamic(() => import("@/features/tools/sql-formatter-engine").then((m) => ({ default: m.SQLFormatterEngine })), {
     loading: () => <EngineLoading />,
   }),
-  "code-explainer": dynamic(() => import("@/features/tools/code-explainer-engine").then((m) => ({ default: m.CodeExplainerEngine })), {
-    loading: () => <EngineLoading />,
-  }),
   // Media tools
   "barcode-generator": dynamic(() => import("@/features/tools/barcode-generator-engine").then((m) => ({ default: m.BarcodeGeneratorEngine })), {
     loading: () => <EngineLoading />,
@@ -268,6 +296,172 @@ const engineMap: Record<string, React.ComponentType<any>> = {
     loading: () => <EngineLoading />,
   }),
   "paraphrase-tool": dynamic(() => import("@/features/tools/paraphrase-tool-engine").then((m) => ({ default: m.ParaphraseToolEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  // File Conversion & Document Tools (Phase 4)
+  "pdf-to-office-converter": dynamic(() => import("@/features/documents/pdf-to-office-converter-engine").then((m) => ({ default: m.PDFToOfficeConverterEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "word-to-pdf-converter": dynamic(() => import("@/features/documents/word-to-pdf-converter-engine").then((m) => ({ default: m.WordToPDFConverterEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "jpg-to-pdf-merger": dynamic(() => import("@/features/documents/jpg-to-pdf-merger-engine").then((m) => ({ default: m.JPGToPDFMergerEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "pdf-to-ppt-converter": dynamic(() => import("@/features/documents/pdf-to-ppt-converter-engine").then((m) => ({ default: m.PDFToPPTConverterEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "onlyoffice-editor": dynamic(() => import("@/features/documents/onlyoffice-editor-engine").then((m) => ({ default: m.ONLYOFFICEEditorEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "soda-pdf": dynamic(() => import("@/features/documents/soda-pdf-engine").then((m) => ({ default: m.SodaPDFEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "pdfelement": dynamic(() => import("@/features/documents/pdfelement-engine").then((m) => ({ default: m.PDFElementEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "nitro-pro": dynamic(() => import("@/features/documents/nitro-pro-engine").then((m) => ({ default: m.NitroProEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "foxit-pdf": dynamic(() => import("@/features/documents/foxit-pdf-engine").then((m) => ({ default: m.FoxitPDFEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "smallpdf": dynamic(() => import("@/features/documents/smallpdf-engine").then((m) => ({ default: m.SmallPDFEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "rfp-monkey": dynamic(() => import("@/features/tools/rfp-monkey-engine").then((m) => ({ default: m.RFPMonkeyEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "online-notepad": dynamic(() => import("@/features/tools/online-notepad-engine").then((m) => ({ default: m.OnlineNotepadEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  // Media & Audio tools (Phase 6)
+  "mp4-mp3-converter": dynamic(() => import("@/features/tools/mp4-mp3-converter-engine").then((m) => ({ default: m.MP4MP3ConverterEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "audio-cutter": dynamic(() => import("@/features/tools/audio-cutter-engine").then((m) => ({ default: m.AudioCutterEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "audio-converter": dynamic(() => import("@/features/tools/audio-converter-engine").then((m) => ({ default: m.AudioConverterEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "video-compressor": dynamic(() => import("@/features/tools/video-compressor-engine").then((m) => ({ default: m.VideoCompressorEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "video-to-gif-maker": dynamic(() => import("@/features/tools/video-to-gif-maker-engine").then((m) => ({ default: m.VideoToGifMakerEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "merge-videos": dynamic(() => import("@/features/tools/merge-videos-engine").then((m) => ({ default: m.MergeVideosEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "extract-audio-from-video": dynamic(() => import("@/features/tools/extract-audio-from-video-engine").then((m) => ({ default: m.ExtractAudioFromVideoEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "video-resizer": dynamic(() => import("@/features/tools/video-resizer-engine").then((m) => ({ default: m.VideoResizerEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  // Text & Writing tools (Phase 6)
+  "text-summarizer": dynamic(() => import("@/features/tools/text-summarizer-engine").then((m) => ({ default: m.TextSummarizerEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "speech-to-text": dynamic(() => import("@/features/tools/speech-to-text-engine").then((m) => ({ default: m.SpeechToTextEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "plagiarism-checker": dynamic(() => import("@/features/tools/plagiarism-checker-engine").then((m) => ({ default: m.PlagiarismCheckerEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "text-annotator": dynamic(() => import("@/features/tools/text-annotator-engine").then((m) => ({ default: m.TextAnnotatorEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  // Study & Academic tools (Phase 6)
+  "equation-to-latex-converter": dynamic(() => import("@/features/tools/equation-to-latex-converter-engine").then((m) => ({ default: m.EquationToLatexConverterEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "pdf-highlighter-notes": dynamic(() => import("@/features/tools/pdf-highlighter-notes-engine").then((m) => ({ default: m.PDFHighlighterNotesEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "flashcard-creator": dynamic(() => import("@/features/tools/flashcard-creator-engine").then((m) => ({ default: m.FlashcardCreatorEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "quiz-maker": dynamic(() => import("@/features/tools/quiz-maker-engine").then((m) => ({ default: m.QuizMakerEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  // Image Manipulation Tools (Phase 2)
+  "image-rotator": dynamic(() => import("@/features/images/image-rotator-engine").then((m) => ({ default: m.ImageRotatorEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "image-watermarker": dynamic(() => import("@/features/images/image-watermarker-engine").then((m) => ({ default: m.ImageWatermarkerEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "background-remover": dynamic(() => import("@/features/images/background-remover-engine").then((m) => ({ default: m.BackgroundRemoverEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "image-grayscale": dynamic(() => import("@/features/images/image-grayscale-engine").then((m) => ({ default: m.ImageGrayscaleEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "image-blur-sharpen": dynamic(() => import("@/features/images/image-blur-sharpen-engine").then((m) => ({ default: m.ImageBlurSharpenEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "image-text-overlay": dynamic(() => import("@/features/images/image-text-overlay-engine").then((m) => ({ default: m.ImageTextOverlayEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  // Document Conversion Tools (Phase 2)
+  "text-to-pdf": dynamic(() => import("@/features/documents/text-to-pdf-engine").then((m) => ({ default: m.TextToPDFEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "csv-to-excel": dynamic(() => import("@/features/documents/csv-to-excel-engine").then((m) => ({ default: m.CSVToExcelEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "txt-to-docx": dynamic(() => import("@/features/documents/txt-to-docx-engine").then((m) => ({ default: m.TxtToDocxEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "ppt-to-pdf": dynamic(() => import("@/features/documents/ppt-to-pdf-engine").then((m) => ({ default: m.PPTToPDFEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  // New Productivity & AI Tools
+  "todo-list": dynamic(() => import("@/features/tools/todo-list-engine").then((m) => ({ default: m.TodoListEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "habit-tracker": dynamic(() => import("@/features/tools/habit-tracker-engine").then((m) => ({ default: m.HabitTrackerEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "file-organizer": dynamic(() => import("@/features/tools/file-organizer-engine").then((m) => ({ default: m.FileOrganizerEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "daily-planner": dynamic(() => import("@/features/tools/daily-planner-engine").then((m) => ({ default: m.DailyPlannerEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "countdown-timer": dynamic(() => import("@/features/tools/countdown-timer-engine").then((m) => ({ default: m.CountdownTimerEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "ai-image-generator": dynamic(() => import("@/features/tools/ai-image-generator-engine").then((m) => ({ default: m.AIImageGeneratorEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "ai-text-generator": dynamic(() => import("@/features/tools/ai-text-generator-engine").then((m) => ({ default: m.AITextGeneratorEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "ai-resume-maker": dynamic(() => import("@/features/tools/ai-resume-maker-engine").then((m) => ({ default: m.AIResumeMakerEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "ai-summary-tool": dynamic(() => import("@/features/tools/ai-summary-tool-engine").then((m) => ({ default: m.AISummaryToolEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "ai-presentation-maker": dynamic(() => import("@/features/tools/ai-presentation-maker-engine").then((m) => ({ default: m.AIPresentationMakerEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "barcode-scanner": dynamic(() => import("@/features/tools/barcode-scanner-engine").then((m) => ({ default: m.BarcodeScannerEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "resume-builder": dynamic(() => import("@/features/tools/resume-builder-engine").then((m) => ({ default: m.ResumeBuilderEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "cv-maker": dynamic(() => import("@/features/tools/cv-maker-engine").then((m) => ({ default: m.CVMakerEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "cover-letter-generator": dynamic(() => import("@/features/tools/cover-letter-generator-engine").then((m) => ({ default: m.CoverLetterGeneratorEngine })), {
+    loading: () => <EngineLoading />,
+  }),
+  "paragraph-rewriter": dynamic(() => import("@/features/tools/paragraph-rewriter-engine").then((m) => ({ default: m.ParagraphRewriterEngine })), {
     loading: () => <EngineLoading />,
   }),
 };

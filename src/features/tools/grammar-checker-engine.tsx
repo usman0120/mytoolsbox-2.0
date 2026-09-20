@@ -8,10 +8,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   SpellCheck2, Copy, Check, Trash2, Loader2, Sparkles,
-  AlertTriangle, Lightbulb, Type, ChevronRight, Wand2,
+  AlertTriangle, Lightbulb, Type, ChevronRight, Wand2, Download,
 } from "lucide-react";
 import { checkGrammar, type GrammarIssue } from "@/lib/ai/services/grammar-checker";
 import { getAvailableProviders } from "@/lib/ai";
+import { toast } from "sonner";
 
 // ---------------------------------------------------------------------------
 // Client-side fallback – basic spell/grammar checks
@@ -159,6 +160,18 @@ export function GrammarCheckerEngine() {
     await navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+    toast.success("Copied to clipboard!");
+  };
+
+  const handleDownload = () => {
+    const blob = new Blob([output], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `grammar-checked-${Date.now()}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Downloaded!");
   };
 
   const handleClear = () => {
@@ -259,6 +272,9 @@ export function GrammarCheckerEngine() {
             </Card>
             <Button variant="outline" size="sm" onClick={() => handleCopy(output)} className="gap-1.5">
               {copied ? <><Check className="h-3.5 w-3.5" /> Copied</> : <><Copy className="h-3.5 w-3.5" /> Copy</>}
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleDownload} className="gap-1.5">
+              <Download className="h-3.5 w-3.5" /> Download
             </Button>
           </TabsContent>
 

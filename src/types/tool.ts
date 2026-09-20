@@ -10,6 +10,7 @@ export type ToolCategory =
   | "productivity"
   | "design"
   | "security"
+  | "ai"
   | "misc";
 
 export type ToolAudience =

@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import type { AIRequest, AIResponse, AIProvider } from "@/lib/ai/types";
 import { getCreditCost, tierToCreditOperation, hasEnoughCredits, type CreditOperation, type SubscriptionTier } from "@/lib/ai/credits";
 import { checkAbuse } from "@/lib/payments/abuse";
+import { checkCredits, deductCredits, getRemainingCredits } from "@/lib/credits";
 
 // ---------------------------------------------------------------------------
 // Server-side API key configuration (NEVER exposed to client)
@@ -205,16 +206,38 @@ async function checkAndDeductCredits(
   userId: string | null,
   operation: CreditOperation
 ): Promise<{ allowed: boolean; remaining: number; tier: string }> {
-  // If no user, check if operation is free-tier compatible
+  // Anonymous/guest users get no AI credits — must sign in
   if (!userId) {
-    // Anonymous users get no AI credits — only local processing
     return { allowed: false, remaining: 0, tier: "free" };
   }
 
-  // In production, this would query Firestore for the user's credit balance
-  // For now, use a simple header-based approach
-  // TODO: Integrate with Firestore user credits collection
-  return { allowed: true, remaining: -1, tier: "free_account" };
+  try {
+    // Check if user has enough credits for this operation
+    const creditCheck = await checkCredits(userId, operation);
+    if (!creditCheck.allowed) {
+      return {
+        allowed: false,
+        remaining: creditCheck.remaining,
+        tier: "free_account",
+      };
+    }
+
+    // Deduct credits atomically
+    await deductCredits(userId, operation);
+
+    // Get updated remaining balance
+    const remaining = await getRemainingCredits(userId);
+
+    return {
+      allowed: true,
+      remaining,
+      tier: "free_account",
+    };
+  } catch (error) {
+    // If credit service fails, log and deny (fail-safe)
+    console.error("Credit service error:", error);
+    return { allowed: false, remaining: 0, tier: "free" };
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -301,7 +324,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({
           ...response,
           creditsUsed: getCreditCost(operation),
-          creditsRemaining: creditCheck.remaining === -1 ? null : creditCheck.remaining - getCreditCost(operation),
+          creditsRemaining: creditCheck.remaining,
         });
       } catch (error) {
         errors.push(`${provider}: ${error instanceof Error ? error.message : "Unknown error"}`);

@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { toast } from "sonner";
 
 const VOICES: { id: string; label: string; lang: string }[] = [
   { id: "en-US-female", label: "English (US) - Female", lang: "en-US" },
@@ -69,8 +70,8 @@ export function TextToSpeechEngine() {
       if (match) utterance.voice = match;
     }
 
-    utterance.onstart = () => setIsSpeaking(true);
-    utterance.onend = () => { setIsSpeaking(false); setIsPaused(false); };
+    utterance.onstart = () => { setIsSpeaking(true); toast.success("Speaking..."); };
+    utterance.onend = () => { setIsSpeaking(false); setIsPaused(false); toast.success("Finished speaking"); };
     utterance.onerror = () => { setIsSpeaking(false); setIsPaused(false); };
     utterance.onpause = () => setIsPaused(true);
     utterance.onresume = () => setIsPaused(false);
@@ -153,19 +154,19 @@ export function TextToSpeechEngine() {
           <div className="flex justify-between">
             <Label className="text-xs">Speed: {rate}x</Label>
           </div>
-          <Slider value={[rate]} onValueChange={([v]) => setRate(v)} min={0.25} max={3} step={0.25} />
+          <Slider value={[rate]} onValueChange={(v) => setRate(Array.isArray(v) ? v[0] : v)} min={0.25} max={3} step={0.25} />
         </div>
         <div className="space-y-1.5">
           <div className="flex justify-between">
             <Label className="text-xs">Pitch: {pitch}</Label>
           </div>
-          <Slider value={[pitch]} onValueChange={([v]) => setPitch(v)} min={0.5} max={2} step={0.1} />
+          <Slider value={[pitch]} onValueChange={(v) => setPitch(Array.isArray(v) ? v[0] : v)} min={0.5} max={2} step={0.1} />
         </div>
         <div className="space-y-1.5">
           <div className="flex justify-between">
             <Label className="text-xs">Volume: {Math.round(volume * 100)}%</Label>
           </div>
-          <Slider value={[volume]} onValueChange={([v]) => setVolume(v)} min={0} max={1} step={0.1} />
+          <Slider value={[volume]} onValueChange={(v) => setVolume(Array.isArray(v) ? v[0] : v)} min={0} max={1} step={0.1} />
         </div>
       </div>
 

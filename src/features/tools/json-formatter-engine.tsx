@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Braces, Copy, Check, Trash2, Minus, AlignLeft } from "lucide-react";
+import { Braces, Copy, Check, Trash2, Minus, AlignLeft, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { formatJSON, minifyJSON, validateJSON } from "@/features/tools/json-formatter";
+import { toast } from "sonner";
 
 export function JSONFormatterEngine() {
   const [input, setInput] = useState("");
@@ -67,6 +68,19 @@ export function JSONFormatterEngine() {
     await navigator.clipboard.writeText(output);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+    toast.success("Copied to clipboard!");
+  };
+
+  const handleDownload = () => {
+    const ext = mode === "minify" ? "json" : "json";
+    const blob = new Blob([output], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `formatted-${Date.now()}.${ext}`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Downloaded!");
   };
 
   return (
@@ -119,10 +133,15 @@ export function JSONFormatterEngine() {
         <div>
           <div className="flex items-center justify-between mb-1.5">
             <label className="text-sm font-medium">Output</label>
-            <Button variant="ghost" size="sm" onClick={handleCopy} className="gap-1.5 h-7">
-              {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
-              {copied ? "Copied" : "Copy"}
-            </Button>
+            <div className="flex gap-1">
+              <Button variant="ghost" size="sm" onClick={handleCopy} className="gap-1.5 h-7">
+                {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+                {copied ? "Copied" : "Copy"}
+              </Button>
+              <Button variant="ghost" size="sm" onClick={handleDownload} className="gap-1.5 h-7">
+                <Download className="h-3.5 w-3.5" /> Download
+              </Button>
+            </div>
           </div>
           <pre className="p-4 rounded-lg bg-muted text-sm font-mono overflow-auto max-h-96 whitespace-pre-wrap">
             {output}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -15,8 +15,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
-import { Send, Loader2, Bot, User, Trash2, Sparkles } from "lucide-react";
-import { complete, getAvailableProviders } from "@/lib/ai";
+import { Send, Loader2, Bot, User, Trash2, Sparkles, Coins } from "lucide-react";
+import { completeViaServer, getAvailableProviders } from "@/lib/ai";
 import type { AIProvider, AIResponse } from "@/lib/ai";
 
 interface Message {
@@ -50,10 +50,28 @@ export function AIChat() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [provider, setProvider] = useState<AIProvider | "auto">("auto");
+  const [creditsRemaining, setCreditsRemaining] = useState<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const availableProviders = getAvailableProviders();
   const hasAnyProvider = availableProviders.length > 0;
+
+  // Fetch credit balance on mount
+  const fetchCredits = useCallback(async () => {
+    try {
+      const res = await fetch("/api/ai/credits");
+      if (res.ok) {
+        const data = await res.json();
+        setCreditsRemaining(data.remaining);
+      }
+    } catch {
+      // Silently fail — credits display is non-critical
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchCredits();
+  }, [fetchCredits]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -76,9 +94,10 @@ export function AIChat() {
     setIsLoading(true);
 
     try {
-      const response = await complete({
+      const response = await completeViaServer({
         prompt: trimmed,
         provider: provider === "auto" ? undefined : provider,
+        tier: "cheap",
       });
 
       const assistantMessage: Message = {
@@ -91,6 +110,11 @@ export function AIChat() {
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
+
+      // Update credit display from response
+      if (response.creditsRemaining !== undefined) {
+        setCreditsRemaining(response.creditsRemaining);
+      }
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to get AI response"
@@ -127,6 +151,19 @@ export function AIChat() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {creditsRemaining !== null && (
+            <Badge
+              variant="outline"
+              className={`h-8 px-2.5 rounded-lg text-xs gap-1.5 ${
+                creditsRemaining < 50
+                  ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
+                  : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+              }`}
+            >
+              <Coins className="h-3.5 w-3.5" />
+              {creditsRemaining}
+            </Badge>
+          )}
           <Select
             value={provider}
             onValueChange={(v) => setProvider(v as AIProvider | "auto")}

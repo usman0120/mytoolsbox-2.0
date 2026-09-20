@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { useAuth } from "@/lib/auth/auth-context";
 import { AIChat } from "@/features/ai/ai-chat";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { SignInDialog } from "@/components/auth/signin-dialog";
 import {
   Bot,
   Code,
@@ -21,6 +23,8 @@ import {
   MessageSquare,
   Languages,
   Wand2,
+  LogIn,
+  ShieldAlert,
 } from "lucide-react";
 
 const QUICK_PROMPTS = [
@@ -120,7 +124,50 @@ const AI_CAPABILITIES = [
 ];
 
 export function AIPageClient() {
+  const { user, loading } = useAuth();
   const [activeTab, setActiveTab] = useState("chat");
+  const [showSignIn, setShowSignIn] = useState(false);
+
+  // Show loading state while auth is initializing
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-10">
+        <div className="flex flex-col items-center justify-center py-32 gap-4 animate-fade-in-up">
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-linear-to-br from-violet-500/10 to-purple-500/10 ring-1 ring-violet-500/20">
+            <Sparkles className="h-8 w-8 text-violet-500 animate-pulse" />
+          </div>
+          <p className="text-muted-foreground text-sm">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Auth gate: require sign-in for AI features
+  if (!user) {
+    return (
+      <div className="container mx-auto px-4 py-10">
+        <div className="flex flex-col items-center justify-center py-24 gap-6 animate-fade-in-up">
+          <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-linear-to-br from-amber-500/10 to-orange-500/10 ring-1 ring-amber-500/20">
+            <ShieldAlert className="h-10 w-10 text-amber-500" />
+          </div>
+          <div className="text-center max-w-md">
+            <h2 className="text-xl font-semibold mb-2">Sign In Required</h2>
+            <p className="text-sm text-muted-foreground mb-6">
+              AI features require an account to manage API usage and credits.
+              Sign in to get <strong>500 free credits</strong> every month.
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <Button onClick={() => setShowSignIn(true)} className="rounded-xl gap-2">
+              <LogIn className="h-4 w-4" />
+              Sign In to Continue
+            </Button>
+          </div>
+          <SignInDialog open={showSignIn} onOpenChange={setShowSignIn} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-10">

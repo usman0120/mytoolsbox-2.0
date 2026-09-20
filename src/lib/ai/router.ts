@@ -143,3 +143,34 @@ export async function streamComplete(
 
   return response;
 }
+
+// ---------------------------------------------------------------------------
+// Server-side API client (routes through /api/ai for credit deduction)
+// ---------------------------------------------------------------------------
+
+export interface ServerAIResponse extends AIResponse {
+  creditsUsed?: number;
+  creditsRemaining?: number;
+}
+
+/**
+ * Call the AI API through the server route, which handles credit deduction.
+ * This is the preferred method for authenticated users — it ensures credits
+ * are properly tracked and deducted.
+ */
+export async function completeViaServer(
+  request: AIRequest & { operation?: CreditOperation }
+): Promise<ServerAIResponse> {
+  const response = await fetch("/api/ai", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(request),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: "Unknown error" }));
+    throw new Error(error.error ?? error.message ?? `Server AI API error: ${response.status}`);
+  }
+
+  return response.json();
+}

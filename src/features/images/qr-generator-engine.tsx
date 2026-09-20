@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useProcessing } from "@/hooks/use-processing";
 import { generateQR } from "@/features/images/qr-generator";
+import { toast } from "sonner";
 
 export function QRGeneratorEngine() {
   const [text, setText] = useState("");
@@ -26,6 +27,7 @@ export function QRGeneratorEngine() {
       a.href = result.outputUrl;
       a.download = "qrcode.png";
       a.click();
+      toast.success("QR code downloaded!");
     }
   };
 

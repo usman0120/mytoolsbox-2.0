@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Binary, Copy, Check, ArrowLeftRight, Trash2 } from "lucide-react";
+import { Binary, Copy, Check, ArrowLeftRight, Trash2, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { encodeBase64, decodeBase64 } from "@/features/tools/base64-encoder";
 import { Base64 } from "js-base64";
+import { toast } from "sonner";
 
 export function Base64EncoderEngine() {
   const [input, setInput] = useState("");
@@ -44,6 +45,18 @@ export function Base64EncoderEngine() {
     await navigator.clipboard.writeText(output);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+    toast.success("Copied to clipboard!");
+  };
+
+  const handleDownload = () => {
+    const blob = new Blob([output], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `base64-${mode}-${Date.now()}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Downloaded!");
   };
 
   const handleSwap = () => {
@@ -102,10 +115,15 @@ export function Base64EncoderEngine() {
         <div>
           <div className="flex items-center justify-between mb-1.5">
             <label className="text-sm font-medium">Output</label>
-            <Button variant="ghost" size="sm" onClick={handleCopy} className="gap-1.5 h-7">
-              {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
-              {copied ? "Copied" : "Copy"}
-            </Button>
+            <div className="flex gap-1">
+              <Button variant="ghost" size="sm" onClick={handleCopy} className="gap-1.5 h-7">
+                {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+                {copied ? "Copied" : "Copy"}
+              </Button>
+              <Button variant="ghost" size="sm" onClick={handleDownload} className="gap-1.5 h-7">
+                <Download className="h-3.5 w-3.5" /> Download
+              </Button>
+            </div>
           </div>
           <pre className="p-4 rounded-lg bg-muted text-sm font-mono overflow-auto max-h-64 whitespace-pre-wrap break-all">
             {output}
