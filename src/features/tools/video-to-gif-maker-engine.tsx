@@ -212,12 +212,12 @@ export function VideoToGifMakerEngine() {
 
             <div className="space-y-1.5">
               <label className="text-xs font-medium">FPS: {fps}</label>
-              <Slider value={[fps]} min={5} max={30} step={1} onValueChange={([v]) => setFps(v)} />
+              <Slider value={[fps]} min={5} max={30} step={1} onValueChange={(v) => setFps(Array.isArray(v) ? v[0] : v)} />
             </div>
 
             <div className="space-y-1.5">
               <label className="text-xs font-medium">Width: {width}px</label>
-              <Slider value={[width]} min={160} max={960} step={16} onValueChange={([v]) => setWidth(v)} />
+              <Slider value={[width]} min={160} max={960} step={16} onValueChange={(v) => setWidth(Array.isArray(v) ? v[0] : v)} />
             </div>
 
             <div className="space-y-1.5">
@@ -227,7 +227,7 @@ export function VideoToGifMakerEngine() {
                 min={0}
                 max={Math.max(0, videoDuration - 0.5)}
                 step={0.1}
-                onValueChange={([v]) => setStartTime(v)}
+                onValueChange={(v) => setStartTime(Array.isArray(v) ? v[0] : v)}
               />
             </div>
 
@@ -238,7 +238,7 @@ export function VideoToGifMakerEngine() {
                 min={0.5}
                 max={Math.min(30, videoDuration - startTime)}
                 step={0.5}
-                onValueChange={([v]) => setDuration(v)}
+                onValueChange={(v) => setDuration(Array.isArray(v) ? v[0] : v)}
               />
             </div>
           </div>

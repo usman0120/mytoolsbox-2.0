@@ -6,3 +6,17 @@ export {
   getFeaturedWorkflows,
   getWorkflowsByCategory,
 } from "./registry";
+export {
+  createToolExecutor,
+  hasExecutor,
+  getRegisteredToolSlugs,
+} from "./tool-executor";
+export {
+  getWorkflowHistory,
+  addWorkflowRun,
+  clearWorkflowHistory,
+  getSavedWorkflows,
+  saveWorkflow,
+  removeSavedWorkflow,
+} from "./history";
+export type { WorkflowRunRecord, SavedWorkflow } from "./history";

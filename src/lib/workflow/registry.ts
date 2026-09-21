@@ -259,6 +259,307 @@ export const draftToProfessionalDoc: WorkflowDefinition = {
 };
 
 // ---------------------------------------------------------------------------
+// Developer Workflows
+// ---------------------------------------------------------------------------
+
+export const jsonPipeline: WorkflowDefinition = {
+  id: "json-pipeline",
+  name: "JSON Cleanup Pipeline",
+  shortDescription: "Validate, format, and minify JSON in one go",
+  description:
+    "Paste messy JSON, validate the structure, format it nicely, then minify for production use.",
+  icon: "Braces",
+  inputType: "application/json",
+  outputType: "application/json",
+  categories: ["developer", "productivity"],
+  keywords: ["json", "validate", "format", "minify", "developer", "cleanup"],
+  estimatedTime: "1-3s",
+  steps: [
+    {
+      id: "step-0-validate",
+      toolSlug: "json-validator",
+      label: "Validate JSON",
+      productType: "tool",
+      inputTypes: ["application/json", "text/plain"],
+      outputTypes: ["application/json"],
+      requiresAuth: false,
+      requiresPro: false,
+    },
+    {
+      id: "step-1-format",
+      toolSlug: "json-formatter",
+      label: "Format JSON",
+      productType: "tool",
+      inputTypes: ["application/json", "text/plain"],
+      outputTypes: ["application/json"],
+      requiresAuth: false,
+      requiresPro: false,
+    },
+  ],
+};
+
+export const textAnalysisPipeline: WorkflowDefinition = {
+  id: "text-analysis-pipeline",
+  name: "Text Analysis Pipeline",
+  shortDescription: "Clean, count, and analyze text",
+  description:
+    "Clean up messy text, count words and characters, then get AI-powered insights about the content.",
+  icon: "FileSearch",
+  inputType: "text/plain",
+  outputType: "application/json",
+  categories: ["writing", "productivity"],
+  keywords: ["text", "analysis", "clean", "count", "insights", "writing"],
+  estimatedTime: "3-8s",
+  steps: [
+    {
+      id: "step-0-clean",
+      toolSlug: "text-cleaner",
+      label: "Clean text",
+      productType: "tool",
+      inputTypes: ["text/plain"],
+      outputTypes: ["text/plain"],
+      requiresAuth: false,
+      requiresPro: false,
+    },
+    {
+      id: "step-1-count",
+      toolSlug: "word-counter",
+      label: "Count words & characters",
+      productType: "tool",
+      inputTypes: ["text/plain"],
+      outputTypes: ["application/json"],
+      requiresAuth: false,
+      requiresPro: false,
+    },
+    {
+      id: "step-2-summarize",
+      toolSlug: "ai-text-summarizer",
+      label: "AI Summary",
+      productType: "ai",
+      inputTypes: ["text/plain"],
+      outputTypes: ["text/plain"],
+      requiresAuth: true,
+      requiresPro: false,
+    },
+  ],
+};
+
+export const encodeDecodePipeline: WorkflowDefinition = {
+  id: "encode-decode-pipeline",
+  name: "Encode/Decode Pipeline",
+  shortDescription: "Chain multiple encoding operations",
+  description:
+    "Apply multiple encoding transformations in sequence: Base64 encode, then URL encode for safe transmission.",
+  icon: "Binary",
+  inputType: "text/plain",
+  outputType: "text/plain",
+  categories: ["developer", "security"],
+  keywords: ["encode", "decode", "base64", "url", "transform", "developer"],
+  estimatedTime: "1-2s",
+  steps: [
+    {
+      id: "step-0-base64",
+      toolSlug: "base64-encoder",
+      label: "Base64 Encode",
+      productType: "tool",
+      inputTypes: ["text/plain"],
+      outputTypes: ["text/plain"],
+      requiresAuth: false,
+      requiresPro: false,
+      config: { mode: "encode" },
+    },
+    {
+      id: "step-1-url",
+      toolSlug: "url-encoder",
+      label: "URL Encode",
+      productType: "tool",
+      inputTypes: ["text/plain"],
+      outputTypes: ["text/plain"],
+      requiresAuth: false,
+      requiresPro: false,
+      config: { mode: "encode" },
+    },
+  ],
+};
+
+export const codeFormatterPipeline: WorkflowDefinition = {
+  id: "code-formatter-pipeline",
+  name: "Code Formatter Pipeline",
+  shortDescription: "Format HTML, CSS, and JSON together",
+  description:
+    "Take raw web code and format HTML, CSS, and JSON through a single pipeline.",
+  icon: "Code2",
+  inputType: "text/html",
+  outputType: "text/css",
+  categories: ["developer", "design"],
+  keywords: ["code", "format", "html", "css", "json", "web", "developer"],
+  estimatedTime: "2-5s",
+  steps: [
+    {
+      id: "step-0-html",
+      toolSlug: "html-formatter",
+      label: "Format HTML",
+      productType: "tool",
+      inputTypes: ["text/html", "text/plain"],
+      outputTypes: ["text/html"],
+      requiresAuth: false,
+      requiresPro: false,
+    },
+    {
+      id: "step-1-css",
+      toolSlug: "css-formatter",
+      label: "Format CSS",
+      productType: "tool",
+      inputTypes: ["text/css", "text/plain"],
+      outputTypes: ["text/css"],
+      requiresAuth: false,
+      requiresPro: false,
+    },
+  ],
+};
+
+export const devToolkitPipeline: WorkflowDefinition = {
+  id: "dev-toolkit-pipeline",
+  name: "Developer Toolkit Pipeline",
+  shortDescription: "Generate UUID, hash it, and encode as JWT",
+  description:
+    "Generate a UUID, create a SHA-256 hash, and wrap it in a JWT-like structure for API testing.",
+  icon: "Terminal",
+  inputType: "text/plain",
+  outputType: "application/json",
+  categories: ["developer", "security"],
+  keywords: ["uuid", "hash", "jwt", "developer", "api", "testing"],
+  estimatedTime: "1-3s",
+  steps: [
+    {
+      id: "step-0-uuid",
+      toolSlug: "uuid-generator",
+      label: "Generate UUID",
+      productType: "tool",
+      inputTypes: ["text/plain"],
+      outputTypes: ["text/plain"],
+      requiresAuth: false,
+      requiresPro: false,
+    },
+    {
+      id: "step-1-hash",
+      toolSlug: "hash-generator",
+      label: "Hash with SHA-256",
+      productType: "tool",
+      inputTypes: ["text/plain"],
+      outputTypes: ["text/plain"],
+      requiresAuth: false,
+      requiresPro: false,
+      config: { algorithm: "sha256" },
+    },
+    {
+      id: "step-2-jwt",
+      toolSlug: "jwt-decoder",
+      label: "JWT Decode (verify structure)",
+      productType: "tool",
+      inputTypes: ["text/plain"],
+      outputTypes: ["application/json"],
+      requiresAuth: false,
+      requiresPro: false,
+    },
+  ],
+};
+
+export const aiWritingAssistant: WorkflowDefinition = {
+  id: "ai-writing-assistant",
+  name: "AI Writing Assistant",
+  shortDescription: "Clean, improve, and format your writing with AI",
+  description:
+    "Clean up your draft, get AI-powered writing improvements, and generate documentation from the result.",
+  icon: "PenLine",
+  inputType: "text/plain",
+  outputType: "text/markdown",
+  categories: ["writing", "ai", "productivity"],
+  keywords: ["writing", "ai", "improve", "grammar", "documentation", "polish"],
+  featured: true,
+  estimatedTime: "5-15s",
+  steps: [
+    {
+      id: "step-0-clean",
+      toolSlug: "text-cleaner",
+      label: "Clean up text",
+      productType: "tool",
+      inputTypes: ["text/plain"],
+      outputTypes: ["text/plain"],
+      requiresAuth: false,
+      requiresPro: false,
+    },
+    {
+      id: "step-1-improve",
+      toolSlug: "ai-text-summarizer",
+      label: "AI Writing Improvement",
+      productType: "ai",
+      inputTypes: ["text/plain"],
+      outputTypes: ["text/plain"],
+      requiresAuth: true,
+      requiresPro: false,
+    },
+    {
+      id: "step-2-docs",
+      toolSlug: "ai-doc-generator",
+      label: "Generate Documentation",
+      productType: "ai",
+      inputTypes: ["text/plain"],
+      outputTypes: ["text/markdown"],
+      requiresAuth: true,
+      requiresPro: false,
+    },
+  ],
+};
+
+export const errorDebuggingPipeline: WorkflowDefinition = {
+  id: "error-debugging-pipeline",
+  name: "Error Debugging Pipeline",
+  shortDescription: "Parse errors, explain them, and suggest fixes",
+  description:
+    "Paste an error message, get it explained in plain English, and receive AI-generated fix suggestions.",
+  icon: "Bug",
+  inputType: "text/plain",
+  outputType: "text/plain",
+  categories: ["developer", "ai"],
+  keywords: ["error", "debug", "explain", "fix", "developer", "troubleshoot"],
+  featured: true,
+  estimatedTime: "3-8s",
+  steps: [
+    {
+      id: "step-0-parse",
+      toolSlug: "text-cleaner",
+      label: "Clean error text",
+      productType: "tool",
+      inputTypes: ["text/plain"],
+      outputTypes: ["text/plain"],
+      requiresAuth: false,
+      requiresPro: false,
+    },
+    {
+      id: "step-1-explain",
+      toolSlug: "ai-error-explainer",
+      label: "AI Error Explanation",
+      productType: "ai",
+      inputTypes: ["text/plain"],
+      outputTypes: ["text/plain"],
+      requiresAuth: true,
+      requiresPro: false,
+    },
+    {
+      id: "step-2-fix",
+      toolSlug: "ai-regex-builder",
+      label: "AI Fix Suggestions",
+      productType: "ai",
+      inputTypes: ["text/plain"],
+      outputTypes: ["text/plain"],
+      requiresAuth: true,
+      requiresPro: false,
+    },
+  ],
+};
+
+// ---------------------------------------------------------------------------
 // All Workflows
 // ---------------------------------------------------------------------------
 
@@ -268,6 +569,13 @@ export const workflowRegistry: WorkflowDefinition[] = [
   imageToMathSolution,
   ideaToDiagram,
   draftToProfessionalDoc,
+  jsonPipeline,
+  textAnalysisPipeline,
+  encodeDecodePipeline,
+  codeFormatterPipeline,
+  devToolkitPipeline,
+  aiWritingAssistant,
+  errorDebuggingPipeline,
 ];
 
 /** Look up a workflow by ID */

@@ -54,6 +54,9 @@ export function Footer() {
               <Link href="/apps" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Apps
               </Link>
+              <Link href="/workflows" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                Workflows
+              </Link>
               <Link href="/ai" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 AI Assistant
               </Link>

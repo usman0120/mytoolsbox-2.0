@@ -9,6 +9,7 @@
 import { cn } from "@/lib/utils";
 import type { WorkflowDefinition, WorkflowStep, WorkflowStepState } from "@/types/workflow";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import * as Icons from "lucide-react";
 import { VisuallyHidden } from "@/components/common/accessibility";
@@ -313,4 +314,137 @@ function getStepIcon(step: WorkflowStep): string {
     default:
       return "Wrench";
   }
+}
+
+// ---------------------------------------------------------------------------
+// WorkflowRunCard — displays a past workflow run in history
+// ---------------------------------------------------------------------------
+
+interface WorkflowRunCardProps {
+  run: {
+    id: string;
+    workflowId: string;
+    workflowName: string;
+    status: "completed" | "failed" | "cancelled";
+    startedAt: number;
+    completedAt?: number;
+  };
+  className?: string;
+  onClick?: () => void;
+}
+
+export function WorkflowRunCard({ run, className, onClick }: WorkflowRunCardProps) {
+  const duration = run.completedAt
+    ? `${((run.completedAt - run.startedAt) / 1000).toFixed(1)}s`
+    : "—";
+
+  return (
+    <Card
+      className={cn(
+        "card-lift cursor-pointer h-full border-border/60 hover:border-brand/25 transition-all duration-200",
+        className
+      )}
+      onClick={onClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick?.();
+        }
+      }}
+    >
+      <CardHeader className="pb-2">
+        <div className="flex items-start justify-between">
+          <CardTitle className="text-sm font-medium">{run.workflowName}</CardTitle>
+          <Badge
+            variant="outline"
+            className={cn(
+              "text-[10px] h-5 px-1.5",
+              run.status === "completed" && "border-success/30 text-success bg-success/5",
+              run.status === "failed" && "border-destructive/30 text-destructive bg-destructive/5",
+              run.status === "cancelled" && "border-muted-foreground/30 text-muted-foreground"
+            )}
+          >
+            {run.status}
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="pt-0">
+        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+          <Icons.Clock className="h-3 w-3" />
+          <span>{new Date(run.startedAt).toLocaleDateString()}</span>
+          <span className="text-border">·</span>
+          <span>{duration}</span>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// WorkflowHistoryList — displays a list of past workflow runs
+// ---------------------------------------------------------------------------
+
+interface WorkflowHistoryListProps {
+  runs: Array<{
+    id: string;
+    workflowId: string;
+    workflowName: string;
+    status: "completed" | "failed" | "cancelled";
+    startedAt: number;
+    completedAt?: number;
+  }>;
+  onRunClick?: (runId: string) => void;
+  onClear?: () => void;
+  className?: string;
+}
+
+export function WorkflowHistoryList({
+  runs,
+  onRunClick,
+  onClear,
+  className,
+}: WorkflowHistoryListProps) {
+  if (runs.length === 0) {
+    return (
+      <div className={cn("text-center py-8", className)}>
+        <Icons.History className="h-8 w-8 mx-auto text-muted-foreground/30 mb-3" />
+        <p className="text-sm text-muted-foreground">No workflow runs yet</p>
+        <p className="text-xs text-muted-foreground/60 mt-1">
+          Run a workflow to see it here
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className={cn("space-y-3", className)}>
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold flex items-center gap-2">
+          <Icons.History className="h-4 w-4 text-muted-foreground" />
+          Recent Runs
+        </h3>
+        {onClear && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onClear}
+            className="h-7 text-xs text-muted-foreground hover:text-destructive"
+          >
+            Clear history
+          </Button>
+        )}
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        {runs.slice(0, 6).map((run) => (
+          <WorkflowRunCard
+            key={run.id}
+            run={run}
+            onClick={() => onRunClick?.(run.id)}
+          />
+        ))}
+      </div>
+    </div>
+  );
 }

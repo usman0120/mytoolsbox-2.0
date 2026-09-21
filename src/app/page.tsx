@@ -25,6 +25,7 @@ import {
   Maximize,
   CaseSensitive,
   Zap,
+  GitBranch,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -285,6 +286,71 @@ export default function Home() {
               </Link>
             );
           })}
+        </div>
+      </section>
+
+      {/* ===== WORKFLOWS ===== */}
+      <section className="bg-muted/30 dark:bg-muted/10 border-y">
+        <div className="container mx-auto px-4 py-20">
+          <div className="flex items-end justify-between mb-10">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <GitBranch className="h-5 w-5 text-emerald-500" />
+                <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Automate</span>
+              </div>
+              <h2 className="text-2xl md:text-3xl font-bold">Workflows</h2>
+              <p className="text-muted-foreground mt-1.5">Chain multiple tools together into automated pipelines</p>
+            </div>
+            <Link href="/workflows">
+              <Button variant="ghost" className="gap-1.5 group">
+                Explore workflows
+                <ChevronRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
+              </Button>
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="border-border/50 hover:border-emerald-500/30 transition-all card-lift">
+              <CardContent className="p-6">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 ring-1 ring-emerald-500/20 mb-4">
+                  <GitBranch className="h-5 w-5 text-emerald-500" />
+                </div>
+                <h3 className="font-semibold mb-2">Pre-built Pipelines</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Ready-to-use workflows for text processing, data conversion, code formatting, and more.
+                </p>
+              </CardContent>
+            </Card>
+            <Card className="border-border/50 hover:border-emerald-500/30 transition-all card-lift">
+              <CardContent className="p-6">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 ring-1 ring-emerald-500/20 mb-4">
+                  <Zap className="h-5 w-5 text-emerald-500" />
+                </div>
+                <h3 className="font-semibold mb-2">Chain Tools Together</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Each tool&apos;s output feeds into the next. Build multi-step processing pipelines visually.
+                </p>
+              </CardContent>
+            </Card>
+            <Card className="border-border/50 hover:border-emerald-500/30 transition-all card-lift">
+              <CardContent className="p-6">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 ring-1 ring-emerald-500/20 mb-4">
+                  <Sparkles className="h-5 w-5 text-emerald-500" />
+                </div>
+                <h3 className="font-semibold mb-2">Build Your Own</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Drag and drop tools to create custom workflows. Save, share, and run them anytime.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+          <div className="mt-6 text-center">
+            <Link href="/workflows/builder">
+              <Button variant="outline" size="lg" className="gap-2 rounded-xl">
+                <Sparkles className="h-4 w-4" />
+                Build a Custom Workflow
+              </Button>
+            </Link>
+          </div>
         </div>
       </section>
 

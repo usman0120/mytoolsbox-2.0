@@ -9,6 +9,7 @@ export const SITE_CONFIG = {
 export const NAV_ITEMS = [
   { label: "Tools", href: "/tools" },
   { label: "Apps", href: "/apps" },
+  { label: "Workflows", href: "/workflows" },
   { label: "AI", href: "/ai" },
   { label: "Hubs", href: "/hubs" },
   { label: "Resources", href: "/resources" },

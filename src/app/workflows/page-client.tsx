@@ -4,15 +4,18 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Sparkles, ArrowRight } from "lucide-react";
+import { Search, Sparkles, Plus, History, Wand2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { PageShell, ToolHeader } from "@/components/common/workload-layouts";
-import { WorkflowCard } from "@/features/workflows/workflow-components";
+import { WorkflowCard, WorkflowHistoryList } from "@/features/workflows/workflow-components";
 import { workflowRegistry, getFeaturedWorkflows } from "@/lib/workflow/registry";
+import { getWorkflowHistory, clearWorkflowHistory } from "@/lib/workflow/history";
 import type { WorkflowDefinition } from "@/types/workflow";
+import type { WorkflowRunRecord } from "@/lib/workflow/history";
 
 const ALL_CATEGORIES = [
   "All",
@@ -24,12 +27,20 @@ const ALL_CATEGORIES = [
   "writing",
   "business",
   "design",
+  "ai",
+  "security",
+  "custom",
 ];
 
 export function WorkflowsPageClient() {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
+  const [history, setHistory] = useState<WorkflowRunRecord[]>([]);
+
+  useEffect(() => {
+    setHistory(getWorkflowHistory());
+  }, []);
 
   const featured = getFeaturedWorkflows();
 
@@ -46,6 +57,11 @@ export function WorkflowsPageClient() {
     return matchesSearch && matchesCategory;
   });
 
+  const handleClearHistory = () => {
+    clearWorkflowHistory();
+    setHistory([]);
+  };
+
   return (
     <PageShell>
       <ToolHeader
@@ -53,6 +69,18 @@ export function WorkflowsPageClient() {
         title="Workflows"
         description="Chain multiple tools together to accomplish complex tasks in one go."
       />
+
+      {/* Action bar */}
+      <div className="flex items-center gap-3 mb-6">
+        <Button
+          onClick={() => router.push("/workflows/builder")}
+          className="gap-2"
+          size="sm"
+        >
+          <Wand2 className="h-4 w-4" />
+          Build Custom Workflow
+        </Button>
+      </div>
 
       {/* Search & Filter */}
       <div className="flex flex-col sm:flex-row gap-3 mb-8">
@@ -89,6 +117,22 @@ export function WorkflowsPageClient() {
         </div>
       </div>
 
+      {/* Workflow History */}
+      {history.length > 0 && !search && activeCategory === "All" && (
+        <section className="mb-10" aria-labelledby="history-heading">
+          <WorkflowHistoryList
+            runs={history}
+            onRunClick={(runId) => {
+              const run = history.find((r) => r.id === runId);
+              if (run) {
+                router.push(`/workflows/${run.workflowId}`);
+              }
+            }}
+            onClear={handleClearHistory}
+          />
+        </section>
+      )}
+
       {/* Featured Workflows */}
       {featured.length > 0 && !search && activeCategory === "All" && (
         <section className="mb-10" aria-labelledby="featured-heading">
@@ -116,6 +160,15 @@ export function WorkflowsPageClient() {
         {filtered.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
             <p className="text-sm">No workflows found matching your criteria.</p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-3 gap-2"
+              onClick={() => router.push("/workflows/builder")}
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Build your own
+            </Button>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

@@ -6,14 +6,15 @@
 
 import { useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Play, RotateCcw } from "lucide-react";
+import { ArrowLeft, Play, RotateCcw, Download, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageShell } from "@/components/common/workload-layouts";
 import { WorkflowDetail, WorkflowPipeline } from "@/features/workflows/workflow-components";
 import { getWorkflowById } from "@/lib/workflow/registry";
 import { executePipeline } from "@/lib/workflow/engine";
-import type { WorkflowExecutionState, WorkflowStep } from "@/types/workflow";
-import type { StepExecutor } from "@/lib/workflow/engine";
+import { createToolExecutor } from "@/lib/workflow/tool-executor";
+import { addWorkflowRun } from "@/lib/workflow/history";
+import type { WorkflowExecutionState } from "@/types/workflow";
 
 export function WorkflowDetailPageClient() {
   const params = useParams();
@@ -23,6 +24,7 @@ export function WorkflowDetailPageClient() {
 
   const [executionState, setExecutionState] = useState<WorkflowExecutionState | null>(null);
   const [isRunning, setIsRunning] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const handleStepChange = useCallback((state: WorkflowExecutionState) => {
     setExecutionState({ ...state, steps: [...state.steps] });
@@ -33,23 +35,36 @@ export function WorkflowDetailPageClient() {
 
     setIsRunning(true);
 
-    // Mock executor — in production, this would call actual tool engines
-    const executor: StepExecutor = async (step, input, signal) => {
-      // Simulate processing time
-      await new Promise((resolve, reject) => {
-        const timeout = setTimeout(resolve, 1000 + Math.random() * 1500);
-        signal?.addEventListener("abort", () => {
-          clearTimeout(timeout);
-          reject(new Error("Cancelled"));
+    // Use the real tool executor
+    const executor = createToolExecutor({
+      onProgress: (stepId, progress) => {
+        setExecutionState((prev) => {
+          if (!prev) return prev;
+          const steps = prev.steps.map((s) =>
+            s.stepId === stepId ? { ...s, progress } : s
+          );
+          return { ...prev, steps };
         });
-      });
-
-      return { result: `Processed by ${step.label}`, input };
-    };
+      },
+    });
 
     try {
-      await executePipeline(workflow, { type: workflow.inputType }, executor, {
-        onStepChange: handleStepChange,
+      const result = await executePipeline(
+        workflow,
+        { type: workflow.inputType, text: "" },
+        executor,
+        { onStepChange: handleStepChange }
+      );
+
+      // Save to history
+      addWorkflowRun({
+        id: `run-${Date.now()}`,
+        workflowId: workflow.id,
+        workflowName: workflow.name,
+        state: result,
+        startedAt: result.startedAt ?? Date.now(),
+        completedAt: result.completedAt,
+        status: result.overallStatus === "completed" ? "completed" : "failed",
       });
     } catch {
       // Error already handled in state
@@ -61,6 +76,22 @@ export function WorkflowDetailPageClient() {
   const handleReset = useCallback(() => {
     setExecutionState(null);
   }, []);
+
+  const handleCopyOutput = useCallback(async () => {
+    if (!executionState) return;
+    const lastStep = executionState.steps[executionState.steps.length - 1];
+    const output = lastStep?.output;
+    if (!output) return;
+
+    const text =
+      typeof output === "string"
+        ? output
+        : JSON.stringify(output, null, 2);
+
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }, [executionState]);
 
   if (!workflow) {
     return (
@@ -81,6 +112,13 @@ export function WorkflowDetailPageClient() {
 
   const isCompleted = executionState?.overallStatus === "completed";
   const isFailed = executionState?.overallStatus === "failed";
+  const lastStepOutput: unknown = executionState?.steps[executionState.steps.length - 1]?.output;
+  const outputText: string =
+    lastStepOutput != null
+      ? typeof lastStepOutput === "string"
+        ? lastStepOutput
+        : JSON.stringify(lastStepOutput, null, 2)
+      : "";
 
   return (
     <PageShell>
@@ -146,6 +184,33 @@ export function WorkflowDetailPageClient() {
                     currentStepIndex={executionState.currentStepIndex}
                     stepStates={executionState.steps}
                   />
+
+                  {/* Output preview */}
+                  {isCompleted && outputText && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                          Output
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleCopyOutput}
+                          className="h-6 text-[10px] gap-1"
+                        >
+                          {copied ? (
+                            <Check className="h-3 w-3 text-success" />
+                          ) : (
+                            <Copy className="h-3 w-3" />
+                          )}
+                          {copied ? "Copied" : "Copy"}
+                        </Button>
+                      </div>
+                      <pre className="text-[11px] bg-muted/50 rounded-lg p-3 max-h-32 overflow-auto whitespace-pre-wrap break-all">
+                        {outputText}
+                      </pre>
+                    </div>
+                  )}
 
                   {/* Actions */}
                   {(isCompleted || isFailed) && (
