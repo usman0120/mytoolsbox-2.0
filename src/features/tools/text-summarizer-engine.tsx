@@ -138,7 +138,7 @@ export function TextSummarizerEngine() {
               min={10}
               max={80}
               step={5}
-              onValueChange={([v]) => setLength(v)}
+              onValueChange={(v) => setLength(Array.isArray(v) ? v[0] : v)}
             />
             <div className="flex justify-between text-xs text-muted-foreground">
               <span>Shorter</span>

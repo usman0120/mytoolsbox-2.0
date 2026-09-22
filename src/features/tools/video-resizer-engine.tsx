@@ -274,7 +274,10 @@ export function VideoResizerEngine() {
                   min={10}
                   max={200}
                   step={5}
-                  onValueChange={(v) => setPercentage(Array.isArray(v) ? v[0] : v)}
+                  onValueChange={(v) => {
+                    const val = Array.isArray(v) ? v[0] : v;
+                    if (typeof val === "number") setPercentage(val);
+                  }}
                 />
                 <p className="text-xs text-muted-foreground">
                   Output: {Math.round(originalWidth * (percentage / 100))}×{Math.round(originalHeight * (percentage / 100))}
