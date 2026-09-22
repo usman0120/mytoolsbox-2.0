@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
 import { toast } from "sonner";
 import {
-  Film, Upload, Download, Loader2, CheckCircle2, XCircle,
+  Film, Download, Loader2, CheckCircle2, XCircle,
   Crop, Maximize, Settings2,
 } from "lucide-react";
 
@@ -274,7 +274,7 @@ export function VideoResizerEngine() {
                   min={10}
                   max={200}
                   step={5}
-                  onValueChange={([v]) => setPercentage(v)}
+                  onValueChange={(v) => setPercentage(Array.isArray(v) ? v[0] : v)}
                 />
                 <p className="text-xs text-muted-foreground">
                   Output: {Math.round(originalWidth * (percentage / 100))}×{Math.round(originalHeight * (percentage / 100))}
