@@ -64,6 +64,40 @@ const SLASH_COMMANDS = [
   { cmd: "/steps", label: "Step-by-Step Guide", desc: "Create an actionable implementation guide", prefix: "Create a detailed, step-by-step implementation guide for: ", icon: ListOrdered },
 ];
 
+interface SpeechRecognitionResultItem {
+  transcript: string;
+}
+
+interface SpeechRecognitionResultList {
+  [index: number]: {
+    [index: number]: SpeechRecognitionResultItem;
+  };
+  length: number;
+}
+
+interface SpeechRecognitionEvent {
+  resultIndex: number;
+  results: SpeechRecognitionResultList;
+}
+
+interface SpeechRecognitionErrorEvent {
+  error: string;
+}
+
+interface BrowserSpeechRecognition {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onstart: (() => void) | null;
+  onresult: ((event: SpeechRecognitionEvent) => void) | null;
+  onerror: ((event: SpeechRecognitionErrorEvent) => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+}
+
+type SpeechRecognitionConstructor = new () => BrowserSpeechRecognition;
+
 export function ChatInput({
   input,
   setInput,
@@ -82,15 +116,13 @@ export function ChatInput({
 }: ChatInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [isRecording, setIsRecording] = useState(false);
-  const [slashMenuOpen, setSlashMenuOpen] = useState(false);
-  const [internalProviders, setInternalProviders] = useState<string[]>([]);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const recognitionRef = useRef<any>(null);
+  const [slashMenuDismissed, setSlashMenuDismissed] = useState(false);
+  const [fetchedProviders, setFetchedProviders] = useState<string[]>([]);
+  const recognitionRef = useRef<BrowserSpeechRecognition | null>(null);
 
-  // Auto-fetch available providers if not provided by parent
+  // Auto-fetch available providers only if not provided by parent
   useEffect(() => {
     if (availableProviders && availableProviders.length > 0) {
-      setInternalProviders(availableProviders);
       return;
     }
 
@@ -99,12 +131,12 @@ export function ChatInput({
       .then((res) => res.json())
       .then((data) => {
         if (!cancelled && Array.isArray(data.providers)) {
-          setInternalProviders(data.providers);
+          setFetchedProviders(data.providers);
         }
       })
       .catch(() => {
         // Fallback default
-        if (!cancelled) setInternalProviders(["gemini", "groq"]);
+        if (!cancelled) setFetchedProviders(["gemini", "groq"]);
       });
 
     return () => {
@@ -121,14 +153,9 @@ export function ChatInput({
     }
   }, [input]);
 
-  // Open slash commands when input starts with "/"
-  useEffect(() => {
-    if (input.startsWith("/") && !input.includes(" ") && input.length <= 15) {
-      setSlashMenuOpen(true);
-    } else {
-      setSlashMenuOpen(false);
-    }
-  }, [input]);
+  // Derive slash menu visibility without cascading effect updates
+  const isSlashTrigger = input.startsWith("/") && !input.includes(" ") && input.length <= 15;
+  const slashMenuOpen = isSlashTrigger && !slashMenuDismissed;
 
   const filteredSlashCommands = SLASH_COMMANDS.filter((sc) =>
     sc.cmd.toLowerCase().startsWith(input.toLowerCase().trim())
@@ -136,7 +163,7 @@ export function ChatInput({
 
   const applySlashCommand = useCallback((prefix: string) => {
     setInput(prefix);
-    setSlashMenuOpen(false);
+    setSlashMenuDismissed(true);
     setTimeout(() => {
       textareaRef.current?.focus();
     }, 50);
@@ -145,7 +172,7 @@ export function ChatInput({
   // Keyboard shortcut: Enter to send, Shift+Enter for new line
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Escape") {
-      setSlashMenuOpen(false);
+      setSlashMenuDismissed(true);
       return;
     }
 
@@ -171,10 +198,9 @@ export function ChatInput({
       return;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const SpeechRecognition =
-      (window as unknown as { SpeechRecognition?: any }).SpeechRecognition ||
-      (window as unknown as { webkitSpeechRecognition?: any }).webkitSpeechRecognition;
+      (window as unknown as { SpeechRecognition?: SpeechRecognitionConstructor }).SpeechRecognition ||
+      (window as unknown as { webkitSpeechRecognition?: SpeechRecognitionConstructor }).webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
       toast.error("Speech recognition is not supported in this browser.");
@@ -192,8 +218,7 @@ export function ChatInput({
         toast.info("Listening... Speak now");
       };
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      recognition.onresult = (event: any) => {
+      recognition.onresult = (event: SpeechRecognitionEvent) => {
         let transcript = "";
         for (let i = event.resultIndex; i < event.results.length; i++) {
           transcript += event.results[i][0].transcript;
@@ -203,8 +228,7 @@ export function ChatInput({
         }
       };
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      recognition.onerror = (event: any) => {
+      recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
         if (event.error !== "no-speech") {
           toast.error(`Speech recognition error: ${event.error}`);
         }
@@ -224,7 +248,9 @@ export function ChatInput({
   };
 
   // Dynamic Provider List & Display
-  const effectiveProviders = internalProviders.length > 0 ? internalProviders : ["gemini", "groq"];
+  const effectiveProviders = (availableProviders && availableProviders.length > 0)
+    ? availableProviders
+    : (fetchedProviders.length > 0 ? fetchedProviders : ["gemini", "groq"]);
 
   const getActiveProviderLabel = () => {
     if (selectedProvider === "auto") return "Auto Router";
@@ -285,12 +311,15 @@ export function ChatInput({
           <textarea
             ref={textareaRef}
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => {
+              setInput(e.target.value);
+              setSlashMenuDismissed(false);
+            }}
             onKeyDown={handleKeyDown}
             placeholder={dynamicPlaceholder}
             disabled={disabled || isLoading}
             rows={1}
-            className="w-full resize-none bg-transparent py-1 text-sm sm:text-base text-white placeholder:text-neutral-400 focus:outline-hidden max-h-48 leading-relaxed font-normal overflow-y-auto [scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.2)_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/20 [&::-webkit-scrollbar-thumb]:rounded-full"
+            className="w-full resize-none bg-transparent py-1 text-sm sm:text-base text-white placeholder:text-neutral-400 focus:outline-hidden max-h-48 leading-relaxed font-normal overflow-y-auto scrollbar-thin [scrollbar-color:rgba(255,255,255,0.2)_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/20 [&::-webkit-scrollbar-thumb]:rounded-full"
           />
         </div>
 
