@@ -145,7 +145,7 @@ Maintain original layout, paragraph breaks, and table structure where applicable
 
       const { createWorker } = await import("tesseract.js");
       const worker = await createWorker(language, 1, {
-        logger: (m) => {
+        logger: (m: { status: string; progress: number }) => {
           if (m.status === "recognizing text") {
             setProgressMsg(`Recognizing text (${Math.round(m.progress * 100)}%)...`);
             setProgressPercent(30 + Math.round(m.progress * 65));
