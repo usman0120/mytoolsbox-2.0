@@ -26,6 +26,11 @@ import {
   CaseSensitive,
   Zap,
   GitBranch,
+  Bot,
+  Cpu,
+  Lightbulb,
+  MessageSquare,
+  Coins,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -202,6 +207,144 @@ export default function Home() {
               </Card>
             </Link>
           ))}
+        </div>
+      </section>
+
+      {/* ===== AI SUITE PROMOTION ===== */}
+      <section className="relative overflow-hidden border-t bg-linear-to-b from-violet-500/5 via-primary/5 to-background py-16 md:py-24">
+        <div className="container mx-auto px-4 max-w-7xl">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <Badge variant="outline" className="text-xs px-2.5 py-0.5 rounded-full border-violet-500/30 text-violet-600 dark:text-violet-400 bg-violet-500/10 font-semibold gap-1.5">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  AI Intelligence Suite
+                </Badge>
+                <Badge variant="secondary" className="text-xs px-2.5 py-0.5 rounded-full gap-1 font-mono">
+                  <Coins className="h-3 w-3 text-amber-500" />
+                  1,000 Free Credits/Mo
+                </Badge>
+              </div>
+              <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">
+                Multi-Engine AI Copilot Built for Builders
+              </h2>
+              <p className="text-sm md:text-base text-muted-foreground mt-2 max-w-2xl leading-relaxed">
+                Harness high-speed intelligence powered by Google Gemini 2.0 Flash and Groq Llama 3.3 70B. Chat, benchmark models side-by-side, explore 160+ curated prompts, and activate expert domain personas.
+              </p>
+            </div>
+            <Link href="/ai" className="shrink-0">
+              <Button size="lg" className="rounded-2xl gap-2 font-medium shadow-md">
+                <span>Open AI Workspace</span>
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {/* Card 1: Chat Workspace */}
+            <Link href="/ai" className="group">
+              <Card className="h-full border-border/60 hover:border-violet-500/50 bg-card/70 hover:bg-card/95 transition-all duration-300 card-lift rounded-2xl overflow-hidden p-6 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-500/10 text-violet-600 dark:text-violet-400 ring-1 ring-violet-500/20 group-hover:scale-105 transition-transform">
+                      <MessageSquare className="h-6 w-6" />
+                    </div>
+                    <Badge variant="outline" className="text-[10px] font-mono rounded-full border-violet-500/30 text-violet-600 dark:text-violet-400">
+                      Auto-Router
+                    </Badge>
+                  </div>
+                  <h3 className="text-base font-semibold mb-1.5 group-hover:text-primary transition-colors">
+                    Chat Workspace
+                  </h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Conversational workspace with real-time routing, speech-to-text dictation, and syntax-highlighted code export.
+                  </p>
+                </div>
+                <div className="mt-5 flex items-center text-xs font-semibold text-primary gap-1 group-hover:translate-x-0.5 transition-transform">
+                  <span>Start Chatting</span>
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </div>
+              </Card>
+            </Link>
+
+            {/* Card 2: Prompt Library */}
+            <Link href="/ai/prompts" className="group">
+              <Card className="h-full border-border/60 hover:border-amber-500/50 bg-card/70 hover:bg-card/95 transition-all duration-300 card-lift rounded-2xl overflow-hidden p-6 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 ring-1 ring-amber-500/20 group-hover:scale-105 transition-transform">
+                      <Lightbulb className="h-6 w-6" />
+                    </div>
+                    <Badge variant="outline" className="text-[10px] font-mono rounded-full border-amber-500/30 text-amber-600 dark:text-amber-400">
+                      160+ Prompts
+                    </Badge>
+                  </div>
+                  <h3 className="text-base font-semibold mb-1.5 group-hover:text-primary transition-colors">
+                    Prompt Library
+                  </h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Battle-tested prompts across Software Engineering, Copywriting, Mathematics, Academic Research, and Product Strategy.
+                  </p>
+                </div>
+                <div className="mt-5 flex items-center text-xs font-semibold text-primary gap-1 group-hover:translate-x-0.5 transition-transform">
+                  <span>Browse Prompts</span>
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </div>
+              </Card>
+            </Link>
+
+            {/* Card 3: Model Arena */}
+            <Link href="/ai/compare" className="group">
+              <Card className="h-full border-border/60 hover:border-blue-500/50 bg-card/70 hover:bg-card/95 transition-all duration-300 card-lift rounded-2xl overflow-hidden p-6 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400 ring-1 ring-blue-500/20 group-hover:scale-105 transition-transform">
+                      <Cpu className="h-6 w-6" />
+                    </div>
+                    <Badge variant="outline" className="text-[10px] font-mono rounded-full border-blue-500/30 text-blue-600 dark:text-blue-400">
+                      Arena
+                    </Badge>
+                  </div>
+                  <h3 className="text-base font-semibold mb-1.5 group-hover:text-primary transition-colors">
+                    Compare Models
+                  </h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Run head-to-head comparisons of Gemini 2.0 Flash against Groq Llama 3.3 70B with real-time millisecond latency metrics.
+                  </p>
+                </div>
+                <div className="mt-5 flex items-center text-xs font-semibold text-primary gap-1 group-hover:translate-x-0.5 transition-transform">
+                  <span>Compare Models</span>
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </div>
+              </Card>
+            </Link>
+
+            {/* Card 4: Personas & Tools */}
+            <Link href="/ai/personas" className="group">
+              <Card className="h-full border-border/60 hover:border-emerald-500/50 bg-card/70 hover:bg-card/95 transition-all duration-300 card-lift rounded-2xl overflow-hidden p-6 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 ring-1 ring-emerald-500/20 group-hover:scale-105 transition-transform">
+                      <Sparkles className="h-6 w-6" />
+                    </div>
+                    <Badge variant="outline" className="text-[10px] font-mono rounded-full border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
+                      Expert Roles
+                    </Badge>
+                  </div>
+                  <h3 className="text-base font-semibold mb-1.5 group-hover:text-primary transition-colors">
+                    Personas & Tools
+                  </h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Tuned system roles for Staff Software Engineers, Mathematics Professors, Master Copywriters, and Executive Product Managers.
+                  </p>
+                </div>
+                <div className="mt-5 flex items-center text-xs font-semibold text-primary gap-1 group-hover:translate-x-0.5 transition-transform">
+                  <span>View Personas</span>
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </div>
+              </Card>
+            </Link>
+          </div>
         </div>
       </section>
 

@@ -1,331 +1,290 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   CheckCircle2, Plus, Trash2, Download, Flame, TrendingUp,
-  Calendar, ChevronLeft, ChevronRight, BarChart3, Target,
+  Calendar, ChevronLeft, ChevronRight, BarChart3, Check
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
+import {
+  Habit,
+  HabitEntry,
+  generateHabitId,
+  calculateHabitStreak,
+  getDaysOfWeek,
+} from "@/features/tools/habit-tracker";
 
-interface Habit {
-  id: string;
-  name: string;
-  emoji: string;
-  color: string;
-  createdAt: number;
-}
-
-interface HabitEntry {
-  date: string; // YYYY-MM-DD
-  habitId: string;
-  done: boolean;
-}
-
-const HABITS_KEY = "mytoolsbox-habits";
-const ENTRIES_KEY = "mytoolsbox-habit-entries";
+const HABITS_KEY = "mytoolsbox-habits-v2";
+const ENTRIES_KEY = "mytoolsbox-habit-entries-v2";
 
 const HABIT_COLORS = [
   "#ef4444", "#f97316", "#eab308", "#22c55e", "#06b6d4",
-  "#3b82f6", "#8b5cf6", "#ec4899", "#78716c",
+  "#3b82f6", "#8b5cf6", "#ec4899",
 ];
 
-const HABIT_EMOJIS = ["💪", "📚", "🏃", "💧", "🧘", "🎯", "✍️", "💤", "🥗", "🚶", "🎨", "💻"];
-
-function loadFromStorage<T>(key: string, fallback: T): T {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function saveToStorage(key: string, data: unknown) {
-  localStorage.setItem(key, JSON.stringify(data));
-}
-
-function getDateString(date: Date): string {
-  return date.toISOString().split("T")[0];
-}
-
-function getWeekDates(date: Date): string[] {
-  const day = date.getDay();
-  const diff = date.getDate() - day + (day === 0 ? -6 : 1); // Monday start
-  const monday = new Date(date.setDate(diff));
-  const dates: string[] = [];
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(monday);
-    d.setDate(monday.getDate() + i);
-    dates.push(getDateString(d));
-  }
-  return dates;
-}
-
-const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const HABIT_EMOJIS = ["💪", "📚", "🏃", "💧", "🧘", "🎯", "✍️", "💤", "🥗", "💻"];
 
 export function HabitTrackerEngine() {
-  const [habits, setHabits] = useState<Habit[]>(() => loadFromStorage(HABITS_KEY, []));
-  const [entries, setEntries] = useState<HabitEntry[]>(() => loadFromStorage(ENTRIES_KEY, []));
-  const [newHabitName, setNewHabitName] = useState("");
-  const [weekOffset, setWeekOffset] = useState(0);
-  const [showAdd, setShowAdd] = useState(false);
+  const [habits, setHabits] = useState<Habit[]>(() => {
+    try {
+      const raw = localStorage.getItem(HABITS_KEY);
+      return raw ? JSON.parse(raw) : [
+        { id: "h1", name: "Drink 2L Water", emoji: "💧", color: "#06b6d4", createdAt: Date.now() },
+        { id: "h2", name: "Read 20 Pages", emoji: "📚", color: "#3b82f6", createdAt: Date.now() },
+        { id: "h3", name: "Exercise 30 Mins", emoji: "🏃", color: "#22c55e", createdAt: Date.now() },
+      ];
+    } catch {
+      return [];
+    }
+  });
 
-  const today = new Date();
-  today.setDate(today.getDate() + weekOffset * 7);
-  const weekDates = getWeekDates(new Date(today));
-  const todayStr = getDateString(new Date());
+  const [entries, setEntries] = useState<HabitEntry[]>(() => {
+    try {
+      const raw = localStorage.getItem(ENTRIES_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [currentWeekOffset, setCurrentWeekOffset] = useState(0);
+  const [newHabitName, setNewHabitName] = useState("");
+  const [newHabitEmoji, setNewHabitEmoji] = useState("🎯");
+  const [newHabitColor, setNewHabitColor] = useState("#3b82f6");
+  const [showAddForm, setShowAddForm] = useState(false);
 
   useEffect(() => {
-    saveToStorage(HABITS_KEY, habits);
+    localStorage.setItem(HABITS_KEY, JSON.stringify(habits));
   }, [habits]);
 
   useEffect(() => {
-    saveToStorage(ENTRIES_KEY, entries);
+    localStorage.setItem(ENTRIES_KEY, JSON.stringify(entries));
   }, [entries]);
 
-  const handleAddHabit = useCallback(() => {
-    const name = newHabitName.trim();
-    if (!name) return;
-    if (habits.length >= 20) {
-      toast.error("Maximum 20 habits allowed.");
+  const referenceDate = new Date();
+  referenceDate.setDate(referenceDate.getDate() + currentWeekOffset * 7);
+  const weekDays = getDaysOfWeek(referenceDate);
+
+  const isHabitDoneOn = (habitId: string, dateStr: string): boolean => {
+    return entries.some((e) => e.habitId === habitId && e.date === dateStr && e.done);
+  };
+
+  const toggleHabit = (habitId: string, dateStr: string) => {
+    setEntries((prev) => {
+      const exists = prev.find((e) => e.habitId === habitId && e.date === dateStr);
+      if (exists) {
+        return prev.map((e) => (e.habitId === habitId && e.date === dateStr ? { ...e, done: !e.done } : e));
+      }
+      return [...prev, { habitId, date: dateStr, done: true }];
+    });
+  };
+
+  const handleCreateHabit = () => {
+    if (!newHabitName.trim()) {
+      toast.error("Habit name is required.");
       return;
     }
-    const habit: Habit = {
-      id: Date.now().toString(36),
-      name,
-      emoji: HABIT_EMOJIS[habits.length % HABIT_EMOJIS.length],
-      color: HABIT_COLORS[habits.length % HABIT_COLORS.length],
+    const newHabit: Habit = {
+      id: generateHabitId(),
+      name: newHabitName.trim(),
+      emoji: newHabitEmoji,
+      color: newHabitColor,
       createdAt: Date.now(),
     };
-    setHabits((prev) => [...prev, habit]);
+    setHabits((prev) => [...prev, newHabit]);
     setNewHabitName("");
-    setShowAdd(false);
-    toast.success("Habit added!");
-  }, [newHabitName, habits.length]);
+    setShowAddForm(false);
+    toast.success("New habit created!");
+  };
 
-  const handleToggle = useCallback((habitId: string, date: string) => {
-    setEntries((prev) => {
-      const existing = prev.find((e) => e.habitId === habitId && e.date === date);
-      if (existing) {
-        return prev.map((e) =>
-          e.habitId === habitId && e.date === date ? { ...e, done: !e.done } : e
-        );
-      }
-      return [...prev, { date, habitId, done: true }];
-    });
-  }, []);
-
-  const handleDeleteHabit = useCallback((habitId: string) => {
-    setHabits((prev) => prev.filter((h) => h.id !== habitId));
-    setEntries((prev) => prev.filter((e) => e.habitId !== habitId));
-    toast.success("Habit removed.");
-  }, []);
-
-  const handleExport = () => {
-    const rows = [["Habit", ...DAY_LABELS]];
-    for (const habit of habits) {
-      const row = [habit.name];
-      for (const date of weekDates) {
-        const entry = entries.find((e) => e.habitId === habit.id && e.date === date);
-        row.push(entry?.done ? "✓" : "✗");
-      }
-      rows.push(row);
+  const handleDeleteHabit = (id: string) => {
+    if (confirm("Delete this habit and all its history?")) {
+      setHabits((prev) => prev.filter((h) => h.id !== id));
+      setEntries((prev) => prev.filter((e) => e.habitId !== id));
+      toast.success("Habit deleted.");
     }
-    const csv = rows.map((r) => r.join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
+  };
+
+  const handleExportJSON = () => {
+    const backup = { habits, entries, exportedAt: new Date().toISOString() };
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `habit-tracker-${weekDates[0]}.csv`;
+    a.download = `habits-backup-${Date.now()}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    toast.success("Exported as CSV!");
+    toast.success("Habits backup exported!");
   };
-
-  const getStreak = (habitId: string): number => {
-    let streak = 0;
-    const d = new Date(today);
-    while (true) {
-      const dateStr = getDateString(d);
-      const entry = entries.find((e) => e.habitId === habitId && e.date === dateStr);
-      if (entry?.done) {
-        streak++;
-        d.setDate(d.getDate() - 1);
-      } else {
-        break;
-      }
-    }
-    return streak;
-  };
-
-  const getCompletionRate = (habitId: string): number => {
-    const habitEntries = entries.filter((e) => e.habitId === habitId && e.done);
-    if (habitEntries.length === 0) return 0;
-    const firstEntry = habits.find((h) => h.id === habitId);
-    if (!firstEntry) return 0;
-    const daysSinceCreation = Math.max(
-      1,
-      Math.ceil((today.getTime() - firstEntry.createdAt) / (1000 * 60 * 60 * 24))
-    );
-    return Math.round((habitEntries.length / Math.min(daysSinceCreation, 30)) * 100);
-  };
-
-  const isCurrentWeek = weekOffset === 0;
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => setWeekOffset((w) => w - 1)}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <span className="text-sm font-medium min-w-[140px] text-center">
-            {weekDates[0]} – {weekDates[6]}
-          </span>
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => setWeekOffset((w) => Math.min(w + 1, 0))}
-            disabled={isCurrentWeek}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-          {!isCurrentWeek && (
-            <Button variant="ghost" size="sm" onClick={() => setWeekOffset(0)}>
-              Today
-            </Button>
-          )}
+    <div className="space-y-4">
+      {/* Header bar */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-bold flex items-center gap-2">
+            <CheckCircle2 className="h-5 w-5 text-primary" /> Habit Tracker
+          </h2>
+          <p className="text-sm text-muted-foreground">Build consistency with visual weekly streaks and completion analytics</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={handleExport} className="gap-1.5">
-            <Download className="h-3.5 w-3.5" /> Export
+        <div className="flex items-center gap-2">
+          <Button onClick={() => setShowAddForm(!showAddForm)} size="sm" className="gap-1.5 text-xs">
+            <Plus className="h-3.5 w-3.5" /> New Habit
           </Button>
-          <Button size="sm" onClick={() => setShowAdd(!showAdd)} className="gap-1.5">
-            <Plus className="h-3.5 w-3.5" /> Add Habit
+          <Button variant="outline" size="sm" onClick={handleExportJSON} className="gap-1.5 text-xs">
+            <Download className="h-3.5 w-3.5" /> Export Data
           </Button>
         </div>
       </div>
 
-      {/* Add habit form */}
-      {showAdd && (
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex gap-2">
+      {/* New Habit Form */}
+      {showAddForm && (
+        <Card className="p-4 border-primary/40 bg-muted/20">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <span className="text-xl p-1 bg-background border rounded">{newHabitEmoji}</span>
               <Input
-                placeholder="New habit name..."
+                placeholder="Habit title (e.g. Meditate for 10 minutes)..."
                 value={newHabitName}
                 onChange={(e) => setNewHabitName(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleAddHabit()}
-                className="flex-1"
+                className="h-8 text-xs flex-1"
                 autoFocus
               />
-              <Button onClick={handleAddHabit} disabled={!newHabitName.trim()}>
-                Add
-              </Button>
             </div>
-          </CardContent>
+
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t">
+              <div className="flex items-center gap-1">
+                <span className="text-[10px] text-muted-foreground mr-1">Icon:</span>
+                {HABIT_EMOJIS.map((em) => (
+                  <button
+                    key={em}
+                    onClick={() => setNewHabitEmoji(em)}
+                    className={`h-7 w-7 text-sm rounded hover:bg-muted ${newHabitEmoji === em ? "bg-muted border border-primary" : ""}`}
+                  >
+                    {em}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] text-muted-foreground mr-1">Color:</span>
+                {HABIT_COLORS.map((c) => (
+                  <button
+                    key={c}
+                    onClick={() => setNewHabitColor(c)}
+                    className={`w-5 h-5 rounded-full border-2 transition-transform ${newHabitColor === c ? "scale-125 border-foreground" : "border-transparent"}`}
+                    style={{ backgroundColor: c }}
+                  />
+                ))}
+              </div>
+
+              <div className="flex gap-2">
+                <Button variant="ghost" size="sm" onClick={() => setShowAddForm(false)} className="h-7 text-xs">
+                  Cancel
+                </Button>
+                <Button size="sm" onClick={handleCreateHabit} className="h-7 text-xs">
+                  Save Habit
+                </Button>
+              </div>
+            </div>
+          </div>
         </Card>
       )}
 
-      {/* Habit grid */}
-      {habits.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">
-          <CheckCircle2 className="h-12 w-12 mx-auto mb-3 opacity-30" />
-          <p className="text-sm">No habits yet. Start tracking your daily habits!</p>
+      {/* Week Navigation */}
+      <div className="flex items-center justify-between text-xs px-1">
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => setCurrentWeekOffset((p) => p - 1)}>
+            <ChevronLeft className="h-3.5 w-3.5" />
+          </Button>
+          <span className="font-semibold text-muted-foreground">
+            {weekDays[0].name} {weekDays[0].dateStr} — {weekDays[6].name} {weekDays[6].dateStr}
+          </span>
+          <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => setCurrentWeekOffset((p) => p + 1)}>
+            <ChevronRight className="h-3.5 w-3.5" />
+          </Button>
         </div>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
+        {currentWeekOffset !== 0 && (
+          <Button variant="ghost" size="sm" onClick={() => setCurrentWeekOffset(0)} className="h-7 text-[10px]">
+            Return to Today
+          </Button>
+        )}
+      </div>
+
+      {/* Weekly Grid */}
+      <Card>
+        <CardContent className="p-0 overflow-x-auto">
+          <table className="w-full text-xs text-left min-w-[560px]">
+            <thead className="bg-muted/40 text-muted-foreground border-b">
               <tr>
-                <th className="text-left text-xs font-medium text-muted-foreground pb-2 pr-4 min-w-30">
-                  Habit
-                </th>
-                {DAY_LABELS.map((day, i) => (
-                  <th
-                    key={day}
-                    className={`text-center text-xs font-medium pb-2 px-1 w-10 ${
-                      weekDates[i] === todayStr ? "text-primary" : "text-muted-foreground"
-                    }`}
-                  >
-                    <div>{day}</div>
-                    <div className="text-[10px]">{weekDates[i].slice(5)}</div>
+                <th className="py-2.5 px-4 w-52">Habit</th>
+                {weekDays.map((day) => (
+                  <th key={day.dateStr} className={`py-2 px-2 text-center ${day.isToday ? "text-primary font-bold bg-primary/5" : ""}`}>
+                    <div>{day.name}</div>
+                    <div className="text-[10px] font-mono font-normal opacity-80">{day.dateStr.slice(8)}</div>
                   </th>
                 ))}
-                <th className="text-center text-xs font-medium text-muted-foreground pb-2 pl-4 w-16">
-                  Streak
-                </th>
-                <th className="w-8"></th>
+                <th className="py-2 px-3 text-center w-28">Streak</th>
+                <th className="py-2 px-2 text-right w-10"></th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-border">
               {habits.map((habit) => {
-                const streak = getStreak(habit.id);
+                const { currentStreak, longestStreak, completionRate30Days } = calculateHabitStreak(habit.id, entries);
+
                 return (
-                  <tr key={habit.id} className="group">
-                    <td className="py-2 pr-4">
+                  <tr key={habit.id} className="hover:bg-muted/20 transition-colors">
+                    <td className="py-3 px-4 font-medium">
                       <div className="flex items-center gap-2">
-                        <span className="text-lg">{habit.emoji}</span>
-                        <span className="text-sm font-medium truncate max-w-25">
-                          {habit.name}
-                        </span>
+                        <span className="text-base">{habit.emoji}</span>
+                        <div>
+                          <p className="truncate font-semibold">{habit.name}</p>
+                          <span className="text-[10px] text-muted-foreground font-mono">
+                            {completionRate30Days}% last 30d
+                          </span>
+                        </div>
                       </div>
                     </td>
-                    {weekDates.map((date) => {
-                      const entry = entries.find(
-                        (e) => e.habitId === habit.id && e.date === date
-                      );
-                      const isToday = date === todayStr;
+
+                    {weekDays.map((day) => {
+                      const done = isHabitDoneOn(habit.id, day.dateStr);
+
                       return (
-                        <td key={date} className="text-center px-1 py-2">
+                        <td key={day.dateStr} className={`py-3 px-2 text-center ${day.isToday ? "bg-primary/5" : ""}`}>
                           <button
-                            onClick={() => handleToggle(habit.id, date)}
-                            className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all text-xs ${
-                              entry?.done
-                                ? "text-white shadow-sm"
-                                : "bg-muted/50 hover:bg-muted text-muted-foreground"
-                            } ${isToday ? "ring-2 ring-primary/30" : ""}`}
-                            style={
-                              entry?.done
-                                ? { backgroundColor: habit.color }
-                                : undefined
-                            }
+                            onClick={() => toggleHabit(habit.id, day.dateStr)}
+                            className={`h-7 w-7 rounded-lg inline-flex items-center justify-center transition-all ${
+                              done
+                                ? "text-white shadow-xs"
+                                : "border border-border/70 hover:border-primary/50 text-transparent hover:text-muted-foreground"
+                            }`}
+                            style={{ backgroundColor: done ? habit.color : "transparent" }}
                           >
-                            {entry?.done ? "✓" : ""}
+                            <Check className="h-4 w-4 stroke-[3]" />
                           </button>
                         </td>
                       );
                     })}
-                    <td className="text-center pl-4 py-2">
-                      <Badge
-                        variant="secondary"
-                        className={`gap-1 text-xs ${
-                          streak >= 7 ? "text-orange-500" : ""
-                        }`}
-                      >
-                        {streak >= 7 && <Flame className="h-3 w-3" />}
-                        {streak}
+
+                    <td className="py-3 px-3 text-center">
+                      <Badge variant="outline" className="gap-1 font-mono text-[10px]">
+                        <Flame className="h-3 w-3 text-orange-400" />
+                        {currentStreak}d
                       </Badge>
                     </td>
-                    <td className="py-2">
+
+                    <td className="py-3 px-2 text-right">
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-7 w-7 opacity-0 group-hover:opacity-100"
                         onClick={() => handleDeleteHabit(habit.id)}
+                        className="h-6 w-6 text-muted-foreground hover:text-destructive"
                       >
-                        <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                        <Trash2 className="h-3 w-3" />
                       </Button>
                     </td>
                   </tr>
@@ -333,50 +292,8 @@ export function HabitTrackerEngine() {
               })}
             </tbody>
           </table>
-        </div>
-      )}
-
-      {/* Stats */}
-      {habits.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <Card>
-            <CardContent className="p-3 text-center">
-              <p className="text-2xl font-bold">{habits.length}</p>
-              <p className="text-xs text-muted-foreground">Habits</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-3 text-center">
-              <p className="text-2xl font-bold">
-                {habits.reduce((max, h) => Math.max(max, getStreak(h.id)), 0)}
-              </p>
-              <p className="text-xs text-muted-foreground">Best Streak</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-3 text-center">
-              <p className="text-2xl font-bold">
-                {entries.filter((e) => e.done && weekDates.includes(e.date)).length}
-              </p>
-              <p className="text-xs text-muted-foreground">This Week</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-3 text-center">
-              <p className="text-2xl font-bold">
-                {habits.length > 0
-                  ? Math.round(
-                      (habits.reduce((sum, h) => sum + getCompletionRate(h.id), 0) /
-                        habits.length)
-                    )
-                  : 0}
-                %
-              </p>
-              <p className="text-xs text-muted-foreground">Avg Rate</p>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

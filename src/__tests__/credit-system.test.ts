@@ -31,29 +31,29 @@ describe("Credit System — AI Credits", () => {
       }
     });
 
-    it("cheap operations cost 1 credit", () => {
-      expect(CREDIT_COSTS.simple_rewrite).toBe(1);
-      expect(CREDIT_COSTS.grammar_check).toBe(1);
-      expect(CREDIT_COSTS.paraphrase).toBe(1);
-      expect(CREDIT_COSTS.citation).toBe(1);
-      expect(CREDIT_COSTS.chat_message).toBe(1);
+    it("standard chat and rewrite operations cost 10 credits", () => {
+      expect(CREDIT_COSTS.simple_rewrite).toBe(10);
+      expect(CREDIT_COSTS.grammar_check).toBe(10);
+      expect(CREDIT_COSTS.chat_message).toBe(10);
     });
 
-    it("medium operations cost 5 credits", () => {
-      expect(CREDIT_COSTS.ai_summary).toBe(5);
-      expect(CREDIT_COSTS.math_solving).toBe(5);
-      expect(CREDIT_COSTS.code_explanation).toBe(5);
-      expect(CREDIT_COSTS.notes_generation).toBe(5);
+    it("summary and paraphrase operations cost 15 credits", () => {
+      expect(CREDIT_COSTS.ai_summary).toBe(15);
+      expect(CREDIT_COSTS.paraphrase).toBe(15);
+      expect(CREDIT_COSTS.quiz_generation).toBe(15);
+      expect(CREDIT_COSTS.notes_generation).toBe(15);
     });
 
-    it("complex reasoning costs 10 credits", () => {
-      expect(CREDIT_COSTS.complex_reasoning).toBe(10);
-      expect(CREDIT_COSTS.diagram_generation).toBe(10);
-      expect(CREDIT_COSTS.planning).toBe(10);
+    it("code and math operations cost 20 credits", () => {
+      expect(CREDIT_COSTS.math_solving).toBe(20);
+      expect(CREDIT_COSTS.code_explanation).toBe(20);
+      expect(CREDIT_COSTS.diagram_generation).toBe(20);
+      expect(CREDIT_COSTS.planning).toBe(20);
     });
 
-    it("vision analysis costs 15 credits", () => {
-      expect(CREDIT_COSTS.vision_analysis).toBe(15);
+    it("complex reasoning and vision cost 25 credits", () => {
+      expect(CREDIT_COSTS.complex_reasoning).toBe(25);
+      expect(CREDIT_COSTS.vision_analysis).toBe(25);
     });
 
     it("image generation costs 50 credits", () => {
@@ -70,8 +70,8 @@ describe("Credit System — AI Credits", () => {
   // -----------------------------------------------------------------------
   describe("getCreditCost", () => {
     it("returns correct cost for known operations", () => {
-      expect(getCreditCost("simple_rewrite")).toBe(1);
-      expect(getCreditCost("complex_reasoning")).toBe(10);
+      expect(getCreditCost("simple_rewrite")).toBe(10);
+      expect(getCreditCost("complex_reasoning")).toBe(25);
       expect(getCreditCost("image_generation")).toBe(50);
     });
 
@@ -87,7 +87,7 @@ describe("Credit System — AI Credits", () => {
     it("returns true when user has enough credits", () => {
       expect(hasEnoughCredits(100, "simple_rewrite")).toBe(true);
       expect(hasEnoughCredits(50, "image_generation")).toBe(true);
-      expect(hasEnoughCredits(10, "complex_reasoning")).toBe(true);
+      expect(hasEnoughCredits(25, "complex_reasoning")).toBe(true);
     });
 
     it("returns false when user has insufficient credits", () => {
@@ -97,8 +97,8 @@ describe("Credit System — AI Credits", () => {
     });
 
     it("returns true when credits exactly match cost", () => {
-      expect(hasEnoughCredits(1, "simple_rewrite")).toBe(true);
-      expect(hasEnoughCredits(10, "complex_reasoning")).toBe(true);
+      expect(hasEnoughCredits(10, "simple_rewrite")).toBe(true);
+      expect(hasEnoughCredits(25, "complex_reasoning")).toBe(true);
     });
   });
 
@@ -111,8 +111,8 @@ describe("Credit System — AI Credits", () => {
       expect(SUBSCRIPTION_PLANS.free.priceMonthly).toBeNull();
     });
 
-    it("free_account tier has 500 monthly credits", () => {
-      expect(SUBSCRIPTION_PLANS.free_account.monthlyCredits).toBe(500);
+    it("free_account tier has 1000 monthly credits", () => {
+      expect(SUBSCRIPTION_PLANS.free_account.monthlyCredits).toBe(1000);
       expect(SUBSCRIPTION_PLANS.free_account.priceMonthly).toBeNull();
     });
 
@@ -236,12 +236,174 @@ describe("Credit System — AI Credits", () => {
       // The blended average should keep us profitable
     });
 
-    it("free_account has zero revenue but limited to 500 credits", () => {
+    it("free_account has zero revenue but limited to 1000 credits", () => {
       const freeAccountCredits = SUBSCRIPTION_PLANS.free_account.monthlyCredits;
-      expect(freeAccountCredits).toBe(500);
-      // 500 × $0.00015 = $0.075 max cost per free user → acceptable CAC
+      expect(freeAccountCredits).toBe(1000);
+      // 1,000 × $0.00015 = $0.15 max cost per free user → acceptable CAC
       const maxCost = freeAccountCredits * 0.00015;
-      expect(maxCost).toBeLessThan(0.10); // Under 10 cents per free user
+      expect(maxCost).toBeLessThan(0.20); // Under 20 cents per free user
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Server Auth & Token Verification
+  // -----------------------------------------------------------------------
+  describe("Server Auth (Anti-Fraud)", () => {
+    // Helper to create mock JWT
+    function createMockToken(payload: Record<string, unknown>): string {
+      const header = Buffer.from(JSON.stringify({ alg: "RS256", typ: "JWT" })).toString("base64url");
+      const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
+      const sig = "mock_signature_bytes";
+      return `${header}.${body}.${sig}`;
+    }
+
+    it("extracts authenticated user from valid Firebase JWT", async () => {
+      const { extractAuthUserFromCookies } = await import("@/lib/auth/server-auth");
+      const validToken = createMockToken({
+        sub: "user_abc12345",
+        user_id: "user_abc12345",
+        exp: Math.floor(Date.now() / 1000) + 3600,
+        email: "test@example.com",
+      });
+
+      const mockCookies = {
+        get: (name: string) => {
+          if (name === "__session") return { value: validToken };
+          return undefined;
+        },
+      };
+
+      const user = extractAuthUserFromCookies(mockCookies);
+      expect(user).not.toBeNull();
+      expect(user?.userId).toBe("user_abc12345");
+      expect(user?.email).toBe("test@example.com");
+      expect(user?.isAnonymous).toBe(false);
+    });
+
+    it("rejects expired Firebase JWT tokens", async () => {
+      const { extractAuthUserFromCookies } = await import("@/lib/auth/server-auth");
+      const expiredToken = createMockToken({
+        sub: "user_expired_999",
+        user_id: "user_expired_999",
+        exp: Math.floor(Date.now() / 1000) - 100, // in the past
+      });
+
+      const mockCookies = {
+        get: (name: string) => {
+          if (name === "__session") return { value: expiredToken };
+          return undefined;
+        },
+      };
+
+      const user = extractAuthUserFromCookies(mockCookies);
+      expect(user).toBeNull();
+    });
+
+    it("detects cookie tampering if __uid does not match token sub", async () => {
+      const { extractAuthUserFromCookies } = await import("@/lib/auth/server-auth");
+      const validToken = createMockToken({
+        sub: "legit_user_111",
+        user_id: "legit_user_111",
+        exp: Math.floor(Date.now() / 1000) + 3600,
+      });
+
+      const mockCookies = {
+        get: (name: string) => {
+          if (name === "__session") return { value: validToken };
+          if (name === "__uid") return { value: "tampered_user_222" };
+          return undefined;
+        },
+      };
+
+      const user = extractAuthUserFromCookies(mockCookies);
+      expect(user).toBeNull(); // Tampering detected
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Credit Service (30-day reset & deductions)
+  // -----------------------------------------------------------------------
+  describe("Credit Service — 30-Day Reset & Tracking", () => {
+    it("allocates 1000 credits to free accounts and deducts correctly", async () => {
+      const { getUserCredits, checkCredits, deductCredits } = await import("@/lib/credits");
+      const testUserId = `test_user_${Date.now()}`;
+
+      // 1. Initial credits should be 1000
+      const initial = await getUserCredits(testUserId);
+      expect(initial.totalCredits).toBe(1000);
+      expect(initial.usedCredits).toBe(0);
+
+      // 2. Check credits for chat_message (10 credits)
+      const check = await checkCredits(testUserId, "chat_message");
+      expect(check.allowed).toBe(true);
+      expect(check.remaining).toBe(1000);
+      expect(check.required).toBe(10);
+
+      // 3. Deduct chat_message (10 credits)
+      const deduction = await deductCredits(testUserId, "chat_message");
+      expect(deduction.remaining).toBe(990);
+      expect(deduction.used).toBe(10);
+
+      // 4. Verify state after deduction
+      const updated = await getUserCredits(testUserId);
+      expect(updated.usedCredits).toBe(10);
+      expect(updated.totalCredits - updated.usedCredits).toBe(990);
+    });
+
+    it("returns summary with daysRemaining and 30-day cycle", async () => {
+      const { getUserCreditSummary } = await import("@/lib/credits");
+      const testUserId = `test_summary_${Date.now()}`;
+
+      const summary = await getUserCreditSummary(testUserId);
+      expect(summary.total).toBe(1000);
+      expect(summary.remaining).toBe(1000);
+      expect(summary.daysRemaining).toBeGreaterThanOrEqual(29);
+      expect(summary.daysRemaining).toBeLessThanOrEqual(30);
+    });
+
+    it("does NOT reset credits on subsequent days within the 30-day window", async () => {
+      const { isPeriodExpired, calculate30DayPeriod, getUserCredits, deductCredits } = await import("@/lib/credits/credit-service");
+      const testUserId = `test_multiday_${Date.now()}`;
+
+      // Initialize and deduct 50 credits
+      await getUserCredits(testUserId);
+      await deductCredits(testUserId, "image_generation"); // 50 credits cost
+
+      const state = await getUserCredits(testUserId);
+      expect(state.usedCredits).toBe(50);
+
+      // Simulate day 2 (24 hours later)
+      const oneDayLater = Date.now() + 24 * 60 * 60 * 1000;
+      expect(isPeriodExpired(state, oneDayLater)).toBe(false);
+
+      // Simulate day 15 (15 days later)
+      const fifteenDaysLater = Date.now() + 15 * 24 * 60 * 60 * 1000;
+      expect(isPeriodExpired(state, fifteenDaysLater)).toBe(false);
+
+      // Simulate day 31 (31 days later) - strictly resets
+      const thirtyOneDaysLater = Date.now() + 31 * 24 * 60 * 60 * 1000;
+      expect(isPeriodExpired(state, thirtyOneDaysLater)).toBe(true);
+    });
+
+    it("correctly identifies expiration only after 30 days have passed", async () => {
+      const { isPeriodExpired } = await import("@/lib/credits/credit-service");
+      const now = Date.now();
+      const mockState = {
+        userId: "test_expire_user",
+        tier: "free_account" as const,
+        totalCredits: 1000,
+        usedCredits: 200,
+        periodStart: new Date(now).toISOString(),
+        periodEnd: new Date(now + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        lastUpdated: now,
+      };
+
+      // 1 minute before expiry -> not expired
+      expect(isPeriodExpired(mockState, now + 30 * 24 * 60 * 60 * 1000 - 60000)).toBe(false);
+      // At exact expiry -> expired
+      expect(isPeriodExpired(mockState, now + 30 * 24 * 60 * 60 * 1000)).toBe(true);
+      // After expiry -> expired
+      expect(isPeriodExpired(mockState, now + 35 * 24 * 60 * 60 * 1000)).toBe(true);
     });
   });
 });

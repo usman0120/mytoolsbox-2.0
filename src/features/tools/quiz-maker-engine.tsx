@@ -1,237 +1,244 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState } from "react";
+import { Plus, Trash2, Play, Check, X, Download, RotateCcw, ToggleLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import {
-  HelpCircle, Loader2, Copy, CheckCircle2, XCircle, Plus,
-  Trash2, Shuffle, ChevronLeft, ChevronRight, RotateCcw,
-  Check, X,
-} from "lucide-react";
+
+type QuestionType = "multiple" | "truefalse";
 
 interface Question {
   id: string;
-  question: string;
+  type: QuestionType;
+  text: string;
   options: string[];
   correctIndex: number;
+  points: number;
+  explanation?: string;
+}
+
+function genId() { return `q_${Math.random().toString(36).slice(2, 9)}`; }
+
+function newQuestion(type: QuestionType = "multiple"): Question {
+  if (type === "truefalse") {
+    return { id: genId(), type: "truefalse", text: "", options: ["True", "False"], correctIndex: 0, points: 1 };
+  }
+  return { id: genId(), type: "multiple", text: "", options: ["", "", "", ""], correctIndex: 0, points: 1 };
 }
 
 export function QuizMakerEngine() {
-  const [questions, setQuestions] = useState<Question[]>([]);
-  const [questionInput, setQuestionInput] = useState("");
-  const [optionsInput, setOptionsInput] = useState("");
-  const [correctIndex, setCorrectIndex] = useState(0);
-  const [isQuizMode, setIsQuizMode] = useState(false);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
-  const [showResult, setShowResult] = useState(false);
-  const [score, setScore] = useState(0);
-  const [answeredQuestions, setAnsweredQuestions] = useState<Set<string>>(new Set());
-  const [error, setError] = useState<string | null>(null);
+  const [title, setTitle] = useState("My Quiz");
+  const [questions, setQuestions] = useState<Question[]>([newQuestion("multiple")]);
+  const [mode, setMode] = useState<"build" | "take" | "review">("build");
+  const [currentQ, setCurrentQ] = useState(0);
+  const [answers, setAnswers] = useState<(number | null)[]>([]);
+  const [checked, setChecked] = useState(false);
 
-  const addQuestion = useCallback(() => {
-    if (!questionInput.trim()) {
-      setError("Please enter a question.");
-      return;
+  const addQuestion = (type: QuestionType) => {
+    setQuestions(prev => [...prev, newQuestion(type)]);
+  };
+
+  const removeQuestion = (id: string) => {
+    if (questions.length <= 1) return;
+    setQuestions(prev => prev.filter(q => q.id !== id));
+  };
+
+  const updateQ = (id: string, field: keyof Question, value: string | number | string[]) => {
+    setQuestions(prev => prev.map(q => q.id === id ? { ...q, [field]: value } : q));
+  };
+
+  const updateOption = (id: string, idx: number, value: string) => {
+    setQuestions(prev => prev.map(q => {
+      if (q.id !== id) return q;
+      const options = [...q.options];
+      options[idx] = value;
+      return { ...q, options };
+    }));
+  };
+
+  const changeType = (id: string, type: QuestionType) => {
+    setQuestions(prev => prev.map(q => {
+      if (q.id !== id) return q;
+      if (type === "truefalse") return { ...q, type, options: ["True", "False"], correctIndex: 0 };
+      return { ...q, type, options: q.options.length >= 4 ? q.options : ["", "", "", ""], correctIndex: 0 };
+    }));
+  };
+
+  const startQuiz = () => {
+    const valid = questions.filter(q => q.text.trim() && q.options.filter(o => o.trim()).length >= 2);
+    if (valid.length === 0) { toast.error("Add at least one complete question."); return; }
+    setAnswers(new Array(questions.length).fill(null));
+    setCurrentQ(0);
+    setChecked(false);
+    setMode("take");
+  };
+
+  const selectAnswer = (optIdx: number) => {
+    if (checked) return;
+    setAnswers(prev => { const next = [...prev]; next[currentQ] = optIdx; return next; });
+  };
+
+  const checkAnswer = () => {
+    if (answers[currentQ] === null) { toast.error("Select an answer first."); return; }
+    setChecked(true);
+  };
+
+  const nextQuestion = () => {
+    if (currentQ < questions.length - 1) {
+      setCurrentQ(p => p + 1);
+      setChecked(false);
+    } else {
+      setMode("review");
     }
+  };
 
-    const options = optionsInput
-      .split("\n")
-      .map((o) => o.trim())
-      .filter((o) => o.length > 0);
+  const exportPrintable = () => {
+    const lines: string[] = [`${title}\n`, "QUESTIONS", "-".repeat(40)];
+    questions.forEach((q, i) => {
+      lines.push(`\n${i + 1}. [${q.points} pt] ${q.text}`);
+      q.options.filter(o => o.trim()).forEach((o, j) => {
+        lines.push(`   ${String.fromCharCode(65 + j)}. ${o}`);
+      });
+    });
+    lines.push("\n\n" + "=" .repeat(40));
+    lines.push("ANSWER KEY");
+    lines.push("-".repeat(40));
+    questions.forEach((q, i) => {
+      const correct = String.fromCharCode(65 + q.correctIndex);
+      lines.push(`${i + 1}. ${correct}${q.explanation ? " — " + q.explanation : ""}`);
+    });
+    const text = lines.join("\n");
+    const blob = new Blob([text], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = `${title.replace(/\s+/g, "-")}-quiz.txt`; a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Quiz exported with answer key!");
+  };
 
-    if (options.length < 2) {
-      setError("Please enter at least 2 options (one per line).");
-      return;
-    }
+  // Results
+  if (mode === "review") {
+    const totalPoints = questions.reduce((a, q) => a + q.points, 0);
+    const earned = questions.reduce((a, q, i) => {
+      return answers[i] === q.correctIndex ? a + q.points : a;
+    }, 0);
+    const pct = totalPoints > 0 ? Math.round((earned / totalPoints) * 100) : 0;
+    const grade = pct >= 90 ? "A" : pct >= 80 ? "B" : pct >= 70 ? "C" : pct >= 60 ? "D" : "F";
 
-    const newQuestion: Question = {
-      id: crypto.randomUUID(),
-      question: questionInput.trim(),
-      options,
-      correctIndex: Math.min(correctIndex, options.length - 1),
-    };
+    return (
+      <div className="space-y-4">
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="pt-6 text-center space-y-2">
+            <p className="text-4xl font-bold">{earned}/{totalPoints}</p>
+            <p className="text-muted-foreground text-sm">{pct}% — Grade: <strong>{grade}</strong></p>
+          </CardContent>
+        </Card>
 
-    setQuestions((prev) => [...prev, newQuestion]);
-    setQuestionInput("");
-    setOptionsInput("");
-    setCorrectIndex(0);
-    setError(null);
-    toast.success("Question added!");
-  }, [questionInput, optionsInput, correctIndex]);
+        <div className="space-y-2">
+          {questions.map((q, i) => {
+            const isCorrect = answers[i] === q.correctIndex;
+            return (
+              <Card key={q.id} className={`border-l-2 ${isCorrect ? "border-l-green-500" : "border-l-red-500"}`}>
+                <CardContent className="pt-3 pb-3">
+                  <div className="flex gap-2 items-start">
+                    {isCorrect ? <Check className="h-4 w-4 text-green-500 mt-0.5 shrink-0" /> : <X className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />}
+                    <div className="flex-1">
+                      <p className="text-xs font-medium">{i + 1}. {q.text}</p>
+                      {!isCorrect && (
+                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                          Your answer: <span className="text-red-400">{q.options[answers[i] ?? -1] || "None"}</span> ·
+                          Correct: <span className="text-green-400">{q.options[q.correctIndex]}</span>
+                        </p>
+                      )}
+                      {q.explanation && (
+                        <p className="text-[10px] text-muted-foreground italic mt-0.5">{q.explanation}</p>
+                      )}
+                    </div>
+                    <Badge variant="outline" className="text-[10px] shrink-0">{q.points}pt</Badge>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
 
-  const removeQuestion = useCallback((id: string) => {
-    setQuestions((prev) => prev.filter((q) => q.id !== id));
-    toast.success("Question removed.");
-  }, []);
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setMode("build")} className="gap-1.5">
+            ← Edit Quiz
+          </Button>
+          <Button onClick={startQuiz} className="gap-1.5">
+            <RotateCcw className="h-4 w-4" /> Retake
+          </Button>
+          <Button variant="outline" onClick={exportPrintable} className="gap-1.5">
+            <Download className="h-4 w-4" /> Export
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
-  const startQuiz = useCallback(() => {
-    if (questions.length === 0) {
-      setError("Add at least one question to start the quiz.");
-      return;
-    }
-    setIsQuizMode(true);
-    setCurrentIndex(0);
-    setSelectedAnswer(null);
-    setShowResult(false);
-    setScore(0);
-    setAnsweredQuestions(new Set());
-    setError(null);
-  }, [questions.length]);
-
-  const selectAnswer = useCallback((index: number) => {
-    if (showResult) return;
-    setSelectedAnswer(index);
-  }, [showResult]);
-
-  const checkAnswer = useCallback(() => {
-    if (selectedAnswer === null) return;
-    setShowResult(true);
-
-    const currentQuestion = questions[currentIndex];
-    if (selectedAnswer === currentQuestion.correctIndex) {
-      setScore((prev) => prev + 1);
-    }
-    setAnsweredQuestions((prev) => new Set(prev).add(currentQuestion.id));
-  }, [selectedAnswer, questions, currentIndex]);
-
-  const nextQuestion = useCallback(() => {
-    if (currentIndex < questions.length - 1) {
-      setCurrentIndex((prev) => prev + 1);
-      setSelectedAnswer(null);
-      setShowResult(false);
-    }
-  }, [currentIndex, questions.length]);
-
-  const prevQuestion = useCallback(() => {
-    if (currentIndex > 0) {
-      setCurrentIndex((prev) => prev - 1);
-      setSelectedAnswer(null);
-      setShowResult(false);
-    }
-  }, [currentIndex]);
-
-  const finishQuiz = useCallback(() => {
-    setIsQuizMode(false);
-    toast.success(`Quiz complete! Score: ${score}/${questions.length}`);
-  }, [score, questions.length]);
-
-  if (isQuizMode && questions.length > 0) {
-    const currentQuestion = questions[currentIndex];
-    const isAnswered = answeredQuestions.has(currentQuestion.id);
+  if (mode === "take") {
+    const q = questions[currentQ];
+    const chosen = answers[currentQ];
+    const isCorrect = chosen === q.correctIndex;
 
     return (
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <Badge variant="outline" className="gap-1.5">
-            <HelpCircle className="h-3.5 w-3.5" /> Quiz Mode
-          </Badge>
-          <div className="flex gap-2">
-            <span className="text-sm text-muted-foreground">
-              Score: {score}/{answeredQuestions.size}
-            </span>
-            <Button variant="outline" size="sm" onClick={finishQuiz}>
-              Finish
-            </Button>
-          </div>
+          <Badge variant="outline">Question {currentQ + 1} / {questions.length}</Badge>
+          <Button size="sm" variant="outline" onClick={() => setMode("build")}>← Back</Button>
         </div>
-
-        {/* Progress bar */}
-        <div className="w-full bg-muted rounded-full h-1.5">
-          <div
-            className="bg-primary h-1.5 rounded-full transition-all"
-            style={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }}
-          />
+        <div className="h-1.5 bg-muted rounded-full">
+          <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${((currentQ + 1) / questions.length) * 100}%` }} />
         </div>
-
-        {/* Question */}
         <Card>
-          <CardContent className="py-6">
-            <div className="space-y-4">
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">
-                  Question {currentIndex + 1} of {questions.length}
-                </p>
-                <p className="text-lg font-medium">{currentQuestion.question}</p>
-              </div>
-
-              <div className="space-y-2">
-                {currentQuestion.options.map((option, idx) => {
-                  let variant: "outline" | "default" | "destructive" | "secondary" = "outline";
-                  if (showResult) {
-                    if (idx === currentQuestion.correctIndex) {
-                      variant = "default";
-                    } else if (idx === selectedAnswer && idx !== currentQuestion.correctIndex) {
-                      variant = "destructive";
-                    }
-                  } else if (idx === selectedAnswer) {
-                    variant = "secondary";
-                  }
-
-                  return (
-                    <Button
-                      key={idx}
-                      variant={variant}
-                      onClick={() => selectAnswer(idx)}
-                      disabled={showResult}
-                      className="w-full justify-start text-left h-auto py-3"
-                    >
-                      <span className="flex items-center gap-2">
-                        <span className="w-6 h-6 rounded-full border text-xs flex items-center justify-center shrink-0">
-                          {String.fromCharCode(65 + idx)}
-                        </span>
-                        <span className="text-sm">{option}</span>
-                      </span>
-                    </Button>
-                  );
-                })}
-              </div>
-
-              {showResult && (
-                <div className={`p-3 rounded-md text-sm ${
-                  selectedAnswer === currentQuestion.correctIndex
-                    ? "bg-green-500/10 text-green-600"
-                    : "bg-destructive/10 text-destructive"
-                }`}>
-                  {selectedAnswer === currentQuestion.correctIndex
-                    ? "✅ Correct!"
-                    : `❌ Incorrect. The correct answer is: ${currentQuestion.options[currentQuestion.correctIndex]}`}
-                </div>
-              )}
+          <CardContent className="pt-6 space-y-4">
+            <div className="flex items-start justify-between gap-2">
+              <p className="text-base font-medium">{q.text}</p>
+              <Badge variant="secondary" className="text-[10px] shrink-0">{q.points}pt</Badge>
             </div>
+
+            <div className="space-y-2">
+              {q.options.filter(o => o.trim()).map((option, idx) => {
+                let cls = "border-border hover:bg-muted/50";
+                if (checked) {
+                  if (idx === q.correctIndex) cls = "border-green-500 bg-green-500/10 text-green-600";
+                  else if (idx === chosen) cls = "border-red-500 bg-red-500/10 text-red-600";
+                } else if (chosen === idx) {
+                  cls = "border-primary bg-primary/10";
+                }
+                return (
+                  <button
+                    key={idx}
+                    onClick={() => selectAnswer(idx)}
+                    className={`w-full text-left px-4 py-2.5 rounded-lg border text-sm transition-all ${cls}`}
+                  >
+                    <span className="font-mono text-muted-foreground mr-2">{String.fromCharCode(65 + idx)}.</span>
+                    {option}
+                  </button>
+                );
+              })}
+            </div>
+
+            {checked && q.explanation && (
+              <p className="text-xs text-muted-foreground italic border-t pt-2">{q.explanation}</p>
+            )}
           </CardContent>
         </Card>
 
-        {/* Navigation */}
-        <div className="flex items-center justify-between">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={prevQuestion}
-            disabled={currentIndex === 0}
-            className="gap-1.5"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            Previous
-          </Button>
-
-          {!showResult ? (
-            <Button onClick={checkAnswer} disabled={selectedAnswer === null} className="gap-1.5">
-              <Check className="h-4 w-4" />
+        <div className="flex gap-2">
+          {!checked ? (
+            <Button onClick={checkAnswer} disabled={chosen === null} className="gap-1.5">
               Check Answer
             </Button>
-          ) : currentIndex < questions.length - 1 ? (
-            <Button onClick={nextQuestion} className="gap-1.5">
-              Next
-              <ChevronRight className="h-4 w-4" />
-            </Button>
           ) : (
-            <Button onClick={finishQuiz} className="gap-1.5">
-              <CheckCircle2 className="h-4 w-4" />
-              See Results
+            <Button onClick={nextQuestion} className="gap-1.5">
+              {currentQ < questions.length - 1 ? "Next →" : "Finish Quiz"}
             </Button>
           )}
         </div>
@@ -241,110 +248,109 @@ export function QuizMakerEngine() {
 
   return (
     <div className="space-y-4">
-      <Badge variant="outline" className="gap-1.5">
-        <HelpCircle className="h-3.5 w-3.5" /> Quiz Maker
-      </Badge>
+      <div>
+        <Label className="text-xs mb-1 block">Quiz Title</Label>
+        <Input value={title} onChange={e => setTitle(e.target.value)} className="h-8 text-sm" />
+      </div>
 
-      {/* Add question form */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Create Question</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium">Question</label>
-            <Textarea
-              value={questionInput}
-              onChange={(e) => setQuestionInput(e.target.value)}
-              placeholder="Enter your question..."
-              className="min-h-15"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium">Options (one per line)</label>
-            <Textarea
-              value={optionsInput}
-              onChange={(e) => setOptionsInput(e.target.value)}
-              placeholder={"Option A\nOption B\nOption C\nOption D"}
-              className="min-h-25"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium">Correct Answer Index</label>
-            <div className="flex gap-2">
-              {[0, 1, 2, 3].map((idx) => (
-                <Button
-                  key={idx}
-                  variant={correctIndex === idx ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setCorrectIndex(idx)}
-                  className="flex-1"
-                >
-                  {String.fromCharCode(65 + idx)}
+      <div className="space-y-3">
+        {questions.map((q, i) => (
+          <Card key={q.id}>
+            <CardContent className="pt-3 space-y-2">
+              <div className="flex gap-2 items-center">
+                <Badge variant="outline" className="text-[10px] shrink-0">Q{i + 1}</Badge>
+                <Input
+                  value={q.text}
+                  onChange={e => updateQ(q.id, "text", e.target.value)}
+                  placeholder="Question text..."
+                  className="h-7 text-xs flex-1"
+                />
+                <Select value={q.type} onValueChange={v => changeType(q.id, v as QuestionType)}>
+                  <SelectTrigger className="h-7 w-28 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="multiple" className="text-xs">Multiple Choice</SelectItem>
+                    <SelectItem value="truefalse" className="text-xs">True / False</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Input
+                  type="number" min={1} max={10}
+                  value={q.points}
+                  onChange={e => updateQ(q.id, "points", parseInt(e.target.value) || 1)}
+                  className="h-7 w-14 text-xs"
+                  title="Points"
+                />
+                <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => removeQuestion(q.id)}>
+                  <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
                 </Button>
-              ))}
-            </div>
-          </div>
+              </div>
 
-          <Button onClick={addQuestion} className="w-full gap-1.5">
-            <Plus className="h-4 w-4" />
-            Add Question
-          </Button>
-        </CardContent>
-      </Card>
-
-      {error && (
-        <Card className="border-destructive/50 bg-destructive/5">
-          <CardContent className="py-3">
-            <div className="flex items-center gap-2 text-destructive">
-              <XCircle className="h-4 w-4" />
-              <p className="text-sm">{error}</p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Question list */}
-      {questions.length > 0 && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Questions ({questions.length})</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2 max-h-75 overflow-y-auto">
-              {questions.map((q, idx) => (
-                <div key={q.id} className="flex items-start gap-2 p-2 rounded-md bg-muted/50">
-                  <span className="text-xs text-muted-foreground w-6 pt-0.5">{idx + 1}.</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{q.question}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {q.options.length} options — Correct: {String.fromCharCode(65 + q.correctIndex)}
-                    </p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 text-destructive shrink-0"
-                    onClick={() => removeQuestion(q.id)}
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
+              {q.type === "multiple" ? (
+                <div className="grid grid-cols-2 gap-1.5 pl-8">
+                  {q.options.map((opt, oIdx) => (
+                    <div key={oIdx} className="flex gap-1 items-center">
+                      <input
+                        type="radio"
+                        name={`correct-${q.id}`}
+                        checked={q.correctIndex === oIdx}
+                        onChange={() => updateQ(q.id, "correctIndex", oIdx)}
+                        className="accent-primary shrink-0"
+                        title="Correct answer"
+                      />
+                      <Input
+                        value={opt}
+                        onChange={e => updateOption(q.id, oIdx, e.target.value)}
+                        placeholder={`Option ${String.fromCharCode(65 + oIdx)}`}
+                        className="h-7 text-xs"
+                      />
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+              ) : (
+                <div className="flex gap-3 pl-8">
+                  {["True", "False"].map((opt, oIdx) => (
+                    <label key={opt} className="flex items-center gap-1.5 text-xs cursor-pointer">
+                      <input
+                        type="radio"
+                        name={`correct-${q.id}`}
+                        checked={q.correctIndex === oIdx}
+                        onChange={() => updateQ(q.id, "correctIndex", oIdx)}
+                        className="accent-primary"
+                      />
+                      {opt}
+                    </label>
+                  ))}
+                </div>
+              )}
 
-      <Button
-        onClick={startQuiz}
-        disabled={questions.length === 0}
-        className="w-full gap-2"
-      >
-        <HelpCircle className="h-4 w-4" />
-        Start Quiz ({questions.length} questions)
+              <div className="pl-8">
+                <Input
+                  value={q.explanation || ""}
+                  onChange={e => updateQ(q.id, "explanation", e.target.value)}
+                  placeholder="Explanation (shown after answering)"
+                  className="h-6 text-[10px] text-muted-foreground bg-muted/30"
+                />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <div className="flex gap-2 flex-wrap">
+        <Button variant="outline" size="sm" className="h-8 text-xs gap-1" onClick={() => addQuestion("multiple")}>
+          <Plus className="h-3.5 w-3.5" /> Multiple Choice
+        </Button>
+        <Button variant="outline" size="sm" className="h-8 text-xs gap-1" onClick={() => addQuestion("truefalse")}>
+          <ToggleLeft className="h-3.5 w-3.5" /> True / False
+        </Button>
+        <Button variant="outline" size="sm" className="h-8 text-xs gap-1" onClick={exportPrintable}>
+          <Download className="h-3.5 w-3.5" /> Export with Key
+        </Button>
+      </div>
+
+      <Button onClick={startQuiz} className="w-full gap-2">
+        <Play className="h-4 w-4" /> Start Quiz
       </Button>
     </div>
   );

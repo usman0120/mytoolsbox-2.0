@@ -1,217 +1,200 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { DollarSign, Copy, Check, RefreshCw, ArrowRightLeft, TrendingUp, TrendingDown } from "lucide-react";
+import { useState, useCallback, useMemo } from "react";
+import {
+  DollarSign, Copy, Check, ArrowRightLeft, TrendingUp, TrendingDown,
+  Globe, Sparkles
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
+import {
+  convertCurrency,
+  formatCurrencyValue,
+  generateComparisonMatrix,
+  CURRENCY_REGISTRY,
+  POPULAR_CURRENCIES,
+  type CurrencyInfo,
+} from "@/features/tools/currency-converter";
 
-// Common currency rates (approximate, relative to USD)
-const EXCHANGE_RATES: Record<string, { name: string; symbol: string; rate: number }> = {
-  USD: { name: "US Dollar", symbol: "$", rate: 1 },
-  EUR: { name: "Euro", symbol: "€", rate: 0.92 },
-  GBP: { name: "British Pound", symbol: "£", rate: 0.79 },
-  JPY: { name: "Japanese Yen", symbol: "¥", rate: 149.5 },
-  CNY: { name: "Chinese Yuan", symbol: "¥", rate: 7.24 },
-  INR: { name: "Indian Rupee", symbol: "₹", rate: 83.1 },
-  AUD: { name: "Australian Dollar", symbol: "A$", rate: 1.54 },
-  CAD: { name: "Canadian Dollar", symbol: "C$", rate: 1.36 },
-  CHF: { name: "Swiss Franc", symbol: "CHF", rate: 0.88 },
-  SGD: { name: "Singapore Dollar", symbol: "S$", rate: 1.34 },
-  KRW: { name: "South Korean Won", symbol: "₩", rate: 1325 },
-  BRL: { name: "Brazilian Real", symbol: "R$", rate: 5.05 },
-  MXN: { name: "Mexican Peso", symbol: "MX$", rate: 17.1 },
-  RUB: { name: "Russian Ruble", symbol: "₽", rate: 91.5 },
-  ZAR: { name: "South African Rand", symbol: "R", rate: 18.7 },
-  AED: { name: "UAE Dirham", symbol: "د.إ", rate: 3.67 },
-  HKD: { name: "Hong Kong Dollar", symbol: "HK$", rate: 7.82 },
-  SEK: { name: "Swedish Krona", symbol: "kr", rate: 10.5 },
-  NOK: { name: "Norwegian Krone", symbol: "kr", rate: 10.7 },
-  DKK: { name: "Danish Krone", symbol: "kr", rate: 6.87 },
-  NZD: { name: "New Zealand Dollar", symbol: "NZ$", rate: 1.64 },
-  THB: { name: "Thai Baht", symbol: "฿", rate: 35.8 },
-  MYR: { name: "Malaysian Ringgit", symbol: "RM", rate: 4.68 },
-  PHP: { name: "Philippine Peso", symbol: "₱", rate: 56.2 },
-  IDR: { name: "Indonesian Rupiah", symbol: "Rp", rate: 15700 },
-  VND: { name: "Vietnamese Dong", symbol: "₫", rate: 24500 },
-  TRY: { name: "Turkish Lira", symbol: "₺", rate: 30.2 },
-  SAR: { name: "Saudi Riyal", symbol: "﷼", rate: 3.75 },
-  NGN: { name: "Nigerian Naira", symbol: "₦", rate: 1520 },
-  EGP: { name: "Egyptian Pound", symbol: "E£", rate: 48.5 },
-  PKR: { name: "Pakistani Rupee", symbol: "₨", rate: 279 },
-  BDT: { name: "Bangladeshi Taka", symbol: "৳", rate: 110 },
-};
-
-const CURRENCIES = Object.entries(EXCHANGE_RATES).map(([code, info]) => ({
-  code,
-  ...info,
-}));
+const QUICK_AMOUNTS = [10, 50, 100, 500, 1000, 5000];
 
 export function CurrencyConverterEngine() {
-  const [amount, setAmount] = useState("1");
-  const [fromCurrency, setFromCurrency] = useState("USD");
-  const [toCurrency, setToCurrency] = useState("EUR");
-  const [result, setResult] = useState<number | null>(null);
+  const [amountStr, setAmountStr] = useState("100");
+  const [fromCode, setFromCode] = useState("USD");
+  const [toCode, setToCode] = useState("EUR");
   const [copied, setCopied] = useState(false);
-  const [favorites, setFavorites] = useState<string[]>(["USD-EUR", "USD-GBP", "USD-JPY"]);
 
-  const handleConvert = useCallback(() => {
-    const numAmount = parseFloat(amount);
-    if (isNaN(numAmount)) return;
+  const amount = parseFloat(amountStr) || 0;
 
-    const fromRate = EXCHANGE_RATES[fromCurrency]?.rate || 1;
-    const toRate = EXCHANGE_RATES[toCurrency]?.rate || 1;
-    const usdAmount = numAmount / fromRate;
-    const converted = usdAmount * toRate;
-    setResult(converted);
-  }, [amount, fromCurrency, toCurrency]);
+  const conversion = useMemo(() => {
+    return convertCurrency(amount, fromCode, toCode);
+  }, [amount, fromCode, toCode]);
+
+  const matrix = useMemo(() => {
+    const targets = POPULAR_CURRENCIES.filter((c) => c !== fromCode).slice(0, 6);
+    return generateComparisonMatrix(amount, fromCode, targets);
+  }, [amount, fromCode]);
 
   const handleSwap = () => {
-    setFromCurrency(toCurrency);
-    setToCurrency(fromCurrency);
-    setResult(null);
+    setFromCode(toCode);
+    setToCode(fromCode);
   };
 
   const handleCopy = async () => {
-    if (result === null) return;
-    const fromInfo = EXCHANGE_RATES[fromCurrency];
-    const toInfo = EXCHANGE_RATES[toCurrency];
-    await navigator.clipboard.writeText(
-      `${amount} ${fromCurrency} = ${result.toFixed(4)} ${toCurrency}`
-    );
+    const text = `${conversion.amount} ${fromCode} = ${conversion.result.toFixed(4)} ${toCode}`;
+    await navigator.clipboard.writeText(text);
     setCopied(true);
+    toast.success("Conversion copied to clipboard!");
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const toggleFavorite = (pair: string) => {
-    setFavorites(prev =>
-      prev.includes(pair) ? prev.filter(p => p !== pair) : [...prev, pair]
-    );
-  };
-
-  const fromInfo = EXCHANGE_RATES[fromCurrency];
-  const toInfo = EXCHANGE_RATES[toCurrency];
-  const rate = result !== null && parseFloat(amount) > 0
-    ? result / parseFloat(amount)
-    : null;
+  const currenciesList = Object.values(CURRENCY_REGISTRY);
 
   return (
     <div className="space-y-6">
-      {/* Converter */}
-      <Card>
-        <CardContent className="p-6 space-y-4">
-          {/* Amount */}
-          <div className="space-y-1.5">
-            <Label className="text-sm font-medium">Amount</Label>
+      {/* Main Conversion Panel */}
+      <Card className="border shadow-xs bg-card">
+        <CardContent className="p-4 sm:p-6 space-y-4">
+          {/* Amount input & Quick Chips */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-semibold">Enter Amount</Label>
+              <div className="flex gap-1 overflow-x-auto">
+                {QUICK_AMOUNTS.map((val) => (
+                  <Button
+                    key={val}
+                    variant={amount === val ? "default" : "outline"}
+                    size="sm"
+                    className="h-6 text-[10px] px-2"
+                    onClick={() => setAmountStr(val.toString())}
+                  >
+                    ${val.toLocaleString()}
+                  </Button>
+                ))}
+              </div>
+            </div>
             <Input
               type="number"
-              placeholder="Enter amount"
-              value={amount}
-              onChange={(e) => { setAmount(e.target.value); setResult(null); }}
-              className="text-lg font-semibold"
+              value={amountStr}
+              onChange={(e) => setAmountStr(e.target.value)}
+              placeholder="0.00"
+              className="text-lg font-mono font-bold h-11"
             />
           </div>
 
-          {/* From currency */}
-          <div className="space-y-1.5">
-            <Label className="text-sm font-medium">From</Label>
-            <select
-              value={fromCurrency}
-              onChange={(e) => { setFromCurrency(e.target.value); setResult(null); }}
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
-            >
-              {CURRENCIES.map((c) => (
-                <option key={c.code} value={c.code}>
-                  {c.symbol} {c.code} - {c.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          {/* Currency Selectors & Swap Button */}
+          <div className="grid grid-cols-1 sm:grid-cols-11 items-center gap-2">
+            {/* From */}
+            <div className="sm:col-span-5 space-y-1">
+              <Label className="text-xs text-muted-foreground">From Currency</Label>
+              <select
+                value={fromCode}
+                onChange={(e) => setFromCode(e.target.value)}
+                className="w-full h-10 rounded-lg border bg-background px-3 text-sm font-medium"
+              >
+                {currenciesList.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.flag} {c.code} — {c.name} ({c.symbol})
+                  </option>
+                ))}
+              </select>
+            </div>
 
-          {/* Swap button */}
-          <div className="flex justify-center">
-            <Button variant="ghost" size="icon" onClick={handleSwap} className="rounded-full">
-              <ArrowRightLeft className="h-5 w-5" />
-            </Button>
-          </div>
+            {/* Swap Button */}
+            <div className="sm:col-span-1 flex justify-center pt-3 sm:pt-4">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleSwap}
+                className="h-9 w-9 rounded-full shadow-xs hover:rotate-180 transition-transform duration-300"
+              >
+                <ArrowRightLeft className="h-4 w-4" />
+              </Button>
+            </div>
 
-          {/* To currency */}
-          <div className="space-y-1.5">
-            <Label className="text-sm font-medium">To</Label>
-            <select
-              value={toCurrency}
-              onChange={(e) => { setToCurrency(e.target.value); setResult(null); }}
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
-            >
-              {CURRENCIES.map((c) => (
-                <option key={c.code} value={c.code}>
-                  {c.symbol} {c.code} - {c.name}
-                </option>
-              ))}
-            </select>
+            {/* To */}
+            <div className="sm:col-span-5 space-y-1">
+              <Label className="text-xs text-muted-foreground">To Currency</Label>
+              <select
+                value={toCode}
+                onChange={(e) => setToCode(e.target.value)}
+                className="w-full h-10 rounded-lg border bg-background px-3 text-sm font-medium"
+              >
+                {currenciesList.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.flag} {c.code} — {c.name} ({c.symbol})
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
-
-          <Button onClick={handleConvert} className="gap-2 w-full" size="lg">
-            <DollarSign className="h-4 w-4" /> Convert
-          </Button>
         </CardContent>
       </Card>
 
-      {/* Result */}
-      {result !== null && (
-        <Card className="border-primary/30 bg-primary/5 animate-fade-in-up">
-          <CardContent className="p-6 text-center">
-            <p className="text-sm text-muted-foreground mb-1">
-              {parseFloat(amount).toLocaleString()} {fromInfo?.name} =
-            </p>
-            <p className="text-3xl font-bold tracking-tight">
-              {toInfo?.symbol}{result.toFixed(4)} <span className="text-lg font-normal text-muted-foreground">{toCurrency}</span>
-            </p>
-            {rate !== null && (
-              <div className="flex items-center justify-center gap-2 mt-2">
-                <Badge variant="secondary" className="gap-1">
-                  <TrendingUp className="h-3 w-3" />
-                  1 {fromCurrency} = {rate.toFixed(6)} {toCurrency}
-                </Badge>
-                <Badge variant="outline" className="gap-1">
-                  <TrendingDown className="h-3 w-3" />
-                  1 {toCurrency} = {(1 / rate).toFixed(6)} {fromCurrency}
-                </Badge>
-              </div>
-            )}
-            <Button variant="outline" size="sm" className="gap-1 mt-3" onClick={handleCopy}>
+      {/* Result Display Banner */}
+      <Card className="border border-primary/30 bg-primary/5 shadow-xs">
+        <CardContent className="p-6 text-center space-y-2">
+          <p className="text-xs text-muted-foreground font-medium">
+            {conversion.amount.toLocaleString()} {conversion.from.name} =
+          </p>
+          <p className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground font-mono">
+            {formatCurrencyValue(conversion.result, conversion.to)}{" "}
+            <span className="text-lg font-normal text-muted-foreground">{toCode}</span>
+          </p>
+
+          <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+            <Badge variant="secondary" className="gap-1 text-xs">
+              <TrendingUp className="h-3 w-3 text-emerald-600" />
+              1 {fromCode} = {conversion.exchangeRate.toFixed(4)} {toCode}
+            </Badge>
+            <Badge variant="outline" className="gap-1 text-xs">
+              <TrendingDown className="h-3 w-3 text-blue-600" />
+              1 {toCode} = {conversion.inverseRate.toFixed(4)} {fromCode}
+            </Badge>
+          </div>
+
+          <div className="pt-2">
+            <Button variant="outline" size="sm" onClick={handleCopy} className="gap-1 text-xs">
               {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
               {copied ? "Copied" : "Copy Result"}
             </Button>
-          </CardContent>
-        </Card>
-      )}
+          </div>
+        </CardContent>
+      </Card>
 
-      {/* Quick conversions */}
-      <div className="space-y-2">
-        <Label className="text-sm font-medium">Quick Conversions</Label>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          {favorites.map((pair) => {
-            const [from, to] = pair.split("-");
-            const fromInfo = EXCHANGE_RATES[from];
-            const toInfo = EXCHANGE_RATES[to];
-            if (!fromInfo || !toInfo) return null;
-            const convRate = toInfo.rate / fromInfo.rate;
-            return (
-              <button
-                key={pair}
-                onClick={() => { setFromCurrency(from); setToCurrency(to); setAmount("1"); setResult(null); }}
-                className="p-3 rounded-lg border border-border/50 hover:border-border hover:bg-muted/50 text-left transition-all"
-              >
-                <p className="text-xs font-semibold">{from} → {to}</p>
-                <p className="text-lg font-bold">
-                  {toInfo.symbol}{convRate.toFixed(4)}
+      {/* Comparison Matrix Table */}
+      <div className="space-y-2.5">
+        <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Popular Rates for {amount.toLocaleString()} {fromCode}
+        </Label>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+          {matrix.map((item) => (
+            <Card
+              key={item.code}
+              onClick={() => setToCode(item.code)}
+              className="border shadow-xs hover:border-primary/50 cursor-pointer transition-colors"
+            >
+              <CardContent className="p-3">
+                <div className="flex items-center justify-between text-xs mb-1">
+                  <span className="font-semibold flex items-center gap-1.5">
+                    <span>{item.flag}</span>
+                    <span>{item.code}</span>
+                  </span>
+                  <span className="text-[10px] text-muted-foreground">{item.name}</span>
+                </div>
+                <p className="text-base font-bold font-mono text-foreground truncate">
+                  {item.symbol}{item.converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })}
                 </p>
-              </button>
-            );
-          })}
+                <p className="text-[10px] text-muted-foreground mt-0.5">
+                  Rate: {item.rate.toFixed(4)}
+                </p>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </div>
     </div>

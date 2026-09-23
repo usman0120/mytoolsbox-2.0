@@ -126,6 +126,9 @@ export function HistoryPageClient() {
     return date.toLocaleDateString();
   };
 
+  const getItemHref = (item: HistoryItem) =>
+    `/${item.productType === "app" ? "apps" : "tools"}/${item.toolSlug}`;
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-3xl">
       <div className="flex items-center justify-between mb-8">
@@ -167,7 +170,7 @@ export function HistoryPageClient() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <Link
-                        href={`/tools/${item.toolSlug}`}
+                        href={getItemHref(item)}
                         className="font-medium text-sm hover:text-primary transition-colors truncate"
                       >
                         {item.toolName}
@@ -192,7 +195,7 @@ export function HistoryPageClient() {
                     variant="ghost"
                     size="icon"
                     className="h-8 w-8"
-                    onClick={() => router.push(`/tools/${item.toolSlug}`)}
+                    onClick={() => router.push(getItemHref(item))}
                   >
                     <ExternalLink className="h-3.5 w-3.5" />
                   </Button>

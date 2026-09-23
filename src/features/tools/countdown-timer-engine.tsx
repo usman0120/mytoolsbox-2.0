@@ -2,8 +2,8 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import {
-  Timer, Play, Pause, RotateCcw, Download, Copy, Check,
-  Clock, Calendar, Volume2, VolumeX, Bell,
+  Timer, Play, Pause, RotateCcw, Copy, Check, Clock,
+  Calendar, Volume2, VolumeX, Sparkles, Bell
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,285 +11,208 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-
-function formatTime(totalSeconds: number): string {
-  const h = Math.floor(totalSeconds / 3600);
-  const m = Math.floor((totalSeconds % 3600) / 60);
-  const s = totalSeconds % 60;
-  if (h > 0) return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
-  return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
-}
-
-function formatDate(date: Date): string {
-  return date.toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
+import {
+  calculateTimeLeft,
+  getUpcomingPresetEvents,
+  TimeLeft,
+} from "@/features/tools/countdown-timer";
 
 export function CountdownTimerEngine() {
-  const [targetDate, setTargetDate] = useState("");
-  const [targetTime, setTargetTime] = useState("23:59");
-  const [title, setTitle] = useState("");
-  const [timeLeft, setTimeLeft] = useState<{
-    days: number;
-    hours: number;
-    minutes: number;
-    seconds: number;
-    total: number;
-  } | null>(null);
-  const [running, setRunning] = useState(false);
+  const [title, setTitle] = useState("Product Launch 🚀");
+  const [targetDateStr, setTargetDateStr] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 30);
+    return d.toISOString().split("T")[0];
+  });
+  const [targetTimeStr, setTargetTimeStr] = useState("09:00");
   const [soundEnabled, setSoundEnabled] = useState(true);
-  const [finished, setFinished] = useState(false);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [copied, setCopied] = useState(false);
 
-  const playAlarm = useCallback(() => {
+  const getTargetDateTime = useCallback(() => {
+    return new Date(`${targetDateStr}T${targetTimeStr}:00`);
+  }, [targetDateStr, targetTimeStr]);
+
+  const [timeLeft, setTimeLeft] = useState<TimeLeft>(() => calculateTimeLeft(getTargetDateTime()));
+
+  const hasAlarmPlayedRef = useRef(false);
+
+  const playChime = useCallback(() => {
+    if (!soundEnabled) return;
     try {
       const ctx = new AudioContext();
-      // Play a pleasant alarm sequence
-      const notes = [523, 659, 784, 1047]; // C5, E5, G5, C6
-      notes.forEach((freq, i) => {
+      const notes = [523.25, 659.25, 783.99, 1046.5]; // C5, E5, G5, C6
+      notes.forEach((freq, idx) => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.connect(gain);
         gain.connect(ctx.destination);
         osc.frequency.value = freq;
-        gain.gain.value = 0.15;
-        osc.start(ctx.currentTime + i * 0.2);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.2 + 0.3);
-        osc.stop(ctx.currentTime + i * 0.2 + 0.3);
+        gain.gain.setValueAtTime(0.1, ctx.currentTime + idx * 0.15);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.15 + 0.4);
+        osc.start(ctx.currentTime + idx * 0.15);
+        osc.stop(ctx.currentTime + idx * 0.15 + 0.4);
       });
     } catch {
-      // Audio not supported
+      // AudioContext not permitted without user gesture
     }
-  }, []);
-
-  const calculateTimeLeft = useCallback(() => {
-    if (!targetDate) return null;
-    const target = new Date(`${targetDate}T${targetTime}:00`);
-    const now = new Date();
-    const diff = Math.max(0, Math.floor((target.getTime() - now.getTime()) / 1000));
-
-    if (diff === 0) {
-      setFinished(true);
-      setRunning(false);
-      if (soundEnabled) playAlarm();
-      return { days: 0, hours: 0, minutes: 0, seconds: 0, total: 0 };
-    }
-
-    return {
-      days: Math.floor(diff / 86400),
-      hours: Math.floor((diff % 86400) / 3600),
-      minutes: Math.floor((diff % 3600) / 60),
-      seconds: diff % 60,
-      total: diff,
-    };
-  }, [targetDate, targetTime, soundEnabled, playAlarm]);
-
-  const startTimer = useCallback(() => {
-    const left = calculateTimeLeft();
-    if (!left || left.total === 0) {
-      toast.error("Please set a future date and time.");
-      return;
-    }
-    setTimeLeft(left);
-    setRunning(true);
-    setFinished(false);
-  }, [calculateTimeLeft]);
-
-  const pauseTimer = useCallback(() => {
-    setRunning(false);
-  }, []);
-
-  const resetTimer = useCallback(() => {
-    setRunning(false);
-    setFinished(false);
-    setTimeLeft(null);
-    if (intervalRef.current) clearInterval(intervalRef.current);
-  }, []);
+  }, [soundEnabled]);
 
   useEffect(() => {
-    if (!running) {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-      return;
-    }
+    const timer = setInterval(() => {
+      const current = calculateTimeLeft(getTargetDateTime());
+      setTimeLeft(current);
 
-    intervalRef.current = setInterval(() => {
-      const left = calculateTimeLeft();
-      if (!left || left.total === 0) {
-        setRunning(false);
-        setFinished(true);
-        if (intervalRef.current) clearInterval(intervalRef.current);
+      if (current.isExpired && !hasAlarmPlayedRef.current) {
+        hasAlarmPlayedRef.current = true;
+        playChime();
+        toast.success(`🎉 The countdown for "${title || "Event"}" has reached zero!`);
+      } else if (!current.isExpired) {
+        hasAlarmPlayedRef.current = false;
       }
-      setTimeLeft(left);
     }, 1000);
 
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [running, calculateTimeLeft]);
+    return () => clearInterval(timer);
+  }, [getTargetDateTime, playChime, title]);
 
-  const handleCopy = useCallback(async () => {
-    if (!timeLeft) return;
-    const text = `Countdown: ${title || "Event"} - ${timeLeft.days}d ${timeLeft.hours}h ${timeLeft.minutes}m ${timeLeft.seconds}s remaining`;
-    await navigator.clipboard.writeText(text);
-    toast.success("Copied!");
-  }, [timeLeft, title]);
+  const handleApplyPreset = (presetTitle: string, dateStr: string) => {
+    const d = new Date(dateStr);
+    setTitle(presetTitle);
+    setTargetDateStr(d.toISOString().split("T")[0]);
+    setTargetTimeStr("00:00");
+    toast.success(`Target set to ${presetTitle}!`);
+  };
 
-  const progress = timeLeft
-    ? 1 - timeLeft.total / (timeLeft.total + (running ? 0 : 0) || 1)
-    : 0;
+  const handleCopySummary = async () => {
+    const summary = `${title || "Countdown"}: ${timeLeft.days}d ${timeLeft.hours}h ${timeLeft.minutes}m ${timeLeft.seconds}s remaining until ${targetDateStr} ${targetTimeStr}`;
+    await navigator.clipboard.writeText(summary);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+    toast.success("Countdown summary copied!");
+  };
 
-  const circumference = 2 * Math.PI * 110;
+  const upcomingPresets = getUpcomingPresetEvents();
 
   return (
-    <div className="space-y-6">
-      {/* Setup */}
-      {!running && !finished && (
-        <Card>
-          <CardContent className="p-6 space-y-4">
-            <div>
-              <Label className="text-sm mb-1.5 block">Event Title (optional)</Label>
-              <Input
-                placeholder="e.g. New Year, Project Deadline..."
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label className="text-sm mb-1.5 block">Target Date</Label>
-                <Input
-                  type="date"
-                  value={targetDate}
-                  onChange={(e) => setTargetDate(e.target.value)}
-                />
-              </div>
-              <div>
-                <Label className="text-sm mb-1.5 block">Target Time</Label>
-                <Input
-                  type="time"
-                  value={targetTime}
-                  onChange={(e) => setTargetTime(e.target.value)}
-                />
-              </div>
-            </div>
-            <Button onClick={startTimer} className="w-full gap-2" disabled={!targetDate}>
-              <Play className="h-4 w-4" /> Start Countdown
-            </Button>
-          </CardContent>
-        </Card>
-      )}
+    <div className="space-y-4">
+      {/* Header bar */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-bold flex items-center gap-2">
+            <Timer className="h-5 w-5 text-primary" /> Countdown Timer
+          </h2>
+          <p className="text-sm text-muted-foreground">Live countdown to special milestones, deadlines, and global events</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setSoundEnabled(!soundEnabled)}
+            className="h-8 px-2 text-xs"
+            title={soundEnabled ? "Mute alert" : "Enable alert"}
+          >
+            {soundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4 text-muted-foreground" />}
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleCopySummary} className="text-xs gap-1.5 h-8">
+            {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />} Share
+          </Button>
+        </div>
+      </div>
 
-      {/* Timer display */}
-      {(running || finished) && timeLeft && (
-        <div className="space-y-6">
-          {/* Circle */}
-          <div className="flex flex-col items-center">
-            <div className="relative w-56 h-56">
-              <svg className="w-full h-full -rotate-90" viewBox="0 0 232 232">
-                <circle
-                  cx="116" cy="116" r="110"
-                  fill="none" stroke="currentColor" strokeWidth="8"
-                  className="stroke-muted/30"
-                />
-                <circle
-                  cx="116" cy="116" r="110"
-                  fill="none" strokeWidth="8" strokeLinecap="round"
-                  className={finished ? "stroke-green-500" : "stroke-primary"}
-                  strokeDasharray={circumference}
-                  strokeDashoffset={finished ? 0 : circumference * (1 - Math.min(progress, 1))}
-                  style={{ transition: "stroke-dashoffset 0.5s ease" }}
-                />
-              </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                {finished ? (
-                  <>
-                    <Bell className="h-10 w-10 text-green-500 mb-2" />
-                    <span className="text-lg font-bold text-green-500">Time&apos;s Up!</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="font-mono text-4xl font-bold tracking-tighter tabular-nums">
-                      {formatTime(timeLeft.total)}
-                    </span>
-                    {title && (
-                      <span className="text-xs text-muted-foreground mt-1 max-w-[140px] text-center truncate">
-                        {title}
-                      </span>
-                    )}
-                  </>
-                )}
+      {/* Target configuration */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div>
+          <Label className="text-xs mb-1 block">Event Title</Label>
+          <Input
+            placeholder="e.g. Vacation, Birthday, Exam..."
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="h-9 text-xs font-medium"
+          />
+        </div>
+        <div>
+          <Label className="text-xs mb-1 block">Target Date</Label>
+          <Input
+            type="date"
+            value={targetDateStr}
+            onChange={(e) => setTargetDateStr(e.target.value)}
+            className="h-9 text-xs font-mono"
+          />
+        </div>
+        <div>
+          <Label className="text-xs mb-1 block">Target Time</Label>
+          <Input
+            type="time"
+            value={targetTimeStr}
+            onChange={(e) => setTargetTimeStr(e.target.value)}
+            className="h-9 text-xs font-mono"
+          />
+        </div>
+      </div>
+
+      {/* Countdown Digits Display Card */}
+      <Card className="p-8 text-center bg-card border-border shadow-sm">
+        <div className="space-y-4">
+          <h3 className="text-lg font-bold text-muted-foreground uppercase tracking-wider">
+            {title || "Countdown"}
+          </h3>
+
+          {timeLeft.isExpired ? (
+            <div className="py-6 space-y-2">
+              <span className="text-4xl sm:text-5xl font-black text-green-500">🎉 Time's Up!</span>
+              <p className="text-xs text-muted-foreground">The countdown target date and time has passed.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 py-2">
+              <div className="p-4 bg-muted/30 rounded-xl border border-border">
+                <span className="text-4xl sm:text-5xl font-black font-mono text-primary">
+                  {timeLeft.days}
+                </span>
+                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mt-1">Days</p>
               </div>
-            </div>
-
-            {/* Controls */}
-            <div className="flex items-center gap-3 mt-4">
-              {running ? (
-                <Button onClick={pauseTimer} variant="secondary" size="lg" className="gap-2 rounded-full px-8">
-                  <Pause className="h-5 w-5" /> Pause
-                </Button>
-              ) : !finished ? (
-                <Button onClick={startTimer} size="lg" className="gap-2 rounded-full px-8">
-                  <Play className="h-5 w-5" /> Resume
-                </Button>
-              ) : null}
-              <Button onClick={resetTimer} variant="outline" size="lg" className="gap-2 rounded-full px-6">
-                <RotateCcw className="h-5 w-5" /> Reset
-              </Button>
-              <Button
-                onClick={() => setSoundEnabled(!soundEnabled)}
-                size="icon"
-                variant="ghost"
-                className="rounded-full"
-              >
-                {soundEnabled ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}
-              </Button>
-            </div>
-          </div>
-
-          {/* Breakdown */}
-          {!finished && (
-            <div className="grid grid-cols-4 gap-3">
-              {[
-                { label: "Days", value: timeLeft.days },
-                { label: "Hours", value: timeLeft.hours },
-                { label: "Minutes", value: timeLeft.minutes },
-                { label: "Seconds", value: timeLeft.seconds },
-              ].map((item) => (
-                <Card key={item.label}>
-                  <CardContent className="p-3 text-center">
-                    <p className="text-2xl font-bold font-mono tabular-nums">{item.value}</p>
-                    <p className="text-xs text-muted-foreground">{item.label}</p>
-                  </CardContent>
-                </Card>
-              ))}
+              <div className="p-4 bg-muted/30 rounded-xl border border-border">
+                <span className="text-4xl sm:text-5xl font-black font-mono text-primary">
+                  {String(timeLeft.hours).padStart(2, "0")}
+                </span>
+                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mt-1">Hours</p>
+              </div>
+              <div className="p-4 bg-muted/30 rounded-xl border border-border">
+                <span className="text-4xl sm:text-5xl font-black font-mono text-primary">
+                  {String(timeLeft.minutes).padStart(2, "0")}
+                </span>
+                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mt-1">Minutes</p>
+              </div>
+              <div className="p-4 bg-muted/30 rounded-xl border border-border">
+                <span className="text-4xl sm:text-5xl font-black font-mono text-primary">
+                  {String(timeLeft.seconds).padStart(2, "0")}
+                </span>
+                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mt-1">Seconds</p>
+              </div>
             </div>
           )}
 
-          {/* Info */}
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span className="flex items-center gap-1">
-              <Calendar className="h-3 w-3" />
-              Target: {formatDate(new Date(`${targetDate}T${targetTime}:00`))}
-            </span>
-            <Button variant="ghost" size="sm" onClick={handleCopy} className="gap-1 h-7">
-              <Copy className="h-3 w-3" /> Copy
-            </Button>
-          </div>
+          <p className="text-xs text-muted-foreground font-mono">
+            Target: {getTargetDateTime().toLocaleString("en-US", { dateStyle: "full", timeStyle: "short" })}
+          </p>
         </div>
-      )}
+      </Card>
 
-      {/* Idle state */}
-      {!running && !finished && !timeLeft && (
-        <div className="text-center py-12 text-muted-foreground">
-          <Timer className="h-12 w-12 mx-auto mb-3 opacity-30" />
-          <p className="text-sm">Set a date and time to start the countdown</p>
+      {/* Preset Milestones & Holidays */}
+      <div className="space-y-2">
+        <Label className="text-xs font-semibold text-muted-foreground uppercase">Upcoming Holiday Presets</Label>
+        <div className="flex flex-wrap gap-2">
+          {upcomingPresets.map((preset) => (
+            <Button
+              key={preset.title}
+              variant="outline"
+              size="sm"
+              onClick={() => handleApplyPreset(preset.title, preset.date)}
+              className="text-xs h-7 gap-1"
+            >
+              <Sparkles className="h-3 w-3 text-primary" /> {preset.title}
+            </Button>
+          ))}
         </div>
-      )}
+      </div>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
+import { Plus, Trash2, Play, Check, X, RotateCcw, Trophy, Copy, ChevronRight, ChevronLeft, Clock, Zap, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,37 +9,32 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "sonner";
 import {
-  generateQuizId, generateQuestionId, calculateScore,
-  SAMPLE_QUIZZES, type Quiz, type QuizQuestion,
+  generateQuizId, generateQuestionId, calculateScore, generateQuizFromText,
+  SAMPLE_QUIZZES,
+  type Quiz, type QuizQuestion,
 } from "@/features/tools/quiz-generator";
-import { Plus, Trash2, Play, Check, X, RotateCcw, Trophy, Copy, ChevronRight } from "lucide-react";
 
 export function QuizGeneratorEngine() {
   const [quiz, setQuiz] = useState<Quiz>({
     id: generateQuizId(),
     title: "My Quiz",
-    questions: [
-      { id: generateQuestionId(), question: "", options: ["", "", "", ""], correctIndex: 0 },
-    ],
+    questions: [{ id: generateQuestionId(), question: "", options: ["", "", "", ""], correctIndex: 0, explanation: "" }],
     createdAt: new Date().toISOString(),
+    timeLimitMinutes: 10,
   });
-  const [mode, setMode] = useState<"edit" | "take">("edit");
+  const [mode, setMode] = useState<"edit" | "take" | "results">("edit");
   const [currentQ, setCurrentQ] = useState(0);
   const [answers, setAnswers] = useState<(number | null)[]>([]);
-  const [showResults, setShowResults] = useState(false);
+  const [startTime, setStartTime] = useState<number | null>(null);
+  const [bulkText, setBulkText] = useState("");
   const [copied, setCopied] = useState(false);
 
-  const updateQuestion = (index: number, field: keyof QuizQuestion, value: string | number) => {
+  const updateQuestion = (index: number, field: keyof QuizQuestion, value: string | number | string[]) => {
     setQuiz(prev => {
       const questions = [...prev.questions];
-      if (field === "options" && typeof value === "string") {
-        // Not used directly
-      } else if (field === "correctIndex") {
-        questions[index] = { ...questions[index], correctIndex: value as number };
-      } else if (field === "question") {
-        questions[index] = { ...questions[index], question: value as string };
-      }
+      questions[index] = { ...questions[index], [field]: value };
       return { ...prev, questions };
     });
   };
@@ -56,54 +52,54 @@ export function QuizGeneratorEngine() {
   const addQuestion = () => {
     setQuiz(prev => ({
       ...prev,
-      questions: [...prev.questions, {
-        id: generateQuestionId(),
-        question: "",
-        options: ["", "", "", ""],
-        correctIndex: 0,
-      }],
+      questions: [...prev.questions, { id: generateQuestionId(), question: "", options: ["", "", "", ""], correctIndex: 0, explanation: "" }],
     }));
   };
 
   const removeQuestion = (index: number) => {
     if (quiz.questions.length <= 1) return;
+    setQuiz(prev => ({ ...prev, questions: prev.questions.filter((_, i) => i !== index) }));
+  };
+
+  const generateFromText = useCallback(() => {
+    if (!bulkText.trim()) { toast.error("Enter some text or notes first."); return; }
+    const generated = generateQuizFromText(bulkText, 8);
+    if (generated.length === 0) { toast.error("Could not extract questions. Try adding definitions like 'Mitosis is ...' or Q: / A: pairs."); return; }
     setQuiz(prev => ({
       ...prev,
-      questions: prev.questions.filter((_, i) => i !== index),
+      id: generateQuizId(),
+      questions: generated,
+      createdAt: new Date().toISOString(),
     }));
-  };
-
-  const startQuiz = () => {
-    setAnswers(new Array(quiz.questions.length).fill(null));
-    setCurrentQ(0);
-    setShowResults(false);
-    setMode("take");
-  };
-
-  const answerQuestion = (optionIndex: number) => {
-    setAnswers(prev => {
-      const next = [...prev];
-      next[currentQ] = optionIndex;
-      return next;
-    });
-  };
-
-  const nextQuestion = () => {
-    if (currentQ < quiz.questions.length - 1) {
-      setCurrentQ(prev => prev + 1);
-    } else {
-      setShowResults(true);
-    }
-  };
-
-  const prevQuestion = () => {
-    if (currentQ > 0) setCurrentQ(prev => prev - 1);
-  };
+    setBulkText("");
+    toast.success(`Generated ${generated.length} questions from your notes!`);
+  }, [bulkText]);
 
   const loadSample = (key: string) => {
     const sample = SAMPLE_QUIZZES[key];
     if (sample) setQuiz({ ...sample, id: generateQuizId(), createdAt: new Date().toISOString() });
   };
+
+  const startQuiz = () => {
+    const valid = quiz.questions.filter(q => q.question.trim() && q.options.filter(o => o.trim()).length >= 2);
+    if (valid.length === 0) { toast.error("Add at least one complete question with options."); return; }
+    setAnswers(new Array(quiz.questions.length).fill(null));
+    setCurrentQ(0);
+    setStartTime(Date.now());
+    setMode("take");
+  };
+
+  const answerQuestion = (optionIndex: number) => {
+    setAnswers(prev => { const next = [...prev]; next[currentQ] = optionIndex; return next; });
+  };
+
+  const finishQuiz = () => setMode("results");
+
+  const evaluation = calculateScore(
+    quiz.questions,
+    answers,
+    startTime ? Math.round((Date.now() - startTime) / 1000) : undefined
+  );
 
   const copyQuiz = () => {
     const text = quiz.questions.map((q, i) =>
@@ -114,14 +110,166 @@ export function QuizGeneratorEngine() {
     setTimeout(() => setCopied(false), 1500);
   };
 
-  const score = calculateScore(quiz.questions, answers);
+  if (mode === "take") {
+    const q = quiz.questions[currentQ];
+    const chosen = answers[currentQ];
 
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <Badge variant="outline" className="gap-1.5">
+            <Play className="h-3.5 w-3.5" /> Question {currentQ + 1} / {quiz.questions.length}
+          </Badge>
+          <div className="flex gap-2 items-center">
+            {startTime && (
+              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                <Clock className="h-3 w-3" /> {Math.round((Date.now() - startTime) / 1000)}s
+              </span>
+            )}
+            <Button variant="outline" size="sm" onClick={() => setMode("edit")}>Back to Edit</Button>
+          </div>
+        </div>
+
+        {/* Progress bar */}
+        <div className="h-1.5 bg-muted rounded-full">
+          <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${((currentQ + 1) / quiz.questions.length) * 100}%` }} />
+        </div>
+
+        <Card>
+          <CardContent className="pt-6 space-y-4">
+            <p className="text-base font-medium">{q.question || <span className="text-muted-foreground italic">No question text</span>}</p>
+            {q.difficulty && (
+              <Badge variant="outline" className="text-[10px]">{q.difficulty}</Badge>
+            )}
+
+            <div className="space-y-2">
+              {q.options.filter(o => o.trim()).map((option, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => answerQuestion(idx)}
+                  className={`w-full text-left px-4 py-2.5 rounded-lg border text-sm transition-all ${
+                    chosen === idx
+                      ? "bg-primary/10 border-primary text-primary font-medium"
+                      : "bg-background border-border hover:bg-muted/50"
+                  }`}
+                >
+                  <span className="font-mono text-muted-foreground mr-2">{String.fromCharCode(65 + idx)}.</span>
+                  {option}
+                </button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="flex gap-2 justify-between">
+          <Button variant="outline" size="sm" disabled={currentQ === 0} onClick={() => setCurrentQ(p => p - 1)}>
+            <ChevronLeft className="h-4 w-4" /> Prev
+          </Button>
+          {currentQ < quiz.questions.length - 1 ? (
+            <Button size="sm" onClick={() => setCurrentQ(p => p + 1)} disabled={chosen === null}>
+              Next <ChevronRight className="h-4 w-4" />
+            </Button>
+          ) : (
+            <Button size="sm" onClick={finishQuiz} className="gap-1.5">
+              <Trophy className="h-4 w-4" /> Finish Quiz
+            </Button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (mode === "results") {
+    const { score, total, percent, letterGrade, breakdown } = evaluation;
+    const gradeColor = letterGrade === "A" ? "text-green-400" : letterGrade === "B" ? "text-cyan-400" : letterGrade === "C" ? "text-yellow-400" : "text-red-400";
+
+    return (
+      <div className="space-y-4">
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="pt-6 text-center space-y-2">
+            <Trophy className="h-10 w-10 mx-auto text-yellow-500" />
+            <div className="flex items-center justify-center gap-4">
+              <div>
+                <p className="text-4xl font-bold">{score}/{total}</p>
+                <p className="text-sm text-muted-foreground">{percent}%</p>
+              </div>
+              <div className={`text-5xl font-bold ${gradeColor}`}>{letterGrade}</div>
+            </div>
+            {evaluation.timeTakenSeconds && (
+              <p className="text-xs text-muted-foreground flex items-center justify-center gap-1">
+                <Clock className="h-3 w-3" /> Completed in {Math.floor(evaluation.timeTakenSeconds / 60)}m {evaluation.timeTakenSeconds % 60}s
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        <div className="space-y-2">
+          <Label className="text-xs font-semibold">Question Breakdown</Label>
+          {breakdown.map((item, i) => (
+            <Card key={i} className={`border-l-2 ${item.isCorrect ? "border-l-green-500" : "border-l-red-500"}`}>
+              <CardContent className="pt-3 pb-3 space-y-1">
+                <div className="flex items-start gap-2">
+                  {item.isCorrect
+                    ? <Check className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />
+                    : <X className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />}
+                  <div className="flex-1">
+                    <p className="text-xs font-medium">{i + 1}. {item.question}</p>
+                    {!item.isCorrect && (
+                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                        Your answer: <span className="text-red-400">{item.userAnswer}</span> |
+                        Correct: <span className="text-green-400">{item.correctAnswer}</span>
+                      </p>
+                    )}
+                    {item.explanation && (
+                      <p className="text-[10px] text-muted-foreground mt-1 italic">{item.explanation}</p>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        <div className="flex gap-2">
+          <Button onClick={() => { setAnswers([]); setCurrentQ(0); setStartTime(null); setMode("take"); }} className="gap-1.5">
+            <RotateCcw className="h-4 w-4" /> Retake
+          </Button>
+          <Button variant="outline" onClick={() => setMode("edit")} className="gap-1.5">
+            <Zap className="h-4 w-4" /> Edit Quiz
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Edit mode
   return (
     <div className="space-y-4">
-      {mode === "edit" ? (
-        <>
-          {/* Sample quizzes */}
+      <Tabs defaultValue="build">
+        <TabsList>
+          <TabsTrigger value="build" className="text-xs">Build Questions</TabsTrigger>
+          <TabsTrigger value="auto" className="text-xs">Auto-Generate from Notes</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="auto" className="space-y-3 mt-3">
+          <p className="text-xs text-muted-foreground">
+            Paste lecture notes or study material. The engine will extract quiz questions using definitions, Q&A pairs, and key facts.
+          </p>
+          <Textarea
+            value={bulkText}
+            onChange={e => setBulkText(e.target.value)}
+            placeholder={"Example:\nMitosis is the process of cell division resulting in two identical daughter cells.\nQ: What is the powerhouse of the cell?\nA: Mitochondria\nWWII ended in 1945."}
+            className="text-xs min-h-36 font-mono"
+          />
+          <Button onClick={generateFromText} className="gap-1.5">
+            <Zap className="h-4 w-4" /> Generate Questions
+          </Button>
+        </TabsContent>
+
+        <TabsContent value="build" className="space-y-4 mt-3">
+          {/* Sample presets */}
           <div className="flex flex-wrap gap-2">
+            <span className="text-xs text-muted-foreground self-center">Load sample:</span>
             {Object.keys(SAMPLE_QUIZZES).map(key => (
               <Button key={key} variant="outline" size="sm" className="text-xs h-7" onClick={() => loadSample(key)}>
                 {SAMPLE_QUIZZES[key].title}
@@ -129,166 +277,79 @@ export function QuizGeneratorEngine() {
             ))}
           </div>
 
-          {/* Title */}
+          {/* Quiz title */}
           <div>
             <Label className="text-xs mb-1 block">Quiz Title</Label>
-            <Input
-              value={quiz.title}
-              onChange={e => setQuiz(prev => ({ ...prev, title: e.target.value }))}
-            />
+            <Input value={quiz.title} onChange={e => setQuiz(prev => ({ ...prev, title: e.target.value }))} className="h-8 text-sm" />
           </div>
 
           {/* Questions */}
-          <div className="space-y-4">
-            {quiz.questions.map((q, qi) => (
-              <Card key={q.id}>
-                <CardHeader className="pb-2 flex flex-row items-center justify-between">
-                  <CardTitle className="text-sm">Question {qi + 1}</CardTitle>
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeQuestion(qi)}>
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <Input
-                    value={q.question}
-                    onChange={e => updateQuestion(qi, "question", e.target.value)}
-                    placeholder="Enter question..."
-                    className="text-sm"
-                  />
-                  {q.options.map((opt, oi) => (
-                    <div key={oi} className="flex items-center gap-2">
-                      <Button
-                        variant={q.correctIndex === oi ? "default" : "outline"}
-                        size="icon"
-                        className="h-7 w-7 shrink-0"
-                        onClick={() => updateQuestion(qi, "correctIndex", oi)}
-                      >
-                        {q.correctIndex === oi ? <Check className="h-3 w-3" /> : <span className="text-xs">{oi + 1}</span>}
-                      </Button>
-                      <Input
-                        value={opt}
-                        onChange={e => updateOption(qi, oi, e.target.value)}
-                        placeholder={`Option ${oi + 1}`}
-                        className="text-sm h-8"
-                      />
-                    </div>
-                  ))}
+          <div className="space-y-3">
+            {quiz.questions.map((q, qIdx) => (
+              <Card key={q.id} className="border">
+                <CardContent className="pt-3 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-[10px] shrink-0">Q{qIdx + 1}</Badge>
+                    <Input
+                      value={q.question}
+                      onChange={e => updateQuestion(qIdx, "question", e.target.value)}
+                      placeholder="Enter question..."
+                      className="h-7 text-xs flex-1"
+                    />
+                    <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => removeQuestion(qIdx)}>
+                      <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
+                    </Button>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-1.5 pl-8">
+                    {q.options.map((opt, oIdx) => (
+                      <div key={oIdx} className="flex gap-1 items-center">
+                        <input
+                          type="radio"
+                          name={`correct-${q.id}`}
+                          checked={q.correctIndex === oIdx}
+                          onChange={() => updateQuestion(qIdx, "correctIndex", oIdx)}
+                          className="accent-primary shrink-0"
+                          title="Mark as correct"
+                        />
+                        <Input
+                          value={opt}
+                          onChange={e => updateOption(qIdx, oIdx, e.target.value)}
+                          placeholder={`Option ${String.fromCharCode(65 + oIdx)}`}
+                          className="h-7 text-xs"
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="pl-8">
+                    <Input
+                      value={q.explanation || ""}
+                      onChange={e => updateQuestion(qIdx, "explanation", e.target.value)}
+                      placeholder="Explanation (optional)"
+                      className="h-6 text-[10px] text-muted-foreground bg-muted/30"
+                    />
+                  </div>
                 </CardContent>
               </Card>
             ))}
           </div>
 
-          <div className="flex gap-2">
-            <Button onClick={addQuestion} variant="outline" className="gap-2">
-              <Plus className="h-4 w-4" /> Add Question
+          <div className="flex gap-2 flex-wrap">
+            <Button variant="outline" size="sm" className="gap-1 h-8 text-xs" onClick={addQuestion}>
+              <Plus className="h-3.5 w-3.5" /> Add Question
             </Button>
-            <Button onClick={startQuiz} className="gap-2">
-              <Play className="h-4 w-4" /> Take Quiz
-            </Button>
-            <Button onClick={copyQuiz} variant="ghost" size="icon">
-              {copied ? <Check className="h-4 w-4 text-green-400" /> : <Copy className="h-4 w-4" />}
+            <Button variant="outline" size="sm" className="gap-1 h-8 text-xs" onClick={copyQuiz}>
+              {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+              Copy as Text
             </Button>
           </div>
-        </>
-      ) : (
-        <>
-          {!showResults ? (
-            <div className="space-y-4">
-              {/* Progress */}
-              <div className="flex items-center justify-between">
-                <Badge variant="outline">Question {currentQ + 1} of {quiz.questions.length}</Badge>
-                <span className="text-xs text-muted-foreground">
-                  {answers.filter(a => a !== null).length} answered
-                </span>
-              </div>
+        </TabsContent>
+      </Tabs>
 
-              {/* Progress bar */}
-              <div className="w-full bg-muted rounded-full h-1.5">
-                <div
-                  className="bg-cyan-500 h-1.5 rounded-full transition-all"
-                  style={{ width: `${((currentQ + 1) / quiz.questions.length) * 100}%` }}
-                />
-              </div>
-
-              {/* Question */}
-              <Card>
-                <CardContent className="p-4">
-                  <p className="font-medium mb-4">{quiz.questions[currentQ].question}</p>
-                  <div className="space-y-2">
-                    {quiz.questions[currentQ].options.map((opt, oi) => (
-                      <Button
-                        key={oi}
-                        variant={answers[currentQ] === oi ? "default" : "outline"}
-                        className="w-full justify-start h-auto py-3 px-4 text-left"
-                        onClick={() => answerQuestion(oi)}
-                      >
-                        <span className="font-mono text-xs mr-3">{String.fromCharCode(65 + oi)}.</span>
-                        {opt}
-                      </Button>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Navigation */}
-              <div className="flex justify-between">
-                <Button onClick={prevQuestion} variant="outline" disabled={currentQ === 0}>
-                  Previous
-                </Button>
-                <Button onClick={nextQuestion}>
-                  {currentQ === quiz.questions.length - 1 ? "Finish" : "Next"}
-                  <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-4 text-center">
-              <Trophy className="h-12 w-12 mx-auto text-yellow-400" />
-              <div>
-                <p className="text-3xl font-bold">{score.percent}%</p>
-                <p className="text-muted-foreground">{score.score} / {score.total} correct</p>
-              </div>
-
-              {/* Review */}
-              <div className="space-y-2 text-left">
-                {quiz.questions.map((q, i) => (
-                  <Card key={q.id} className={answers[i] === q.correctIndex ? "border-green-500/30" : "border-red-500/30"}>
-                    <CardContent className="p-3">
-                      <div className="flex items-start gap-2">
-                        {answers[i] === q.correctIndex ? (
-                          <Check className="h-4 w-4 text-green-400 mt-0.5 shrink-0" />
-                        ) : (
-                          <X className="h-4 w-4 text-red-400 mt-0.5 shrink-0" />
-                        )}
-                        <div>
-                          <p className="text-sm font-medium">{q.question}</p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Your answer: {answers[i] !== null ? q.options[answers[i]] : "Skipped"}
-                          </p>
-                          {answers[i] !== q.correctIndex && (
-                            <p className="text-xs text-green-400 mt-0.5">
-                              Correct: {q.options[q.correctIndex]}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-
-              <div className="flex gap-2 justify-center">
-                <Button onClick={() => { setMode("edit"); setShowResults(false); }} variant="outline" className="gap-2">
-                  Edit Quiz
-                </Button>
-                <Button onClick={startQuiz} className="gap-2">
-                  <RotateCcw className="h-4 w-4" /> Retake
-                </Button>
-              </div>
-            </div>
-          )}
-        </>
-      )}
+      <Button onClick={startQuiz} className="w-full gap-2">
+        <Play className="h-4 w-4" /> Start Quiz ({quiz.questions.length} questions)
+      </Button>
     </div>
   );
 }

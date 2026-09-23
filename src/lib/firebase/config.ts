@@ -13,10 +13,10 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
-// Initialize Firebase only on client side
+// Initialize Firebase app (works on client and server when config is available)
 function getFirebaseApp() {
-  if (typeof window === "undefined") return null;
   if (getApps().length > 0) return getApps()[0];
+  if (!firebaseConfig.apiKey || !firebaseConfig.projectId) return null;
   return initializeApp(firebaseConfig);
 }
 
@@ -33,6 +33,7 @@ export function getFirebaseFirestore() {
 }
 
 export async function getFirebaseAnalytics() {
+  if (typeof window === "undefined") return null;
   const app = getFirebaseApp();
   if (!app) return null;
   if (await isSupported()) {

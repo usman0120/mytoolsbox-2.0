@@ -97,6 +97,9 @@ export function FavoritesPageClient() {
   const getCategoryName = (catId: string) =>
     CATEGORIES.find((c) => c.id === catId)?.name ?? catId;
 
+  const getItemHref = (item: FavoriteItem) =>
+    `/${item.productType === "app" ? "apps" : "tools"}/${item.toolSlug}`;
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-3xl">
       <div className="mb-8">
@@ -132,7 +135,7 @@ export function FavoritesPageClient() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <Link
-                      href={`/tools/${item.toolSlug}`}
+                      href={getItemHref(item)}
                       className="font-medium hover:text-primary transition-colors truncate"
                     >
                       {item.toolName}
@@ -152,7 +155,7 @@ export function FavoritesPageClient() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => router.push(`/tools/${item.toolSlug}`)}
+                    onClick={() => router.push(getItemHref(item))}
                   >
                     <ExternalLink className="h-4 w-4" />
                   </Button>

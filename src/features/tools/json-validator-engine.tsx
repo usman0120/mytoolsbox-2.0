@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { repairJSON } from "./json-formatter";
 
 interface JSONNode {
   key: string;
@@ -221,9 +222,25 @@ export function JSONValidatorEngine() {
       {/* Error display */}
       {error ? (
         <Card className="border-destructive/50 bg-destructive/5">
-          <CardContent className="p-4">
-            <p className="text-sm font-medium text-destructive mb-1">Validation Error</p>
-            <p className="text-sm text-destructive/80 font-mono">{error}</p>
+          <CardContent className="p-4 space-y-3">
+            <div>
+              <p className="text-sm font-semibold text-destructive mb-1">Validation Error</p>
+              <p className="text-xs text-destructive/80 font-mono whitespace-pre-wrap">{error}</p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-xs"
+              onClick={() => {
+                const repaired = repairJSON(input);
+                if (repaired.success) {
+                  setInput(repaired.output);
+                  setTimeout(() => handleValidate(), 50);
+                }
+              }}
+            >
+              Attempt Auto-Repair
+            </Button>
           </CardContent>
         </Card>
       ) : null}

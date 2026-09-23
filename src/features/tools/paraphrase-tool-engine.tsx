@@ -1,77 +1,148 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  PenLine, Copy, Check, Trash2, Loader2, Sparkles,
-  ChevronRight, BookOpen, Lightbulb, Minus, Plus, Star,
+  PenLine,
+  Copy,
+  Check,
+  Trash2,
+  Loader2,
+  Sparkles,
+  ChevronRight,
+  BookOpen,
+  Lightbulb,
+  Minus,
+  Plus,
+  Star,
+  Download,
+  ArrowRightLeft,
+  Coins,
 } from "lucide-react";
 import { paraphrase, type ParaphraseVariant } from "@/lib/ai/services/paraphrase-tool";
-import { getAvailableProviders } from "@/lib/ai";
+import { useCredits } from "@/lib/credits/use-credits";
+import { toast } from "sonner";
 
 // ---------------------------------------------------------------------------
-// Client-side fallback – basic synonym-based paraphrasing
+// Client-side fallback: Smart synonym & phrase restructuring
 // ---------------------------------------------------------------------------
 
-const SYNONYM_MAP: Record<string, string[]> = {
-  "good": ["excellent", "great", "fine", "superb", "wonderful"],
-  "bad": ["poor", "terrible", "awful", "negative", "unfavorable"],
-  "big": ["large", "substantial", "significant", "major", "considerable"],
-  "small": ["tiny", "minor", "compact", "limited", "modest"],
-  "important": ["crucial", "essential", "vital", "significant", "critical"],
-  "help": ["assist", "support", "aid", "facilitate", "guide"],
-  "make": ["create", "produce", "generate", "build", "develop"],
-  "use": ["utilize", "employ", "apply", "leverage", "operate"],
-  "show": ["demonstrate", "display", "reveal", "indicate", "present"],
-  "get": ["obtain", "acquire", "receive", "gain", "secure"],
-  "say": ["state", "express", "mention", "declare", "articulate"],
-  "think": ["believe", "consider", "contemplate", "reflect", "ponder"],
-  "very": ["extremely", "highly", "remarkably", "exceptionally", "notably"],
-  "thing": ["item", "object", "element", "aspect", "factor"],
-  "people": ["individuals", "persons", "citizens", "members", "participants"],
+const RICH_SYNONYMS: Record<string, string[]> = {
+  good: ["exceptional", "superb", "commendable", "optimal", "favorable"],
+  bad: ["suboptimal", "unfavorable", "detrimental", "adverse", "inadequate"],
+  big: ["substantial", "prominent", "significant", "considerable", "extensive"],
+  small: ["modest", "compact", "concise", "marginal", "incremental"],
+  important: ["critical", "pivotal", "vital", "essential", "paramount"],
+  help: ["facilitate", "assist", "empower", "reinforce", "catalyze"],
+  make: ["generate", "synthesize", "construct", "formulate", "establish"],
+  use: ["leverage", "utilize", "deploy", "implement", "harness"],
+  show: ["illustrate", "demonstrate", "exemplify", "reveal", "indicate"],
+  get: ["acquire", "obtain", "derive", "secure", "attain"],
+  say: ["articulate", "convey", "emphasize", "assert", "delineate"],
+  think: ["assess", "determine", "evaluate", "consider", "hypothesize"],
+  very: ["notably", "exceptionally", "remarkably", "substantially"],
+  fast: ["rapid", "swift", "expeditious", "accelerated", "nimble"],
+  problem: ["challenge", "bottleneck", "obstacle", "impediment", "friction"],
+  start: ["commence", "initiate", "embark upon", "launch", "kick-off"],
+  end: ["conclude", "culminate", "terminate", "finalize", "wrap up"],
 };
 
-function basicParaphrase(text: string): ParaphraseVariant[] {
+function generateOfflineParaphrases(text: string, style: Mode): ParaphraseVariant[] {
   const words = text.split(/\b/);
-  const variants: ParaphraseVariant[] = [];
 
-  // Variant 1: Synonym replacement
-  const synonymVersion = words
-    .map((word) => {
-      const lower = word.toLowerCase();
-      if (SYNONYM_MAP[lower] && Math.random() > 0.5) {
-        const synonyms = SYNONYM_MAP[lower];
-        return synonyms[Math.floor(Math.random() * synonyms.length)];
-      }
-      return word;
-    })
-    .join("");
-
-  variants.push({
-    text: synonymVersion,
-    style: "Standard",
-    description: "Basic synonym replacement",
+  // 1. Synonym-enhanced variant
+  const synWords = words.map((w) => {
+    const l = w.toLowerCase();
+    if (RICH_SYNONYMS[l] && Math.random() > 0.4) {
+      const candidates = RICH_SYNONYMS[l];
+      const rep = candidates[Math.floor(Math.random() * candidates.length)];
+      return w[0] === w[0].toUpperCase() ? rep.charAt(0).toUpperCase() + rep.slice(1) : rep;
+    }
+    return w;
   });
+  const synText = synWords.join("");
 
-  // Variant 2: Shortened (remove some adjectives/adverbs)
-  const shortened = text
-    .replace(/\b(very|really|quite|extremely|highly|absolutely)\s+/gi, "")
-    .replace(/\s{2,}/g, " ");
-  variants.push({
-    text: shortened,
-    style: "Shortened",
-    description: "Removed intensifiers for conciseness",
-  });
+  // 2. Academic / Formal variant
+  const academicText = text
+    .replace(/\b(a lot of|lots of)\b/gi, "a substantial volume of")
+    .replace(/\b(in order to)\b/gi, "to")
+    .replace(/\b(due to the fact that)\b/gi, "inasmuch as")
+    .replace(/\b(think that|believe that)\b/gi, "contend that")
+    .replace(/\b(good)\b/gi, "advantageous")
+    .replace(/\b(bad)\b/gi, "detrimental")
+    .replace(/\b(use)\b/gi, "utilize");
 
-  return variants;
+  // 3. Concise / Shortened variant
+  const shortenedText = text
+    .replace(/\b(very|really|quite|extremely|highly|absolutely|literally|basically)\s+/gi, "")
+    .replace(/\b(in the process of)\b/gi, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+
+  // 4. Expanded / Descriptive variant
+  const expandedText = text
+    .replace(/\b(important)\b/gi, "essential and of utmost priority")
+    .replace(/\b(help)\b/gi, "provide valuable guidance and assist")
+    .replace(/\b(grow)\b/gi, "expand sustainably and thrive");
+
+  const results: ParaphraseVariant[] = [];
+
+  if (style === "shorten") {
+    results.push({
+      text: shortenedText,
+      style: "Concise",
+      description: "Trimmed filler words and intensifiers",
+    });
+    results.push({
+      text: synText,
+      style: "Alternative",
+      description: "Alternative vocabulary",
+    });
+  } else if (style === "academic") {
+    results.push({
+      text: academicText,
+      style: "Academic",
+      description: "Elevated scholarly tone and precise terminology",
+    });
+    results.push({
+      text: synText,
+      style: "Refined",
+      description: "Formal vocabulary substitution",
+    });
+  } else if (style === "expand") {
+    results.push({
+      text: expandedText,
+      style: "Comprehensive",
+      description: "Elaborated context with deeper descriptive power",
+    });
+    results.push({
+      text: synText,
+      style: "Rich",
+      description: "Enhanced phrasing",
+    });
+  } else {
+    results.push({
+      text: synText,
+      style: "Natural Flow",
+      description: "Smooth synonym replacement and readability",
+    });
+    results.push({
+      text: academicText,
+      style: "Formal Alternative",
+      description: "Professional tone variation",
+    });
+    results.push({
+      text: shortenedText,
+      style: "Punchy & Direct",
+      description: "Direct and fluff-free",
+    });
+  }
+
+  return results;
 }
-
-// ---------------------------------------------------------------------------
-// Engine Component
-// ---------------------------------------------------------------------------
 
 type Mode = "standard" | "fluent" | "academic" | "creative" | "shorten" | "expand";
 
@@ -92,8 +163,7 @@ export function ParaphraseToolEngine() {
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const [mode, setMode] = useState<Mode>("standard");
   const [error, setError] = useState<string | null>(null);
-
-  const hasAIProvider = getAvailableProviders().length > 0;
+  const { remaining, refresh } = useCredits();
 
   const handleParaphrase = useCallback(async () => {
     if (!input.trim()) return;
@@ -101,29 +171,46 @@ export function ParaphraseToolEngine() {
     setError(null);
 
     try {
-      if (hasAIProvider) {
-        const result = await paraphrase({ text: input.trim(), mode });
-        setVariants(result.variants);
-        setBestPick(result.bestPick);
-      } else {
-        const fallbackVariants = basicParaphrase(input.trim());
-        setVariants(fallbackVariants);
-        setBestPick(0);
-      }
+      const result = await paraphrase({ text: input.trim(), mode });
+      setVariants(result.variants);
+      setBestPick(result.bestPick);
+      toast.success("Paraphrase generated! (15 credits deducted)");
+      await refresh();
     } catch {
-      const fallbackVariants = basicParaphrase(input.trim());
+      const fallbackVariants = generateOfflineParaphrases(input.trim(), mode);
       setVariants(fallbackVariants);
       setBestPick(0);
-      setError("AI service unavailable. Showing basic results.");
+      setError("AI service unavailable. Showing offline phrasing variations.");
     } finally {
       setIsLoading(false);
     }
-  }, [input, mode, hasAIProvider]);
+  }, [input, mode, refresh]);
 
   const handleCopy = async (text: string, idx: number) => {
     await navigator.clipboard.writeText(text);
     setCopiedIdx(idx);
     setTimeout(() => setCopiedIdx(null), 2000);
+    toast.success("Copied variation to clipboard!");
+  };
+
+  const handleUseAsInput = (text: string) => {
+    setInput(text);
+    toast.info("Transferred variation into source editor");
+  };
+
+  const handleDownloadAll = () => {
+    if (variants.length === 0) return;
+    const body = variants
+      .map((v, i) => `--- Variation ${i + 1} (${v.style}) ---\n${v.text}\n`)
+      .join("\n");
+    const blob = new Blob([body], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `paraphrased-variations-${Date.now()}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Downloaded all variations!");
   };
 
   const handleClear = () => {
@@ -133,94 +220,158 @@ export function ParaphraseToolEngine() {
     setError(null);
   };
 
+  const inputWordCount = input.trim() ? input.trim().split(/\s+/).length : 0;
+
   return (
-    <div className="space-y-4">
-      {/* Mode selector */}
-      <div className="flex gap-2 flex-wrap">
-        {MODES.map((m) => (
-          <Button
-            key={m.id}
-            variant={mode === m.id ? "default" : "outline"}
-            size="sm"
-            onClick={() => setMode(m.id)}
-            className="gap-1.5"
-          >
-            <m.icon className="h-3.5 w-3.5" />
-            {m.label}
-          </Button>
-        ))}
-        {hasAIProvider && (
-          <Badge className="bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20 gap-1 ml-auto">
-            <Sparkles className="h-3 w-3" />AI Ready
+    <div className="space-y-5">
+      {/* Mode Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-muted/40 rounded-xl border">
+        <div className="flex gap-2 flex-wrap items-center">
+          <span className="text-xs font-semibold text-muted-foreground mr-1">Rewrite Style:</span>
+          {MODES.map((m) => (
+            <Button
+              key={m.id}
+              variant={mode === m.id ? "default" : "outline"}
+              size="sm"
+              onClick={() => setMode(m.id)}
+              className="gap-1.5 h-8 text-xs"
+            >
+              <m.icon className="h-3.5 w-3.5" />
+              {m.label}
+            </Button>
+          ))}
+        </div>
+        <div className="flex items-center gap-1.5">
+          <Badge variant="outline" className="text-xs gap-1 text-muted-foreground">
+            <Coins className="h-3 w-3 text-amber-500" /> 15 credits {remaining !== undefined && remaining > 0 ? `(${remaining} left)` : ""}
           </Badge>
-        )}
+          <Badge className="bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20 gap-1 text-xs">
+            <Sparkles className="h-3 w-3" /> AI Powered
+          </Badge>
+        </div>
       </div>
 
-      {/* Input */}
-      <Textarea
-        placeholder="Paste your text here to paraphrase..."
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-        rows={6}
-        className="font-mono text-sm"
-      />
-
-      {/* Actions */}
-      <div className="flex gap-2">
-        <Button onClick={handleParaphrase} disabled={!input.trim() || isLoading} className="gap-2">
-          {isLoading ? (
-            <><Loader2 className="h-4 w-4 animate-spin" /> Paraphrasing...</>
-          ) : (
-            <><PenLine className="h-4 w-4" /> Paraphrase {hasAIProvider ? "with AI" : ""}</>
-          )}
-        </Button>
-        <Button variant="outline" onClick={handleClear} disabled={!input && variants.length === 0} className="gap-1.5">
-          <Trash2 className="h-4 w-4" /> Clear
-        </Button>
+      {/* Input Textarea Card */}
+      <div className="rounded-xl border bg-card p-4 shadow-xs">
+        <div className="flex items-center justify-between pb-2 border-b mb-3">
+          <label className="text-sm font-semibold">Original Sentence or Paragraph</label>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground font-mono">
+              {inputWordCount} words
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleClear}
+              disabled={!input && variants.length === 0}
+              className="gap-1 h-7 text-xs text-muted-foreground hover:text-destructive"
+            >
+              <Trash2 className="h-3.5 w-3.5" /> Clear
+            </Button>
+          </div>
+        </div>
+        <Textarea
+          placeholder="Paste or write your text here to generate fresh, articulate paraphrased alternatives..."
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          rows={6}
+          className="font-mono text-sm leading-relaxed"
+        />
+        <div className="mt-3 flex gap-2">
+          <Button onClick={handleParaphrase} disabled={!input.trim() || isLoading} className="gap-2">
+            {isLoading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" /> Rewriting Phrasing...
+              </>
+            ) : (
+              <>
+                <PenLine className="h-4 w-4" /> Paraphrase Text
+              </>
+            )}
+          </Button>
+        </div>
       </div>
 
       {error && (
-        <p className="text-sm text-amber-500">{error}</p>
+        <p className="text-xs text-amber-500 p-2 bg-amber-500/10 rounded-lg">{error}</p>
       )}
 
-      {/* Results */}
+      {/* Generated Variations */}
       {variants.length > 0 && (
         <div className="space-y-3">
-          <p className="text-sm text-muted-foreground">
-            {variants.length} variant{variants.length > 1 ? "s" : ""} generated
-          </p>
-          {variants.map((variant, idx) => (
-            <Card key={idx} className={idx === bestPick ? "border-green-500/30" : ""}>
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-muted-foreground">
+              {variants.length} Alternative Variations Generated
+            </span>
+            <Button variant="outline" size="sm" onClick={handleDownloadAll} className="gap-1 h-7 text-xs">
+              <Download className="h-3.5 w-3.5" /> Download All
+            </Button>
+          </div>
+
+          {variants.map((variant, idx) => {
+            const vWords = variant.text.trim() ? variant.text.trim().split(/\s+/).length : 0;
+            const wordDiff = vWords - inputWordCount;
+
+            return (
+              <Card
+                key={idx}
+                className={`transition-all ${
+                  idx === bestPick
+                    ? "border-emerald-500/50 bg-emerald-50/10 dark:bg-emerald-950/10 shadow-xs"
+                    : ""
+                }`}
+              >
+                <CardHeader className="pb-2 pt-3 px-4 flex flex-row items-center justify-between border-b">
                   <div className="flex items-center gap-2">
-                    <CardTitle className="text-sm flex items-center gap-1.5">
+                    <CardTitle className="text-xs font-semibold flex items-center gap-1.5">
                       {variant.style}
                       {idx === bestPick && (
-                        <Star className="h-3.5 w-3.5 text-green-500 fill-green-500" />
+                        <Star className="h-3.5 w-3.5 text-amber-500 fill-amber-500" />
                       )}
                     </CardTitle>
-                    <Badge variant="outline" className="text-[10px]">{variant.description}</Badge>
+                    <Badge variant="outline" className="text-[10px]">
+                      {variant.description}
+                    </Badge>
+                    <span className="text-[11px] text-muted-foreground font-mono ml-2">
+                      {vWords} words ({wordDiff >= 0 ? `+${wordDiff}` : wordDiff})
+                    </span>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleCopy(variant.text, idx)}
-                    className="gap-1 h-7"
-                  >
-                    {copiedIdx === idx ? (
-                      <><Check className="h-3.5 w-3.5" /> Copied</>
-                    ) : (
-                      <><Copy className="h-3.5 w-3.5" /> Copy</>
-                    )}
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm whitespace-pre-wrap">{variant.text}</p>
-              </CardContent>
-            </Card>
-          ))}
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleUseAsInput(variant.text)}
+                      className="gap-1 h-7 text-xs text-muted-foreground hover:text-foreground"
+                      title="Use this variation as new input"
+                    >
+                      <ArrowRightLeft className="h-3 w-3" /> Re-use
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleCopy(variant.text, idx)}
+                      className="gap-1 h-7 text-xs"
+                    >
+                      {copiedIdx === idx ? (
+                        <>
+                          <Check className="h-3.5 w-3.5 text-emerald-500" /> Copied
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="h-3.5 w-3.5" /> Copy
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-4">
+                  <p className="text-sm leading-relaxed whitespace-pre-wrap font-mono">
+                    {variant.text}
+                  </p>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>

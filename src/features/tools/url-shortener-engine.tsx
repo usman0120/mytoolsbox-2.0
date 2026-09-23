@@ -1,270 +1,334 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { Link, Copy, Check, Trash2, ExternalLink, QrCode, History, BarChart3, Shield, Download } from "lucide-react";
+import { useState, useCallback, useEffect } from "react";
+import {
+  Link as LinkIcon, Copy, Check, Trash2, ExternalLink, QrCode,
+  Download, Search, Sparkles, AlertCircle
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
+import {
+  createShortLink,
+  validateUrl,
+  validateCustomAlias,
+  exportLinksToCSV,
+  type ShortLink,
+} from "@/features/tools/url-shortener";
+import { generateQrDataUrl } from "@/features/tools/barcode-generator";
 
-interface ShortLink {
-  id: string;
-  originalUrl: string;
-  shortCode: string;
-  createdAt: number;
-  clicks: number;
-}
-
-function generateShortCode(length = 6): string {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  let result = "";
-  for (let i = 0; i < length; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
-}
-
-function isValidUrl(url: string): boolean {
-  try {
-    const u = new URL(url);
-    return u.protocol === "http:" || u.protocol === "https:";
-  } catch {
-    return false;
-  }
-}
-
-const STORAGE_KEY = "mytoolsbox-shortlinks";
-
-function loadLinks(): ShortLink[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveLinks(links: ShortLink[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(links));
-}
+const STORAGE_KEY = "mytoolsbox-shortlinks-v2";
 
 export function URLShortenerEngine() {
   const [url, setUrl] = useState("");
-  const [customCode, setCustomCode] = useState("");
-  const [links, setLinks] = useState<ShortLink[]>(() => loadLinks());
-  const [error, setError] = useState("");
-  const [copied, setCopied] = useState("");
+  const [customAlias, setCustomAlias] = useState("");
+  const [title, setTitle] = useState("");
+  const [links, setLinks] = useState<ShortLink[]>([]);
   const [lastCreated, setLastCreated] = useState<ShortLink | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [activeQrId, setActiveQrId] = useState<string | null>(null);
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Load from local storage
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) setLinks(JSON.parse(raw));
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const saveLinks = (updated: ShortLink[]) => {
+    setLinks(updated);
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    } catch {
+      // ignore
+    }
+  };
 
   const handleShorten = useCallback(() => {
-    setError("");
-    setLastCreated(null);
+    const existingCodes = links.map((l) => l.shortCode);
+    const res = createShortLink(url, {
+      customAlias: customAlias.trim() || undefined,
+      existingCodes,
+      title: title.trim() || undefined,
+    });
 
-    if (!url.trim()) {
-      setError("Please enter a URL.");
+    if (!res.success) {
+      toast.error(res.error);
       return;
     }
 
-    let normalizedUrl = url.trim();
-    if (!/^https?:\/\//i.test(normalizedUrl)) {
-      normalizedUrl = "https://" + normalizedUrl;
-    }
-
-    if (!isValidUrl(normalizedUrl)) {
-      setError("Please enter a valid URL.");
-      return;
-    }
-
-    const code = customCode.trim() || generateShortCode();
-
-    // Check for duplicate codes
-    if (links.some((l) => l.shortCode === code)) {
-      setError("This custom code is already in use. Please choose another.");
-      return;
-    }
-
-    const newLink: ShortLink = {
-      id: Date.now().toString(36),
-      originalUrl: normalizedUrl,
-      shortCode: code,
-      createdAt: Date.now(),
-      clicks: 0,
-    };
-
-    const updated = [newLink, ...links];
-    setLinks(updated);
+    const updated = [res.link, ...links];
     saveLinks(updated);
-    setLastCreated(newLink);
+    setLastCreated(res.link);
     setUrl("");
-    setCustomCode("");
-  }, [url, customCode, links]);
+    setCustomAlias("");
+    setTitle("");
+    toast.success("Short link created successfully!");
+  }, [url, customAlias, title, links]);
 
-  const handleCopy = async (text: string, id: string) => {
-    await navigator.clipboard.writeText(text);
-    setCopied(id);
-    setTimeout(() => setCopied(""), 2000);
-    toast.success("Copied to clipboard!");
+  const handleCopy = async (shortCode: string, id: string) => {
+    const shortUrl = `https://mytoolsbox.me/s/${shortCode}`;
+    await navigator.clipboard.writeText(shortUrl);
+    setCopiedId(id);
+    toast.success("Short link copied to clipboard!");
+    setTimeout(() => setCopiedId(null), 1500);
   };
 
   const handleDelete = (id: string) => {
     const updated = links.filter((l) => l.id !== id);
-    setLinks(updated);
     saveLinks(updated);
+    if (lastCreated?.id === id) setLastCreated(null);
+    if (activeQrId === id) {
+      setActiveQrId(null);
+      setQrDataUrl(null);
+    }
     toast.success("Link deleted.");
   };
 
-  const handleDownloadLinks = () => {
-    const report = links.map((l) =>
-      `Short: mytoolsbox.me/s/${l.shortCode}\nOriginal: ${l.originalUrl}\nClicks: ${l.clicks}\nCreated: ${new Date(l.createdAt).toLocaleDateString()}\n---`
-    ).join("\n");
-    const blob = new Blob([`MyToolsBox.me Short Links Report\n${"=".repeat(40)}\n\n${report}\n\nGenerated by MyToolsBox.me`], { type: "text/plain" });
+  const handleShowQr = async (link: ShortLink) => {
+    if (activeQrId === link.id) {
+      setActiveQrId(null);
+      setQrDataUrl(null);
+      return;
+    }
+    const shortUrl = `https://mytoolsbox.me/s/${link.shortCode}`;
+    const dataUrl = await generateQrDataUrl(shortUrl, { width: 240 });
+    setActiveQrId(link.id);
+    setQrDataUrl(dataUrl);
+  };
+
+  const handleExportCSV = () => {
+    if (links.length === 0) return;
+    const csv = exportLinksToCSV(links);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `short-links-${Date.now()}.txt`;
+    a.download = `mytoolsbox-links-${Date.now()}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-    toast.success("Links exported!");
+    toast.success("CSV file downloaded!");
   };
 
-  const handleIncrementClick = (id: string) => {
-    const updated = links.map((l) =>
-      l.id === id ? { ...l, clicks: l.clicks + 1 } : l
-    );
-    setLinks(updated);
+  const handleIncrementClicks = (id: string, originalUrl: string) => {
+    const updated = links.map((l) => (l.id === id ? { ...l, clicks: l.clicks + 1 } : l));
     saveLinks(updated);
+    window.open(originalUrl, "_blank");
   };
 
-  const totalClicks = links.reduce((sum, l) => sum + l.clicks, 0);
+  const filteredLinks = links.filter((l) => {
+    const q = searchQuery.toLowerCase();
+    return (
+      l.shortCode.toLowerCase().includes(q) ||
+      l.originalUrl.toLowerCase().includes(q) ||
+      (l.title && l.title.toLowerCase().includes(q))
+    );
+  });
 
   return (
     <div className="space-y-6">
-      {/* Create short link */}
-      <Card>
-        <CardContent className="p-6 space-y-4">
+      {/* Create Link Card */}
+      <Card className="border shadow-xs">
+        <CardContent className="p-4 sm:p-6 space-y-4">
           <div className="space-y-1.5">
-            <Label className="text-sm font-medium">Long URL</Label>
+            <Label className="text-xs font-semibold">Destination URL *</Label>
             <Input
-              placeholder="https://example.com/very/long/url"
               value={url}
-              onChange={(e) => { setUrl(e.target.value); setError(""); }}
-              className="font-mono text-sm"
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="https://example.com/very/long/url/to/shorten"
+              className="text-xs font-mono"
             />
           </div>
 
-          <div className="space-y-1.5">
-            <Label className="text-sm font-medium">
-              Custom Code <span className="text-muted-foreground font-normal">(optional)</span>
-            </Label>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">mytoolsbox.me/s/</span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Custom Alias (Optional)</Label>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-muted-foreground font-mono">mytoolsbox.me/s/</span>
+                <Input
+                  value={customAlias}
+                  onChange={(e) => setCustomAlias(e.target.value)}
+                  placeholder="custom-slug"
+                  className="text-xs font-mono"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs">Link Title / Note (Optional)</Label>
               <Input
-                placeholder="abc123"
-                value={customCode}
-                onChange={(e) => setCustomCode(e.target.value.replace(/[^a-zA-Z0-9_-]/g, ""))}
-                className="font-mono text-sm flex-1"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="e.g. Portfolio Project"
+                className="text-xs"
               />
             </div>
           </div>
 
-          {error && <p className="text-sm text-destructive">{error}</p>}
-
-          <Button onClick={handleShorten} className="gap-2 w-full" disabled={!url.trim()}>
-            <Link className="h-4 w-4" /> Shorten URL
+          <Button onClick={handleShorten} disabled={!url.trim()} className="w-full gap-2 text-xs">
+            <LinkIcon className="h-4 w-4" /> Shorten URL
           </Button>
-          {links.length > 0 && (
-            <Button variant="outline" size="sm" onClick={handleDownloadLinks} className="gap-1 w-full">
-              <Download className="h-3.5 w-3.5" /> Export Links
-            </Button>
-          )}
         </CardContent>
       </Card>
 
-      {/* Last created */}
+      {/* Last Created Success Banner */}
       {lastCreated && (
-        <Card className="border-primary/30 bg-primary/5 animate-fade-in-up">
-          <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground mb-1">Short link created!</p>
-            <div className="flex items-center gap-2">
-              <code className="text-sm font-bold text-primary flex-1 truncate">
-                mytoolsbox.me/s/{lastCreated.shortCode}
-              </code>
+        <Card className="border-primary/40 bg-primary/5">
+          <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <p className="text-[11px] text-muted-foreground uppercase font-semibold">Short Link Created!</p>
+              <p className="font-mono text-base font-bold text-primary">
+                https://mytoolsbox.me/s/{lastCreated.shortCode}
+              </p>
+              <p className="text-xs text-muted-foreground truncate max-w-md">{lastCreated.originalUrl}</p>
+            </div>
+            <div className="flex gap-2">
               <Button
-                variant="ghost"
+                variant="outline"
                 size="sm"
-                className="gap-1 shrink-0"
-                onClick={() => handleCopy(`https://mytoolsbox.me/s/${lastCreated.shortCode}`, lastCreated.id)}
+                className="h-8 text-xs gap-1.5"
+                onClick={() => handleCopy(lastCreated.shortCode, lastCreated.id)}
               >
-                {copied === lastCreated.id ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+                {copiedId === lastCreated.id ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
                 Copy
               </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 text-xs gap-1.5"
+                onClick={() => handleShowQr(lastCreated)}
+              >
+                <QrCode className="h-3.5 w-3.5" /> QR Code
+              </Button>
             </div>
-            <p className="text-xs text-muted-foreground mt-1 truncate">{lastCreated.originalUrl}</p>
           </CardContent>
         </Card>
       )}
 
-      {/* Stats */}
-      {links.length > 0 && (
-        <div className="flex gap-3">
-          <Badge variant="secondary" className="gap-1">
-            <Link className="h-3 w-3" /> {links.length} links
-          </Badge>
-          <Badge variant="secondary" className="gap-1">
-            <BarChart3 className="h-3 w-3" /> {totalClicks} total clicks
-          </Badge>
-        </div>
+      {/* QR Code Modal / Drawer */}
+      {qrDataUrl && activeQrId && (
+        <Card className="border shadow-md bg-card">
+          <CardContent className="p-4 flex flex-col items-center space-y-3">
+            <p className="text-xs font-semibold text-muted-foreground">Scan QR to Open Shortlink</p>
+            <img src={qrDataUrl} alt="QR Code" className="w-48 h-48 rounded-lg border shadow-xs" />
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-xs"
+              onClick={() => {
+                const a = document.createElement("a");
+                a.href = qrDataUrl;
+                a.download = `qrcode-${activeQrId}.png`;
+                a.click();
+              }}
+            >
+              <Download className="h-3.5 w-3.5 mr-1" /> Download QR Image
+            </Button>
+          </CardContent>
+        </Card>
       )}
 
-      {/* Link history */}
+      {/* Links List / History */}
       {links.length > 0 && (
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">Your Short Links</Label>
+        <div className="space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Your Shortened Links ({links.length})
+              </Label>
+              <Badge variant="secondary" className="text-[10px]">
+                {links.reduce((acc, l) => acc + l.clicks, 0)} Total Clicks
+              </Badge>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <Search className="h-3 w-3 absolute left-2.5 top-2.5 text-muted-foreground" />
+                <Input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Filter links..."
+                  className="h-7 text-xs pl-7 w-40 sm:w-48"
+                />
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportCSV}
+                className="h-7 text-xs gap-1"
+              >
+                <Download className="h-3 w-3" /> CSV
+              </Button>
+            </div>
+          </div>
+
           <div className="space-y-2">
-            {links.map((link) => (
-              <Card key={link.id}>
-                <CardContent className="p-3">
-                  <div className="flex items-center justify-between mb-1">
-                    <code className="text-sm font-semibold text-primary">
-                      mytoolsbox.me/s/{link.shortCode}
-                    </code>
-                    <div className="flex gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7"
-                        onClick={() => handleCopy(`https://mytoolsbox.me/s/${link.shortCode}`, link.id)}
-                      >
-                        {copied === link.id ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7"
-                        onClick={() => { handleIncrementClick(link.id); window.open(link.originalUrl, "_blank"); }}
-                      >
-                        <ExternalLink className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 text-destructive hover:text-destructive"
-                        onClick={() => handleDelete(link.id)}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
+            {filteredLinks.map((link) => (
+              <Card key={link.id} className="border shadow-xs hover:border-primary/40 transition-colors">
+                <CardContent className="p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="space-y-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-sm font-semibold text-primary">
+                        mytoolsbox.me/s/{link.shortCode}
+                      </span>
+                      {link.customAlias && (
+                        <Badge variant="outline" className="text-[9px] px-1 h-4">Custom</Badge>
+                      )}
+                      {link.title && (
+                        <span className="text-xs font-medium text-foreground truncate max-w-[200px]">
+                          • {link.title}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground truncate max-w-lg">{link.originalUrl}</p>
+                    <div className="flex items-center gap-3 text-[10px] text-muted-foreground pt-0.5">
+                      <span>{new Date(link.createdAt).toLocaleDateString()}</span>
+                      <span>•</span>
+                      <span className="font-semibold text-foreground">{link.clicks} clicks</span>
                     </div>
                   </div>
-                  <p className="text-xs text-muted-foreground truncate">{link.originalUrl}</p>
-                  <div className="flex items-center gap-3 mt-1">
-                    <span className="text-[10px] text-muted-foreground">
-                      {new Date(link.createdAt).toLocaleDateString()}
-                    </span>
-                    <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                      <BarChart3 className="h-3 w-3" /> {link.clicks} clicks
-                    </span>
+
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() => handleCopy(link.shortCode, link.id)}
+                    >
+                      {copiedId === link.id ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() => handleShowQr(link)}
+                    >
+                      <QrCode className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() => handleIncrementClicks(link.id, link.originalUrl)}
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-destructive hover:text-destructive"
+                      onClick={() => handleDelete(link.id)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
                   </div>
                 </CardContent>
               </Card>

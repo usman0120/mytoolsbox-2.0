@@ -23,6 +23,8 @@ const engineMap: Record<string, React.ComponentType<unknown>> = {
   "budget-planner": dynamic(() => import("@/features/apps/budget-planner-engine").then((m) => ({ default: m.BudgetPlannerEngine })), { loading: EngineLoading }),
   "habit-tracker": dynamic(() => import("@/features/apps/habit-tracker-engine").then((m) => ({ default: m.HabitTrackerEngine })), { loading: EngineLoading }),
   "certificate-maker": dynamic(() => import("@/features/apps/certificate-maker-engine").then((m) => ({ default: m.CertificateMakerEngine })), { loading: EngineLoading }),
+  "fitness-ai": dynamic(() => import("@/features/apps/fitness-ai-engine").then((m) => ({ default: m.FitnessAIEngine })), { loading: EngineLoading }),
+  "nutrition-ai": dynamic(() => import("@/features/apps/nutrition-ai-engine").then((m) => ({ default: m.NutritionAIEngine })), { loading: EngineLoading }),
 };
 
 function EngineLoading() {

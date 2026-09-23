@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import {
   FileText, Download, Copy, Check, Trash2, Loader2,
-  Sparkles, Zap, AlignLeft, List, FileCode,
+  Sparkles, Zap, AlignLeft, List, FileCode, Coins,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,6 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { useCredits } from "@/lib/credits/use-credits";
+import { completeViaServer } from "@/lib/ai";
 
 const STORAGE_KEY = "mytoolsbox-ai-summary";
 
@@ -93,6 +95,7 @@ export function AISummaryToolEngine() {
   const [style, setStyle] = useState<SummaryStyle>("concise");
   const [isProcessing, setIsProcessing] = useState(false);
   const [copied, setCopied] = useState(false);
+  const { remaining, refresh } = useCredits();
 
   const handleInputChange = useCallback((value: string) => {
     setInput(value);
@@ -109,12 +112,39 @@ export function AISummaryToolEngine() {
       return;
     }
     setIsProcessing(true);
-    await new Promise((r) => setTimeout(r, 400 + Math.random() * 600));
-    const result = generateSummary(input, style);
-    setOutput(result);
-    setIsProcessing(false);
-    toast.success("Summary generated!");
-  }, [input, style]);
+
+    try {
+      const stylePrompts: Record<SummaryStyle, string> = {
+        concise: "Provide a concise 2-3 sentence executive summary of the core thesis.",
+        detailed: "Provide a detailed summary capturing all primary arguments and nuanced takeaways.",
+        bullets: "Extract the most important points as clear, impactful bullet points.",
+        executive: "Write a high-level executive briefing with core findings and strategic recommendations.",
+      };
+
+      const aiRes = await completeViaServer({
+        systemPrompt: "You are an expert analyst and executive editor. Generate a clear, well-structured, insightful summary.",
+        prompt: `${stylePrompts[style]}\n\nSource Text:\n"""\n${input.trim()}\n"""`,
+        tier: "cheap",
+        operation: "ai_summary",
+        temperature: 0.3,
+      });
+
+      if (aiRes?.text) {
+        setOutput(aiRes.text.trim());
+        toast.success("AI summary generated! (15 credits deducted)");
+        await refresh();
+      } else {
+        throw new Error("Empty response");
+      }
+    } catch {
+      // Deterministic offline fallback
+      const result = generateSummary(input, style);
+      setOutput(result);
+      toast.info("Generated via local engine (offline fallback).");
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [input, style, refresh]);
 
   const handleCopy = useCallback(async () => {
     await navigator.clipboard.writeText(output);
@@ -150,6 +180,9 @@ export function AISummaryToolEngine() {
         <div className="flex items-center gap-2">
           <Badge className="bg-violet-500/10 text-violet-600 dark:text-violet-400 gap-1">
             <Sparkles className="h-3 w-3" /> AI Summary
+          </Badge>
+          <Badge variant="outline" className="text-xs gap-1 text-muted-foreground">
+            <Coins className="h-3 w-3 text-amber-500" /> 15 credits {remaining !== undefined && remaining > 0 ? `(${remaining} left)` : ""}
           </Badge>
           <span className="text-xs text-muted-foreground">{wordCount} words</span>
         </div>

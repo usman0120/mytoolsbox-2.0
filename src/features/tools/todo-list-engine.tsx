@@ -2,303 +2,292 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import {
-  ListTodo, Plus, Trash2, Check, Circle, GripVertical,
-  Download, Copy, Edit3, X, Calendar, Clock, Filter,
+  ListTodo, Plus, Trash2, Check, Circle, Download, Upload,
+  Calendar, AlertCircle, Filter, ArrowUpDown, CheckCheck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import {
+  TodoItem,
+  TodoPriority,
+  generateTodoId,
+  isTodoOverdue,
+  getTodoMetrics,
+  filterAndSortTodos,
+  exportTodosCSV,
+} from "@/features/tools/todo-list";
 
-interface TodoItem {
-  id: string;
-  text: string;
-  completed: boolean;
-  createdAt: number;
-  priority: "low" | "medium" | "high";
-  dueDate?: string;
-}
+const STORAGE_KEY = "mytoolsbox-todo-list-v2";
 
-const STORAGE_KEY = "mytoolsbox-todo-list";
-
-function loadTodos(): TodoItem[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveTodos(todos: TodoItem[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
-}
+const PRIORITY_BADGES: Record<TodoPriority, string> = {
+  high: "bg-red-500/10 text-red-500 border-red-500/20",
+  medium: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
+  low: "bg-blue-500/10 text-blue-500 border-blue-500/20",
+};
 
 export function TodoListEngine() {
-  const [todos, setTodos] = useState<TodoItem[]>(() => loadTodos());
-  const [newTodo, setNewTodo] = useState("");
-  const [priority, setPriority] = useState<TodoItem["priority"]>("medium");
-  const [filter, setFilter] = useState<"all" | "active" | "completed">("all");
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editText, setEditText] = useState("");
-  const [dragId, setDragId] = useState<string | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [todos, setTodos] = useState<TodoItem[]>(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : [
+        { id: "t1", text: "Complete project deliverables", completed: false, priority: "high", dueDate: new Date().toISOString().split("T")[0], createdAt: Date.now() },
+        { id: "t2", text: "Team alignment meeting", completed: true, priority: "medium", createdAt: Date.now() - 3600000 },
+        { id: "t3", text: "Read industry research paper", completed: false, priority: "low", createdAt: Date.now() - 7200000 },
+      ];
+    } catch {
+      return [];
+    }
+  });
+
+  const [newText, setNewText] = useState("");
+  const [newPriority, setNewPriority] = useState<TodoPriority>("medium");
+  const [newDueDate, setNewDueDate] = useState("");
+  const [filter, setFilter] = useState<"all" | "active" | "completed" | "overdue">("all");
+  const [sortBy, setSortBy] = useState<"date" | "priority" | "dueDate">("date");
 
   useEffect(() => {
-    saveTodos(todos);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
   }, [todos]);
 
-  const handleAdd = useCallback(() => {
-    const text = newTodo.trim();
-    if (!text) return;
-    const todo: TodoItem = {
-      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-      text,
+  const handleAdd = () => {
+    if (!newText.trim()) return;
+    const item: TodoItem = {
+      id: generateTodoId(),
+      text: newText.trim(),
       completed: false,
+      priority: newPriority,
+      dueDate: newDueDate || undefined,
       createdAt: Date.now(),
-      priority,
     };
-    setTodos((prev) => [todo, ...prev]);
-    setNewTodo("");
-    setPriority("medium");
-    inputRef.current?.focus();
+    setTodos((prev) => [item, ...prev]);
+    setNewText("");
+    setNewDueDate("");
     toast.success("Task added!");
-  }, [newTodo, priority]);
+  };
 
-  const handleToggle = useCallback((id: string) => {
+  const handleToggle = (id: string) => {
     setTodos((prev) =>
       prev.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t))
     );
-  }, []);
+  };
 
-  const handleDelete = useCallback((id: string) => {
+  const handleDelete = (id: string) => {
     setTodos((prev) => prev.filter((t) => t.id !== id));
     toast.success("Task deleted.");
-  }, []);
+  };
 
-  const handleEdit = useCallback((id: string, text: string) => {
-    setEditingId(id);
-    setEditText(text);
-  }, []);
-
-  const handleSaveEdit = useCallback(() => {
-    if (!editingId) return;
-    const text = editText.trim();
-    if (!text) {
-      handleDelete(editingId);
-    } else {
-      setTodos((prev) =>
-        prev.map((t) => (t.id === editingId ? { ...t, text } : t))
-      );
-    }
-    setEditingId(null);
-    setEditText("");
-  }, [editingId, editText, handleDelete]);
-
-  const handleClearCompleted = useCallback(() => {
+  const handleClearCompleted = () => {
     setTodos((prev) => prev.filter((t) => !t.completed));
-    toast.success("Cleared completed tasks.");
-  }, []);
+    toast.success("Completed tasks cleared.");
+  };
 
-  const handleExport = useCallback(() => {
-    const text = todos
-      .map((t) => `${t.completed ? "[x]" : "[ ]"} ${t.text} ${t.priority !== "medium" ? `[${t.priority}]` : ""}`)
-      .join("\n");
-    const blob = new Blob([text], { type: "text/plain" });
+  const handleExportCSV = () => {
+    const csv = exportTodosCSV(todos);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `todo-list-${new Date().toISOString().split("T")[0]}.txt`;
+    a.download = `todo-list-${Date.now()}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-    toast.success("Downloaded!");
-  }, [todos]);
-
-  const handleDragStart = (id: string) => setDragId(id);
-  const handleDragOver = (e: React.DragEvent) => e.preventDefault();
-  const handleDrop = (targetId: string) => {
-    if (!dragId || dragId === targetId) return;
-    setTodos((prev) => {
-      const items = [...prev];
-      const dragIdx = items.findIndex((t) => t.id === dragId);
-      const targetIdx = items.findIndex((t) => t.id === targetId);
-      if (dragIdx === -1 || targetIdx === -1) return prev;
-      const [removed] = items.splice(dragIdx, 1);
-      items.splice(targetIdx, 0, removed);
-      return items;
-    });
-    setDragId(null);
+    toast.success("Tasks exported as CSV!");
   };
 
-  const filteredTodos = todos.filter((t) => {
-    if (filter === "active") return !t.completed;
-    if (filter === "completed") return t.completed;
-    return true;
-  });
-
-  const completedCount = todos.filter((t) => t.completed).length;
-  const activeCount = todos.filter((t) => !t.completed).length;
-
-  const priorityColor = (p: TodoItem["priority"]) => {
-    switch (p) {
-      case "high": return "text-red-500 bg-red-500/10";
-      case "medium": return "text-amber-500 bg-amber-500/10";
-      case "low": return "text-green-500 bg-green-500/10";
-    }
-  };
+  const metrics = getTodoMetrics(todos);
+  const visibleTodos = filterAndSortTodos(todos, filter, "all", sortBy);
 
   return (
     <div className="space-y-4">
-      {/* Add new todo */}
-      <Card>
-        <CardContent className="p-4 space-y-3">
-          <div className="flex gap-2">
-            <Input
-              ref={inputRef}
-              placeholder="Add a new task..."
-              value={newTodo}
-              onChange={(e) => setNewTodo(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleAdd()}
-              className="flex-1"
-            />
-            <Button onClick={handleAdd} size="sm" className="gap-1.5" disabled={!newTodo.trim()}>
-              <Plus className="h-4 w-4" /> Add
-            </Button>
-          </div>
-          <div className="flex gap-2">
-            {(["low", "medium", "high"] as const).map((p) => (
-              <Button
-                key={p}
-                variant={priority === p ? "default" : "outline"}
-                size="sm"
-                onClick={() => setPriority(p)}
-                className="text-xs h-7 capitalize"
-              >
-                {p}
-              </Button>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Stats & filters */}
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <div className="flex gap-2">
-          <Badge variant="secondary">{activeCount} active</Badge>
-          <Badge variant="secondary">{completedCount} done</Badge>
+      {/* Top Header */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-bold flex items-center gap-2">
+            <ListTodo className="h-5 w-5 text-primary" /> Task & Todo Manager
+          </h2>
+          <p className="text-sm text-muted-foreground">Stay organized with priority sorting, due dates, and progress tracking</p>
         </div>
-        <div className="flex gap-1">
-          {(["all", "active", "completed"] as const).map((f) => (
-            <Button
-              key={f}
-              variant={filter === f ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setFilter(f)}
-              className="text-xs h-7 capitalize"
-            >
-              {f}
-            </Button>
-          ))}
-        </div>
-        <div className="flex gap-1">
-          <Button variant="ghost" size="sm" onClick={handleExport} className="gap-1 h-7">
-            <Download className="h-3.5 w-3.5" /> Export
-          </Button>
-          {completedCount > 0 && (
-            <Button variant="ghost" size="sm" onClick={handleClearCompleted} className="gap-1 h-7 text-destructive">
-              <Trash2 className="h-3.5 w-3.5" /> Clear Done
+        <div className="flex items-center gap-2">
+          {metrics.completed > 0 && (
+            <Button variant="ghost" size="sm" onClick={handleClearCompleted} className="text-xs text-muted-foreground hover:text-destructive">
+              Clear Completed
             </Button>
           )}
+          <Button variant="outline" size="sm" onClick={handleExportCSV} className="text-xs gap-1.5">
+            <Download className="h-3.5 w-3.5" /> Export CSV
+          </Button>
         </div>
       </div>
 
-      {/* Todo list */}
+      {/* Progress & Metrics Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <Card className="p-3 text-center">
+          <p className="text-xl font-bold">{metrics.total}</p>
+          <p className="text-[10px] text-muted-foreground">Total Tasks</p>
+        </Card>
+        <Card className="p-3 text-center">
+          <p className="text-xl font-bold text-green-500">{metrics.completed}</p>
+          <p className="text-[10px] text-muted-foreground">Completed</p>
+        </Card>
+        <Card className="p-3 text-center">
+          <p className="text-xl font-bold text-blue-500">{metrics.pending}</p>
+          <p className="text-[10px] text-muted-foreground">Pending</p>
+        </Card>
+        <Card className="p-3 text-center">
+          <p className="text-xl font-bold text-red-500">{metrics.overdue}</p>
+          <p className="text-[10px] text-muted-foreground">Overdue</p>
+        </Card>
+      </div>
+
+      {/* Completion Progress Bar */}
       <div className="space-y-1">
-        {filteredTodos.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground">
-            <ListTodo className="h-12 w-12 mx-auto mb-3 opacity-30" />
-            <p className="text-sm">
-              {filter === "all" ? "No tasks yet. Add one above!" : filter === "active" ? "No active tasks." : "No completed tasks."}
-            </p>
+        <div className="flex justify-between text-xs text-muted-foreground">
+          <span>Overall Completion</span>
+          <span className="font-mono font-medium">{metrics.percent}%</span>
+        </div>
+        <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
+          <div
+            className="h-full bg-primary transition-all duration-300 rounded-full"
+            style={{ width: `${metrics.percent}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Add Task Input Row */}
+      <Card className="p-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <Input
+            placeholder="Add a new task or action item..."
+            value={newText}
+            onChange={(e) => setNewText(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+            className="h-9 text-xs flex-1 min-w-48"
+          />
+          <Select value={newPriority} onValueChange={(v) => setNewPriority(v as TodoPriority)}>
+            <SelectTrigger className="w-28 h-9 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="low" className="text-xs">Low Priority</SelectItem>
+              <SelectItem value="medium" className="text-xs">Medium</SelectItem>
+              <SelectItem value="high" className="text-xs">High Priority</SelectItem>
+            </SelectContent>
+          </Select>
+          <Input
+            type="date"
+            value={newDueDate}
+            onChange={(e) => setNewDueDate(e.target.value)}
+            className="w-36 h-9 text-xs"
+            title="Due Date"
+          />
+          <Button onClick={handleAdd} size="sm" className="h-9 text-xs gap-1.5 px-4">
+            <Plus className="h-4 w-4" /> Add Task
+          </Button>
+        </div>
+      </Card>
+
+      {/* Filter and Sort Toolbar */}
+      <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+        <div className="flex gap-1">
+          {(["all", "active", "completed", "overdue"] as const).map((tab) => (
+            <Button
+              key={tab}
+              variant={filter === tab ? "default" : "outline"}
+              size="sm"
+              onClick={() => setFilter(tab)}
+              className="text-xs h-7 capitalize px-2.5"
+            >
+              {tab}
+            </Button>
+          ))}
+        </div>
+
+        <div className="flex items-center gap-1.5 text-xs">
+          <ArrowUpDown className="h-3 w-3 text-muted-foreground" />
+          <span className="text-muted-foreground text-[10px]">Sort:</span>
+          <Select value={sortBy} onValueChange={(v) => setSortBy(v as "date" | "priority" | "dueDate")}>
+            <SelectTrigger className="w-28 h-7 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="date" className="text-xs">Created Date</SelectItem>
+              <SelectItem value="priority" className="text-xs">Priority</SelectItem>
+              <SelectItem value="dueDate" className="text-xs">Due Date</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Task List */}
+      <div className="space-y-1.5">
+        {visibleTodos.length === 0 ? (
+          <div className="text-center py-10 text-muted-foreground border rounded-xl text-xs">
+            No tasks found in this view.
           </div>
         ) : (
-          filteredTodos.map((todo) => (
-            <div
-              key={todo.id}
-              draggable
-              onDragStart={() => handleDragStart(todo.id)}
-              onDragOver={handleDragOver}
-              onDrop={() => handleDrop(todo.id)}
-              className={`flex items-center gap-2 p-3 rounded-lg border border-border/50 hover:bg-muted/30 transition-colors group ${
-                todo.completed ? "opacity-60" : ""
-              } ${dragId === todo.id ? "opacity-50" : ""}`}
-            >
-              <GripVertical className="h-4 w-4 text-muted-foreground/40 cursor-grab shrink-0" />
-              <button
-                onClick={() => handleToggle(todo.id)}
-                className={`shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
+          visibleTodos.map((todo) => {
+            const overdue = isTodoOverdue(todo);
+
+            return (
+              <div
+                key={todo.id}
+                className={`flex items-center justify-between p-3 rounded-lg border transition-colors text-xs ${
                   todo.completed
-                    ? "bg-primary border-primary text-primary-foreground"
-                    : "border-muted-foreground/30 hover:border-primary/50"
+                    ? "bg-muted/30 border-border opacity-70"
+                    : overdue
+                    ? "bg-red-500/5 border-red-500/30"
+                    : "bg-card border-border hover:border-primary/40"
                 }`}
               >
-                {todo.completed && <Check className="h-3 w-3" />}
-              </button>
-
-              {editingId === todo.id ? (
-                <div className="flex-1 flex gap-2">
-                  <Input
-                    value={editText}
-                    onChange={(e) => setEditText(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") handleSaveEdit();
-                      if (e.key === "Escape") { setEditingId(null); setEditText(""); }
-                    }}
-                    className="h-8 text-sm"
-                    autoFocus
-                  />
-                  <Button size="icon" variant="ghost" className="h-8 w-8" onClick={handleSaveEdit}>
-                    <Check className="h-4 w-4" />
-                  </Button>
-                  <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => { setEditingId(null); setEditText(""); }}>
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              ) : (
-                <>
+                <div className="flex items-center gap-2.5 flex-1 min-w-0 pr-2">
+                  <button
+                    onClick={() => handleToggle(todo.id)}
+                    className="text-muted-foreground hover:text-primary shrink-0 transition-colors"
+                  >
+                    {todo.completed ? (
+                      <Check className="h-4 w-4 text-green-500" />
+                    ) : (
+                      <Circle className="h-4 w-4" />
+                    )}
+                  </button>
                   <span
-                    className={`flex-1 text-sm ${todo.completed ? "line-through text-muted-foreground" : ""}`}
-                    onDoubleClick={() => handleEdit(todo.id, todo.text)}
+                    className={`truncate font-medium ${
+                      todo.completed ? "line-through text-muted-foreground" : "text-foreground"
+                    }`}
                   >
                     {todo.text}
                   </span>
-                  <Badge className={`text-[10px] h-5 px-1.5 ${priorityColor(todo.priority)}`}>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  {overdue && (
+                    <Badge variant="destructive" className="text-[9px] gap-0.5 px-1 py-0">
+                      <AlertCircle className="h-2.5 w-2.5" /> Overdue
+                    </Badge>
+                  )}
+                  {todo.dueDate && (
+                    <span className="text-[10px] text-muted-foreground flex items-center gap-1 font-mono">
+                      <Calendar className="h-2.5 w-2.5" /> {todo.dueDate}
+                    </span>
+                  )}
+                  <Badge variant="outline" className={`text-[9px] uppercase px-1.5 py-0 ${PRIORITY_BADGES[todo.priority]}`}>
                     {todo.priority}
                   </Badge>
-                  <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7"
-                      onClick={() => handleEdit(todo.id, todo.text)}
-                    >
-                      <Edit3 className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 text-destructive"
-                      onClick={() => handleDelete(todo.id)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </>
-              )}
-            </div>
-          ))
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleDelete(todo.id)}
+                    className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+            );
+          })
         )}
       </div>
     </div>

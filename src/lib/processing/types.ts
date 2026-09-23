@@ -15,6 +15,7 @@ export interface ProcessingResult {
   outputBlob?: Blob;
   error?: string;
   data?: unknown;
+  metadata?: Record<string, unknown>;
 }
 
 export interface ProcessingOptions {

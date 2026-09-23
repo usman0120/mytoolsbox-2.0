@@ -1,88 +1,143 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
-import { Upload, FileText, Download, Trash2, FileImage, ChevronLeft, ChevronRight } from "lucide-react";
+import { useState, useRef, useCallback, useEffect } from "react";
+import {
+  Upload,
+  FileText,
+  Download,
+  Trash2,
+  FileImage,
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  Loader2,
+  CheckCircle2,
+  Archive,
+  Image as ImageIcon,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { useProcessing } from "@/hooks/use-processing";
-import { pdfToImages, renderPageToImage } from "@/features/documents/pdf-to-images";
+import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+import {
+  pdfToImages,
+  renderPageToImage,
+  exportImagesZip,
+} from "@/features/documents/pdf-to-images";
 
 export function PDFToImagesEngine() {
   const [file, setFile] = useState<File | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [format, setFormat] = useState<"image/png" | "image/jpeg">("image/png");
+  const [scale, setScale] = useState<number>(2); // 2 = High DPI (150-200 DPI)
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pageImages, setPageImages] = useState<Map<number, string>>(new Map());
-  const [rendering, setRendering] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const { status, result, error, process, reset } = useProcessing();
+  const [isRendering, setIsRendering] = useState(false);
+  const [isExportingAll, setIsExportingAll] = useState(false);
+  const [exportProgress, setExportProgress] = useState<number>(0);
 
-  const loadFile = useCallback((f: File) => {
-    if (f.type !== "application/pdf") return;
-    setFile(f);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const loadFile = useCallback(async (selected: File) => {
+    if (selected.type !== "application/pdf" && !selected.name.toLowerCase().endsWith(".pdf")) {
+      toast.error("Please upload a valid PDF document.");
+      return;
+    }
+
+    setFile(selected);
     setPageImages(new Map());
     setCurrentPage(1);
-    reset();
-  }, [reset]);
 
-  const handleProcess = async () => {
-    if (!file) return;
-    await process(() => pdfToImages(file, format));
-  };
-
-  // Compute derived state from result during render
-  const derivedTotalPages = result?.data ? (result.data as { totalPages?: number }).totalPages || 0 : 0;
-  const derivedPdfUrl = result?.data ? (result.data as { pdfUrl?: string }).pdfUrl || null : null;
-  // Sync state when result changes
-  const [prevResultKey, setPrevResultKey] = useState<unknown>(null);
-  if (result !== prevResultKey) {
-    setPrevResultKey(result);
-    if (derivedTotalPages !== totalPages) setTotalPages(derivedTotalPages);
-    if (derivedPdfUrl !== pdfUrl) setPdfUrl(derivedPdfUrl);
-  }
-
-  const renderCurrentPage = async () => {
-    if (!pdfUrl) return;
-    setRendering(true);
-    const image = await renderPageToImage(pdfUrl, currentPage, format, 2);
-    if (image) {
-      setPageImages((prev) => new Map(prev).set(currentPage, image));
+    const res = await pdfToImages(selected, format);
+    if (res.status === "success" && res.data) {
+      const data = res.data as { pdfUrl: string; totalPages: number };
+      setPdfUrl(data.pdfUrl);
+      setTotalPages(data.totalPages);
+      toast.success(`PDF loaded: ${data.totalPages} pages.`);
+    } else {
+      toast.error(res.error || "Failed to load PDF.");
     }
-    setRendering(false);
+  }, [format]);
+
+  // Automatically render the first page on load
+  useEffect(() => {
+    if (pdfUrl && totalPages > 0 && !pageImages.has(1)) {
+      setIsRendering(true);
+      renderPageToImage(pdfUrl, 1, format, scale).then((img) => {
+        if (img) {
+          setPageImages((prev) => new Map(prev).set(1, img));
+        }
+        setIsRendering(false);
+      });
+    }
+  }, [pdfUrl, totalPages, format, scale]);
+
+  // Render on page change if not yet rendered
+  const handlePageChange = async (newPage: number) => {
+    if (newPage < 1 || newPage > totalPages) return;
+    setCurrentPage(newPage);
+
+    if (pdfUrl && !pageImages.has(newPage)) {
+      setIsRendering(true);
+      const img = await renderPageToImage(pdfUrl, newPage, format, scale);
+      if (img) {
+        setPageImages((prev) => new Map(prev).set(newPage, img));
+      }
+      setIsRendering(false);
+    }
   };
 
-  const downloadPage = () => {
-    const image = pageImages.get(currentPage);
-    if (!image) return;
-    const ext = format === "image/jpeg" ? "jpg" : "png";
+  const handleDownloadSingle = () => {
+    const img = pageImages.get(currentPage);
+    if (!img || !file) return;
     const a = document.createElement("a");
-    a.href = image;
-    a.download = `page-${currentPage}.${ext}`;
+    a.href = img;
+    const ext = format === "image/jpeg" ? "jpg" : "png";
+    const base = file.name.replace(/\.pdf$/i, "");
+    a.download = `${base}-page-${currentPage}.${ext}`;
     a.click();
   };
 
-  const downloadAll = async () => {
-    if (!pdfUrl) return;
-    for (let i = 1; i <= totalPages; i++) {
-      if (!pageImages.has(i)) {
-        const image = await renderPageToImage(pdfUrl, i, format, 2);
-        if (image) {
-          setPageImages((prev) => new Map(prev).set(i, image));
-          const ext = format === "image/jpeg" ? "jpg" : "png";
-          const a = document.createElement("a");
-          a.href = image;
-          a.download = `page-${i}.${ext}`;
-          a.click();
-          await new Promise((r) => setTimeout(r, 500));
+  const handleDownloadAllZip = async () => {
+    if (!pdfUrl || totalPages === 0 || !file) return;
+    setIsExportingAll(true);
+    setExportProgress(0);
+
+    try {
+      const allImages = new Map(pageImages);
+
+      for (let i = 1; i <= totalPages; i++) {
+        if (!allImages.has(i)) {
+          const img = await renderPageToImage(pdfUrl, i, format, scale);
+          if (img) {
+            allImages.set(i, img);
+            setPageImages((prev) => new Map(prev).set(i, img));
+          }
         }
+        setExportProgress(Math.round((i / totalPages) * 100));
       }
+
+      const zipBlob = await exportImagesZip(allImages, format);
+      const zipUrl = URL.createObjectURL(zipBlob);
+      const a = document.createElement("a");
+      a.href = zipUrl;
+      const base = file.name.replace(/\.pdf$/i, "");
+      a.download = `${base}-all-images.zip`;
+      a.click();
+      URL.revokeObjectURL(zipUrl);
+      toast.success(`Exported ${totalPages} images into ZIP!`);
+    } catch {
+      toast.error("Failed to package images into ZIP.");
+    } finally {
+      setIsExportingAll(false);
     }
   };
 
   const handleReset = () => {
-    reset();
+    if (pdfUrl) URL.revokeObjectURL(pdfUrl);
     setFile(null);
     setPdfUrl(null);
     setPageImages(new Map());
@@ -90,119 +145,225 @@ export function PDFToImagesEngine() {
     setTotalPages(0);
   };
 
+  useEffect(() => {
+    return () => {
+      if (pdfUrl) URL.revokeObjectURL(pdfUrl);
+    };
+  }, [pdfUrl]);
+
   return (
-    <div className="space-y-4">
-      {status === "idle" && !file && (
+    <div className="space-y-6 max-w-4xl mx-auto">
+      {/* Upload Zone */}
+      {!file && (
         <div
-          className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer ${
-            dragOver ? "border-primary bg-primary/5" : "border-muted-foreground/25"
+          className={`border-2 border-dashed rounded-2xl p-8 sm:p-10 text-center transition-all cursor-pointer ${
+            dragOver
+              ? "border-primary bg-primary/5 scale-[0.99]"
+              : "border-border hover:border-primary/50 hover:bg-muted/30"
           }`}
-          onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragOver(true);
+          }}
           onDragLeave={() => setDragOver(false)}
-          onDrop={(e) => { e.preventDefault(); setDragOver(false); if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); }}
+          onDrop={(e) => {
+            e.preventDefault();
+            setDragOver(false);
+            if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
+          }}
           onClick={() => fileInputRef.current?.click()}
         >
-          <Upload className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
-          <p className="font-medium mb-1">Drop a PDF file here</p>
-          <p className="text-sm text-muted-foreground">or click to browse. Convert PDF pages to images.</p>
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary mx-auto mb-4">
+            <FileImage className="h-8 w-8" />
+          </div>
+          <h3 className="text-lg font-semibold mb-1">Upload PDF to Extract Images</h3>
+          <p className="text-sm text-muted-foreground mb-4 max-w-md mx-auto">
+            Render PDF pages to high-resolution PNG or JPG images. Download single pages or the entire document as a ZIP archive.
+          </p>
+          <Button variant="outline" size="sm" className="rounded-xl pointer-events-none">
+            <Plus className="h-4 w-4 mr-1.5" /> Select PDF Document
+          </Button>
           <input
             ref={fileInputRef}
             type="file"
             accept="application/pdf"
             className="hidden"
-            onChange={(e) => e.target.files?.[0] && loadFile(e.target.files[0])}
+            onChange={(e) => {
+              if (e.target.files?.[0]) loadFile(e.target.files[0]);
+              e.target.value = "";
+            }}
           />
         </div>
       )}
 
-      {file && status === "idle" && (
-        <>
-          <Card className="p-3">
-            <div className="flex items-center gap-3">
-              <FileText className="h-5 w-5 text-red-500 shrink-0" />
-              <span className="text-sm flex-1 truncate">{file.name}</span>
-              <span className="text-xs text-muted-foreground">{(file.size / 1024).toFixed(0)} KB</span>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleReset}>
-                <Trash2 className="h-3.5 w-3.5" />
+      {/* Viewer & Export Controls */}
+      {file && (
+        <Card className="rounded-2xl border-border/60 shadow-sm overflow-hidden">
+          {/* Header Bar */}
+          <div className="p-4 bg-muted/40 border-b border-border/60 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-500/10 text-red-500 shrink-0">
+                <FileText className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-foreground truncate">{file.name}</p>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span>{(file.size / 1024).toFixed(1)} KB</span>
+                  <span>•</span>
+                  <Badge variant="secondary" className="rounded-full text-[10px]">
+                    {totalPages} {totalPages === 1 ? "page" : "pages"}
+                  </Badge>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleReset}
+                className="text-xs h-8 text-destructive hover:text-destructive rounded-lg"
+              >
+                <Trash2 className="h-3.5 w-3.5 mr-1" /> Change PDF
               </Button>
             </div>
-          </Card>
-
-          <div className="flex gap-2">
-            <Button variant={format === "image/png" ? "default" : "outline"} size="sm" onClick={() => setFormat("image/png")}>
-              PNG
-            </Button>
-            <Button variant={format === "image/jpeg" ? "default" : "outline"} size="sm" onClick={() => setFormat("image/jpeg")}>
-              JPEG
-            </Button>
           </div>
 
-          <Button onClick={handleProcess} className="w-full">
-            <FileImage className="h-4 w-4 mr-2" /> Convert PDF to Images
-          </Button>
-        </>
-      )}
+          <CardContent className="p-5 space-y-6">
+            {/* Options Bar */}
+            <div className="flex flex-wrap items-center justify-between gap-4 p-3 rounded-xl bg-muted/20 border border-border/50 text-xs">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-foreground">Format:</span>
+                  <div className="flex rounded-lg bg-background p-0.5 border border-border/60">
+                    <button
+                      type="button"
+                      onClick={() => setFormat("image/png")}
+                      className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                        format === "image/png" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+                      }`}
+                    >
+                      PNG
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormat("image/jpeg")}
+                      className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                        format === "image/jpeg" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+                      }`}
+                    >
+                      JPG
+                    </button>
+                  </div>
+                </div>
 
-      {status === "processing" && (
-        <div className="text-center py-8">
-          <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-3" />
-          <p className="text-sm text-muted-foreground">Processing PDF...</p>
-        </div>
-      )}
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-foreground">Resolution:</span>
+                  <div className="flex rounded-lg bg-background p-0.5 border border-border/60">
+                    <button
+                      type="button"
+                      onClick={() => setScale(1.5)}
+                      className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                        scale === 1.5 ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+                      }`}
+                    >
+                      Standard (150 DPI)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setScale(2.5)}
+                      className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                        scale === 2.5 ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+                      }`}
+                    >
+                      High (300 DPI)
+                    </button>
+                  </div>
+                </div>
+              </div>
 
-      {status === "success" && totalPages > 0 && (
-        <div className="space-y-4">
-          <div className="bg-green-500/10 text-green-600 dark:text-green-400 rounded-xl p-4 text-sm font-medium text-center">
-            {result?.message}
-          </div>
+              {/* Download All ZIP Button */}
+              <Button
+                size="sm"
+                onClick={handleDownloadAllZip}
+                disabled={isExportingAll || totalPages === 0}
+                className="rounded-xl h-8 text-xs font-semibold gap-1.5"
+              >
+                {isExportingAll ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> {exportProgress}% Zipping...
+                  </>
+                ) : (
+                  <>
+                    <Archive className="h-3.5 w-3.5" /> Download All Pages (ZIP)
+                  </>
+                )}
+              </Button>
+            </div>
 
-          <div className="flex items-center justify-between">
-            <Button variant="outline" size="sm" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage <= 1}>
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <span className="text-sm font-medium">Page {currentPage} of {totalPages}</span>
-            <Button variant="outline" size="sm" onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage >= totalPages}>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
+            {/* Page Preview Container */}
+            <div className="flex flex-col items-center space-y-4">
+              <div className="w-full max-w-xl aspect-[3/4] bg-muted/10 border border-border/60 rounded-xl overflow-hidden shadow-inner flex items-center justify-center p-3 relative">
+                {isRendering ? (
+                  <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <span className="text-xs">Rendering Page {currentPage}...</span>
+                  </div>
+                ) : pageImages.has(currentPage) ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={pageImages.get(currentPage)}
+                    alt={`PDF Page ${currentPage}`}
+                    className="max-h-full max-w-full object-contain rounded-sm shadow-md"
+                  />
+                ) : (
+                  <div className="text-center text-muted-foreground text-xs">
+                    <ImageIcon className="h-8 w-8 mx-auto mb-2 opacity-40" />
+                    Click below to render Page {currentPage}
+                  </div>
+                )}
+              </div>
 
-          <Card className="overflow-hidden">
-            <CardContent className="p-4 flex items-center justify-center min-h-75 bg-muted/30">
-              {pageImages.has(currentPage) ? (
-                <img
-                  src={pageImages.get(currentPage)}
-                  alt={`Page ${currentPage}`}
-                  className="max-w-full max-h-125 rounded-lg shadow-lg"
-                />
-              ) : (
-                <div className="text-center">
-                  <FileImage className="h-12 w-12 mx-auto mb-3 text-muted-foreground" />
-                  <Button onClick={renderCurrentPage} disabled={rendering}>
-                    {rendering ? "Rendering..." : "Render Page"}
+              {/* Navigation & Single Download Bar */}
+              <div className="flex items-center justify-between w-full max-w-xl">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage <= 1 || isRendering}
+                  className="rounded-xl h-9"
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" /> Previous
+                </Button>
+
+                <div className="text-xs font-medium text-foreground">
+                  Page <span className="font-bold">{currentPage}</span> of {totalPages}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage >= totalPages || isRendering}
+                    className="rounded-xl h-9"
+                  >
+                    Next <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+
+                  <Button
+                    size="sm"
+                    onClick={handleDownloadSingle}
+                    disabled={!pageImages.has(currentPage)}
+                    className="rounded-xl h-9 text-xs gap-1.5"
+                  >
+                    <Download className="h-3.5 w-3.5" /> Download Page {currentPage}
                   </Button>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <div className="flex gap-2">
-            <Button onClick={downloadPage} disabled={!pageImages.has(currentPage)} className="flex-1">
-              <Download className="h-4 w-4 mr-2" /> Download This Page
-            </Button>
-            <Button onClick={downloadAll} variant="outline" className="flex-1">
-              <Download className="h-4 w-4 mr-2" /> Download All Pages
-            </Button>
-          </div>
-
-          <Button variant="outline" onClick={handleReset} className="w-full">Convert Another</Button>
-        </div>
-      )}
-
-      {status === "error" && error && (
-        <div className="space-y-3">
-          <div className="bg-destructive/10 text-destructive rounded-xl p-4 text-sm text-center">{error}</div>
-          <Button variant="outline" onClick={handleReset} className="w-full">Try Again</Button>
-        </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

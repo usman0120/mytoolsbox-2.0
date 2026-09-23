@@ -1,18 +1,30 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
-import { Upload, Download, SlidersHorizontal, ImageIcon, Trash2, Sun, Contrast, Droplets, Eye, Zap, Palette } from "lucide-react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import {
+  Upload,
+  Download,
+  SlidersHorizontal,
+  Trash2,
+  Sun,
+  Contrast,
+  Droplets,
+  Eye,
+  Zap,
+  Palette,
+  Sparkles,
+  Sliders,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useProcessing } from "@/hooks/use-processing";
-import type { ProcessingResult } from "@/lib/processing/types";
 
-// Preset-based auto-correction
-type Preset = "auto" | "vivid" | "natural" | "bw" | "warm" | "cool";
+type Preset = "auto" | "portrait" | "landscape" | "shadows" | "crisp" | "bw";
 
 interface PresetConfig {
+  label: string;
+  desc: string;
+  icon: string;
   brightness: number;
   contrast: number;
   saturation: number;
@@ -20,243 +32,367 @@ interface PresetConfig {
   sharpen: number;
 }
 
-const presets: Record<Preset, PresetConfig> = {
-  auto: { brightness: 0, contrast: 1.05, saturation: 1.1, warmth: 0, sharpen: 1.2 },
-  vivid: { brightness: 5, contrast: 1.15, saturation: 1.4, warmth: 5, sharpen: 1.3 },
-  natural: { brightness: 0, contrast: 1.02, saturation: 1.05, warmth: 0, sharpen: 1.1 },
-  bw: { brightness: 0, contrast: 1.2, saturation: 0, warmth: 0, sharpen: 1.25 },
-  warm: { brightness: 3, contrast: 1.05, saturation: 1.15, warmth: 15, sharpen: 1.15 },
-  cool: { brightness: -2, contrast: 1.05, saturation: 1.1, warmth: -10, sharpen: 1.15 },
+const PRESETS: Record<Preset, PresetConfig> = {
+  auto: {
+    label: "Intelligent Auto",
+    desc: "Universal balanced clarity & exposure",
+    icon: "⚡",
+    brightness: 4,
+    contrast: 1.08,
+    saturation: 1.15,
+    warmth: 2,
+    sharpen: 0.35,
+  },
+  portrait: {
+    label: "Beautify Portrait",
+    desc: "Soft skin tones & radiant highlights",
+    icon: "✨",
+    brightness: 6,
+    contrast: 1.04,
+    saturation: 1.08,
+    warmth: 8,
+    sharpen: 0.2,
+  },
+  landscape: {
+    label: "Vivid Landscape",
+    desc: "Deep atmospheric blues & foliage pop",
+    icon: "🏞️",
+    brightness: 2,
+    contrast: 1.16,
+    saturation: 1.35,
+    warmth: 4,
+    sharpen: 0.5,
+  },
+  shadows: {
+    label: "Shadow Recovery",
+    desc: "Lift dark underexposed details",
+    icon: "☀️",
+    brightness: 18,
+    contrast: 1.02,
+    saturation: 1.1,
+    warmth: 0,
+    sharpen: 0.3,
+  },
+  crisp: {
+    label: "Crisp & Dehazed",
+    desc: "Cut through haze with razor clarity",
+    icon: "🔍",
+    brightness: -2,
+    contrast: 1.2,
+    saturation: 1.15,
+    warmth: -4,
+    sharpen: 0.7,
+  },
+  bw: {
+    label: "Fine-Art Monochrome",
+    desc: "High-dynamic studio black & white",
+    icon: "🎞️",
+    brightness: 0,
+    contrast: 1.25,
+    saturation: 0,
+    warmth: 0,
+    sharpen: 0.45,
+  },
 };
-
-async function applyPreset(imageDataUrl: string, preset: PresetConfig): Promise<ProcessingResult> {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) { resolve({ status: "error", error: "Unable to process image" }); return; }
-
-      ctx.drawImage(img, 0, 0);
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const { data } = imageData;
-
-      for (let i = 0; i < data.length; i += 4) {
-        let r = data[i];
-        let g = data[i + 1];
-        let b = data[i + 2];
-
-        // Brightness
-        const bAdj = preset.brightness * 2.55;
-        r = Math.min(255, Math.max(0, r + bAdj));
-        g = Math.min(255, Math.max(0, g + bAdj));
-        b = Math.min(255, Math.max(0, b + bAdj));
-
-        // Contrast
-        const cf = preset.contrast;
-        r = Math.min(255, Math.max(0, ((r / 255 - 0.5) * cf + 0.5) * 255));
-        g = Math.min(255, Math.max(0, ((g / 255 - 0.5) * cf + 0.5) * 255));
-        b = Math.min(255, Math.max(0, ((b / 255 - 0.5) * cf + 0.5) * 255));
-
-        // Warmth
-        if (preset.warmth !== 0) {
-          r = Math.min(255, r + preset.warmth);
-          b = Math.max(0, b - preset.warmth);
-        }
-
-        // Saturation
-        const gray = 0.299 * r + 0.587 * g + 0.114 * b;
-        const sf = preset.saturation;
-        r = Math.min(255, gray + (r - gray) * sf);
-        g = Math.min(255, gray + (g - gray) * sf);
-        b = Math.min(255, gray + (b - gray) * sf);
-
-        data[i] = r;
-        data[i + 1] = g;
-        data[i + 2] = b;
-      }
-
-      // Sharpen (simple unsharp mask via second pass)
-      if (preset.sharpen > 1) {
-        const sharpened = new Uint8ClampedArray(data);
-        const kernel = preset.sharpen - 1; // sharpen amount
-        const w = canvas.width;
-
-        for (let y = 1; y < canvas.height - 1; y++) {
-          for (let x = 1; x < w - 1; x++) {
-            const idx = (y * w + x) * 4;
-            for (let c = 0; c < 3; c++) {
-              const center = data[idx + c];
-              const neighbors =
-                data[((y - 1) * w + x) * 4 + c] +
-                data[((y + 1) * w + x) * 4 + c] +
-                data[(y * w + (x - 1)) * 4 + c] +
-                data[(y * w + (x + 1)) * 4 + c];
-              const blurred = neighbors / 4;
-              sharpened[idx + c] = Math.min(255, Math.max(0, center + (center - blurred) * kernel));
-            }
-          }
-        }
-        for (let i = 0; i < data.length; i++) {
-          data[i] = sharpened[i];
-        }
-      }
-
-      ctx.putImageData(imageData, 0, 0);
-      resolve({
-        status: "success",
-        message: `${preset} preset applied`,
-        outputUrl: canvas.toDataURL("image/jpeg", 0.92),
-      });
-    };
-    img.src = imageDataUrl;
-  });
-}
 
 export function PerfectlyClearEngine() {
   const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
-  const [dragOver, setDragOver] = useState(false);
-  const [activePreset, setActivePreset] = useState<Preset>("auto");
-  const [showBeforeAfter, setShowBeforeAfter] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const { status, result, error, process, reset: resetProcessing } = useProcessing();
+  const [baseImage, setBaseImage] = useState<HTMLImageElement | null>(null);
 
-  const loadFile = useCallback((f: File) => {
+  // Settings
+  const [activePreset, setActivePreset] = useState<Preset>("auto");
+  const [strength, setStrength] = useState(100); // 0-100%
+  const [fineClarity, setFineClarity] = useState(0); // -20 to 50
+  const [fineExposure, setFineExposure] = useState(0); // -30 to 30
+  const [showOriginal, setShowOriginal] = useState(false);
+
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleLoadFile = (f: File) => {
     if (!f.type.startsWith("image/")) return;
     setFile(f);
-    resetProcessing();
     const reader = new FileReader();
-    reader.onload = () => setPreview(reader.result as string);
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => setBaseImage(img);
+      img.src = reader.result as string;
+    };
     reader.readAsDataURL(f);
-  }, [resetProcessing]);
-
-  const handleApply = async () => {
-    if (!preview) return;
-    await process(() => applyPreset(preview, presets[activePreset]));
   };
 
-  const handleDownload = () => {
-    if (result?.outputUrl) {
-      const link = document.createElement("a");
-      link.download = `perfectly-clear-${file?.name || "image"}.jpg`;
-      link.href = result.outputUrl;
-      link.click();
+  const renderCanvas = useCallback(() => {
+    if (!baseImage || !canvasRef.current) return;
+    const canvas = canvasRef.current;
+    canvas.width = baseImage.naturalWidth || baseImage.width;
+    canvas.height = baseImage.naturalHeight || baseImage.height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    if (showOriginal) {
+      ctx.drawImage(baseImage, 0, 0);
+      return;
     }
+
+    ctx.drawImage(baseImage, 0, 0);
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const { data } = imageData;
+
+    const cfg = PRESETS[activePreset];
+    const blend = strength / 100;
+    const bAdj = (cfg.brightness + fineExposure) * 1.8;
+    const cf = cfg.contrast;
+    const sf = cfg.saturation;
+    const wAdj = cfg.warmth;
+
+    for (let i = 0; i < data.length; i += 4) {
+      const origR = data[i];
+      const origG = data[i + 1];
+      const origB = data[i + 2];
+
+      let r = Math.min(255, Math.max(0, origR + bAdj));
+      let g = Math.min(255, Math.max(0, origG + bAdj));
+      let b = Math.min(255, Math.max(0, origB + bAdj));
+
+      // Contrast
+      r = Math.min(255, Math.max(0, ((r / 255 - 0.5) * cf + 0.5) * 255));
+      g = Math.min(255, Math.max(0, ((g / 255 - 0.5) * cf + 0.5) * 255));
+      b = Math.min(255, Math.max(0, ((b / 255 - 0.5) * cf + 0.5) * 255));
+
+      // Warmth
+      if (wAdj !== 0) {
+        r = Math.min(255, r + wAdj);
+        b = Math.max(0, b - wAdj);
+      }
+
+      // Saturation
+      const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+      r = Math.min(255, lum + (r - lum) * sf);
+      g = Math.min(255, lum + (g - lum) * sf);
+      b = Math.min(255, lum + (b - lum) * sf);
+
+      data[i] = Math.round(origR * (1 - blend) + r * blend);
+      data[i + 1] = Math.round(origG * (1 - blend) + g * blend);
+      data[i + 2] = Math.round(origB * (1 - blend) + b * blend);
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+
+    // Apply Sharpening convolution if cfg.sharpen > 0 or fineClarity > 0
+    const totalSharpen = (cfg.sharpen + fineClarity / 100) * blend;
+    if (totalSharpen > 0.05) {
+      const srcData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const dstData = ctx.createImageData(canvas.width, canvas.height);
+      const src = srcData.data;
+      const dst = dstData.data;
+      const w = canvas.width;
+      const h = canvas.height;
+      const s = Math.min(0.8, totalSharpen);
+
+      const kernel = [0, -s, 0, -s, 1 + 4 * s, -s, 0, -s, 0];
+
+      for (let y = 1; y < h - 1; y++) {
+        for (let x = 1; x < w - 1; x++) {
+          let r = 0, g = 0, b = 0;
+          let k = 0;
+          for (let ky = -1; ky <= 1; ky++) {
+            for (let kx = -1; kx <= 1; kx++) {
+              const idx = ((y + ky) * w + (x + kx)) * 4;
+              const weight = kernel[k++];
+              r += src[idx] * weight;
+              g += src[idx + 1] * weight;
+              b += src[idx + 2] * weight;
+            }
+          }
+          const dstIdx = (y * w + x) * 4;
+          dst[dstIdx] = Math.min(255, Math.max(0, r));
+          dst[dstIdx + 1] = Math.min(255, Math.max(0, g));
+          dst[dstIdx + 2] = Math.min(255, Math.max(0, b));
+          dst[dstIdx + 3] = src[(y * w + x) * 4 + 3];
+        }
+      }
+      ctx.putImageData(dstData, 0, 0);
+    }
+  }, [baseImage, activePreset, strength, fineClarity, fineExposure, showOriginal]);
+
+  useEffect(() => {
+    renderCanvas();
+  }, [renderCanvas]);
+
+  const handleDownload = () => {
+    if (!canvasRef.current) return;
+    const a = document.createElement("a");
+    a.href = canvasRef.current.toDataURL("image/jpeg", 0.95);
+    const base = file?.name.replace(/\.[^.]+$/, "") || "perfectly_clear";
+    a.download = `${base}_${activePreset}.jpg`;
+    a.click();
   };
 
   const handleReset = () => {
-    resetProcessing();
     setFile(null);
-    setPreview(null);
-    setShowBeforeAfter(false);
-  };
-
-  const presetIcons: Record<Preset, React.ReactNode> = {
-    auto: <Zap className="h-4 w-4" />,
-    vivid: <Palette className="h-4 w-4" />,
-    natural: <Eye className="h-4 w-4" />,
-    bw: <Contrast className="h-4 w-4" />,
-    warm: <Sun className="h-4 w-4" />,
-    cool: <Droplets className="h-4 w-4" />,
+    setBaseImage(null);
+    setActivePreset("auto");
+    setStrength(100);
+    setFineClarity(0);
+    setFineExposure(0);
   };
 
   return (
-    <div className="space-y-4">
-      {status === "idle" && !file && (
+    <div className="space-y-6">
+      {!file && (
         <div
-          className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer ${
-            dragOver ? "border-primary bg-primary/5" : "border-muted-foreground/25"
-          }`}
-          onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={(e) => { e.preventDefault(); setDragOver(false); e.dataTransfer.files[0] && loadFile(e.dataTransfer.files[0]); }}
+          className="border-2 border-dashed rounded-2xl p-10 text-center transition-all cursor-pointer hover:border-primary/50 hover:bg-primary/5 border-muted-foreground/25"
           onClick={() => fileInputRef.current?.click()}
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => {
+            e.preventDefault();
+            if (e.dataTransfer.files[0]) handleLoadFile(e.dataTransfer.files[0]);
+          }}
         >
-          <SlidersHorizontal className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
-          <p className="font-medium mb-1">Drop a photo to auto-correct</p>
-          <p className="text-sm text-muted-foreground">Choose a preset and instantly perfect your photo</p>
+          <div className="h-14 w-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mx-auto mb-4">
+            <SlidersHorizontal className="h-7 w-7" />
+          </div>
+          <h3 className="font-semibold text-lg mb-1">Perfectly Clear Automatic Studio</h3>
+          <p className="text-sm text-muted-foreground max-w-sm mx-auto mb-4">
+            Intelligent portrait beautification, landscape depth, shadow lift, and high-frequency sharpness.
+          </p>
+          <Button variant="outline" className="rounded-xl shadow-xs">
+            Browse Photo
+          </Button>
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/jpeg,image/png,image/webp,image/bmp"
+            accept="image/*"
             className="hidden"
-            onChange={(e) => e.target.files?.[0] && loadFile(e.target.files[0])}
+            onChange={(e) => e.target.files?.[0] && handleLoadFile(e.target.files[0])}
           />
         </div>
       )}
 
-      {status === "idle" && file && preview && (
-        <div className="space-y-4">
-          <div className="flex items-start gap-4">
-            <img src={preview} alt="Preview" className="w-32 h-32 object-cover rounded-lg border" />
-            <div className="flex-1 min-w-0">
-              <p className="font-medium text-sm truncate">{file.name}</p>
-              <p className="text-xs text-muted-foreground">{(file.size / 1024).toFixed(1)} KB</p>
-              <Button variant="ghost" size="sm" className="mt-2" onClick={handleReset}>
-                <Trash2 className="h-3 w-3 mr-1" /> Remove
-              </Button>
-            </div>
-          </div>
+      {file && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Controls */}
+          <div className="lg:col-span-5 space-y-4">
+            <div className="p-5 rounded-2xl border bg-card/60 backdrop-blur-sm space-y-4">
+              <div>
+                <h4 className="font-semibold text-sm">Correction Profile</h4>
+                <p className="text-xs text-muted-foreground">Select professional lab correction</p>
+              </div>
 
-          <div>
-            <Label className="text-xs mb-2 block">Choose Preset</Label>
-            <div className="grid grid-cols-3 gap-2">
-              {(Object.keys(presets) as Preset[]).map((preset) => (
-                <Button
-                  key={preset}
-                  variant={activePreset === preset ? "default" : "outline"}
-                  size="sm"
-                  className="gap-1 capitalize"
-                  onClick={() => setActivePreset(preset)}
-                >
-                  {presetIcons[preset]}
-                  {preset}
+              <div className="grid grid-cols-2 gap-2">
+                {(Object.keys(PRESETS) as Preset[]).map((key) => {
+                  const p = PRESETS[key];
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => setActivePreset(key)}
+                      className={`p-3 rounded-xl border text-left transition-all ${
+                        activePreset === key
+                          ? "border-primary bg-primary/5 ring-1 ring-primary/20 shadow-xs"
+                          : "border-border/50 hover:border-primary/30 bg-background"
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <span className="text-base">{p.icon}</span>
+                        <p className="font-semibold text-xs text-foreground truncate">{p.label}</p>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground line-clamp-1">{p.desc}</p>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="space-y-3 pt-3 border-t">
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <Label className="text-xs font-medium">Correction Intensity</Label>
+                    <span className="text-xs text-muted-foreground">{strength}%</span>
+                  </div>
+                  <Slider
+                    value={[strength]}
+                    min={0}
+                    max={100}
+                    step={1}
+                    onValueChange={(val) => setStrength(Array.isArray(val) ? val[0] : (val as number))}
+                  />
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <Label className="text-xs font-medium">Fine Clarity & Sharpen</Label>
+                    <span className="text-xs text-muted-foreground">{fineClarity > 0 ? `+${fineClarity}` : fineClarity}%</span>
+                  </div>
+                  <Slider
+                    value={[fineClarity]}
+                    min={-20}
+                    max={40}
+                    step={1}
+                    onValueChange={(val) => setFineClarity(Array.isArray(val) ? val[0] : (val as number))}
+                  />
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <Label className="text-xs font-medium">Exposure Trim</Label>
+                    <span className="text-xs text-muted-foreground">{fineExposure > 0 ? `+${fineExposure}` : fineExposure}</span>
+                  </div>
+                  <Slider
+                    value={[fineExposure]}
+                    min={-25}
+                    max={25}
+                    step={1}
+                    onValueChange={(val) => setFineExposure(Array.isArray(val) ? val[0] : (val as number))}
+                  />
+                </div>
+              </div>
+
+              <div className="pt-2 border-t">
+                <Button onClick={handleDownload} className="w-full gap-2 rounded-xl">
+                  <Download className="h-4 w-4" /> Download Perfectly Clear Photo
                 </Button>
-              ))}
+              </div>
             </div>
           </div>
 
-          <Button onClick={handleApply} className="w-full gap-2" size="lg">
-            <SlidersHorizontal className="h-5 w-5" /> Apply {activePreset.charAt(0).toUpperCase() + activePreset.slice(1)} Preset
-          </Button>
-        </div>
-      )}
+          {/* Canvas Live Preview */}
+          <div className="lg:col-span-7 flex flex-col space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-muted-foreground">
+                  Live Preview
+                </span>
+                <Button
+                  size="sm"
+                  variant={showOriginal ? "secondary" : "outline"}
+                  className="h-7 text-xs rounded-lg gap-1"
+                  onMouseDown={() => setShowOriginal(true)}
+                  onMouseUp={() => setShowOriginal(false)}
+                  onTouchStart={() => setShowOriginal(true)}
+                  onTouchEnd={() => setShowOriginal(false)}
+                  onClick={() => setShowOriginal(!showOriginal)}
+                >
+                  <Eye className="h-3.5 w-3.5" />
+                  {showOriginal ? "Original" : "Hold to Compare"}
+                </Button>
+              </div>
 
-      {status === "processing" && (
-        <div className="text-center py-8">
-          <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-3" />
-          <p className="text-sm text-muted-foreground">Applying {activePreset} preset...</p>
-        </div>
-      )}
-
-      {status === "success" && result?.outputUrl && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-xs text-muted-foreground mb-1 text-center">Original</p>
-              <img src={preview!} alt="Before" className="w-full rounded-lg border" />
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">
+                  {baseImage ? `${baseImage.naturalWidth} × ${baseImage.naturalHeight} px` : ""}
+                </span>
+                <Button variant="ghost" size="sm" onClick={handleReset} className="h-7 text-xs text-muted-foreground">
+                  <Trash2 className="h-3.5 w-3.5 mr-1" /> Reset
+                </Button>
+              </div>
             </div>
-            <div>
-              <p className="text-xs text-blue-600 font-medium mb-1 text-center capitalize">{activePreset} Preset</p>
-              <img src={result.outputUrl} alt="After" className="w-full rounded-lg border border-blue-500" />
+
+            <div className="relative border rounded-2xl overflow-hidden bg-dot-pattern flex items-center justify-center p-4 min-h-[460px] max-h-[640px] shadow-xs">
+              <canvas
+                ref={canvasRef}
+                className="max-h-[580px] w-auto max-w-full object-contain rounded-lg shadow-md"
+              />
             </div>
           </div>
-          <div className="flex gap-2">
-            <Button onClick={handleDownload} className="gap-2">
-              <Download className="h-4 w-4" /> Download
-            </Button>
-            <Button variant="outline" onClick={handleReset}>Try Another</Button>
-          </div>
-        </div>
-      )}
-
-      {status === "error" && (
-        <div className="text-center py-8">
-          <p className="text-red-500 mb-2">{error || "Processing failed"}</p>
-          <Button variant="outline" size="sm" onClick={handleReset}>Try Again</Button>
         </div>
       )}
     </div>

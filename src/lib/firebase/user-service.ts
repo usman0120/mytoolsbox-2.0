@@ -270,3 +270,59 @@ export async function deleteFeedback(feedbackId: string): Promise<void> {
   if (!firestore) return;
   await deleteDoc(doc(firestore, "feedback", feedbackId));
 }
+
+// ---------------------------------------------------------------------------
+// Account Lifecycle (Disable & 30-Day Deletion Grace Period)
+// ---------------------------------------------------------------------------
+
+const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+
+/**
+ * Schedule account deletion with a 30-day recovery window.
+ * The user can log in anytime within 30 days to cancel deletion.
+ */
+export async function scheduleAccountDeletion(userId: string): Promise<{ deletionScheduledAt: number }> {
+  const now = Date.now();
+  const scheduledTime = now + THIRTY_DAYS_MS;
+
+  await saveUserProfile(userId, {
+    status: "pending_deletion",
+    deletionRequestedAt: now,
+    deletionScheduledAt: scheduledTime,
+  });
+
+  return { deletionScheduledAt: scheduledTime };
+}
+
+/**
+ * Cancel a pending deletion request and restore the account to active.
+ */
+export async function cancelAccountDeletion(userId: string): Promise<void> {
+  await saveUserProfile(userId, {
+    status: "active",
+    deletionRequestedAt: undefined,
+    deletionScheduledAt: undefined,
+  });
+}
+
+/**
+ * Temporarily disable an account. Data remains intact; re-activates on next login.
+ */
+export async function disableAccount(userId: string): Promise<void> {
+  await saveUserProfile(userId, {
+    status: "disabled",
+    disabledAt: Date.now(),
+  });
+}
+
+/**
+ * Reactivate a disabled account.
+ */
+export async function reactivateAccount(userId: string): Promise<void> {
+  await saveUserProfile(userId, {
+    status: "active",
+    disabledAt: undefined,
+    deletionRequestedAt: undefined,
+    deletionScheduledAt: undefined,
+  });
+}

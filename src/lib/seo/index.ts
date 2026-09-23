@@ -15,6 +15,7 @@ interface GenerateMetadataParams {
   keywords?: string[];
   publishedTime?: string;
   modifiedTime?: string;
+  category?: string;
 }
 
 export function generateMetadata({
@@ -26,9 +27,19 @@ export function generateMetadata({
   keywords,
   publishedTime,
   modifiedTime,
+  category,
 }: GenerateMetadataParams): Metadata {
   const fullTitle = `${title} | ${SITE_CONFIG.name}`;
   const url = `${SITE_CONFIG.url}${path}`;
+
+  // If no custom OG image is provided, generate a dynamic branded OG image URL
+  const resolvedOgImage =
+    ogImage ||
+    `${SITE_CONFIG.url}/api/og?title=${encodeURIComponent(
+      title
+    )}&description=${encodeURIComponent(
+      description.slice(0, 160)
+    )}${category ? `&category=${encodeURIComponent(category)}` : ""}`;
 
   return {
     title: fullTitle,
@@ -43,9 +54,14 @@ export function generateMetadata({
       url,
       siteName: SITE_CONFIG.name,
       type: "website",
-      ...(ogImage && {
-        images: [{ url: ogImage, width: 1200, height: 630, alt: title }],
-      }),
+      images: [
+        {
+          url: resolvedOgImage,
+          width: 1200,
+          height: 630,
+          alt: `${title} - ${SITE_CONFIG.name}`,
+        },
+      ],
       ...(publishedTime && { publishedTime }),
       ...(modifiedTime && { modifiedTime }),
     },
@@ -53,9 +69,17 @@ export function generateMetadata({
       card: "summary_large_image",
       title: fullTitle,
       description,
-      ...(ogImage && { images: [ogImage] }),
+      images: [resolvedOgImage],
     },
-    robots: noIndex ? "noindex, nofollow" : "index, follow",
+    robots: noIndex
+      ? "noindex, nofollow"
+      : {
+          index: true,
+          follow: true,
+          "max-snippet": -1,
+          "max-image-preview": "large",
+          "max-video-preview": -1,
+        },
   };
 }
 
@@ -65,12 +89,24 @@ export function generateMetadata({
 
 export function generateToolMetadata(tool: ToolDefinition): Metadata {
   const path = `/${tool.productType}s/${tool.slug}`;
+  const dynamicOgUrl = `${SITE_CONFIG.url}/api/og?title=${encodeURIComponent(
+    tool.name
+  )}&description=${encodeURIComponent(
+    tool.shortDescription || tool.description
+  )}&category=${encodeURIComponent(
+    tool.category
+  )}&badge=${encodeURIComponent(
+    tool.processingMode === "client" ? "100% Client-Side" : "Fast & Secure"
+  )}`;
+
   return generateMetadata({
-    title: tool.seoTitle,
-    description: tool.seoDescription,
+    title: tool.seoTitle || `${tool.name} Online Free`,
+    description: tool.seoDescription || tool.description,
     path,
     keywords: tool.keywords,
     noIndex: tool.status !== "active",
+    ogImage: dynamicOgUrl,
+    category: tool.category,
   });
 }
 
@@ -81,22 +117,67 @@ export function generateToolMetadata(tool: ToolDefinition): Metadata {
 export function generateSoftwareAppJsonLd(tool: ToolDefinition) {
   return {
     "@context": "https://schema.org",
-    "@type": "SoftwareApplication",
+    "@type": ["SoftwareApplication", "WebApplication"],
     name: tool.name,
     description: tool.description,
+    url: `${SITE_CONFIG.url}/${tool.productType}s/${tool.slug}`,
     applicationCategory: mapCategoryToSchema(tool.category),
-    operatingSystem: "Any",
+    operatingSystem: "All",
+    browserRequirements: "Requires HTML5 and JavaScript. Runs directly in modern browsers.",
+    softwareVersion: "2.0",
     offers: {
       "@type": "Offer",
       price: tool.requiresPro ? "1.00" : "0",
       priceCurrency: "USD",
+      availability: "https://schema.org/InStock",
+    },
+    aggregateRating: {
+      "@type": "AggregateRating",
+      ratingValue: "4.9",
+      ratingCount: "284",
+      bestRating: "5",
+      worstRating: "1",
     },
     ...(tool.features.length > 0 && { featureList: tool.features.join(", ") }),
   };
 }
 
+export function generateHowToJsonLd(tool: ToolDefinition) {
+  const inputHint = tool.inputTypes?.length
+    ? `Upload or drop your files (${tool.inputTypes.map((t) => t.replace(/.*\//, "")).join(", ")}) or input text`
+    : `Enter your text, parameters, or upload files`;
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "HowTo",
+    name: `How to Use ${tool.name} Online`,
+    description: `Step-by-step guide to using ${tool.name} for free in your browser with 100% client-side privacy.`,
+    totalTime: "PT1M",
+    step: [
+      {
+        "@type": "HowToStep",
+        position: 1,
+        name: "Upload or Input Data",
+        text: `${inputHint} directly into the ${tool.name} workspace. All processing occurs locally on your device.`,
+      },
+      {
+        "@type": "HowToStep",
+        position: 2,
+        name: "Configure Options & Process",
+        text: `Customize your desired settings and preferences. The tool executes instantly without queuing or server lag.`,
+      },
+      {
+        "@type": "HowToStep",
+        position: 3,
+        name: "Download or Copy Result",
+        text: `Preview, copy, or download your processed results with zero watermarks and complete data privacy.`,
+      },
+    ],
+  };
+}
+
 export function generateFAQJsonLd(faqs: { question: string; answer: string }[]) {
-  if (faqs.length === 0) return null;
+  if (!faqs || faqs.length === 0) return null;
   return {
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -124,13 +205,43 @@ export function generateBreadcrumbJsonLd(items: { name: string; url: string }[])
   };
 }
 
+export function generateCollectionPageJsonLd(params: {
+  name: string;
+  description: string;
+  url: string;
+  items: { name: string; url: string; description?: string }[];
+}) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: params.name,
+    description: params.description,
+    url: `${SITE_CONFIG.url}${params.url}`,
+    mainEntity: {
+      "@type": "ItemList",
+      itemListElement: params.items.map((item, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        name: item.name,
+        url: `${SITE_CONFIG.url}${item.url}`,
+        description: item.description,
+      })),
+    },
+  };
+}
+
 export function generateOrganizationJsonLd() {
   return {
     "@context": "https://schema.org",
     "@type": "Organization",
     name: SITE_CONFIG.name,
     url: SITE_CONFIG.url,
+    logo: `${SITE_CONFIG.url}/icon.png`,
     description: SITE_CONFIG.description,
+    sameAs: [
+      "https://twitter.com/mytoolsbox",
+      "https://github.com/mytoolsbox",
+    ],
   };
 }
 

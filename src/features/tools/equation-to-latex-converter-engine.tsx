@@ -1,226 +1,223 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { Copy, Check, Sigma, Loader2, Download, ChevronDown, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import {
-  Sigma, Loader2, Copy, CheckCircle2, XCircle, Subscript,
-} from "lucide-react";
+  convertToLatex, getFormulasByCategory, FORMULA_CATALOG,
+  type FormulaTemplate,
+} from "@/features/tools/equation-to-latex-converter";
 
-// Common LaTeX templates for equations
-const TEMPLATES: Record<string, string> = {
-  fraction: "\\frac{a}{b}",
-  sqrt: "\\sqrt{x}",
-  integral: "\\int_{a}^{b} f(x)\\,dx",
-  sum: "\\sum_{i=1}^{n} x_i",
-  product: "\\prod_{i=1}^{n} x_i",
-  limit: "\\lim_{x \\to \\infty} f(x)",
-  matrix: "\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}",
-  greek: "\\alpha, \\beta, \\gamma, \\delta, \\theta, \\pi, \\sigma, \\omega",
-  power: "x^{n}",
-  subscript: "x_{n}",
-  derivative: "\\frac{d}{dx}f(x)",
-  partial: "\\frac{\\partial}{\\partial x}f(x,y)",
+const SYMBOL_GROUPS: Record<string, Array<{ label: string; insert: string }>> = {
+  "Greek": [
+    { label: "α", insert: "alpha" }, { label: "β", insert: "beta" },
+    { label: "γ", insert: "gamma" }, { label: "δ", insert: "delta" },
+    { label: "θ", insert: "theta" }, { label: "λ", insert: "lambda" },
+    { label: "μ", insert: "mu" },   { label: "π", insert: "pi" },
+    { label: "σ", insert: "sigma" }, { label: "ω", insert: "omega" },
+    { label: "Γ", insert: "Gamma" }, { label: "Δ", insert: "Delta" },
+    { label: "Σ", insert: "Sigma" }, { label: "Ω", insert: "Omega" },
+  ],
+  "Calculus": [
+    { label: "∫(a,b)", insert: "int(a,b)" },
+    { label: "∂/∂x", insert: "partial/partial x" },
+    { label: "d/dx", insert: "d/dx" },
+    { label: "∑(i=1,n)", insert: "sum(i=1,n)" },
+    { label: "∏(i=1,n)", insert: "prod(i=1,n)" },
+    { label: "lim", insert: "lim(x->inf)" },
+    { label: "∞", insert: "infinity" },
+    { label: "nabla", insert: "nabla" },
+  ],
+  "Relations": [
+    { label: "≥", insert: ">=" }, { label: "≤", insert: "<=" },
+    { label: "≠", insert: "!=" }, { label: "≈", insert: "~=" },
+    { label: "→", insert: "->" }, { label: "⇒", insert: "=>" },
+    { label: "⟺", insert: "<=>" }, { label: "±", insert: "+-" },
+  ],
+  "Structures": [
+    { label: "√", insert: "sqrt()" },
+    { label: "a/b", insert: "a/b" },
+    { label: "x^n", insert: "x^n" },
+    { label: "x_n", insert: "x_n" },
+    { label: "|x|", insert: "abs(x)" },
+    { label: "ℝ", insert: "RR" }, { label: "ℕ", insert: "NN" },
+    { label: "ℤ", insert: "ZZ" }, { label: "ℂ", insert: "CC" },
+  ],
 };
 
 export function EquationToLatexConverterEngine() {
   const [input, setInput] = useState("");
-  const [output, setOutput] = useState("");
-  const [isConverting, setIsConverting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [output, setOutput] = useState<{ latex: string; inline: string; display: string } | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
+  const [expandedCat, setExpandedCat] = useState<string | null>("Algebra");
 
-  const handleConvert = useCallback(async () => {
-    if (!input.trim()) {
-      setError("Please enter an equation or mathematical expression.");
-      return;
-    }
-
-    setIsConverting(true);
-    setError(null);
-
-    try {
-      let latex = input.trim();
-
-      // Convert common patterns to LaTeX
-      const conversions: Array<[RegExp, string | ((match: string, ...groups: string[]) => string)]> = [
-        // Fractions: a/b -> \frac{a}{b}
-        [/([a-zA-Z0-9]+)\s*\/\s*([a-zA-Z0-9]+)/g, "\\frac{$1}{$2}"],
-        // Square root: sqrt(x) -> \sqrt{x}
-        [/sqrt\s*\(([^)]+)\)/g, "\\sqrt{$1}"],
-        // nth root: nrt(x) or root[n](x)
-        [/nrt\s*\(([^)]+)\)/g, "\\sqrt[n]{$1}"],
-        [/root\[([^\]]+)\]\(([^)]+)\)/g, "\\sqrt[$1]{$2}"],
-        // Power: x^n -> x^{n}
-        [/([a-zA-Z0-9)\]}])\^([a-zA-Z0-9]+)/g, "$1^{$2}"],
-        // Subscript: x_n -> x_{n}
-        [/([a-zA-Z0-9)\]}])\_([a-zA-Z0-9]+)/g, "$1_{$2}"],
-        // Sum: sum(i=1,n) -> \sum_{i=1}^{n}
-        [/sum\s*\(([^,]+),([^)]+)\)/g, "\\sum_{$1}^{$2}"],
-        // Product: prod(i=1,n) -> \prod_{i=1}^{n}
-        [/prod\s*\(([^,]+),([^)]+)\)/g, "\\prod_{$1}^{$2}"],
-        // Integral: int(a,b) -> \int_{a}^{b}
-        [/int\s*\(([^,]+),([^)]+)\)/g, "\\int_{$1}^{$2}"],
-        // Limit: lim(x->a) -> \lim_{x \to a}
-        [/lim\s*\(([^)]+)\)/g, "\\lim_{$1}"],
-        // Greek letters
-        [/alpha/g, "\\alpha"],
-        [/beta/g, "\\beta"],
-        [/gamma/g, "\\gamma"],
-        [/delta/g, "\\delta"],
-        [/theta/g, "\\theta"],
-        [/pi(?!pe)/g, "\\pi"],
-        [/sigma/g, "\\sigma"],
-        [/omega/g, "\\omega"],
-        [/lambda/g, "\\lambda"],
-        [/mu/g, "\\mu"],
-        [/epsilon/g, "\\epsilon"],
-        [/phi/g, "\\phi"],
-        [/rho/g, "\\rho"],
-        // Infinity
-        [/infinity|inf/g, "\\infty"],
-        // Times
-        [/\*/g, " \\times "],
-        // Arrows
-        [/->/g, "\\to"],
-        [/=>/g, "\\Rightarrow"],
-        [/<=>/g, "\\Leftrightarrow"],
-        // Inequalities
-        [/>=/g, "\\geq"],
-        [/<=/g, "\\leq"],
-        [/!=/g, "\\neq"],
-        // Plus/minus
-        [/\+-/g, "\\pm"],
-        // Dot product
-        [/dot/g, "\\cdot"],
-        // Trig functions
-        [/sin\(/g, "\\sin("],
-        [/cos\(/g, "\\cos("],
-        [/tan\(/g, "\\tan("],
-        [/log\(/g, "\\log("],
-        [/ln\(/g, "\\ln("],
-        [/exp\(/g, "\\exp("],
-      ];
-
-      for (const [pattern, replacement] of conversions) {
-        latex = latex.replace(pattern, replacement as string);
-      }
-
-      // Clean up extra spaces around LaTeX commands
-      latex = latex.replace(/\s*\\times\s*/g, " \\times ");
-      latex = latex.replace(/\s+/g, " ").trim();
-
-      setOutput(latex);
-      toast.success("Equation converted to LaTeX!");
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Conversion failed";
-      setError(message);
-      toast.error("Conversion failed: " + message);
-    } finally {
-      setIsConverting(false);
-    }
+  const convert = useCallback(() => {
+    if (!input.trim()) { toast.error("Enter an equation first."); return; }
+    const result = convertToLatex(input);
+    setOutput(result);
+    toast.success("Converted to LaTeX!");
   }, [input]);
 
-  const handleCopy = useCallback(async () => {
-    await navigator.clipboard.writeText(output);
-    setCopied(true);
-    toast.success("LaTeX copied to clipboard!");
-    setTimeout(() => setCopied(false), 2000);
-  }, [output]);
-
-  const insertTemplate = useCallback((template: string) => {
-    setInput((prev) => prev + (prev ? " " : "") + template);
+  const copyText = useCallback(async (text: string, id: string) => {
+    await navigator.clipboard.writeText(text);
+    setCopied(id);
+    toast.success("Copied!");
+    setTimeout(() => setCopied(null), 2000);
   }, []);
+
+  const insertSymbol = useCallback((sym: string) => {
+    setInput(prev => prev + (prev.endsWith(" ") || prev.length === 0 ? "" : " ") + sym + " ");
+  }, []);
+
+  const loadFormula = useCallback((f: FormulaTemplate) => {
+    setInput(f.input);
+    const result = convertToLatex(f.input);
+    setOutput(result);
+    toast.success(`Loaded: ${f.name}`);
+  }, []);
+
+  const byCategory = getFormulasByCategory();
 
   return (
     <div className="space-y-4">
       <Badge variant="outline" className="gap-1.5">
-        <Sigma className="h-3.5 w-3.5" /> Equation to LaTeX Converter
+        <Sigma className="h-3.5 w-3.5" /> Equation → LaTeX Converter
       </Badge>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Enter Equation</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Enter a mathematical expression, e.g.: x^2 + 2x + 1 = 0 or int(0,1) x^2 dx"
-            className="min-h-30 font-mono"
-          />
-        </CardContent>
-      </Card>
+      <Tabs defaultValue="converter">
+        <TabsList>
+          <TabsTrigger value="converter" className="text-xs">Converter</TabsTrigger>
+          <TabsTrigger value="catalog" className="text-xs">Formula Catalog</TabsTrigger>
+        </TabsList>
 
-      {/* Templates */}
-      <Card>
-        <CardContent className="py-3">
+        <TabsContent value="catalog" className="space-y-3 mt-3">
+          <p className="text-xs text-muted-foreground">Click any formula to load it into the converter.</p>
           <div className="space-y-2">
-            <p className="text-xs font-medium">Quick Templates</p>
-            <div className="flex flex-wrap gap-1.5">
-              {Object.entries(TEMPLATES).map(([name, template]) => (
-                <Button
-                  key={name}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => insertTemplate(template)}
-                  className="text-xs font-mono"
+            {Object.entries(byCategory).map(([cat, formulas]) => (
+              <Card key={cat} className="overflow-hidden">
+                <button
+                  className="w-full flex items-center justify-between px-4 py-2 text-sm font-semibold hover:bg-muted/30 transition-colors"
+                  onClick={() => setExpandedCat(expandedCat === cat ? null : cat)}
                 >
-                  {name}
-                </Button>
-              ))}
-            </div>
+                  {cat} <span className="text-xs text-muted-foreground">{formulas.length} formulas</span>
+                  {expandedCat === cat ? <ChevronDown className="h-4 w-4 ml-2" /> : <ChevronRight className="h-4 w-4 ml-2" />}
+                </button>
+                {expandedCat === cat && (
+                  <div className="border-t divide-y divide-border/30">
+                    {formulas.map(f => (
+                      <button
+                        key={f.name}
+                        onClick={() => loadFormula(f)}
+                        className="w-full text-left px-4 py-2.5 hover:bg-muted/30 transition-colors"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-xs font-medium">{f.name}</p>
+                            <p className="text-[10px] text-muted-foreground">{f.description}</p>
+                            <code className="text-[10px] text-primary/80 font-mono mt-0.5 block">{f.latex}</code>
+                          </div>
+                          <Badge variant="secondary" className="text-[9px] shrink-0">Load</Badge>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </Card>
+            ))}
           </div>
-        </CardContent>
-      </Card>
+        </TabsContent>
 
-      {error && (
-        <Card className="border-destructive/50 bg-destructive/5">
-          <CardContent className="py-3">
-            <div className="flex items-center gap-2 text-destructive">
-              <XCircle className="h-4 w-4" />
-              <p className="text-sm">{error}</p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+        <TabsContent value="converter" className="space-y-4 mt-3">
+          {/* Symbol palette */}
+          <div className="space-y-2">
+            {Object.entries(SYMBOL_GROUPS).map(([group, symbols]) => (
+              <div key={group}>
+                <Label className="text-[10px] text-muted-foreground mb-1 block">{group}</Label>
+                <div className="flex flex-wrap gap-1">
+                  {symbols.map(s => (
+                    <button
+                      key={s.label}
+                      onClick={() => insertSymbol(s.insert)}
+                      className="h-7 px-2 rounded border border-border hover:bg-muted/50 font-mono text-xs transition-colors"
+                      title={s.insert}
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
 
-      {output && (
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base">LaTeX Output</CardTitle>
-              <Button variant="ghost" size="sm" onClick={handleCopy} className="gap-1.5">
-                {copied ? <CheckCircle2 className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
-                {copied ? "Copied!" : "Copy"}
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <pre className="text-sm font-mono bg-muted p-3 rounded-md whitespace-pre-wrap break-all">
-              {output}
-            </pre>
-            <p className="text-xs text-muted-foreground mt-2">
-              Paste this into any LaTeX editor or use with $$ delimiters in Markdown.
+          {/* Input */}
+          <div>
+            <Label className="text-xs mb-1 block">Math Expression</Label>
+            <Textarea
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              placeholder={"e.g.   (-b ± sqrt(b^2 - 4ac)) / (2a)\nor: int(0,inf) e^(-x^2) dx\nor: sum(k=1,n) 1/k^2"}
+              className="font-mono text-sm min-h-20"
+            />
+            <p className="text-[10px] text-muted-foreground mt-1">
+              Use: <code>sqrt(x)</code>, <code>int(a,b)</code>, <code>sum(i=1,n)</code>, <code>lim(x-&gt;inf)</code>, Greek names, <code>a/b</code> for fractions
             </p>
-          </CardContent>
-        </Card>
-      )}
+          </div>
 
-      <Button
-        onClick={handleConvert}
-        disabled={!input.trim() || isConverting}
-        className="w-full gap-2"
-      >
-        {isConverting ? (
-          <><Loader2 className="h-4 w-4 animate-spin" /> Converting...</>
-        ) : (
-          <><Sigma className="h-4 w-4" /> Convert to LaTeX</>
-        )}
-      </Button>
+          <Button onClick={convert} className="gap-2">
+            <Sigma className="h-4 w-4" /> Convert to LaTeX
+          </Button>
+
+          {/* Output */}
+          {output && (
+            <div className="space-y-3">
+              {[
+                { id: "raw",     label: "Raw LaTeX",    value: output.latex },
+                { id: "inline",  label: "Inline $...$", value: output.inline },
+                { id: "display", label: "Display $$...", value: output.display },
+              ].map(({ id, label, value }) => (
+                <Card key={id}>
+                  <CardContent className="pt-3 pb-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <Label className="text-xs">{label}</Label>
+                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyText(value, id)}>
+                        {copied === id ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+                      </Button>
+                    </div>
+                    <code className="block bg-muted rounded px-3 py-2 text-sm font-mono whitespace-pre-wrap break-all">
+                      {value}
+                    </code>
+                  </CardContent>
+                </Card>
+              ))}
+
+              {/* Quick links */}
+              <div className="flex gap-2 flex-wrap text-xs">
+                <a
+                  href={`https://www.overleaf.com/learn/latex/Mathematical_expressions`}
+                  target="_blank" rel="noopener noreferrer"
+                  className="text-primary hover:underline"
+                >
+                  Open in Overleaf Docs ↗
+                </a>
+                <span className="text-muted-foreground">•</span>
+                <a
+                  href={`https://latexeditor.lagrida.com/`}
+                  target="_blank" rel="noopener noreferrer"
+                  className="text-primary hover:underline"
+                >
+                  LaTeX Live Preview ↗
+                </a>
+              </div>
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

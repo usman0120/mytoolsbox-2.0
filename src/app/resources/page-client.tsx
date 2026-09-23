@@ -1,335 +1,246 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
+import {
+  BookOpen, FileText, HelpCircle, Download, ArrowRight, Shield, Zap,
+  Clock, Globe, Lock, Smartphone, FileJson, FileImage, FileCode,
+  Calculator, Type, ExternalLink, ChevronDown, ChevronUp, Search,
+  Copy, Check, Eye, Sparkles, Filter, Code2, Terminal, Layers,
+  CheckCircle2, X
+} from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 import {
-  BookOpen,
-  FileText,
-  HelpCircle,
-  Download,
-  ArrowRight,
-  Shield,
-  Zap,
-  Clock,
-  Globe,
-  Lock,
-  Smartphone,
-  FileJson,
-  FileImage,
-  FileCode,
-  Calculator,
-  Type,
-  ExternalLink,
-  ChevronDown,
-  ChevronUp,
-} from "lucide-react";
-
-const GUIDES = [
-  {
-    title: "Getting Started with MyToolsBox",
-    description: "Learn how to use the platform effectively for your daily tasks. Covers navigation, favorites, history, and keyboard shortcuts.",
-    readTime: "5 min read",
-    icon: Zap,
-    slug: "getting-started",
-    gradient: "from-amber-500/10 to-orange-500/10",
-    iconColor: "text-amber-600 dark:text-amber-400",
-  },
-  {
-    title: "PDF Tools: Complete Guide",
-    description: "Master merging, splitting, compressing, and converting PDFs. Learn when to use each tool and tips for best results.",
-    readTime: "8 min read",
-    icon: FileText,
-    slug: "pdf-tools-guide",
-    gradient: "from-red-500/10 to-rose-500/10",
-    iconColor: "text-red-600 dark:text-red-400",
-  },
-  {
-    title: "Image Processing 101",
-    description: "Compress, resize, crop, and convert images without quality loss. Understand format differences and optimization strategies.",
-    readTime: "6 min read",
-    icon: FileImage,
-    slug: "image-processing-101",
-    gradient: "from-green-500/10 to-emerald-500/10",
-    iconColor: "text-green-600 dark:text-green-400",
-  },
-  {
-    title: "Developer Tools Overview",
-    description: "JSON formatting, Base64 encoding, URL encoding, regex testing, and diff checking — all in your browser.",
-    readTime: "7 min read",
-    icon: FileCode,
-    slug: "developer-tools-overview",
-    gradient: "from-blue-500/10 to-cyan-500/10",
-    iconColor: "text-blue-600 dark:text-blue-400",
-  },
-  {
-    title: "Calculator Tools Guide",
-    description: "Percentage, age, BMI, loan, and unit conversion calculators explained with real-world examples.",
-    readTime: "5 min read",
-    icon: Calculator,
-    slug: "calculator-tools-guide",
-    gradient: "from-violet-500/10 to-purple-500/10",
-    iconColor: "text-violet-600 dark:text-violet-400",
-  },
-  {
-    title: "Writing & Text Tools",
-    description: "Word counting, case conversion, text cleaning, and lorem ipsum generation for writers and editors.",
-    readTime: "4 min read",
-    icon: Type,
-    slug: "writing-tools-guide",
-    gradient: "from-teal-500/10 to-cyan-500/10",
-    iconColor: "text-teal-600 dark:text-teal-400",
-  },
-];
-
-const TEMPLATES = [
-  {
-    title: "Project Proposal Template",
-    description: "Professional project proposal document structure with executive summary, timeline, and budget sections.",
-    format: "DOCX",
-    icon: FileText,
-    gradient: "from-blue-500/10 to-indigo-500/10",
-    iconColor: "text-blue-600 dark:text-blue-400",
-  },
-  {
-    title: "Meeting Notes Template",
-    description: "Structured meeting notes with attendees, agenda, discussion points, and action items.",
-    format: "MD",
-    icon: FileText,
-    gradient: "from-emerald-500/10 to-teal-500/10",
-    iconColor: "text-emerald-600 dark:text-emerald-400",
-  },
-  {
-    title: "Budget Calculator Spreadsheet",
-    description: "Monthly budget tracking template with income, expenses, savings goals, and auto-calculating formulas.",
-    format: "CSV",
-    icon: Calculator,
-    gradient: "from-amber-500/10 to-orange-500/10",
-    iconColor: "text-amber-600 dark:text-amber-400",
-  },
-  {
-    title: "Code Review Checklist",
-    description: "Comprehensive code review checklist covering functionality, readability, security, and performance.",
-    format: "MD",
-    icon: FileCode,
-    gradient: "from-violet-500/10 to-purple-500/10",
-    iconColor: "text-violet-600 dark:text-violet-400",
-  },
-  {
-    title: "Weekly Planner Template",
-    description: "Plan your week with time blocks, priorities, and goals. Printable and digital-friendly.",
-    format: "PDF",
-    icon: FileText,
-    gradient: "from-rose-500/10 to-pink-500/10",
-    iconColor: "text-rose-600 dark:text-rose-400",
-  },
-  {
-    title: "Personal SWOT Analysis",
-    description: "Strengths, Weaknesses, Opportunities, and Threats analysis template for personal development.",
-    format: "DOCX",
-    icon: FileText,
-    gradient: "from-teal-500/10 to-green-500/10",
-    iconColor: "text-teal-600 dark:text-teal-400",
-  },
-];
-
-const FAQS = [
-  {
-    question: "Are my files uploaded to a server?",
-    answer:
-      "No. All tools process files locally in your browser using Web APIs. Your data never leaves your device. We don't have access to your files.",
-    icon: Shield,
-  },
-  {
-    question: "Is MyToolsBox really free?",
-    answer:
-      "Yes! All core tools are free forever with no usage limits. We may offer optional premium features in the future, but the essentials will always remain free.",
-    icon: Zap,
-  },
-  {
-    question: "Do I need an account?",
-    answer:
-      "No account is needed for any tool. Signing in is optional and gives you access to favorites, history sync, and personalized recommendations.",
-    icon: Lock,
-  },
-  {
-    question: "Which browsers are supported?",
-    answer:
-      "MyToolsBox works on all modern browsers: Chrome 90+, Firefox 90+, Safari 15+, and Edge 90+. Mobile browsers are also supported.",
-    icon: Globe,
-  },
-  {
-    question: "Is there a file size limit?",
-    answer:
-      "Since processing happens in your browser, limits depend on your device's memory. Most tools handle files up to 100MB smoothly. For very large files, consider splitting them first.",
-    icon: FileJson,
-  },
-  {
-    question: "Can I use MyToolsBox offline?",
-    answer:
-      "Yes! Once the page loads, most tools work offline since all processing is client-side. You can even install it as a PWA on supported browsers.",
-    icon: Smartphone,
-  },
-  {
-    question: "How is my privacy protected?",
-    answer:
-      "We don't track individual usage, don't store your files, and don't use third-party analytics. Your data stays on your device. Read our privacy policy for details.",
-    icon: Shield,
-  },
-  {
-    question: "How often are new tools added?",
-    answer:
-      "We regularly add new tools and improve existing ones based on user feedback. Check the changelog or follow us for updates.",
-    icon: Clock,
-  },
-];
-
-function FaqItem({ faq, i }: { faq: (typeof FAQS)[0]; i: number }) {
-  const [isOpen, setIsOpen] = useState(false);
-
-  return (
-    <Card
-      className="border-border/50 hover:border-primary/20 transition-colors animate-fade-in-up overflow-hidden"
-      style={{ animationDelay: `${i * 60}ms` }}
-    >
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full p-5 flex items-start gap-4 text-left"
-      >
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-linear-to-br from-rose-500/10 to-pink-500/10 ring-1 ring-rose-500/20 shrink-0">
-          <faq.icon className="h-5 w-5 text-rose-600 dark:text-rose-400" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between gap-2">
-            <h3 className="font-medium text-sm">{faq.question}</h3>
-            {isOpen ? (
-              <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0" />
-            ) : (
-              <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
-            )}
-          </div>
-          {isOpen && (
-            <p className="text-sm text-muted-foreground mt-3 leading-relaxed animate-fade-in-up">
-              {faq.answer}
-            </p>
-          )}
-        </div>
-      </button>
-    </Card>
-  );
-}
+  RESOURCE_GUIDES,
+  RESOURCE_TEMPLATES,
+  CHEAT_SHEETS,
+  RESOURCE_FAQS,
+  searchResources,
+  type ResourceGuide,
+  type ResourceTemplate,
+  type CheatSheetItem,
+  type ResourceFaq,
+} from "@/features/resources/resources-data";
+import { createDocxBlob } from "@/lib/documents/openxml-builder";
 
 export function ResourcesPageClient() {
   const [activeTab, setActiveTab] = useState("guides");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+
+  // Template preview modal state
+  const [previewTemplate, setPreviewTemplate] = useState<ResourceTemplate | null>(null);
+
+  // Guide quick-read modal state
+  const [previewGuide, setPreviewGuide] = useState<ResourceGuide | null>(null);
+
+  // Cheat Sheet category filter
+  const [cheatCategory, setCheatCategory] = useState<string>("all");
+
+  // FAQ accordion state
+  const [openFaqId, setOpenFaqId] = useState<string | null>(null);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+
+  // Filtered resources
+  const searchResults = useMemo(() => {
+    return searchResources(searchQuery);
+  }, [searchQuery]);
+
+  const filteredGuides = useMemo(() => {
+    return searchResults.guides.filter((g) =>
+      selectedCategory === "all" ? true : g.category === selectedCategory
+    );
+  }, [searchResults.guides, selectedCategory]);
+
+  const filteredTemplates = useMemo(() => {
+    return searchResults.templates.filter((t) =>
+      selectedCategory === "all" ? true : t.category === selectedCategory
+    );
+  }, [searchResults.templates, selectedCategory]);
+
+  const filteredCheatSheets = useMemo(() => {
+    return searchResults.cheatSheets.filter((c) =>
+      cheatCategory === "all" ? true : c.category === cheatCategory
+    );
+  }, [searchResults.cheatSheets, cheatCategory]);
+
+  const handleCopyText = async (text: string, key: string) => {
+    await navigator.clipboard.writeText(text);
+    setCopiedKey(key);
+    toast.success("Copied to clipboard!");
+    setTimeout(() => setCopiedKey(null), 1500);
+  };
+
+  const handleDownloadTemplate = async (template: ResourceTemplate) => {
+    try {
+      let blob: Blob;
+
+      if (template.format === "DOCX") {
+        const lines = template.content.split("\n");
+        const paragraphs = lines.map((l) => {
+          if (l.startsWith("# ")) return { text: l.replace("# ", ""), isHeading: true, fontSize: 32 };
+          if (l.startsWith("## ")) return { text: l.replace("## ", ""), isHeading: true, fontSize: 26 };
+          if (l.startsWith("### ")) return { text: l.replace("### ", ""), isHeading: true, fontSize: 22 };
+          return { text: l };
+        });
+        blob = await createDocxBlob(paragraphs, template.title);
+      } else if (template.format === "CSV") {
+        blob = new Blob([template.content], { type: "text/csv;charset=utf-8;" });
+      } else if (template.format === "JSON") {
+        blob = new Blob([template.content], { type: "application/json;charset=utf-8;" });
+      } else {
+        blob = new Blob([template.content], { type: "text/plain;charset=utf-8;" });
+      }
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = template.filename;
+      link.click();
+      URL.revokeObjectURL(url);
+      toast.success(`Downloaded ${template.filename}!`);
+    } catch {
+      toast.error("Failed to download template.");
+    }
+  };
 
   return (
-    <div className="container mx-auto px-4 py-10">
-      {/* Header */}
-      <div className="mb-10 animate-fade-in-up">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-linear-to-br from-rose-500/10 to-pink-500/10 ring-1 ring-rose-500/20 shadow-sm">
-            <BookOpen className="h-6 w-6 text-rose-600 dark:text-rose-400" />
+    <div className="container mx-auto px-4 py-8 max-w-6xl">
+      {/* Page Header */}
+      <div className="mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-linear-to-br from-rose-500/10 to-pink-500/10 ring-1 ring-rose-500/20 shadow-xs shrink-0">
+              <BookOpen className="h-6 w-6 text-rose-600 dark:text-rose-400" />
+            </div>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
+                Resources & Knowledge Hub
+              </h1>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+                In-depth guides, downloadable production templates, developer cheat sheets, and FAQs
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Resources</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              Guides, templates, and FAQs to help you get the most out of MyToolsBox
-            </p>
+
+          {/* Search bar */}
+          <div className="relative w-full sm:w-72">
+            <Search className="h-3.5 w-3.5 absolute left-3 top-3 text-muted-foreground" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search guides, templates, syntax..."
+              className="h-9 text-xs pl-8 pr-8"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
           </div>
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v ?? "")} className="w-full">
-        <TabsList className="mb-8 rounded-xl p-1 bg-muted/50 w-full justify-start overflow-x-auto">
-          <TabsTrigger value="guides" className="rounded-lg data-[state=active]:shadow-sm gap-1.5">
+      {/* Main Tabs Navigation */}
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v ?? "guides")} className="w-full">
+        <TabsList className="mb-6 rounded-xl p-1 bg-muted/60 w-full justify-start overflow-x-auto">
+          <TabsTrigger value="guides" className="rounded-lg text-xs gap-1.5 data-[state=active]:shadow-xs">
             <BookOpen className="h-3.5 w-3.5" />
-            Guides
+            Guides & Tutorials ({filteredGuides.length})
           </TabsTrigger>
-          <TabsTrigger value="templates" className="rounded-lg data-[state=active]:shadow-sm gap-1.5">
+          <TabsTrigger value="templates" className="rounded-lg text-xs gap-1.5 data-[state=active]:shadow-xs">
             <Download className="h-3.5 w-3.5" />
-            Templates
+            Templates ({filteredTemplates.length})
           </TabsTrigger>
-          <TabsTrigger value="faqs" className="rounded-lg data-[state=active]:shadow-sm gap-1.5">
+          <TabsTrigger value="cheatsheets" className="rounded-lg text-xs gap-1.5 data-[state=active]:shadow-xs">
+            <Code2 className="h-3.5 w-3.5" />
+            Cheat Sheets ({CHEAT_SHEETS.length})
+          </TabsTrigger>
+          <TabsTrigger value="faqs" className="rounded-lg text-xs gap-1.5 data-[state=active]:shadow-xs">
             <HelpCircle className="h-3.5 w-3.5" />
-            FAQs
+            FAQs ({RESOURCE_FAQS.length})
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="guides">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {GUIDES.map((guide, i) => (
-              <Link key={guide.slug} href={`/resources/${guide.slug}`}>
-                <Card
-                  className="group card-lift border-border/50 hover:border-primary/30 overflow-hidden animate-fade-in-up"
-                  style={{ animationDelay: `${i * 60}ms` }}
-                >
-                  <CardContent className="p-5">
-                    <div className="flex items-start gap-4">
-                      <div
-                        className={`flex h-12 w-12 items-center justify-center rounded-xl bg-linear-to-br ${guide.gradient} ring-1 ring-border/50 group-hover:scale-110 transition-transform shrink-0`}
-                      >
-                        <guide.icon className={`h-6 w-6 ${guide.iconColor}`} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-semibold text-sm group-hover:text-primary transition-colors">
-                            {guide.title}
-                          </h3>
-                        </div>
-                        <p className="text-xs text-muted-foreground leading-relaxed mb-2">
-                          {guide.description}
-                        </p>
-                        <Badge variant="secondary" className="text-[10px] rounded-full">
-                          {guide.readTime}
-                        </Badge>
-                      </div>
-                      <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-all shrink-0 mt-1" />
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
+        {/* ------------------------------------------------------------- */}
+        {/* Tab 1: Guides & Tutorials */}
+        {/* ------------------------------------------------------------- */}
+        <TabsContent value="guides" className="space-y-6">
+          {/* Category Chips */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+            {[
+              { id: "all", label: "All Categories" },
+              { id: "getting-started", label: "Getting Started" },
+              { id: "multimedia", label: "Multimedia" },
+              { id: "developer", label: "Developer" },
+              { id: "productivity", label: "Productivity" },
+              { id: "security", label: "Security" },
+            ].map((cat) => (
+              <Button
+                key={cat.id}
+                variant={selectedCategory === cat.id ? "default" : "outline"}
+                size="sm"
+                className="h-7 text-xs rounded-full px-3 shrink-0"
+                onClick={() => setSelectedCategory(cat.id)}
+              >
+                {cat.label}
+              </Button>
             ))}
           </div>
-        </TabsContent>
 
-        <TabsContent value="templates">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {TEMPLATES.map((template, i) => (
+            {filteredGuides.map((guide) => (
               <Card
-                key={template.title}
-                className="group card-lift border-border/50 hover:border-primary/30 overflow-hidden animate-fade-in-up"
-                style={{ animationDelay: `${i * 60}ms` }}
+                key={guide.slug}
+                className="border shadow-xs hover:border-primary/40 transition-all hover:scale-[1.01] flex flex-col justify-between"
               >
-                <CardContent className="p-5">
+                <CardContent className="p-5 space-y-4">
                   <div className="flex items-start gap-4">
-                    <div
-                      className={`flex h-12 w-12 items-center justify-center rounded-xl bg-linear-to-br ${template.gradient} ring-1 ring-border/50 group-hover:scale-110 transition-transform shrink-0`}
-                    >
-                      <template.icon className={`h-6 w-6 ${template.iconColor}`} />
+                    <div className={`flex h-12 w-12 items-center justify-center rounded-xl bg-linear-to-br ${guide.gradient} ring-1 ring-border/50 shrink-0`}>
+                      <BookOpen className={`h-6 w-6 ${guide.iconColor}`} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold text-sm group-hover:text-primary transition-colors">
-                          {template.title}
-                        </h3>
-                        <Badge variant="outline" className="text-[10px] h-4 px-1.5 rounded-full">
-                          {template.format}
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <Badge variant="outline" className="text-[10px] capitalize px-1.5 h-4">
+                          {guide.category.replace("-", " ")}
                         </Badge>
+                        <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                          <Clock className="h-3 w-3" /> {guide.readTime}
+                        </span>
                       </div>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        {template.description}
+                      <h3 className="font-bold text-sm text-foreground hover:text-primary transition-colors">
+                        {guide.title}
+                      </h3>
+                      <p className="text-xs text-muted-foreground line-clamp-2 mt-1 leading-relaxed">
+                        {guide.description}
                       </p>
                     </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2 border-t text-xs">
                     <Button
                       variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 rounded-lg opacity-0 group-hover:opacity-100 transition-all shrink-0"
+                      size="sm"
+                      className="h-7 text-xs gap-1"
+                      onClick={() => setPreviewGuide(guide)}
                     >
-                      <Download className="h-4 w-4" />
+                      <Eye className="h-3.5 w-3.5" /> Quick Preview
                     </Button>
+                    <Link
+                      href={`/resources/${guide.slug}`}
+                      className="inline-flex items-center font-medium text-primary hover:underline text-xs gap-1"
+                    >
+                      Read Full Guide <ArrowRight className="h-3.5 w-3.5" />
+                    </Link>
                   </div>
                 </CardContent>
               </Card>
@@ -337,14 +248,341 @@ export function ResourcesPageClient() {
           </div>
         </TabsContent>
 
-        <TabsContent value="faqs">
-          <div className="max-w-3xl space-y-3">
-            {FAQS.map((faq, i) => (
-              <FaqItem key={faq.question} faq={faq} i={i} />
+        {/* ------------------------------------------------------------- */}
+        {/* Tab 2: Downloadable & Interactive Templates */}
+        {/* ------------------------------------------------------------- */}
+        <TabsContent value="templates" className="space-y-6">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+            {[
+              { id: "all", label: "All Formats" },
+              { id: "business", label: "Business & Proposals" },
+              { id: "productivity", label: "Productivity & Planners" },
+              { id: "developer", label: "Developer Specs" },
+              { id: "finance", label: "Finance & Spreadsheets" },
+            ].map((cat) => (
+              <Button
+                key={cat.id}
+                variant={selectedCategory === cat.id ? "default" : "outline"}
+                size="sm"
+                className="h-7 text-xs rounded-full px-3 shrink-0"
+                onClick={() => setSelectedCategory(cat.id)}
+              >
+                {cat.label}
+              </Button>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {filteredTemplates.map((template) => (
+              <Card
+                key={template.id}
+                className="border shadow-xs hover:border-primary/40 transition-all flex flex-col justify-between"
+              >
+                <CardContent className="p-5 space-y-4">
+                  <div className="flex items-start gap-4">
+                    <div className={`flex h-12 w-12 items-center justify-center rounded-xl bg-linear-to-br ${template.gradient} ring-1 ring-border/50 shrink-0`}>
+                      <FileText className={`h-6 w-6 ${template.iconColor}`} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <Badge variant="secondary" className="text-[10px] font-mono h-4 px-1.5">
+                          {template.format}
+                        </Badge>
+                        <span className="text-[10px] text-muted-foreground capitalize">
+                          {template.category}
+                        </span>
+                      </div>
+                      <h3 className="font-bold text-sm text-foreground">
+                        {template.title}
+                      </h3>
+                      <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                        {template.description}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t text-xs">
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 text-xs gap-1"
+                        onClick={() => setPreviewTemplate(template)}
+                      >
+                        <Eye className="h-3 w-3" /> Preview
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs gap-1"
+                        onClick={() => handleCopyText(template.content, template.id)}
+                      >
+                        {copiedKey === template.id ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3" />}
+                        Copy
+                      </Button>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      {template.toolIntegration && (
+                        <Link href={`/tools/${template.toolIntegration.toolSlug}`}>
+                          <Button variant="ghost" size="sm" className="h-7 text-[11px] text-primary gap-1">
+                            <ExternalLink className="h-3 w-3" /> {template.toolIntegration.toolName}
+                          </Button>
+                        </Link>
+                      )}
+                      <Button
+                        size="sm"
+                        className="h-7 text-xs gap-1 font-semibold"
+                        onClick={() => handleDownloadTemplate(template)}
+                      >
+                        <Download className="h-3 w-3" /> Download .{template.format.toLowerCase()}
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
         </TabsContent>
+
+        {/* ------------------------------------------------------------- */}
+        {/* Tab 3: Interactive Cheat Sheets & References */}
+        {/* ------------------------------------------------------------- */}
+        <TabsContent value="cheatsheets" className="space-y-6">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+            {[
+              { id: "all", label: "All References" },
+              { id: "regex", label: "Regular Expressions" },
+              { id: "http", label: "HTTP Status Codes" },
+              { id: "markdown", label: "Markdown Syntax" },
+              { id: "mime", label: "MIME Content Types" },
+              { id: "git", label: "Git Commands" },
+            ].map((cat) => (
+              <Button
+                key={cat.id}
+                variant={cheatCategory === cat.id ? "default" : "outline"}
+                size="sm"
+                className="h-7 text-xs rounded-full px-3 shrink-0"
+                onClick={() => setCheatCategory(cat.id)}
+              >
+                {cat.label}
+              </Button>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {filteredCheatSheets.map((item) => (
+              <Card key={item.id} className="border shadow-xs hover:border-primary/40 transition-colors">
+                <CardContent className="p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-xs text-foreground">{item.title}</span>
+                      {item.badge && (
+                        <Badge variant="outline" className="text-[9px] px-1 h-4">
+                          {item.badge}
+                        </Badge>
+                      )}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6"
+                      onClick={() => handleCopyText(item.syntax, item.id)}
+                    >
+                      {copiedKey === item.id ? (
+                        <Check className="h-3 w-3 text-green-500" />
+                      ) : (
+                        <Copy className="h-3 w-3" />
+                      )}
+                    </Button>
+                  </div>
+
+                  <div className="p-2 rounded bg-muted/40 font-mono text-xs text-foreground break-all select-all">
+                    {item.syntax}
+                  </div>
+
+                  <p className="text-[11px] text-muted-foreground leading-snug">
+                    {item.explanation}
+                  </p>
+
+                  {item.example && (
+                    <div className="text-[10px] text-muted-foreground font-mono pt-1 border-t">
+                      Example: <span className="text-foreground">{item.example}</span>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </TabsContent>
+
+        {/* ------------------------------------------------------------- */}
+        {/* Tab 4: Interactive FAQs */}
+        {/* ------------------------------------------------------------- */}
+        <TabsContent value="faqs" className="space-y-4">
+          <div className="max-w-3xl space-y-2.5">
+            {searchResults.faqs.map((faq) => {
+              const isOpen = openFaqId === faq.id;
+              return (
+                <Card key={faq.id} className="border shadow-xs overflow-hidden transition-all">
+                  <button
+                    onClick={() => setOpenFaqId(isOpen ? null : faq.id)}
+                    className="w-full p-4 flex items-start gap-3.5 text-left hover:bg-muted/20 transition-colors"
+                  >
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0 mt-0.5">
+                      <HelpCircle className="h-4 w-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <h3 className="font-semibold text-xs sm:text-sm text-foreground">{faq.question}</h3>
+                        {isOpen ? (
+                          <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+                        )}
+                      </div>
+                      {isOpen && (
+                        <div className="pt-2 text-xs text-muted-foreground leading-relaxed animate-fade-in-up">
+                          <p>{faq.answer}</p>
+                          {faq.relatedToolSlug && (
+                            <div className="mt-3 pt-2 border-t flex items-center gap-2">
+                              <span className="text-[10px]">Related tool:</span>
+                              <Link
+                                href={`/tools/${faq.relatedToolSlug}`}
+                                className="text-[11px] font-semibold text-primary hover:underline flex items-center gap-1"
+                              >
+                                Launch {faq.relatedToolSlug} <ArrowRight className="h-2.5 w-2.5" />
+                              </Link>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                </Card>
+              );
+            })}
+          </div>
+        </TabsContent>
       </Tabs>
+
+      {/* ------------------------------------------------------------- */}
+      {/* Template Preview Modal */}
+      {/* ------------------------------------------------------------- */}
+      {previewTemplate && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <Card className="w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl bg-card border">
+            <div className="p-4 border-b flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-sm">{previewTemplate.title}</h3>
+                <p className="text-[11px] text-muted-foreground">{previewTemplate.filename}</p>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setPreviewTemplate(null)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <div className="p-4 flex-1 overflow-y-auto">
+              <pre className="font-mono text-xs p-3 rounded-lg bg-muted/40 text-foreground whitespace-pre-wrap break-all">
+                {previewTemplate.content}
+              </pre>
+            </div>
+
+            <div className="p-4 border-t flex items-center justify-between bg-muted/20">
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs gap-1"
+                onClick={() => handleCopyText(previewTemplate.content, "modal-copy")}
+              >
+                {copiedKey === "modal-copy" ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3" />}
+                Copy Content
+              </Button>
+              <Button
+                size="sm"
+                className="text-xs gap-1"
+                onClick={() => handleDownloadTemplate(previewTemplate)}
+              >
+                <Download className="h-3.5 w-3.5" /> Download .{previewTemplate.format.toLowerCase()}
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* ------------------------------------------------------------- */}
+      {/* Guide Quick-Read Modal */}
+      {/* ------------------------------------------------------------- */}
+      {previewGuide && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <Card className="w-full max-w-3xl max-h-[85vh] flex flex-col shadow-2xl bg-card border">
+            <div className="p-4 border-b flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" className="capitalize text-[10px]">
+                  {previewGuide.category}
+                </Badge>
+                <h3 className="font-bold text-sm">{previewGuide.title}</h3>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setPreviewGuide(null)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <div className="p-5 flex-1 overflow-y-auto space-y-4">
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                {previewGuide.description}
+              </p>
+
+              <div className="p-3.5 rounded-lg border bg-primary/5 space-y-2">
+                <span className="text-xs font-semibold text-primary flex items-center gap-1.5">
+                  <Sparkles className="h-3.5 w-3.5" /> Key Takeaways
+                </span>
+                <ul className="space-y-1 text-xs text-foreground/90">
+                  {previewGuide.takeaways.map((t, i) => (
+                    <li key={i} className="flex items-start gap-1.5">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                      <span>{t}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {previewGuide.sections.map((sec, i) => (
+                <div key={i} className="space-y-1.5 pt-2">
+                  <h4 className="font-bold text-xs text-foreground">{sec.title}</h4>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{sec.content}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="p-4 border-t flex items-center justify-between bg-muted/20">
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs"
+                onClick={() => setPreviewGuide(null)}
+              >
+                Close
+              </Button>
+              <Link href={`/resources/${previewGuide.slug}`}>
+                <Button size="sm" className="text-xs gap-1">
+                  Open Dedicated Page <ArrowRight className="h-3.5 w-3.5" />
+                </Button>
+              </Link>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

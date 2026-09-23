@@ -1,6 +1,40 @@
 import { ProcessingResult } from "@/lib/processing/types";
 
-export function convertColor(input: string): ProcessingResult {
+export interface ColorData {
+  hex: string;
+  hexAlpha: string;
+  rgb: string;
+  rgba: string;
+  hsl: string;
+  hsla: string;
+  hsv: string;
+  cmyk: string;
+  raw: {
+    r: number;
+    g: number;
+    b: number;
+    a: number;
+    h: number;
+    s: number;
+    l: number;
+  };
+  codeSnippets: {
+    cssVar: string;
+    tailwind: string;
+    flutter: string;
+    swiftUI: string;
+    android: string;
+  };
+  harmonies: {
+    complementary: string;
+    analogous: [string, string];
+    triadic: [string, string];
+    tints: string[];
+    shades: string[];
+  };
+}
+
+export function convertColor(input: string): ProcessingResult & { data?: ColorData } {
   if (!input.trim()) {
     return { status: "error", error: "Please enter a color value." };
   }
@@ -8,13 +42,18 @@ export function convertColor(input: string): ProcessingResult {
   const trimmed = input.trim();
   let r = 0, g = 0, b = 0, a = 1;
 
-  // Hex
+  // Hex (#rgb, #rrggbb, #rrggbbaa)
   if (trimmed.startsWith("#")) {
     const hex = trimmed.slice(1);
     if (hex.length === 3) {
       r = parseInt(hex[0] + hex[0], 16);
       g = parseInt(hex[1] + hex[1], 16);
       b = parseInt(hex[2] + hex[2], 16);
+    } else if (hex.length === 4) {
+      r = parseInt(hex[0] + hex[0], 16);
+      g = parseInt(hex[1] + hex[1], 16);
+      b = parseInt(hex[2] + hex[2], 16);
+      a = Math.round((parseInt(hex[3] + hex[3], 16) / 255) * 100) / 100;
     } else if (hex.length === 6) {
       r = parseInt(hex.slice(0, 2), 16);
       g = parseInt(hex.slice(2, 4), 16);
@@ -25,68 +64,108 @@ export function convertColor(input: string): ProcessingResult {
       b = parseInt(hex.slice(4, 6), 16);
       a = Math.round((parseInt(hex.slice(6, 8), 16) / 255) * 100) / 100;
     } else {
-      return { status: "error", error: "Invalid hex color. Use #RGB, #RRGGBB, or #RRGGBBAA." };
+      return { status: "error", error: "Invalid hex color format." };
     }
   }
-  // RGB/RGBA
+  // RGB / RGBA
   else if (trimmed.startsWith("rgb")) {
-    const match = trimmed.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
+    const match = trimmed.match(/rgba?\((\d+)[,\s]+(\d+)[,\s]+(\d+)(?:[,\s/]+([\d.]+))?\)/);
     if (!match) {
       return { status: "error", error: "Invalid RGB format. Use rgb(r, g, b) or rgba(r, g, b, a)." };
     }
-    r = parseInt(match[1]);
-    g = parseInt(match[2]);
-    b = parseInt(match[3]);
-    a = match[4] ? parseFloat(match[4]) : 1;
+    r = Math.min(255, parseInt(match[1]));
+    g = Math.min(255, parseInt(match[2]));
+    b = Math.min(255, parseInt(match[3]));
+    a = match[4] ? Math.min(1, Math.max(0, parseFloat(match[4]))) : 1;
   }
-  // HSL
+  // HSL / HSLA
   else if (trimmed.startsWith("hsl")) {
-    const match = trimmed.match(/hsla?\((\d+),\s*(\d+)%,\s*(\d+)%(?:,\s*([\d.]+))?\)/);
+    const match = trimmed.match(/hsla?\((\d+)[,\s]+(\d+)%?[,\s]+(\d+)%?(?:[,\s/]+([\d.]+))?\)/);
     if (!match) {
-      return { status: "error", error: "Invalid HSL format. Use hsl(h, s%, l%) or hsla(h, s%, l%, a)." };
+      return { status: "error", error: "Invalid HSL format. Use hsl(h, s%, l%)." };
     }
     const h = parseInt(match[1]) / 360;
     const s = parseInt(match[2]) / 100;
     const l = parseInt(match[3]) / 100;
-    a = match[4] ? parseFloat(match[4]) : 1;
+    a = match[4] ? Math.min(1, Math.max(0, parseFloat(match[4]))) : 1;
     const rgb = hslToRgb(h, s, l);
     r = rgb[0];
     g = rgb[1];
     b = rgb[2];
   }
-  // Named colors
+  // Named CSS colors
   else {
     const named = NAMED_COLORS[trimmed.toLowerCase()];
     if (!named) {
-      return { status: "error", error: "Unrecognized color. Use hex (#fff), rgb(), hsl(), or a named color." };
+      return { status: "error", error: `Unrecognized color "${trimmed}". Try hex (#3b82f6) or named color.` };
     }
     r = named[0];
     g = named[1];
     b = named[2];
   }
 
+  if (isNaN(r) || isNaN(g) || isNaN(b)) {
+    return { status: "error", error: "Invalid numeric color channels." };
+  }
+
   const hex = `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+  const hexAlpha = a < 1 ? `${hex}${toHex(Math.round(a * 255))}` : hex;
   const hsl = rgbToHsl(r, g, b);
+  const hsv = rgbToHsv(r, g, b);
   const cmyk = rgbToCmyk(r, g, b);
+
+  // Harmonies
+  const complementary = hslToHex((hsl[0] + 180) % 360, hsl[1], hsl[2]);
+  const analogous: [string, string] = [
+    hslToHex((hsl[0] + 330) % 360, hsl[1], hsl[2]),
+    hslToHex((hsl[0] + 30) % 360, hsl[1], hsl[2]),
+  ];
+  const triadic: [string, string] = [
+    hslToHex((hsl[0] + 120) % 360, hsl[1], hsl[2]),
+    hslToHex((hsl[0] + 240) % 360, hsl[1], hsl[2]),
+  ];
+
+  // Tints (lighter) & Shades (darker)
+  const tints = [85, 70, 55].map((l) => hslToHex(hsl[0], hsl[1], l));
+  const shades = [40, 25, 10].map((l) => hslToHex(hsl[0], hsl[1], l));
+
+  // Code snippets
+  const hexUpperNoHash = hex.slice(1).toUpperCase();
+  const codeSnippets = {
+    cssVar: `--color-primary: ${hex};`,
+    tailwind: `bg-[${hex}] text-[${hex}] border-[${hex}]`,
+    flutter: `Color(0xFF${hexUpperNoHash})`,
+    swiftUI: `Color(red: ${(r / 255).toFixed(2)}, green: ${(g / 255).toFixed(2)}, blue: ${(b / 255).toFixed(2)})`,
+    android: `Color.parseColor("${hex.toUpperCase()}")`,
+  };
 
   return {
     status: "success",
     message: hex,
     data: {
       hex,
-      hexAlpha: a < 1 ? `${hex}${toHex(Math.round(a * 255))}` : hex,
+      hexAlpha,
       rgb: `rgb(${r}, ${g}, ${b})`,
       rgba: `rgba(${r}, ${g}, ${b}, ${a})`,
-      hsl: `hsl(${hsl[0]}°, ${hsl[1]}%, ${hsl[2]}%)`,
-      hsla: `hsla(${hsl[0]}°, ${hsl[1]}%, ${hsl[2]}%, ${a})`,
+      hsl: `hsl(${hsl[0]}, ${hsl[1]}%, ${hsl[2]}%)`,
+      hsla: `hsla(${hsl[0]}, ${hsl[1]}%, ${hsl[2]}%, ${a})`,
+      hsv: `hsv(${hsv[0]}, ${hsv[1]}%, ${hsv[2]}%)`,
       cmyk: `cmyk(${cmyk[0]}%, ${cmyk[1]}%, ${cmyk[2]}%, ${cmyk[3]}%)`,
-      preview: hex,
+      raw: { r, g, b, a, h: hsl[0], s: hsl[1], l: hsl[2] },
+      codeSnippets,
+      harmonies: {
+        complementary,
+        analogous,
+        triadic,
+        tints,
+        shades,
+      },
     },
   };
 }
 
 function toHex(n: number): string {
-  return n.toString(16).padStart(2, "0");
+  return Math.max(0, Math.min(255, Math.round(n))).toString(16).padStart(2, "0");
 }
 
 function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
@@ -130,6 +209,30 @@ function hslToRgb(h: number, s: number, l: number): [number, number, number] {
   return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
 }
 
+function hslToHex(h: number, s: number, l: number): string {
+  const rgb = hslToRgb(h / 360, s / 100, l / 100);
+  return `#${toHex(rgb[0])}${toHex(rgb[1])}${toHex(rgb[2])}`;
+}
+
+function rgbToHsv(r: number, g: number, b: number): [number, number, number] {
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  const d = max - min;
+  let h = 0;
+  const s = max === 0 ? 0 : d / max;
+  const v = max;
+
+  if (max !== min) {
+    switch (max) {
+      case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+      case g: h = ((b - r) / d + 2) / 6; break;
+      case b: h = ((r - g) / d + 4) / 6; break;
+    }
+  }
+
+  return [Math.round(h * 360), Math.round(s * 100), Math.round(v * 100)];
+}
+
 function rgbToCmyk(r: number, g: number, b: number): [number, number, number, number] {
   let c = 1 - (r / 255);
   let m = 1 - (g / 255);
@@ -147,52 +250,14 @@ function rgbToCmyk(r: number, g: number, b: number): [number, number, number, nu
 }
 
 const NAMED_COLORS: Record<string, [number, number, number]> = {
-  aliceblue: [240, 248, 255], antiquewhite: [250, 235, 215], aqua: [0, 255, 255],
-  aquamarine: [127, 255, 212], azure: [240, 255, 255], beige: [245, 245, 220],
-  bisque: [255, 228, 196], black: [0, 0, 0], blanchedalmond: [255, 235, 205],
-  blue: [0, 0, 255], blueviolet: [138, 43, 226], brown: [165, 42, 42],
-  burlywood: [222, 184, 135], cadetblue: [95, 158, 160], chartreuse: [127, 255, 0],
-  chocolate: [210, 105, 30], coral: [255, 127, 80], cornflowerblue: [100, 149, 237],
-  cornsilk: [255, 248, 220], crimson: [220, 20, 60], cyan: [0, 255, 255],
-  darkblue: [0, 0, 139], darkcyan: [0, 139, 139], darkgoldenrod: [184, 134, 11],
-  darkgray: [169, 169, 169], darkgreen: [0, 100, 0], darkgrey: [169, 169, 169],
-  darkkhaki: [189, 183, 107], darkmagenta: [139, 0, 139], darkolivegreen: [85, 107, 47],
-  darkorange: [255, 140, 0], darkorchid: [153, 50, 204], darkred: [139, 0, 0],
-  darksalmon: [233, 150, 122], darkseagreen: [143, 188, 143], darkslateblue: [72, 61, 139],
-  darkslategray: [47, 79, 79], darkturquoise: [0, 206, 209], darkviolet: [148, 0, 211],
-  deeppink: [255, 20, 147], deepskyblue: [0, 191, 255], dimgray: [105, 105, 105],
-  dodgerblue: [30, 144, 255], firebrick: [178, 34, 34], floralwhite: [255, 250, 240],
-  forestgreen: [34, 139, 34], fuchsia: [255, 0, 255], gainsboro: [220, 220, 220],
-  ghostwhite: [248, 248, 255], gold: [255, 215, 0], goldenrod: [218, 165, 32],
-  gray: [128, 128, 128], green: [0, 128, 0], greenyellow: [173, 255, 47],
-  honeydew: [240, 255, 240], hotpink: [255, 105, 180], indianred: [205, 92, 92],
-  indigo: [75, 0, 130], ivory: [255, 255, 240], khaki: [240, 230, 140],
-  lavender: [230, 230, 250], lavenderblush: [255, 240, 245], lawngreen: [124, 252, 0],
-  lemonchiffon: [255, 250, 205], lightblue: [173, 216, 230], lightcoral: [240, 128, 128],
-  lightcyan: [224, 255, 255], lightgoldenrodyellow: [250, 250, 210], lightgray: [211, 211, 211],
-  lightgreen: [144, 238, 144], lightgrey: [211, 211, 211], lightpink: [255, 182, 193],
-  lightsalmon: [255, 160, 122], lightseagreen: [32, 178, 170], lightskyblue: [135, 206, 250],
-  lightslategray: [119, 136, 153], lightsteelblue: [176, 196, 222], lightyellow: [255, 255, 224],
-  lime: [0, 255, 0], limegreen: [50, 205, 50], linen: [250, 240, 230],
-  magenta: [255, 0, 255], maroon: [128, 0, 0], mediumaquamarine: [102, 205, 170],
-  mediumblue: [0, 0, 205], mediumorchid: [186, 85, 211], mediumpurple: [147, 112, 219],
-  mediumseagreen: [60, 179, 113], mediumslateblue: [123, 104, 238], mediumspringgreen: [0, 250, 154],
-  mediumturquoise: [72, 209, 204], mediumvioletred: [199, 21, 133], midnightblue: [25, 25, 112],
-  mintcream: [245, 255, 250], mistyrose: [255, 228, 225], moccasin: [255, 228, 181],
-  navajowhite: [255, 222, 173], navy: [0, 0, 128], oldlace: [253, 245, 230],
-  olive: [128, 128, 0], olivedrab: [107, 142, 35], orange: [255, 165, 0],
-  orangered: [255, 69, 0], orchid: [218, 112, 214], palegoldenrod: [238, 232, 170],
-  palegreen: [152, 251, 152], paleturquoise: [175, 238, 238], palevioletred: [219, 112, 147],
-  papayawhip: [255, 239, 213], peachpuff: [255, 218, 185], peru: [205, 133, 63],
-  pink: [255, 192, 203], plum: [221, 160, 221], powderblue: [176, 224, 230],
-  purple: [128, 0, 128], rebeccapurple: [102, 51, 153], red: [255, 0, 0],
-  rosybrown: [188, 143, 143], royalblue: [65, 105, 225], saddlebrown: [139, 69, 19],
-  salmon: [250, 128, 114], sandybrown: [244, 164, 96], seagreen: [46, 139, 87],
-  seashell: [255, 245, 238], sienna: [160, 82, 45], silver: [192, 192, 192],
-  skyblue: [135, 206, 235], slateblue: [106, 90, 205], slategray: [112, 128, 144],
-  snow: [255, 250, 250], springgreen: [0, 255, 127], steelblue: [70, 130, 180],
-  tan: [210, 180, 140], teal: [0, 128, 128], thistle: [216, 191, 216],
-  tomato: [255, 99, 71], turquoise: [64, 224, 208], violet: [238, 130, 238],
-  wheat: [245, 222, 179], white: [255, 255, 255], whitesmoke: [245, 245, 245],
-  yellow: [255, 255, 0], yellowgreen: [154, 205, 50],
+  black: [0, 0, 0], white: [255, 255, 255], red: [255, 0, 0], green: [0, 128, 0],
+  blue: [0, 0, 255], yellow: [255, 255, 0], cyan: [0, 255, 255], magenta: [255, 0, 255],
+  gray: [128, 128, 128], purple: [128, 0, 128], orange: [255, 165, 0], pink: [255, 192, 203],
+  teal: [0, 128, 128], indigo: [75, 0, 130], violet: [238, 130, 238], brown: [165, 42, 42],
+  gold: [255, 215, 0], silver: [192, 192, 192], navy: [0, 0, 128], lime: [0, 255, 0],
+  coral: [255, 127, 80], salmon: [250, 128, 114], crimson: [220, 20, 60], khaki: [240, 230, 140],
+  plum: [221, 160, 221], orchid: [218, 112, 214], turquoise: [64, 224, 208], skyblue: [135, 206, 235],
+  royalblue: [65, 105, 225], steelblue: [70, 130, 180], slateblue: [106, 90, 205],
+  darkred: [139, 0, 0], darkgreen: [0, 100, 0], darkblue: [0, 0, 139], darkcyan: [0, 139, 139],
+  darkgray: [169, 169, 169], lightgray: [211, 211, 211], ivory: [255, 255, 240], beige: [245, 245, 220],
 };

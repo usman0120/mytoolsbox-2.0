@@ -1,233 +1,340 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import {
-  Mic, Upload, Loader2, Copy, CheckCircle2, XCircle,
-  FileAudio, Play, Square,
+  Mic,
+  MicOff,
+  Copy,
+  CheckCircle2,
+  Trash2,
+  Download,
+  Volume2,
+  Globe,
+  Radio,
 } from "lucide-react";
+
+interface SpeechRecognitionEvent {
+  resultIndex: number;
+  results: {
+    length: number;
+    [index: number]: {
+      isFinal: boolean;
+      [index: number]: { transcript: string; confidence: number };
+    };
+  };
+}
+
+interface SpeechRecognitionErrorEvent {
+  error: string;
+  message?: string;
+}
+
+interface ISpeechRecognition extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  start: () => void;
+  stop: () => void;
+  abort: () => void;
+  onresult: ((event: SpeechRecognitionEvent) => void) | null;
+  onerror: ((event: SpeechRecognitionErrorEvent) => void) | null;
+  onend: (() => void) | null;
+}
+
+const LANGUAGES = [
+  { code: "en-US", label: "English (United States)" },
+  { code: "en-GB", label: "English (United Kingdom)" },
+  { code: "es-ES", label: "Spanish (Spain)" },
+  { code: "es-MX", label: "Spanish (Mexico)" },
+  { code: "fr-FR", label: "French (France)" },
+  { code: "de-DE", label: "German (Germany)" },
+  { code: "zh-CN", label: "Chinese (Mandarin Simplified)" },
+  { code: "ja-JP", label: "Japanese" },
+  { code: "ar-SA", label: "Arabic (Saudi Arabia)" },
+  { code: "ur-PK", label: "Urdu (Pakistan)" },
+  { code: "hi-IN", label: "Hindi (India)" },
+  { code: "pt-BR", label: "Portuguese (Brazil)" },
+];
 
 export function SpeechToTextEngine() {
   const [text, setText] = useState("");
-  const [isRecording, setIsRecording] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [interimText, setInterimText] = useState("");
+  const [isListening, setIsListening] = useState(false);
+  const [selectedLang, setSelectedLang] = useState("en-US");
+  const [isSupported, setIsSupported] = useState(true);
   const [copied, setCopied] = useState(false);
-  const [audioFile, setAudioFile] = useState<File | null>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const processAudio = useCallback(async (file: File) => {
-    setIsProcessing(true);
-    setError(null);
+  const recognitionRef = useRef<ISpeechRecognition | null>(null);
 
-    try {
-      // Use Web Speech API for recognition
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const win = window as unknown as { SpeechRecognition?: new () => any; webkitSpeechRecognition?: new () => any };
-      const SpeechRecognitionAPI = win.SpeechRecognition || win.webkitSpeechRecognition;
+  useEffect(() => {
+    // Check Web Speech API support
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const win = window as any;
+    const SpeechClass = win.SpeechRecognition || win.webkitSpeechRecognition;
 
-      if (!SpeechRecognitionAPI) {
-        // Fallback: provide a message about browser support
-        setText(
-          "Speech recognition is not supported in this browser. " +
-          "Please use Chrome or Edge for the best experience, or try uploading a smaller audio file.\n\n" +
-          "Audio file received: " + file.name + " (" + (file.size / 1024).toFixed(1) + " KB)"
-        );
-        toast.success("Audio file processed. Note: Full transcription requires Chrome/Edge.");
-        setIsProcessing(false);
-        return;
-      }
-
-      // For live recording, we can try to use the SpeechRecognition API
-      // However, it only works with live audio, not files
-      // So we provide a helpful message
-      setText(
-        "Audio file received: " + file.name + " (" + (file.size / 1024).toFixed(1) + " KB)\n\n" +
-        "For best speech-to-text results:\n" +
-        "1. Use the 'Record' button to capture live audio\n" +
-        "2. Or use Chrome/Edge's built-in dictation feature\n" +
-        "3. For file transcription, consider using a dedicated transcription service\n\n" +
-        "Tip: Click 'Record' and speak clearly for real-time transcription."
-      );
-      toast.success("Audio file loaded. Use Record for live transcription.");
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Processing failed";
-      setError(message);
-      toast.error("Processing failed: " + message);
-    } finally {
-      setIsProcessing(false);
+    if (!SpeechClass) {
+      setIsSupported(false);
     }
   }, []);
 
-  const startRecording = useCallback(async () => {
-    try {
-      setError(null);
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? "audio/webm;codecs=opus" : "audio/webm",
-      });
+  const startListening = useCallback(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const win = window as any;
+    const SpeechClass = win.SpeechRecognition || win.webkitSpeechRecognition;
 
-      chunksRef.current = [];
-      mediaRecorder.ondataavailable = (e) => chunksRef.current.push(e.data);
-      mediaRecorder.onstop = async () => {
-        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
-        const file = new File([blob], "recording.webm", { type: "audio/webm" });
-        setAudioFile(file);
-        stream.getTracks().forEach((t) => t.stop());
-        await processAudio(file);
-      };
-
-      mediaRecorder.start();
-      mediaRecorderRef.current = mediaRecorder;
-      setIsRecording(true);
-      toast.success("Recording started...");
-    } catch (err) {
-      setError("Microphone access denied. Please allow microphone access or upload an audio file instead.");
-      toast.error("Microphone access denied");
-    }
-  }, [processAudio]);
-
-  const stopRecording = useCallback(() => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-      toast.success("Recording stopped. Processing...");
-    }
-  }, []);
-
-  const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setError(null);
-
-    const validTypes = ["audio/mpeg", "audio/wav", "audio/webm", "audio/ogg", "audio/mp4"];
-    if (!validTypes.includes(file.type) && !file.name.match(/\.(mp3|wav|webm|ogg|m4a)$/i)) {
-      setError("Please select a valid audio file (MP3, WAV, WebM, OGG, M4A).");
+    if (!SpeechClass) {
+      toast.error("Web Speech API is not supported in this browser. Please use Chrome, Edge, or Safari.");
       return;
     }
 
-    setAudioFile(file);
-    await processAudio(file);
-  }, [processAudio]);
+    try {
+      const recognition = new SpeechClass() as ISpeechRecognition;
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = selectedLang;
+
+      recognition.onresult = (event: SpeechRecognitionEvent) => {
+        let interim = "";
+        let finalChunk = "";
+
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const res = event.results[i];
+          const transcript = res[0].transcript;
+          if (res.isFinal) {
+            finalChunk += transcript + " ";
+          } else {
+            interim += transcript;
+          }
+        }
+
+        if (finalChunk) {
+          setText((prev) => (prev ? prev + " " + finalChunk.trim() : finalChunk.trim()));
+          setInterimText("");
+        } else {
+          setInterimText(interim);
+        }
+      };
+
+      recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+        if (event.error === "no-speech") return;
+        toast.error(`Recognition error: ${event.error}`);
+        setIsListening(false);
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+        setInterimText("");
+      };
+
+      recognition.start();
+      recognitionRef.current = recognition;
+      setIsListening(true);
+      toast.success("Microphone listening... Speak clearly.");
+    } catch (err) {
+      toast.error("Could not start microphone listener. Check browser permissions.");
+      setIsListening(false);
+    }
+  }, [selectedLang]);
+
+  const stopListening = useCallback(() => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
+    }
+    setIsListening(false);
+    setInterimText("");
+    toast.info("Microphone stopped.");
+  }, []);
 
   const handleCopy = useCallback(async () => {
-    await navigator.clipboard.writeText(text);
+    const full = (text + (interimText ? " " + interimText : "")).trim();
+    if (!full) return;
+    await navigator.clipboard.writeText(full);
     setCopied(true);
-    toast.success("Copied to clipboard!");
+    toast.success("Transcript copied to clipboard!");
     setTimeout(() => setCopied(false), 2000);
-  }, [text]);
+  }, [text, interimText]);
+
+  const handleDownload = () => {
+    const full = (text + (interimText ? " " + interimText : "")).trim();
+    if (!full) return;
+    const blob = new Blob([full], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `transcript-${Date.now()}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Downloaded transcript!");
+  };
+
+  const handleClear = () => {
+    setText("");
+    setInterimText("");
+  };
+
+  const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
+  const charCount = text.length;
 
   return (
-    <div className="space-y-4">
-      <Badge variant="outline" className="gap-1.5">
-        <Mic className="h-3.5 w-3.5" /> Speech to Text
-      </Badge>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Record or Upload Audio</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Record button */}
-          <div className="flex justify-center gap-3">
-            {!isRecording ? (
-              <Button onClick={startRecording} size="lg" className="gap-2 rounded-full h-14 w-14 p-0">
-                <Mic className="h-6 w-6" />
-              </Button>
-            ) : (
-              <Button onClick={stopRecording} variant="destructive" size="lg" className="gap-2 rounded-full h-14 w-14 p-0">
-                <Square className="h-6 w-6" />
-              </Button>
-            )}
+    <div className="space-y-6">
+      {/* Control Ribbon */}
+      <div className="flex flex-wrap items-center justify-between gap-3 p-4 bg-muted/40 rounded-xl border">
+        <div className="flex items-center gap-3">
+          <Globe className="h-4 w-4 text-muted-foreground" />
+          <div className="w-56">
+            <Select
+              value={selectedLang}
+              onValueChange={(v) => {
+                if (isListening) stopListening();
+                setSelectedLang(v || "en-US");
+              }}
+            >
+              <SelectTrigger className="h-8 text-xs bg-background">
+                <SelectValue placeholder="Select language" />
+              </SelectTrigger>
+              <SelectContent>
+                {LANGUAGES.map((lang) => (
+                  <SelectItem key={lang.code} value={lang.code} className="text-xs">
+                    {lang.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-          <p className="text-center text-sm text-muted-foreground">
-            {isRecording ? "Recording... Click to stop" : "Click to start recording"}
-          </p>
+        </div>
 
-          <div className="relative text-center">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t" />
-            </div>
-            <span className="relative bg-background px-2 text-xs text-muted-foreground">OR</span>
-          </div>
+        <div className="flex items-center gap-2">
+          {isListening ? (
+            <Badge className="bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20 gap-1.5 animate-pulse text-xs">
+              <Radio className="h-3 w-3 text-rose-500" /> Live Dictation Active
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="text-xs text-muted-foreground">
+              Ready to Dictate
+            </Badge>
+          )}
+        </div>
+      </div>
 
-          {/* File upload */}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="audio/*,.mp3,.wav,.webm,.ogg,.m4a"
-            onChange={handleFileUpload}
-            className="hidden"
-          />
+      {!isSupported && (
+        <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs text-amber-700 dark:text-amber-300">
+          ⚠️ Note: Direct browser speech recognition is supported in Google Chrome, Microsoft Edge, and Safari.
+        </div>
+      )}
+
+      {/* Main Microphone Button & Waveform Box */}
+      <div className="flex flex-col items-center justify-center p-8 rounded-2xl border bg-card shadow-xs text-center space-y-4">
+        <div className="relative">
+          {isListening && (
+            <span className="absolute -inset-2 rounded-full bg-rose-500/20 animate-ping" />
+          )}
           <Button
-            variant="outline"
-            onClick={() => fileInputRef.current?.click()}
-            className="w-full gap-2"
+            onClick={isListening ? stopListening : startListening}
+            size="lg"
+            variant={isListening ? "destructive" : "default"}
+            className="rounded-full h-20 w-20 shadow-md relative z-10 transition-transform active:scale-95"
           >
-            <Upload className="h-4 w-4" />
-            Upload Audio File
+            {isListening ? <MicOff className="h-8 w-8" /> : <Mic className="h-8 w-8" />}
           </Button>
-        </CardContent>
-      </Card>
+        </div>
 
-      {audioFile && (
-        <Card>
-          <CardContent className="py-3">
-            <div className="flex items-center gap-2">
-              <FileAudio className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm">{audioFile.name}</span>
-              <span className="text-xs text-muted-foreground">
-                ({(audioFile.size / 1024).toFixed(1)} KB)
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+        <div>
+          <h3 className="font-semibold text-base">
+            {isListening ? "Listening to your voice..." : "Click to Start Speaking"}
+          </h3>
+          <p className="text-xs text-muted-foreground mt-1">
+            {isListening
+              ? "Speak into your microphone. Transcribed words will stream in real-time."
+              : "Continuous speech-to-text dictation with automatic sentence punctuation."}
+          </p>
+        </div>
 
-      {isProcessing && (
-        <Card>
-          <CardContent className="py-4">
-            <div className="flex items-center gap-2">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span className="text-sm">Processing audio...</span>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+        {isListening && (
+          <div className="flex items-center gap-1 h-6">
+            <span className="w-1 h-3 bg-rose-500 rounded-full animate-pulse" />
+            <span className="w-1 h-6 bg-rose-500 rounded-full animate-pulse delay-75" />
+            <span className="w-1 h-4 bg-rose-500 rounded-full animate-pulse delay-150" />
+            <span className="w-1 h-8 bg-rose-500 rounded-full animate-pulse delay-100" />
+            <span className="w-1 h-5 bg-rose-500 rounded-full animate-pulse delay-200" />
+          </div>
+        )}
+      </div>
 
-      {error && (
-        <Card className="border-destructive/50 bg-destructive/5">
-          <CardContent className="py-3">
-            <div className="flex items-center gap-2 text-destructive">
-              <XCircle className="h-4 w-4" />
-              <p className="text-sm">{error}</p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* Live Transcript Card */}
+      <div className="rounded-xl border bg-card p-5 shadow-xs space-y-3">
+        <div className="flex items-center justify-between pb-3 border-b">
+          <div className="flex items-center gap-2">
+            <Volume2 className="h-4 w-4 text-primary" />
+            <span className="text-sm font-semibold">Real-Time Transcription</span>
+            <span className="text-xs text-muted-foreground font-mono ml-2">
+              {wordCount} words • {charCount} characters
+            </span>
+          </div>
 
-      {text && (
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base">Transcription</CardTitle>
-              <Button variant="ghost" size="sm" onClick={handleCopy} className="gap-1.5">
-                {copied ? <CheckCircle2 className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
-                {copied ? "Copied!" : "Copy"}
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm whitespace-pre-wrap">{text}</p>
-          </CardContent>
-        </Card>
-      )}
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleCopy}
+              disabled={!text && !interimText}
+              className="gap-1 h-8 text-xs"
+            >
+              {copied ? (
+                <>
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> Copied
+                </>
+              ) : (
+                <>
+                  <Copy className="h-3.5 w-3.5" /> Copy
+                </>
+              )}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDownload}
+              disabled={!text && !interimText}
+              className="gap-1 h-8 text-xs"
+            >
+              <Download className="h-3.5 w-3.5" /> Download .txt
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleClear}
+              disabled={!text && !interimText}
+              className="gap-1 h-8 text-xs text-muted-foreground hover:text-destructive"
+            >
+              <Trash2 className="h-3.5 w-3.5" /> Clear
+            </Button>
+          </div>
+        </div>
+
+        <Textarea
+          value={text + (interimText ? (text ? " " : "") + interimText : "")}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="Your speech transcript will be typed here live as you speak..."
+          className="min-h-52 font-mono text-sm leading-relaxed resize-y bg-muted/20"
+        />
+        {interimText && (
+          <p className="text-xs text-primary font-mono animate-pulse">
+            Listening: &ldquo;{interimText}&rdquo;
+          </p>
+        )}
+      </div>
     </div>
   );
 }

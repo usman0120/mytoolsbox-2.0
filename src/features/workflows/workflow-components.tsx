@@ -30,7 +30,7 @@ export function WorkflowCard({ workflow, className, onClick }: WorkflowCardProps
   return (
     <Card
       className={cn(
-        "card-lift cursor-pointer h-full border-border/60 hover:border-brand/25 transition-all duration-200",
+        "card-lift cursor-pointer h-full border-border/60 hover:border-brand/25 transition-all duration-200 group",
         className
       )}
       onClick={onClick}
@@ -258,7 +258,7 @@ interface WorkflowDetailProps {
   className?: string;
 }
 
-export function WorkflowDetail({ workflow, onStart, className }: WorkflowDetailProps) {
+export function WorkflowDetail({ workflow, className }: WorkflowDetailProps) {
   const IconComponent = (Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[workflow.icon] || Icons.Workflow;
 
   return (

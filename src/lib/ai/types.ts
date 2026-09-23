@@ -1,4 +1,4 @@
-export type AIProvider = "openai" | "gemini" | "groq" | "claude";
+export type AIProvider = "openai" | "gemini" | "groq" | "claude" | "deepseek" | "mistral" | (string & {});
 
 export type AIModelTier = "cheap" | "reasoning" | "vision" | "image";
 

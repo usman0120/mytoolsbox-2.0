@@ -1,18 +1,20 @@
 import { ProcessingResult } from "@/lib/processing/types";
 
-export type RotationAngle = 90 | 180 | 270;
-export type FlipDirection = "horizontal" | "vertical" | "both";
+export type RotationAngle = number; // arbitrary degrees, e.g. -180 to 180
+export type FlipDirection = "none" | "horizontal" | "vertical" | "both";
 
-interface RotateOptions {
-  angle?: RotationAngle;
+export interface RotateOptions {
+  angle?: number;
   flip?: FlipDirection;
+  backgroundColor?: string;
+  format?: "image/png" | "image/jpeg" | "image/webp";
 }
 
 export async function rotateImage(
   file: File,
   options: RotateOptions = {}
 ): Promise<ProcessingResult> {
-  const { angle = 90, flip } = options;
+  const { angle = 0, flip = "none", backgroundColor = "transparent", format } = options;
 
   if (!file.type.startsWith("image/")) {
     return { status: "unsupported", error: "Selected file is not an image." };
@@ -31,37 +33,56 @@ export async function rotateImage(
     };
 
     img.onload = () => {
-      let canvasWidth = img.width;
-      let canvasHeight = img.height;
+      const rad = (angle * Math.PI) / 180;
+      const absCos = Math.abs(Math.cos(rad));
+      const absSin = Math.abs(Math.sin(rad));
 
-      // Swap dimensions for 90/270 rotations
-      if (angle === 90 || angle === 270) {
-        [canvasWidth, canvasHeight] = [canvasHeight, canvasWidth];
-      }
+      // Calculate new bounding canvas dimensions for any arbitrary rotation
+      const newWidth = Math.round(img.width * absCos + img.height * absSin);
+      const newHeight = Math.round(img.width * absSin + img.height * absCos);
 
       const canvas = document.createElement("canvas");
-      canvas.width = canvasWidth;
-      canvas.height = canvasHeight;
-      const ctx = canvas.getContext("2d");
+      canvas.width = newWidth;
+      canvas.height = newHeight;
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
 
       if (!ctx) {
-        resolve({ status: "error", error: "Unable to process image." });
+        resolve({ status: "error", error: "Unable to initialize canvas context." });
         return;
       }
 
-      // Move origin to center, rotate, then draw
-      ctx.translate(canvasWidth / 2, canvasHeight / 2);
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+
+      // Fill background if specified and not transparent
+      if (backgroundColor && backgroundColor !== "transparent") {
+        ctx.fillStyle = backgroundColor;
+        ctx.fillRect(0, 0, newWidth, newHeight);
+      }
+
+      // Move origin to canvas center
+      ctx.translate(newWidth / 2, newHeight / 2);
 
       // Apply rotation
-      const radians = (angle * Math.PI) / 180;
-      ctx.rotate(radians);
+      ctx.rotate(rad);
 
       // Apply flip
-      if (flip === "horizontal") ctx.scale(-1, 1);
-      else if (flip === "vertical") ctx.scale(1, -1);
-      else if (flip === "both") ctx.scale(-1, -1);
+      const scaleX = flip === "horizontal" || flip === "both" ? -1 : 1;
+      const scaleY = flip === "vertical" || flip === "both" ? -1 : 1;
+      ctx.scale(scaleX, scaleY);
 
+      // Draw image centered
       ctx.drawImage(img, -img.width / 2, -img.height / 2);
+
+      let targetMime = format;
+      if (!targetMime) {
+        targetMime = file.type === "image/png" ? "image/png" : "image/jpeg";
+      }
+
+      // If background is transparent, ensure PNG or WebP
+      if (backgroundColor === "transparent" && targetMime === "image/jpeg") {
+        targetMime = "image/png";
+      }
 
       canvas.toBlob(
         (blob) => {
@@ -72,17 +93,23 @@ export async function rotateImage(
 
           const url = URL.createObjectURL(blob);
           const originalName = file.name.replace(/\.[^.]+$/, "");
-          const ext = file.type === "image/png" ? "png" : "jpg";
+          const ext = targetMime === "image/png" ? "png" : targetMime === "image/webp" ? "webp" : "jpg";
+          const downloadName = `${originalName}_rotated.${ext}`;
 
           resolve({
             status: "success",
             outputBlob: blob,
             outputUrl: url,
-            message: `Image rotated ${angle}°${flip ? ` and flipped ${flip}` : ""} (${canvasWidth}×${canvasHeight})`,
-            data: { downloadName: `${originalName}_rotated.${ext}`, width: canvasWidth, height: canvasHeight },
+            message: `Rotated ${angle}°${flip !== "none" ? ` (flipped ${flip})` : ""} (${newWidth}×${newHeight}px)`,
+            data: {
+              downloadName,
+              width: newWidth,
+              height: newHeight,
+              size: blob.size,
+            },
           });
         },
-        file.type || "image/png",
+        targetMime,
         0.95
       );
     };

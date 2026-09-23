@@ -1,10 +1,10 @@
 import { AIProviderAdapter, AIRequest, AIResponse } from "../types";
 
 const GEMINI_MODELS: Record<string, string> = {
-  cheap: "gemini-2.0-flash",
-  reasoning: "gemini-2.0-pro",
-  vision: "gemini-2.0-flash",
-  image: "gemini-2.0-flash-exp-image",
+  cheap: "gemini-3-flash-preview",
+  reasoning: "gemini-3.1-pro-preview",
+  vision: "gemini-3-flash-preview",
+  image: "gemini-3-flash-preview",
 };
 
 export function createGeminiAdapter(): AIProviderAdapter {

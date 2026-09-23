@@ -1,353 +1,398 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Card } from "@/components/ui/card";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { useAuth } from "@/lib/auth/auth-context";
+import { useChatStore } from "./chat-store";
+import { ChatSidebar } from "./components/chat-sidebar";
+import { ChatHeader } from "./components/chat-header";
+import { ChatMessages } from "./components/chat-messages";
+import { ChatInput } from "./components/chat-input";
+import { SignInDialog } from "@/components/auth/signin-dialog";
+import { completeViaServer } from "@/lib/ai";
+import { AI_PERSONAS } from "./prompt-library-data";
 import { toast } from "sonner";
-import { Send, Loader2, Bot, User, Trash2, Sparkles, Coins } from "lucide-react";
-import { completeViaServer, getAvailableProviders } from "@/lib/ai";
-import type { AIProvider, AIResponse } from "@/lib/ai";
+import type { ChatMessage, ChatConversation } from "./types";
+import type { AIProvider } from "@/lib/ai";
 
-interface Message {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  provider?: AIProvider;
-  model?: string;
-  usage?: AIResponse["usage"];
+interface AIChatProps {
+  onOpenPromptLibrary?: () => void;
 }
 
-const PROVIDER_LABELS: Record<AIProvider, string> = {
-  openai: "OpenAI",
-  gemini: "Gemini",
-  groq: "Groq",
-  claude: "Claude",
-};
+export function AIChat({ onOpenPromptLibrary }: AIChatProps) {
+  const { user } = useAuth();
+  const {
+    conversations,
+    activeConversationId,
+    setActiveConversation,
+    addConversation,
+    getActiveConversation,
+    toggleSidebar,
+    addMessage,
+    updateMessage,
+    setMessageFeedback,
+    selectedProvider,
+    setProvider,
+    selectedModel,
+    activePersonaId,
+    setActivePersonaId,
+    updateConversation,
+    pendingPrompt,
+    setPendingPrompt,
+    isStreaming,
+    setStreaming,
+  } = useChatStore();
 
-const PROVIDER_COLORS: Record<AIProvider, string> = {
-  openai:
-    "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
-  gemini:
-    "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
-  groq: "bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20",
-  claude:
-    "bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20",
-};
-
-export function AIChat() {
-  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [provider, setProvider] = useState<AIProvider | "auto">("auto");
   const [creditsRemaining, setCreditsRemaining] = useState<number | null>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const [availableProviders, setAvailableProviders] = useState<string[]>([]);
+  const [showSignInDialog, setShowSignInDialog] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
-  const availableProviders = getAvailableProviders();
-  const hasAnyProvider = availableProviders.length > 0;
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
-  // Fetch credit balance on mount
+  // Fetch initial credits & available providers on mount
   useEffect(() => {
     let cancelled = false;
+
+    // Check credits
     const fetchCredits = async () => {
       try {
         const res = await fetch("/api/ai/credits");
         if (res.ok) {
           const data = await res.json();
-          if (!cancelled) setCreditsRemaining(data.remaining);
+          if (!cancelled && data.remaining !== undefined) {
+            setCreditsRemaining(data.remaining);
+          }
         }
       } catch {
-        // Silently fail — credits display is non-critical
+        // Silently ignore if not signed in or offline
       }
     };
-    fetchCredits();
-    return () => { cancelled = true; };
-  }, []);
 
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages]);
-
-  const handleSend = async () => {
-    const trimmed = input.trim();
-    if (!trimmed || isLoading) return;
-
-    const userMessage: Message = {
-      id: crypto.randomUUID(),
-      role: "user",
-      content: trimmed,
+    // Check available providers from server health endpoint
+    const fetchProviders = async () => {
+      try {
+        const res = await fetch("/api/ai");
+        if (res.ok) {
+          const data = await res.json();
+          if (!cancelled && Array.isArray(data.providers)) {
+            setAvailableProviders(data.providers);
+          }
+        }
+      } catch {
+        // Fallback
+      }
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    fetchCredits();
+    fetchProviders();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  // Handle pending prompt from prompt library or quick cards
+  useEffect(() => {
+    if (pendingPrompt) {
+      setInput(pendingPrompt);
+      setPendingPrompt(null);
+    }
+  }, [pendingPrompt, setPendingPrompt]);
+
+  // Ensure active conversation exists or initialize one if empty
+  useEffect(() => {
+    if (!activeConversationId && conversations.length > 0) {
+      setActiveConversation(conversations[0].id);
+    }
+  }, [activeConversationId, conversations, setActiveConversation]);
+
+  // Global productivity keyboard shortcuts: Ctrl/Cmd + B for sidebar
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "b") {
+        e.preventDefault();
+        toggleSidebar();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [toggleSidebar]);
+
+  const activeConv = getActiveConversation();
+  const messages = activeConv?.messages || [];
+
+  // Start a new chat
+  const handleNewChat = useCallback(() => {
+    const newId = addConversation();
     setInput("");
-    setIsLoading(true);
+    return newId;
+  }, [addConversation]);
+
+  // Send message
+  const handleSend = async () => {
+    const trimmed = input.trim();
+    if (!trimmed || isStreaming) return;
+
+    if (!user) {
+      setShowSignInDialog(true);
+      toast.info("Please sign in to chat with AI. You will receive 1,000 free credits every month!", {
+        duration: 5000,
+      });
+      return;
+    }
+
+    let convId = activeConversationId;
+    if (!convId || !activeConv) {
+      convId = handleNewChat();
+    }
+
+    const userMessage: ChatMessage = {
+      id: `msg_${Date.now()}_u`,
+      role: "user",
+      content: trimmed,
+      timestamp: Date.now(),
+    };
+
+    addMessage(convId, userMessage);
+    setInput("");
+    setStreaming(true);
+
+    const assistantMsgId = `msg_${Date.now()}_a`;
+    const initialAssistantMessage: ChatMessage = {
+      id: assistantMsgId,
+      role: "assistant",
+      content: "",
+      provider: selectedProvider,
+      model: selectedModel,
+      timestamp: Date.now(),
+      isStreaming: true,
+    };
+
+    addMessage(convId, initialAssistantMessage);
+
+    // Get persona system prompt
+    const persona =
+      AI_PERSONAS.find((p) => p.id === activePersonaId) || AI_PERSONAS[0];
+    const systemPrompt = activeConv?.systemPrompt || persona.systemPrompt;
+
+    // Build context history
+    const contextMessages = [
+      ...messages.map((m) => ({ role: m.role, content: m.content })),
+      { role: "user", content: trimmed },
+    ];
+
+    abortControllerRef.current = new AbortController();
 
     try {
+      const providerArg =
+        selectedProvider === "auto" ? undefined : (selectedProvider as AIProvider);
+
       const response = await completeViaServer({
         prompt: trimmed,
-        provider: provider === "auto" ? undefined : provider,
+        systemPrompt,
+        provider: providerArg,
         tier: "cheap",
       });
 
-      const assistantMessage: Message = {
-        id: crypto.randomUUID(),
-        role: "assistant",
+      updateMessage(convId, assistantMsgId, {
         content: response.text,
         provider: response.provider,
         model: response.model,
         usage: response.usage,
-      };
+        isStreaming: false,
+      });
 
-      setMessages((prev) => [...prev, assistantMessage]);
-
-      // Update credit display from response
       if (response.creditsRemaining !== undefined) {
         setCreditsRemaining(response.creditsRemaining);
       }
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to get AI response"
-      );
+      const errMsg =
+        error instanceof Error ? error.message : "Failed to get AI response";
+
+      // If user is guest and server returned 401/insufficient credits, offer friendly sign in
+      if (!user && (errMsg.includes("Authentication") || errMsg.includes("Sign in"))) {
+        toast.error("Please sign in to chat with AI models.", {
+          action: {
+            label: "Sign In",
+            onClick: () => setShowSignInDialog(true),
+          },
+        });
+      } else {
+        toast.error(errMsg);
+      }
+
+      updateMessage(convId, assistantMsgId, {
+        content: `⚠️ **Unable to complete response:** ${errMsg}\n\n*Please ensure your API key or account credits are valid.*`,
+        isStreaming: false,
+      });
     } finally {
-      setIsLoading(false);
+      setStreaming(false);
+      abortControllerRef.current = null;
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
+  // Regenerate last assistant response
+  const handleRegenerate = async () => {
+    if (!activeConv || messages.length === 0 || isStreaming) return;
+
+    // Find last user message
+    const lastUserIndex = [...messages]
+      .reverse()
+      .findIndex((m) => m.role === "user");
+
+    if (lastUserIndex === -1) return;
+
+    const actualIndex = messages.length - 1 - lastUserIndex;
+    const userPrompt = messages[actualIndex].content;
+
+    setStreaming(true);
+
+    const assistantMsgId = `msg_${Date.now()}_regen`;
+    const initialAssistantMessage: ChatMessage = {
+      id: assistantMsgId,
+      role: "assistant",
+      content: "",
+      provider: selectedProvider,
+      model: selectedModel,
+      timestamp: Date.now(),
+      isStreaming: true,
+    };
+
+    addMessage(activeConv.id, initialAssistantMessage);
+
+    const persona =
+      AI_PERSONAS.find((p) => p.id === activePersonaId) || AI_PERSONAS[0];
+
+    try {
+      const providerArg =
+        selectedProvider === "auto" ? undefined : (selectedProvider as AIProvider);
+
+      const response = await completeViaServer({
+        prompt: userPrompt,
+        systemPrompt: persona.systemPrompt,
+        provider: providerArg,
+        tier: "cheap",
+      });
+
+      updateMessage(activeConv.id, assistantMsgId, {
+        content: response.text,
+        provider: response.provider,
+        model: response.model,
+        usage: response.usage,
+        isStreaming: false,
+      });
+
+      if (response.creditsRemaining !== undefined) {
+        setCreditsRemaining(response.creditsRemaining);
+      }
+      toast.success("Response regenerated");
+    } catch (error) {
+      const errMsg =
+        error instanceof Error ? error.message : "Failed to regenerate";
+      toast.error(errMsg);
+      updateMessage(activeConv.id, assistantMsgId, {
+        content: `⚠️ ${errMsg}`,
+        isStreaming: false,
+      });
+    } finally {
+      setStreaming(false);
     }
   };
 
-  const clearChat = () => setMessages([]);
+  const handleStop = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    setStreaming(false);
+    toast.info("Generation stopped");
+  };
+
+  const handleFeedback = (messageId: string, feedback: "like" | "dislike") => {
+    if (!activeConv) return;
+    setMessageFeedback(activeConv.id, messageId, feedback);
+    toast.success(
+      feedback === "like"
+        ? "Thank you for the positive feedback!"
+        : "Feedback noted. We'll improve future responses."
+    );
+  };
+
+  if (!mounted) {
+    return (
+      <div className="flex h-full w-full items-center justify-center rounded-none sm:rounded-2xl md:rounded-3xl border-0 sm:border border-border/60 bg-card/40">
+        <div className="flex flex-col items-center gap-3 text-muted-foreground">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <p className="text-xs font-medium">Loading Chat Workspace...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-14rem)] max-w-3xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4 pb-3 border-b border-border/50">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-linear-to-br from-violet-500/10 to-purple-500/10 ring-1 ring-violet-500/20">
-            <Bot className="h-4 w-4 text-violet-500" />
-          </div>
-          <div>
-            <h2 className="font-semibold text-sm">AI Chat</h2>
-            {!hasAnyProvider && (
-              <p className="text-xs text-amber-600 dark:text-amber-400">
-                No API keys configured
-              </p>
-            )}
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          {creditsRemaining !== null && (
-            <Badge
-              variant="outline"
-              className={`h-8 px-2.5 rounded-lg text-xs gap-1.5 ${
-                creditsRemaining < 50
-                  ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
-                  : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
-              }`}
-            >
-              <Coins className="h-3.5 w-3.5" />
-              {creditsRemaining}
-            </Badge>
-          )}
-          <Select
-            value={provider}
-            onValueChange={(v) => setProvider(v as AIProvider | "auto")}
-          >
-            <SelectTrigger className="w-32 h-8 text-xs rounded-lg">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="auto">Auto</SelectItem>
-              {availableProviders.map((p) => (
-                <SelectItem key={p} value={p}>
-                  {PROVIDER_LABELS[p]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {messages.length > 0 && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 rounded-lg"
-              onClick={clearChat}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
-      </div>
+    <div className="flex h-full w-full border-0 sm:border sm:border-border/60 rounded-none sm:rounded-2xl md:rounded-3xl overflow-hidden bg-card/40 shadow-xl backdrop-blur-xs">
+      {/* Left Collapsible History Sidebar */}
+      <ChatSidebar
+        creditsRemaining={creditsRemaining}
+        onNewChat={handleNewChat}
+      />
 
-      {/* Messages */}
-      <ScrollArea className="flex-1 pr-4" ref={scrollRef}>
-        {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-linear-to-br from-violet-500/10 to-purple-500/10 ring-1 ring-violet-500/20">
-              <Sparkles className="h-8 w-8 text-violet-500" />
-            </div>
-            <div className="text-center">
-              <p className="text-lg font-medium mb-1">
-                Start a conversation
-              </p>
-              <p className="text-sm">
-                Ask anything — coding, writing, analysis, brainstorming
-              </p>
-            </div>
-            {!hasAnyProvider && (
-              <Card className="p-5 mt-4 max-w-md text-sm border-border/50 rounded-xl">
-                <p className="font-medium mb-3">To get started:</p>
-                <p className="mb-2">
-                  Add at least one API key to your{" "}
-                  <code className="bg-muted px-1.5 py-0.5 rounded text-xs">
-                    .env.local
-                  </code>
-                  :
-                </p>
-                <ul className="list-disc list-inside space-y-1 text-xs text-muted-foreground">
-                  <li>
-                    <code className="text-foreground">
-                      NEXT_PUBLIC_OPENAI_API_KEY
-                    </code>
-                  </li>
-                  <li>
-                    <code className="text-foreground">
-                      NEXT_PUBLIC_GEMINI_API_KEY
-                    </code>
-                  </li>
-                  <li>
-                    <code className="text-foreground">
-                      NEXT_PUBLIC_GROQ_API_KEY
-                    </code>
-                  </li>
-                  <li>
-                    <code className="text-foreground">
-                      NEXT_PUBLIC_CLAUDE_API_KEY
-                    </code>
-                  </li>
-                </ul>
-              </Card>
-            )}
-          </div>
-        ) : (
-          <div className="space-y-5 pb-4">
-            {messages.map((msg) => (
-              <div
-                key={msg.id}
-                className={`flex gap-3 ${
-                  msg.role === "user" ? "justify-end" : ""
-                }`}
-              >
-                {msg.role === "assistant" && (
-                  <Avatar className="h-8 w-8 shrink-0 ring-2 ring-violet-500/20">
-                    <AvatarFallback className="bg-linear-to-br from-violet-500/10 to-purple-500/10">
-                      <Bot className="h-4 w-4 text-violet-500" />
-                    </AvatarFallback>
-                  </Avatar>
-                )}
-                <div
-                  className={`max-w-[80%] ${
-                    msg.role === "user" ? "order-first" : ""
-                  }`}
-                >
-                  <Card
-                    className={`px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap rounded-2xl ${
-                      msg.role === "user"
-                        ? "bg-primary text-primary-foreground rounded-br-lg"
-                        : "bg-card border-border/50 rounded-bl-lg"
-                    }`}
-                  >
-                    {msg.content}
-                  </Card>
-                  {msg.provider && (
-                    <div className="flex items-center gap-2 mt-1.5 px-1">
-                      <Badge
-                        variant="outline"
-                        className={`text-[10px] h-5 px-1.5 rounded-full ${PROVIDER_COLORS[msg.provider]}`}
-                      >
-                        {PROVIDER_LABELS[msg.provider]}
-                      </Badge>
-                      {msg.model && (
-                        <span className="text-[10px] text-muted-foreground">
-                          {msg.model}
-                        </span>
-                      )}
-                      {msg.usage && (
-                        <span className="text-[10px] text-muted-foreground">
-                          {msg.usage.totalTokens} tokens
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
-                {msg.role === "user" && (
-                  <Avatar className="h-8 w-8 shrink-0 ring-2 ring-primary/20">
-                    <AvatarFallback className="bg-primary/10">
-                      <User className="h-4 w-4 text-primary" />
-                    </AvatarFallback>
-                  </Avatar>
-                )}
-              </div>
-            ))}
-            {isLoading && (
-              <div className="flex gap-3">
-                <Avatar className="h-8 w-8 shrink-0 ring-2 ring-violet-500/20">
-                  <AvatarFallback className="bg-linear-to-br from-violet-500/10 to-purple-500/10">
-                    <Bot className="h-4 w-4 text-violet-500" />
-                  </AvatarFallback>
-                </Avatar>
-                <Card className="px-4 py-3 rounded-2xl rounded-bl-lg border-border/50">
-                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                </Card>
-              </div>
-            )}
-          </div>
-        )}
-      </ScrollArea>
-
-      {/* Input */}
-      <div className="flex gap-2 pt-4 border-t border-border/50">
-        <Textarea
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={
-            hasAnyProvider
-              ? "Type a message... (Enter to send, Shift+Enter for new line)"
-              : "Configure an API key to start chatting..."
-          }
-          className="min-h-13 max-h-32 resize-none rounded-xl border-border/60 focus-visible:ring-primary/30"
-          rows={2}
-          disabled={!hasAnyProvider || isLoading}
+      {/* Main Conversation Canvas */}
+      <div className="flex-1 flex flex-col min-w-0 bg-background/50">
+        {/* Top Header */}
+        <ChatHeader
+          creditsRemaining={creditsRemaining}
+          onNewChat={handleNewChat}
+          availableProviders={availableProviders}
         />
-        <Button
-          onClick={handleSend}
-          disabled={!input.trim() || isLoading || !hasAnyProvider}
-          size="icon"
-          className="h-13 w-13 shrink-0 rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all"
-        >
-          {isLoading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Send className="h-4 w-4" />
-          )}
-        </Button>
+
+        {/* Message Stream */}
+        <ChatMessages
+          messages={messages}
+          isLoading={isStreaming}
+          onSelectPrompt={(text) => {
+            setInput(text);
+          }}
+          onRegenerate={handleRegenerate}
+          onFeedback={handleFeedback}
+          onOpenPromptLibrary={onOpenPromptLibrary}
+        />
+
+        {/* Bottom Gemini Floating Capsule Input Area */}
+        <ChatInput
+          input={input}
+          setInput={setInput}
+          isLoading={isStreaming}
+          onSend={handleSend}
+          onStop={handleStop}
+          onClear={() => setInput("")}
+          selectedProvider={selectedProvider}
+          availableProviders={availableProviders}
+          onProviderChange={(p) => {
+            setProvider(p);
+            if (activeConv) {
+              updateConversation(activeConv.id, { provider: p });
+            }
+          }}
+          activePersonaId={activePersonaId}
+          onPersonaChange={(pId) => {
+            setActivePersonaId(pId);
+            if (activeConv) {
+              updateConversation(activeConv.id, { personaId: pId });
+            }
+          }}
+          onOpenPromptLibrary={onOpenPromptLibrary}
+        />
       </div>
+
+      {/* Sign In Dialog */}
+      <SignInDialog
+        open={showSignInDialog}
+        onOpenChange={setShowSignInDialog}
+      />
     </div>
   );
 }

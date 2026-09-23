@@ -12,10 +12,11 @@ import {
   Microscope, Plus, Trash2, Copy, Download, BookOpen, Tag,
   Link2, FileText, Quote, Search, Bookmark, Star, Library,
   GraduationCap, Globe, Calendar, CheckCircle2, Circle, ExternalLink, X,
-  Loader2, Sparkles
+  Loader2, Sparkles, Coins
 } from "lucide-react";
 import { generateCitation, type CitationStyle as AICitationStyle } from "@/lib/ai/services/citation-generator";
-import { getAvailableProviders } from "@/lib/ai";
+import { useCredits } from "@/lib/credits/use-credits";
+import { toast } from "sonner";
 
 interface Source {
   id: string;
@@ -233,7 +234,7 @@ export function ResearchAssistantEngine() {
   // AI citation generation
   const [aiGenerating, setAiGenerating] = useState(false);
   const [aiGeneratedCitations, setAiGeneratedCitations] = useState<string | null>(null);
-  const hasAIProvider = getAvailableProviders().length > 0;
+  const { remaining, refresh } = useCredits();
 
   const generateAICitations = async () => {
     const citedSources = sources.filter((s) => s.cited);
@@ -244,7 +245,6 @@ export function ResearchAssistantEngine() {
     try {
       const results = await Promise.all(
         citedSources.map((source) => {
-          // Build a descriptive source string for the AI
           const parts = [
             source.author && `Author: ${source.author}`,
             source.title && `Title: ${source.title}`,
@@ -254,14 +254,17 @@ export function ResearchAssistantEngine() {
           ].filter(Boolean);
           return generateCitation({
             source: parts.join(". "),
-            style: citationStyle.id as AICitationStyle,
+            style: (citationStyle.id === "apa" || citationStyle.id === "mla" || citationStyle.id === "chicago" || citationStyle.id === "harvard") ? (citationStyle.id as AICitationStyle) : "apa",
           });
         })
       );
-      setAiGeneratedCitations(results.map((r) => r.citation).join("\n\n"));
+      setAiGeneratedCitations(results.map((r: any) => r.citation).join("\n\n"));
+      toast.success("AI citations formatted! (5 credits/source)");
+      await refresh();
     } catch {
       // Fall back to local formatter on error
       setAiGeneratedCitations(null);
+      toast.info("Using local citation formatter.");
     } finally {
       setAiGenerating(false);
     }
@@ -592,20 +595,18 @@ export function ResearchAssistantEngine() {
                     }} className="gap-1.5">
                       <Download className="h-4 w-4" /> Download
                     </Button>
-                    {hasAIProvider && (
-                      <Button
-                        variant="outline"
-                        onClick={generateAICitations}
-                        disabled={aiGenerating}
-                        className="gap-1.5 border-violet-500/30 text-violet-600 dark:text-violet-400 hover:bg-violet-500/10"
-                      >
-                        {aiGenerating ? (
-                          <><Loader2 className="h-4 w-4 animate-spin" /> Generating...</>
-                        ) : (
-                          <><Sparkles className="h-4 w-4" /> AI Generate</>
-                        )}
-                      </Button>
-                    )}
+                    <Button
+                      variant="outline"
+                      onClick={generateAICitations}
+                      disabled={aiGenerating}
+                      className="gap-1.5 border-violet-500/30 text-violet-600 dark:text-violet-400 hover:bg-violet-500/10"
+                    >
+                      {aiGenerating ? (
+                        <><Loader2 className="h-4 w-4 animate-spin" /> Generating...</>
+                      ) : (
+                        <><Sparkles className="h-4 w-4" /> AI Generate <span className="text-[11px] opacity-80 flex items-center gap-0.5"><Coins className="h-3 w-3 text-amber-500" /> 5 credits/source {remaining !== undefined && remaining > 0 ? `(${remaining} left)` : ""}</span></>
+                      )}
+                    </Button>
                     {aiGeneratedCitations && (
                       <Button
                         variant="ghost"

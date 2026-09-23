@@ -8,10 +8,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Code2, Copy, Check, Trash2, Loader2, Sparkles,
-  Lightbulb, BookOpen, GraduationCap, User, ChevronRight,
+  Lightbulb, BookOpen, GraduationCap, User, ChevronRight, Coins,
 } from "lucide-react";
 import { explainCode, type CodeExplainOutput } from "@/lib/ai/services/code-explainer";
-import { getAvailableProviders } from "@/lib/ai";
+import { useCredits } from "@/lib/credits/use-credits";
+import { toast } from "sonner";
 
 // ---------------------------------------------------------------------------
 // Client-side fallback – basic code analysis
@@ -96,8 +97,7 @@ export function CodeExplainerEngine() {
   const [language, setLanguage] = useState("auto");
   const [activeTab, setActiveTab] = useState("summary");
   const [error, setError] = useState<string | null>(null);
-
-  const hasAIProvider = getAvailableProviders().length > 0;
+  const { remaining, refresh } = useCredits();
 
   const handleExplain = useCallback(async () => {
     if (!input.trim()) return;
@@ -105,23 +105,21 @@ export function CodeExplainerEngine() {
     setError(null);
 
     try {
-      if (hasAIProvider) {
-        const result = await explainCode({
-          code: input.trim(),
-          language: language === "auto" ? undefined : language,
-          audience,
-        });
-        setResult(result);
-      } else {
-        setResult(basicCodeAnalysis(input.trim(), language === "auto" ? undefined : language));
-      }
+      const result = await explainCode({
+        code: input.trim(),
+        language: language === "auto" ? undefined : language,
+        audience,
+      });
+      setResult(result);
+      toast.success("Code explanation generated! (20 credits deducted)");
+      await refresh();
     } catch {
       setResult(basicCodeAnalysis(input.trim(), language === "auto" ? undefined : language));
       setError("AI service unavailable. Showing basic analysis.");
     } finally {
       setIsLoading(false);
     }
-  }, [input, language, audience, hasAIProvider]);
+  }, [input, language, audience, refresh]);
 
   const handleCopy = async (text: string) => {
     await navigator.clipboard.writeText(text);
@@ -162,11 +160,14 @@ export function CodeExplainerEngine() {
             <option key={l} value={l}>{l === "auto" ? "Auto-detect" : l === "cpp" ? "C++" : l === "csharp" ? "C#" : l.charAt(0).toUpperCase() + l.slice(1)}</option>
           ))}
         </select>
-        {hasAIProvider && (
-          <Badge className="bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20 gap-1 ml-auto">
+        <div className="flex items-center gap-1.5 ml-auto">
+          <Badge variant="outline" className="text-xs gap-1 text-muted-foreground">
+            <Coins className="h-3 w-3 text-amber-500" /> 20 credits {remaining !== undefined && remaining > 0 ? `(${remaining} left)` : ""}
+          </Badge>
+          <Badge className="bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20 gap-1">
             <Sparkles className="h-3 w-3" />AI Ready
           </Badge>
-        )}
+        </div>
       </div>
 
       {/* Input */}
@@ -184,7 +185,7 @@ export function CodeExplainerEngine() {
           {isLoading ? (
             <><Loader2 className="h-4 w-4 animate-spin" /> Explaining...</>
           ) : (
-            <><Code2 className="h-4 w-4" /> Explain {hasAIProvider ? "with AI" : "Code"}</>
+            <><Code2 className="h-4 w-4" /> Explain Code with AI</>
           )}
         </Button>
         <Button variant="outline" onClick={handleClear} disabled={!input && !result} className="gap-1.5">

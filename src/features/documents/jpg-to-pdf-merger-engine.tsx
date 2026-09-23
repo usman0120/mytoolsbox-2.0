@@ -1,10 +1,24 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { Image, Upload, Download, Loader2, AlertCircle, FileOutput, X, GripVertical } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import {
+  Image as ImageIcon,
+  Upload,
+  Download,
+  Loader2,
+  Trash2,
+  ArrowUp,
+  ArrowDown,
+  X,
+  Plus,
+  CheckCircle2,
+  ExternalLink,
+  FileText,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { PDFDocument } from "pdf-lib";
 
@@ -14,41 +28,15 @@ interface ImageFile {
   preview: string;
 }
 
-async function imageToPDFPage(file: File): Promise<Uint8Array | null> {
-  try {
-    const pdf = await PDFDocument.create();
-    const arrayBuffer = await file.arrayBuffer();
-
-    if (file.type === "image/png") {
-      const image = await pdf.embedPng(new Uint8Array(arrayBuffer));
-      const page = pdf.addPage([image.width, image.height]);
-      page.drawImage(image, { x: 0, y: 0, width: image.width, height: image.height });
-    } else if (file.type === "image/jpeg" || file.type === "image/jpg") {
-      const image = await pdf.embedJpg(new Uint8Array(arrayBuffer));
-      const page = pdf.addPage([image.width, image.height]);
-      page.drawImage(image, { x: 0, y: 0, width: image.width, height: image.height });
-    } else {
-      // Try PNG embedding for other formats
-      try {
-        const image = await pdf.embedPng(new Uint8Array(arrayBuffer));
-        const page = pdf.addPage([image.width, image.height]);
-        page.drawImage(image, { x: 0, y: 0, width: image.width, height: image.height });
-      } catch {
-        return null;
-      }
-    }
-
-    return await pdf.save();
-  } catch {
-    return null;
-  }
-}
-
 export function JPGToPDFMergerEngine() {
   const [images, setImages] = useState<ImageFile[]>([]);
-  const [isConverting, setIsConverting] = useState(false);
+  const [layoutMode, setLayoutMode] = useState<"1-per-page" | "2-per-page" | "fit">("1-per-page");
+  const [pageSize, setPageSize] = useState<"a4" | "letter">("a4");
+  const [isMerging, setIsMerging] = useState(false);
   const [convertedBlob, setConvertedBlob] = useState<Blob | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [convertedUrl, setConvertedUrl] = useState<string | null>(null);
+  const [pageCount, setPageCount] = useState<number>(0);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFilesSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -57,25 +45,21 @@ export function JPGToPDFMergerEngine() {
 
     const validFiles: ImageFile[] = [];
     for (const file of files) {
-      if (!file.type.startsWith("image/")) {
-        setError(`"${file.name}" is not a valid image file.`);
-        continue;
-      }
-      if (file.size > 20 * 1024 * 1024) {
-        setError(`"${file.name}" exceeds 20MB limit.`);
+      if (!file.type.startsWith("image/") && !/\.(jpe?g|png|webp)$/i.test(file.name)) {
         continue;
       }
       validFiles.push({
-        id: crypto.randomUUID(),
+        id: `${file.name}-${Date.now()}-${Math.random()}`,
         file,
         preview: URL.createObjectURL(file),
       });
     }
 
     if (validFiles.length > 0) {
-      setError(null);
       setImages((prev) => [...prev, ...validFiles]);
       setConvertedBlob(null);
+      setConvertedUrl(null);
+      toast.success(`Added ${validFiles.length} image(s).`);
     }
   };
 
@@ -88,163 +72,383 @@ export function JPGToPDFMergerEngine() {
     setConvertedBlob(null);
   };
 
-  const moveImage = (id: string, direction: "up" | "down") => {
+  const moveImage = (index: number, direction: -1 | 1) => {
     setImages((prev) => {
-      const idx = prev.findIndex((i) => i.id === id);
-      if (idx === -1) return prev;
-      const newIdx = direction === "up" ? idx - 1 : idx + 1;
-      if (newIdx < 0 || newIdx >= prev.length) return prev;
-      const arr = [...prev];
-      [arr[idx], arr[newIdx]] = [arr[newIdx], arr[idx]];
-      return arr;
+      const next = [...prev];
+      const target = index + direction;
+      if (target < 0 || target >= next.length) return prev;
+      [next[index], next[target]] = [next[target], next[index]];
+      return next;
     });
-    setConvertedBlob(null);
   };
 
   const handleMerge = async () => {
     if (images.length === 0) return;
-    setIsConverting(true);
-    setError(null);
+    setIsMerging(true);
 
     try {
-      // Use pdf-lib to merge all images into a single PDF
-      const mergedPdf = await PDFDocument.create();
+      const pdf = await PDFDocument.create();
+      const pageWidth = pageSize === "letter" ? 612 : 595.28;
+      const pageHeight = pageSize === "letter" ? 792 : 841.89;
+      const margin = 36; // 0.5 inch
 
-      for (const img of images) {
-        const arrayBuffer = await img.file.arrayBuffer();
-        let embeddedImage;
-
-        if (img.file.type === "image/png") {
-          embeddedImage = await mergedPdf.embedPng(new Uint8Array(arrayBuffer));
-        } else if (img.file.type === "image/jpeg" || img.file.type === "image/jpg") {
-          embeddedImage = await mergedPdf.embedJpg(new Uint8Array(arrayBuffer));
-        } else {
+      if (layoutMode === "1-per-page") {
+        for (const item of images) {
+          const ab = await item.file.arrayBuffer();
+          let embeddedImage;
           try {
-            embeddedImage = await mergedPdf.embedPng(new Uint8Array(arrayBuffer));
+            embeddedImage = await pdf.embedJpg(new Uint8Array(ab));
           } catch {
-            continue;
+            embeddedImage = await pdf.embedPng(new Uint8Array(ab));
+          }
+
+          const page = pdf.addPage([pageWidth, pageHeight]);
+          const availW = pageWidth - margin * 2;
+          const availH = pageHeight - margin * 2;
+          const scale = Math.min(availW / embeddedImage.width, availH / embeddedImage.height, 1);
+
+          const w = embeddedImage.width * scale;
+          const h = embeddedImage.height * scale;
+          const x = margin + (availW - w) / 2;
+          const y = margin + (availH - h) / 2;
+
+          page.drawImage(embeddedImage, { x, y, width: w, height: h });
+        }
+      } else if (layoutMode === "fit") {
+        // Fit each page to exact image size
+        for (const item of images) {
+          const ab = await item.file.arrayBuffer();
+          let embeddedImage;
+          try {
+            embeddedImage = await pdf.embedJpg(new Uint8Array(ab));
+          } catch {
+            embeddedImage = await pdf.embedPng(new Uint8Array(ab));
+          }
+
+          const page = pdf.addPage([embeddedImage.width, embeddedImage.height]);
+          page.drawImage(embeddedImage, {
+            x: 0,
+            y: 0,
+            width: embeddedImage.width,
+            height: embeddedImage.height,
+          });
+        }
+      } else {
+        // 2-per-page stacked vertically
+        for (let i = 0; i < images.length; i += 2) {
+          const page = pdf.addPage([pageWidth, pageHeight]);
+          const slotHeight = (pageHeight - margin * 3) / 2;
+          const availW = pageWidth - margin * 2;
+
+          // Slot 1 (top)
+          const ab1 = await images[i].file.arrayBuffer();
+          let img1;
+          try {
+            img1 = await pdf.embedJpg(new Uint8Array(ab1));
+          } catch {
+            img1 = await pdf.embedPng(new Uint8Array(ab1));
+          }
+          const scale1 = Math.min(availW / img1.width, slotHeight / img1.height, 1);
+          const w1 = img1.width * scale1;
+          const h1 = img1.height * scale1;
+          page.drawImage(img1, {
+            x: margin + (availW - w1) / 2,
+            y: pageHeight - margin - slotHeight + (slotHeight - h1) / 2,
+            width: w1,
+            height: h1,
+          });
+
+          // Slot 2 (bottom if exists)
+          if (i + 1 < images.length) {
+            const ab2 = await images[i + 1].file.arrayBuffer();
+            let img2;
+            try {
+              img2 = await pdf.embedJpg(new Uint8Array(ab2));
+            } catch {
+              img2 = await pdf.embedPng(new Uint8Array(ab2));
+            }
+            const scale2 = Math.min(availW / img2.width, slotHeight / img2.height, 1);
+            const w2 = img2.width * scale2;
+            const h2 = img2.height * scale2;
+            page.drawImage(img2, {
+              x: margin + (availW - w2) / 2,
+              y: margin + (slotHeight - h2) / 2,
+              width: w2,
+              height: h2,
+            });
           }
         }
-
-        const page = mergedPdf.addPage([embeddedImage.width, embeddedImage.height]);
-        page.drawImage(embeddedImage, {
-          x: 0, y: 0,
-          width: embeddedImage.width,
-          height: embeddedImage.height,
-        });
       }
 
-      if (mergedPdf.getPageCount() === 0) {
-        setError("Could not process any of the selected images.");
-        return;
-      }
+      const total = pdf.getPageCount();
+      setPageCount(total);
 
-      const pdfBytes = await mergedPdf.save();
-      const blob = new Blob([pdfBytes as BlobPart], { type: "application/pdf" });
+      const bytes = await pdf.save({ useObjectStreams: true });
+      const blob = new Blob([bytes as BlobPart], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+
       setConvertedBlob(blob);
-      toast.success(`Merged ${images.length} image(s) into PDF (${mergedPdf.getPageCount()} pages).`);
+      setConvertedUrl(url);
+      toast.success(`Merged ${images.length} JPG images into ${total} page(s)!`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Merge failed.");
-      toast.error("Merge failed.");
+      toast.error(err instanceof Error ? err.message : "Error merging JPGs.");
     } finally {
-      setIsConverting(false);
+      setIsMerging(false);
     }
   };
 
   const handleDownload = () => {
-    if (!convertedBlob) return;
-    const url = URL.createObjectURL(convertedBlob);
+    if (!convertedUrl) return;
     const a = document.createElement("a");
-    a.href = url;
+    a.href = convertedUrl;
     a.download = `merged-images-${Date.now()}.pdf`;
     a.click();
-    URL.revokeObjectURL(url);
   };
 
+  const handleReset = () => {
+    images.forEach((img) => URL.revokeObjectURL(img.preview));
+    setImages([]);
+    setConvertedBlob(null);
+    setConvertedUrl(null);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (convertedUrl) URL.revokeObjectURL(convertedUrl);
+      images.forEach((img) => URL.revokeObjectURL(img.preview));
+    };
+  }, [convertedUrl, images]);
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2 mb-2">
-        <Badge variant="secondary" className="rounded-full">JPG → PDF</Badge>
-        <span className="text-xs text-muted-foreground">Merge multiple images into a single PDF</span>
+    <div className="space-y-6 max-w-4xl mx-auto">
+      {/* Upload Zone */}
+      <div
+        className="border-2 border-dashed rounded-2xl p-8 sm:p-10 text-center transition-all cursor-pointer border-border hover:border-primary/50 hover:bg-muted/30"
+        onClick={() => fileInputRef.current?.click()}
+      >
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-500 mx-auto mb-4">
+          <ImageIcon className="h-8 w-8" />
+        </div>
+        <h3 className="text-lg font-semibold mb-1">Upload JPG Images to Merge into PDF</h3>
+        <p className="text-sm text-muted-foreground mb-4 max-w-md mx-auto">
+          Combine multiple JPG/JPEG photos, scans, and documents into a clean PDF. Reorder and customize layout.
+        </p>
+        <Button variant="outline" size="sm" className="rounded-xl pointer-events-none">
+          <Plus className="h-4 w-4 mr-1.5" /> Select JPG Files
+        </Button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/jpg,image/png"
+          multiple
+          className="hidden"
+          onChange={handleFilesSelected}
+        />
       </div>
 
-      {/* Upload */}
-      <Card className="border-border/50">
-        <CardContent className="p-4">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            multiple
-            onChange={handleFilesSelected}
-            className="hidden"
-          />
-          <div
-            onClick={() => fileInputRef.current?.click()}
-            className="border-2 border-dashed border-border/50 rounded-xl p-6 text-center cursor-pointer hover:border-primary/30 hover:bg-muted/30 transition-colors"
-          >
-            <Upload className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
-            <p className="font-medium text-sm mb-1">Drop images here or click to browse</p>
-            <p className="text-xs text-muted-foreground">JPG, PNG, WebP, BMP • Max 20MB each</p>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Image list */}
+      {/* Queue & Settings */}
       {images.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-sm font-medium">{images.length} image(s) selected</p>
-          <div className="space-y-2 max-h-75 overflow-y-auto">
-            {images.map((img, idx) => (
-              <div key={img.id} className="flex items-center gap-3 p-2 bg-muted/30 rounded-xl">
-                <img src={img.preview} alt={img.file.name} className="h-12 w-12 object-cover rounded-lg" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{img.file.name}</p>
-                  <p className="text-xs text-muted-foreground">{(img.file.size / 1024).toFixed(1)} KB</p>
+        <Card className="rounded-2xl border-border/60 shadow-sm overflow-hidden">
+          <div className="p-4 bg-muted/40 border-b border-border/60 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-sm">Image Order</span>
+              <Badge variant="secondary" className="rounded-full text-xs">
+                {images.length} {images.length === 1 ? "image" : "images"}
+              </Badge>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                className="text-xs h-8 rounded-lg"
+              >
+                <Plus className="h-3.5 w-3.5 mr-1" /> Add More
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleReset}
+                className="text-xs h-8 text-destructive hover:text-destructive rounded-lg"
+              >
+                <Trash2 className="h-3.5 w-3.5 mr-1" /> Clear
+              </Button>
+            </div>
+          </div>
+
+          <CardContent className="p-4 space-y-5">
+            {/* Gallery Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              {images.map((item, idx) => (
+                <div
+                  key={item.id}
+                  className="rounded-xl border border-border/60 overflow-hidden bg-card flex flex-col"
+                >
+                  <div className="aspect-square w-full bg-muted/20 relative flex items-center justify-center overflow-hidden p-2">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={item.preview}
+                      alt={item.file.name}
+                      className="max-h-full max-w-full object-contain rounded"
+                    />
+                    <div className="absolute top-1.5 left-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-white font-bold text-[10px]">
+                      {idx + 1}
+                    </div>
+                  </div>
+
+                  <div className="p-2 border-t border-border/40 flex items-center justify-between text-xs">
+                    <span className="truncate flex-1 text-muted-foreground font-mono text-[11px]">
+                      {(item.file.size / 1024).toFixed(0)} KB
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        disabled={idx === 0}
+                        onClick={() => moveImage(idx, -1)}
+                        className="p-1 rounded hover:bg-muted text-muted-foreground disabled:opacity-30 cursor-pointer"
+                        title="Move up"
+                      >
+                        <ArrowUp className="h-3 w-3" />
+                      </button>
+                      <button
+                        type="button"
+                        disabled={idx === images.length - 1}
+                        onClick={() => moveImage(idx, 1)}
+                        className="p-1 rounded hover:bg-muted text-muted-foreground disabled:opacity-30 cursor-pointer"
+                        title="Move down"
+                      >
+                        <ArrowDown className="h-3 w-3" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removeImage(item.id)}
+                        className="p-1 rounded hover:bg-destructive/10 text-destructive cursor-pointer"
+                        title="Remove"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveImage(img.id, "up")} disabled={idx === 0}>
-                    <GripVertical className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => removeImage(img.id)}>
-                    <X className="h-3.5 w-3.5" />
-                  </Button>
+              ))}
+            </div>
+
+            {/* Layout Options */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-xl bg-muted/20 border border-border/50 text-xs">
+              <div>
+                <Label className="text-xs font-semibold mb-1.5 block">Layout Mode</Label>
+                <div className="flex rounded-lg bg-background p-0.5 border border-border/60">
+                  <button
+                    type="button"
+                    onClick={() => setLayoutMode("1-per-page")}
+                    className={`flex-1 py-1 text-center rounded-md font-medium transition-colors ${
+                      layoutMode === "1-per-page" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+                    }`}
+                  >
+                    1 per page
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLayoutMode("2-per-page")}
+                    className={`flex-1 py-1 text-center rounded-md font-medium transition-colors ${
+                      layoutMode === "2-per-page" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+                    }`}
+                  >
+                    2 per page
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLayoutMode("fit")}
+                    className={`flex-1 py-1 text-center rounded-md font-medium transition-colors ${
+                      layoutMode === "fit" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+                    }`}
+                  >
+                    Fit Image
+                  </button>
                 </div>
               </div>
-            ))}
+
+              <div>
+                <Label className="text-xs font-semibold mb-1.5 block">Page Size</Label>
+                <div className="flex rounded-lg bg-background p-0.5 border border-border/60">
+                  <button
+                    type="button"
+                    onClick={() => setPageSize("a4")}
+                    className={`flex-1 py-1 text-center rounded-md font-medium transition-colors ${
+                      pageSize === "a4" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+                    }`}
+                  >
+                    A4
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPageSize("letter")}
+                    className={`flex-1 py-1 text-center rounded-md font-medium transition-colors ${
+                      pageSize === "letter" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+                    }`}
+                  >
+                    US Letter
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <Button
+                onClick={handleMerge}
+                disabled={isMerging}
+                className="rounded-xl px-6 font-semibold"
+              >
+                {isMerging ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Merging JPGs...
+                  </>
+                ) : (
+                  <>
+                    <FileText className="h-4 w-4 mr-2" /> Merge into PDF Document
+                  </>
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Result Card */}
+      {convertedBlob && convertedUrl && (
+        <Card className="rounded-2xl border-emerald-500/30 bg-emerald-500/5 p-6 animate-fade-in">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3 text-center sm:text-left">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 shrink-0">
+                <CheckCircle2 className="h-6 w-6" />
+              </div>
+              <div>
+                <h4 className="font-semibold text-foreground">JPG Images Merged Successfully!</h4>
+                <p className="text-xs text-muted-foreground">
+                  {pageCount} page(s) • {(convertedBlob.size / 1024).toFixed(1)} KB
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-xl h-10 gap-1.5"
+                onClick={() => window.open(convertedUrl, "_blank")}
+              >
+                <ExternalLink className="h-4 w-4" /> Preview
+              </Button>
+              <Button
+                size="sm"
+                className="rounded-xl h-10 gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
+                onClick={handleDownload}
+              >
+                <Download className="h-4 w-4" /> Download PDF
+              </Button>
+            </div>
           </div>
-        </div>
-      )}
-
-      {error && (
-        <div className="flex items-center gap-2 p-3 rounded-xl bg-destructive/10 text-destructive text-sm">
-          <AlertCircle className="h-4 w-4 shrink-0" />
-          {error}
-        </div>
-      )}
-
-      <div className="flex gap-2">
-        <Button
-          onClick={handleMerge}
-          disabled={images.length === 0 || isConverting}
-          className="gap-2 rounded-xl"
-        >
-          {isConverting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileOutput className="h-4 w-4" />}
-          {isConverting ? "Merging..." : `Merge ${images.length} Image(s) to PDF`}
-        </Button>
-        {convertedBlob && (
-          <Button onClick={handleDownload} variant="outline" className="gap-2 rounded-xl">
-            <Download className="h-4 w-4" />
-            Download PDF
-          </Button>
-        )}
-      </div>
-
-      {images.length === 0 && !error && (
-        <div className="text-center py-6 text-muted-foreground">
-          <Image className="h-10 w-10 mx-auto mb-3 opacity-30" />
-          <p className="text-sm">Add images to merge them into a single PDF</p>
-        </div>
+        </Card>
       )}
     </div>
   );

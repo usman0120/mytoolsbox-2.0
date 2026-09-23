@@ -12,7 +12,7 @@ import {
 } from "./adapters";
 import { tierToCreditOperation, getCreditCost, type CreditOperation } from "./credits";
 
-const adapterFactories: Record<AIProvider, () => AIProviderAdapter> = {
+const adapterFactories: Partial<Record<AIProvider, () => AIProviderAdapter>> = {
   openai: createOpenAIAdapter,
   gemini: createGeminiAdapter,
   groq: createGroqAdapter,
@@ -26,6 +26,9 @@ function getAdapter(provider: AIProvider): AIProviderAdapter {
   if (cached) return cached;
 
   const factory = adapterFactories[provider];
+  if (!factory) {
+    throw new Error(`Client adapter for provider "${provider}" is not configured. Use completeViaServer instead.`);
+  }
   const adapter = factory();
   adapterCache.set(provider, adapter);
   return adapter;
@@ -85,6 +88,27 @@ export function getRequestCreditCost(request: AIRequest): number {
 }
 
 export async function complete(request: AIRequest): Promise<AIResponse> {
+  // Centralized Credit Routing: In browser environments, route through /api/ai
+  // to ensure credits are tracked and deducted accurately across all AI tools.
+  if (typeof window !== "undefined") {
+    try {
+      return await completeViaServer(request);
+    } catch (serverErr) {
+      const errMsg = serverErr instanceof Error ? serverErr.message : String(serverErr);
+      // Propagate critical business rule errors (credits, rate limits) directly to UI
+      if (
+        errMsg.toLowerCase().includes("credit") ||
+        errMsg.toLowerCase().includes("insufficient") ||
+        errMsg.toLowerCase().includes("blocked") ||
+        errMsg.toLowerCase().includes("rate limit")
+      ) {
+        throw serverErr;
+      }
+      // Non-critical network/server error: allow local adapter fallback if available
+      console.warn("Server AI route failed, attempting local adapter:", serverErr);
+    }
+  }
+
   // If a specific provider is requested, use it
   if (request.provider) {
     const adapter = getAdapter(request.provider);
@@ -172,5 +196,15 @@ export async function completeViaServer(
     throw new Error(error.error ?? error.message ?? `Server AI API error: ${response.status}`);
   }
 
-  return response.json();
+  const data: ServerAIResponse = await response.json();
+
+  if (typeof window !== "undefined" && typeof data.creditsRemaining === "number") {
+    window.dispatchEvent(
+      new CustomEvent("credits-updated", {
+        detail: { remaining: data.creditsRemaining, used: data.creditsUsed },
+      })
+    );
+  }
+
+  return data;
 }

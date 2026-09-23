@@ -1,251 +1,342 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
-import { Upload, Download, Wand, ImageIcon, Trash2, Sun, Contrast, Droplets, Zap } from "lucide-react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import {
+  Upload,
+  Download,
+  Wand,
+  Trash2,
+  Sun,
+  Contrast,
+  Droplets,
+  Zap,
+  Eye,
+  Sliders,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
-import { useProcessing } from "@/hooks/use-processing";
-import type { ProcessingResult } from "@/lib/processing/types";
-
-// Auto-enhancement algorithm
-async function autoEnhance(imageDataUrl: string): Promise<ProcessingResult> {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) { resolve({ status: "error", error: "Unable to process image" }); return; }
-
-      ctx.drawImage(img, 0, 0);
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const { data } = imageData;
-
-      // Analyze histogram
-      const histogram = new Array(256).fill(0);
-      let totalLuminance = 0;
-
-      for (let i = 0; i < data.length; i += 4) {
-        const r = data[i];
-        const g = data[i + 1];
-        const b = data[i + 2];
-        const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
-        histogram[Math.round(luminance)]++;
-        totalLuminance += luminance;
-      }
-
-      const pixelCount = data.length / 4;
-      const avgLuminance = totalLuminance / pixelCount;
-
-      // Find shadows and highlights clipping points
-      let shadowClip = 0;
-      let highlightClip = 255;
-      const clipPercent = 0.005;
-      let cumulative = 0;
-
-      for (let i = 0; i < 256; i++) {
-        cumulative += histogram[i] / pixelCount;
-        if (cumulative <= clipPercent) shadowClip = i;
-      }
-
-      cumulative = 0;
-      for (let i = 255; i >= 0; i--) {
-        cumulative += histogram[i] / pixelCount;
-        if (cumulative <= clipPercent) highlightClip = i;
-      }
-
-      // Auto levels adjustment
-      const scale = highlightClip > shadowClip ? 255 / (highlightClip - shadowClip) : 1;
-
-      // Auto white balance (gray world assumption)
-      let totalR = 0, totalG = 0, totalB = 0;
-      for (let i = 0; i < data.length; i += 4) {
-        totalR += data[i];
-        totalG += data[i + 1];
-        totalB += data[i + 2];
-      }
-      const avgR = totalR / pixelCount;
-      const avgG = totalG / pixelCount;
-      const avgB = totalB / pixelCount;
-      const grayValue = (avgR + avgG + avgB) / 3;
-      const wbR = grayValue / (avgR || 1);
-      const wbG = grayValue / (avgG || 1);
-      const wbB = grayValue / (avgB || 1);
-
-      // Apply corrections
-      for (let i = 0; i < data.length; i += 4) {
-        // Auto levels
-        data[i] = Math.min(255, Math.max(0, (data[i] - shadowClip) * scale));
-        data[i + 1] = Math.min(255, Math.max(0, (data[i + 1] - shadowClip) * scale));
-        data[i + 2] = Math.min(255, Math.max(0, (data[i + 2] - shadowClip) * scale));
-
-        // White balance
-        data[i] = Math.min(255, data[i] * wbR);
-        data[i + 1] = Math.min(255, data[i + 1] * wbG);
-        data[i + 2] = Math.min(255, data[i + 2] * wbB);
-
-        // Saturation boost (gentle)
-        const r = data[i];
-        const g = data[i + 1];
-        const b = data[i + 2];
-        const gray = 0.299 * r + 0.587 * g + 0.114 * b;
-        const satBoost = 1.15;
-        data[i] = Math.min(255, gray + (r - gray) * satBoost);
-        data[i + 1] = Math.min(255, gray + (g - gray) * satBoost);
-        data[i + 2] = Math.min(255, gray + (b - gray) * satBoost);
-      }
-
-      ctx.putImageData(imageData, 0, 0);
-      resolve({
-        status: "success",
-        message: "Auto enhancement complete",
-        outputUrl: canvas.toDataURL("image/jpeg", 0.92),
-      });
-    };
-    img.src = imageDataUrl;
-  });
-}
 
 export function SoftColorAutoEnhanceEngine() {
   const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
-  const [dragOver, setDragOver] = useState(false);
-  const [files, setFiles] = useState<File[]>([]);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const { status, result, error, process, reset: resetProcessing } = useProcessing();
+  const [baseImage, setBaseImage] = useState<HTMLImageElement | null>(null);
 
-  const loadFile = useCallback((f: File) => {
+  // Fine-tuning parameters
+  const [intensity, setIntensity] = useState(100); // 0-100%
+  const [exposure, setExposure] = useState(0); // -40 to 40
+  const [contrastBoost, setContrastBoost] = useState(10); // -30 to 50
+  const [saturationBoost, setSaturationBoost] = useState(15); // -30 to 50
+  const [warmth, setWarmth] = useState(0); // -30 to 30
+  const [showOriginal, setShowOriginal] = useState(false);
+
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleLoadFile = (f: File) => {
     if (!f.type.startsWith("image/")) return;
     setFile(f);
-    resetProcessing();
     const reader = new FileReader();
-    reader.onload = () => setPreview(reader.result as string);
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => setBaseImage(img);
+      img.src = reader.result as string;
+    };
     reader.readAsDataURL(f);
-  }, [resetProcessing]);
-
-  const loadMultipleFiles = useCallback((fileList: FileList) => {
-    const imageFiles = Array.from(fileList).filter((f) => f.type.startsWith("image/"));
-    setFiles((prev) => [...prev, ...imageFiles]);
-    if (imageFiles.length > 0 && !file) {
-      loadFile(imageFiles[0]);
-    }
-  }, [file, loadFile]);
-
-  const handleEnhance = async () => {
-    if (!preview) return;
-    await process(() => autoEnhance(preview));
   };
 
-  const handleDownload = () => {
-    if (result?.outputUrl) {
-      const link = document.createElement("a");
-      link.download = `enhanced-${file?.name || "image"}.jpg`;
-      link.href = result.outputUrl;
-      link.click();
+  const renderCanvas = useCallback(() => {
+    if (!baseImage || !canvasRef.current) return;
+    const canvas = canvasRef.current;
+    canvas.width = baseImage.naturalWidth || baseImage.width;
+    canvas.height = baseImage.naturalHeight || baseImage.height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    if (showOriginal) {
+      ctx.drawImage(baseImage, 0, 0);
+      return;
     }
+
+    ctx.drawImage(baseImage, 0, 0);
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const { data } = imageData;
+
+    // Analyze histogram for Auto Levels
+    const histogram = new Array(256).fill(0);
+    let totalR = 0, totalG = 0, totalB = 0;
+    const pixelCount = data.length / 4;
+
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+      const lum = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
+      histogram[lum]++;
+      totalR += r;
+      totalG += g;
+      totalB += b;
+    }
+
+    // Shadow & highlight clipping points (0.5% threshold)
+    let shadowClip = 0;
+    let highlightClip = 255;
+    const clipLimit = pixelCount * 0.005;
+    let cumulative = 0;
+
+    for (let i = 0; i < 256; i++) {
+      cumulative += histogram[i];
+      if (cumulative <= clipLimit) shadowClip = i;
+    }
+    cumulative = 0;
+    for (let i = 255; i >= 0; i--) {
+      cumulative += histogram[i];
+      if (cumulative <= clipLimit) highlightClip = i;
+    }
+
+    const scale = highlightClip > shadowClip ? 255 / (highlightClip - shadowClip) : 1;
+
+    // Auto White Balance factors (gray-world assumption)
+    const avgR = totalR / pixelCount;
+    const avgG = totalG / pixelCount;
+    const avgB = totalB / pixelCount;
+    const gray = (avgR + avgG + avgB) / 3;
+    const wbR = gray / (avgR || 1);
+    const wbG = gray / (avgG || 1);
+    const wbB = gray / (avgB || 1);
+
+    const blend = intensity / 100;
+    const satFactor = 1 + (saturationBoost / 100);
+    const contrastFactor = (259 * (contrastBoost + 255)) / (255 * (259 - contrastBoost));
+
+    for (let i = 0; i < data.length; i += 4) {
+      const origR = data[i];
+      const origG = data[i + 1];
+      const origB = data[i + 2];
+
+      // Auto levels & White Balance calculation
+      let enhancedR = Math.min(255, Math.max(0, (origR - shadowClip) * scale)) * wbR;
+      let enhancedG = Math.min(255, Math.max(0, (origG - shadowClip) * scale)) * wbG;
+      let enhancedB = Math.min(255, Math.max(0, (origB - shadowClip) * scale)) * wbB;
+
+      // Fine contrast & exposure
+      enhancedR = Math.min(255, Math.max(0, contrastFactor * (enhancedR - 128) + 128 + exposure));
+      enhancedG = Math.min(255, Math.max(0, contrastFactor * (enhancedG - 128) + 128 + exposure));
+      enhancedB = Math.min(255, Math.max(0, contrastFactor * (enhancedB - 128) + 128 + exposure));
+
+      // Saturation
+      const lum = 0.299 * enhancedR + 0.587 * enhancedG + 0.114 * enhancedB;
+      enhancedR = Math.min(255, Math.max(0, lum + (enhancedR - lum) * satFactor + warmth));
+      enhancedG = Math.min(255, Math.max(0, lum + (enhancedG - lum) * satFactor));
+      enhancedB = Math.min(255, Math.max(0, lum + (enhancedB - lum) * satFactor - warmth));
+
+      // Blend between original and enhanced according to intensity
+      data[i] = Math.round(origR * (1 - blend) + enhancedR * blend);
+      data[i + 1] = Math.round(origG * (1 - blend) + enhancedG * blend);
+      data[i + 2] = Math.round(origB * (1 - blend) + enhancedB * blend);
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+  }, [
+    baseImage,
+    intensity,
+    exposure,
+    contrastBoost,
+    saturationBoost,
+    warmth,
+    showOriginal,
+  ]);
+
+  useEffect(() => {
+    renderCanvas();
+  }, [renderCanvas]);
+
+  const handleDownload = () => {
+    if (!canvasRef.current) return;
+    const a = document.createElement("a");
+    a.href = canvasRef.current.toDataURL("image/jpeg", 0.95);
+    const base = file?.name.replace(/\.[^.]+$/, "") || "enhanced";
+    a.download = `${base}_softcolor.jpg`;
+    a.click();
   };
 
   const handleReset = () => {
-    resetProcessing();
     setFile(null);
-    setPreview(null);
-    setFiles([]);
+    setBaseImage(null);
+    setIntensity(100);
+    setExposure(0);
+    setContrastBoost(10);
+    setSaturationBoost(15);
+    setWarmth(0);
   };
 
   return (
-    <div className="space-y-4">
-      {status === "idle" && !file && (
+    <div className="space-y-6">
+      {!file && (
         <div
-          className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer ${
-            dragOver ? "border-primary bg-primary/5" : "border-muted-foreground/25"
-          }`}
-          onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={(e) => { e.preventDefault(); setDragOver(false); e.dataTransfer.files && loadMultipleFiles(e.dataTransfer.files); }}
+          className="border-2 border-dashed rounded-2xl p-10 text-center transition-all cursor-pointer hover:border-primary/50 hover:bg-primary/5 border-muted-foreground/25"
           onClick={() => fileInputRef.current?.click()}
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => {
+            e.preventDefault();
+            if (e.dataTransfer.files[0]) handleLoadFile(e.dataTransfer.files[0]);
+          }}
         >
-          <Wand className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
-          <p className="font-medium mb-1">Drop photos to auto-enhance</p>
-          <p className="text-sm text-muted-foreground">Intelligent color correction, exposure, and detail enhancement</p>
+          <div className="h-14 w-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mx-auto mb-4">
+            <Wand className="h-7 w-7" />
+          </div>
+          <h3 className="font-semibold text-lg mb-1">SoftColor Automatic Photo Enhancer</h3>
+          <p className="text-sm text-muted-foreground max-w-sm mx-auto mb-4">
+            Automatic white balance correction, shadow/highlight level stretching, and vibrance balancing.
+          </p>
+          <Button variant="outline" className="rounded-xl shadow-xs">
+            Browse Photo
+          </Button>
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/jpeg,image/png,image/webp,image/bmp"
-            multiple
+            accept="image/*"
             className="hidden"
-            onChange={(e) => e.target.files && loadMultipleFiles(e.target.files)}
+            onChange={(e) => e.target.files?.[0] && handleLoadFile(e.target.files[0])}
           />
         </div>
       )}
 
-      {status === "idle" && file && preview && (
-        <div className="space-y-4">
-          <div className="flex items-start gap-4">
-            <img src={preview} alt="Preview" className="w-32 h-32 object-cover rounded-lg border" />
-            <div className="flex-1 min-w-0">
-              <p className="font-medium text-sm truncate">{file.name}</p>
-              <p className="text-xs text-muted-foreground">{(file.size / 1024).toFixed(1)} KB</p>
-              {files.length > 1 && (
-                <p className="text-xs text-muted-foreground mt-1">{files.length} files loaded</p>
-              )}
-              <Button variant="ghost" size="sm" className="mt-2" onClick={handleReset}>
-                <Trash2 className="h-3 w-3 mr-1" /> Remove
-              </Button>
+      {file && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Controls */}
+          <div className="lg:col-span-5 space-y-4">
+            <div className="p-5 rounded-2xl border bg-card/60 backdrop-blur-sm space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="font-semibold text-sm">Enhancement Strength</h4>
+                  <p className="text-xs text-muted-foreground">Blend intensity of automatic corrections</p>
+                </div>
+                <span className="text-xs font-bold text-primary">{intensity}%</span>
+              </div>
+
+              <Slider
+                value={[intensity]}
+                min={0}
+                max={100}
+                step={1}
+                onValueChange={(val) => setIntensity(Array.isArray(val) ? val[0] : (val as number))}
+              />
+
+              <div className="space-y-3 pt-3 border-t">
+                <h5 className="font-semibold text-xs flex items-center gap-1.5">
+                  <Sliders className="h-3.5 w-3.5" /> Fine-Tune Controls
+                </h5>
+
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <Label className="text-xs font-medium flex items-center gap-1">
+                      <Sun className="h-3 w-3" /> Exposure Offset
+                    </Label>
+                    <span className="text-xs text-muted-foreground">{exposure > 0 ? `+${exposure}` : exposure}</span>
+                  </div>
+                  <Slider
+                    value={[exposure]}
+                    min={-30}
+                    max={30}
+                    step={1}
+                    onValueChange={(val) => setExposure(Array.isArray(val) ? val[0] : (val as number))}
+                  />
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <Label className="text-xs font-medium flex items-center gap-1">
+                      <Contrast className="h-3 w-3" /> Contrast Boost
+                    </Label>
+                    <span className="text-xs text-muted-foreground">{contrastBoost}%</span>
+                  </div>
+                  <Slider
+                    value={[contrastBoost]}
+                    min={-20}
+                    max={40}
+                    step={1}
+                    onValueChange={(val) => setContrastBoost(Array.isArray(val) ? val[0] : (val as number))}
+                  />
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <Label className="text-xs font-medium flex items-center gap-1">
+                      <Droplets className="h-3 w-3" /> Vibrance & Saturation
+                    </Label>
+                    <span className="text-xs text-muted-foreground">+{saturationBoost}%</span>
+                  </div>
+                  <Slider
+                    value={[saturationBoost]}
+                    min={-20}
+                    max={50}
+                    step={1}
+                    onValueChange={(val) => setSaturationBoost(Array.isArray(val) ? val[0] : (val as number))}
+                  />
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <Label className="text-xs font-medium">Color Temperature</Label>
+                    <span className="text-xs text-muted-foreground">{warmth > 0 ? `+${warmth}` : warmth}°</span>
+                  </div>
+                  <Slider
+                    value={[warmth]}
+                    min={-25}
+                    max={25}
+                    step={1}
+                    onValueChange={(val) => setWarmth(Array.isArray(val) ? val[0] : (val as number))}
+                  />
+                </div>
+              </div>
+
+              <div className="pt-2 border-t">
+                <Button onClick={handleDownload} className="w-full gap-2 rounded-xl">
+                  <Download className="h-4 w-4" /> Download Enhanced JPEG
+                </Button>
+              </div>
             </div>
           </div>
 
-          <div className="bg-muted/50 rounded-lg p-3 text-sm">
-            <p className="font-medium flex items-center gap-2 mb-2">
-              <Zap className="h-4 w-4 text-yellow-500" /> Auto Enhancement Will:
-            </p>
-            <ul className="space-y-1 text-xs text-muted-foreground">
-              <li className="flex items-center gap-1"><Sun className="h-3 w-3" /> Fix exposure and brightness</li>
-              <li className="flex items-center gap-1"><Contrast className="h-3 w-3" /> Optimize contrast levels</li>
-              <li className="flex items-center gap-1"><Droplets className="h-3 w-3" /> Correct white balance & color</li>
-              <li className="flex items-center gap-1"><Wand className="h-3 w-3" /> Boost saturation gently</li>
-            </ul>
-          </div>
+          {/* Canvas Live Preview */}
+          <div className="lg:col-span-7 flex flex-col space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-muted-foreground">
+                  Live Preview
+                </span>
+                <Button
+                  size="sm"
+                  variant={showOriginal ? "secondary" : "outline"}
+                  className="h-7 text-xs rounded-lg gap-1"
+                  onMouseDown={() => setShowOriginal(true)}
+                  onMouseUp={() => setShowOriginal(false)}
+                  onTouchStart={() => setShowOriginal(true)}
+                  onTouchEnd={() => setShowOriginal(false)}
+                  onClick={() => setShowOriginal(!showOriginal)}
+                >
+                  <Eye className="h-3.5 w-3.5" />
+                  {showOriginal ? "Original" : "Hold to Compare"}
+                </Button>
+              </div>
 
-          <Button onClick={handleEnhance} className="w-full gap-2">
-            <Wand className="h-4 w-4" /> Auto Enhance
-          </Button>
-        </div>
-      )}
-
-      {status === "processing" && (
-        <div className="text-center py-8">
-          <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-3" />
-          <p className="text-sm text-muted-foreground">Analyzing and enhancing your photo...</p>
-        </div>
-      )}
-
-      {status === "success" && result?.outputUrl && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-xs text-muted-foreground mb-1 text-center">Before</p>
-              <img src={preview!} alt="Before" className="w-full rounded-lg border" />
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">
+                  {baseImage ? `${baseImage.naturalWidth} × ${baseImage.naturalHeight} px` : ""}
+                </span>
+                <Button variant="ghost" size="sm" onClick={handleReset} className="h-7 text-xs text-muted-foreground">
+                  <Trash2 className="h-3.5 w-3.5 mr-1" /> Reset
+                </Button>
+              </div>
             </div>
-            <div>
-              <p className="text-xs text-green-600 font-medium mb-1 text-center">Enhanced</p>
-              <img src={result.outputUrl} alt="After" className="w-full rounded-lg border border-green-500" />
+
+            <div className="relative border rounded-2xl overflow-hidden bg-dot-pattern flex items-center justify-center p-4 min-h-[460px] max-h-[640px] shadow-xs">
+              <canvas
+                ref={canvasRef}
+                className="max-h-[580px] w-auto max-w-full object-contain rounded-lg shadow-md"
+              />
             </div>
           </div>
-          <div className="flex gap-2">
-            <Button onClick={handleDownload} className="gap-2">
-              <Download className="h-4 w-4" /> Download Enhanced
-            </Button>
-            <Button variant="outline" onClick={handleReset}>Enhance Another</Button>
-          </div>
-        </div>
-      )}
-
-      {status === "error" && (
-        <div className="text-center py-8">
-          <p className="text-red-500 mb-2">{error || "Enhancement failed"}</p>
-          <Button variant="outline" size="sm" onClick={handleReset}>Try Again</Button>
         </div>
       )}
     </div>

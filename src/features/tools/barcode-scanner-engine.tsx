@@ -2,378 +2,362 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import {
-  Scan, Download, Copy, Check, Trash2, Loader2,
-  Camera, Upload, Link, Barcode, QrCode,
+  Scan, Download, Copy, Check, Trash2, Camera, Upload,
+  ExternalLink, Wifi, Phone, Mail, QrCode, AlertCircle, CheckCircle2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-
-// Barcode scanning using the Barcode Detection API or image analysis
-// This is a client-side implementation that works with camera or uploaded images
-
-interface ScanResult {
-  format: string;
-  rawValue: string;
-  type: "url" | "text" | "number" | "email" | "phone" | "unknown";
-  timestamp: number;
-}
+import {
+  parseBarcode,
+  validateEAN13,
+  validateUPCA,
+  ParsedBarcodeResult,
+} from "@/features/tools/barcode-scanner";
 
 const STORAGE_KEY = "mytoolsbox-barcode-scanner-history";
 
-function loadHistory(): ScanResult[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveHistory(results: ScanResult[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(results.slice(-50)));
-}
-
-function detectType(value: string): ScanResult["type"] {
-  if (/^https?:\/\//i.test(value)) return "url";
-  if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value)) return "email";
-  if (/^[\d\s\-+()]{7,}$/.test(value)) return "phone";
-  if (/^\d+$/.test(value)) return "number";
-  return "text";
-}
-
-// Simulate barcode scanning with image analysis
-// In production, this would use the BarcodeDetector API or a library like zxing-js
-async function scanBarcodeFromImage(imageDataUrl: string): Promise<ScanResult> {
-  // Simulate processing delay
-  await new Promise((r) => setTimeout(r, 800 + Math.random() * 1200));
-
-  // In a real implementation, we'd use BarcodeDetector API:
-  // const detector = new BarcodeDetector({ formats: ['qr_code', 'ean_13', 'code_128', ...] });
-  // const barcodes = await detector.detect(image);
-
-  // For now, simulate a result
-  const formats = ["QR_CODE", "CODE_128", "EAN_13", "UPC_A", "CODE_39", "DATA_MATRIX"];
-  const format = formats[Math.floor(Math.random() * formats.length)];
-
-  const mockValues = [
-    "https://example.com/product/12345",
-    "PRODUCT-2024-XYZ",
-    "5901234123457",
-    "123456789012",
-    "HELLO-WORLD-CODE39",
-    "DATA_MATRIX_TEST_001",
-  ];
-
-  const rawValue = mockValues[Math.floor(Math.random() * mockValues.length)];
-
-  return {
-    format,
-    rawValue,
-    type: detectType(rawValue),
-    timestamp: Date.now(),
-  };
-}
-
 export function BarcodeScannerEngine() {
-  const [activeTab, setActiveTab] = useState("camera");
-  const [results, setResults] = useState<ScanResult[]>(() => loadHistory());
-  const [isScanning, setIsScanning] = useState(false);
+  const [activeTab, setActiveTab] = useState<"camera" | "upload" | "manual">("upload");
+  const [scannedResult, setScannedResult] = useState<ParsedBarcodeResult | null>(null);
+  const [history, setHistory] = useState<ParsedBarcodeResult[]>(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [cameraActive, setCameraActive] = useState(false);
   const [manualInput, setManualInput] = useState("");
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [copied, setCopied] = useState(false);
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [cameraActive, setCameraActive] = useState(false);
-  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const animFrameRef = useRef<number | null>(null);
 
   useEffect(() => {
-    saveHistory(results);
-  }, [results]);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(history.slice(0, 30)));
+  }, [history]);
 
-  // Cleanup camera on unmount
-  useEffect(() => {
-    return () => {
-      if (videoRef.current?.srcObject) {
-        const stream = videoRef.current.srcObject as MediaStream;
-        stream.getTracks().forEach((t) => t.stop());
-      }
-    };
+  // Handle a new scan result
+  const handleNewScan = useCallback((rawValue: string, format: string = "QR_CODE") => {
+    const result = parseBarcode(rawValue, format);
+    setScannedResult(result);
+    setHistory((prev) => [result, ...prev.filter((h) => h.rawValue !== result.rawValue)]);
+    toast.success(`Scanned: ${result.rawValue}`);
   }, []);
 
-  const startCamera = useCallback(async () => {
+  // Native BarcodeDetector scanning function
+  const scanMediaElement = async (element: HTMLVideoElement | HTMLImageElement): Promise<boolean> => {
+    if (typeof window === "undefined") return false;
+
+    // Check if BarcodeDetector API exists in browser
+    if ("BarcodeDetector" in window) {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const Detector = (window as any).BarcodeDetector;
+        const formats = await Detector.getSupportedFormats();
+        const detector = new Detector({
+          formats: formats.length > 0 ? formats : ["qr_code", "ean_13", "upc_a", "code_128", "code_39"],
+        });
+        const barcodes = await detector.detect(element);
+
+        if (barcodes.length > 0) {
+          const first = barcodes[0];
+          handleNewScan(first.rawValue, first.format || "BARCODE");
+          return true;
+        }
+      } catch (e) {
+        console.warn("BarcodeDetector error:", e);
+      }
+    }
+    return false;
+  };
+
+  // Camera continuous loop
+  const startCamera = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } },
+        video: { facingMode: "environment" },
       });
+      streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         await videoRef.current.play();
         setCameraActive(true);
+
+        const checkFrame = async () => {
+          if (videoRef.current && videoRef.current.readyState === videoRef.current.HAVE_ENOUGH_DATA) {
+            const detected = await scanMediaElement(videoRef.current);
+            if (detected) {
+              stopCamera();
+              return;
+            }
+          }
+          animFrameRef.current = requestAnimationFrame(checkFrame);
+        };
+        animFrameRef.current = requestAnimationFrame(checkFrame);
       }
     } catch {
-      toast.error("Could not access camera. Please check permissions.");
-    }
-  }, []);
-
-  const stopCamera = useCallback(() => {
-    if (videoRef.current?.srcObject) {
-      const stream = videoRef.current.srcObject as MediaStream;
-      stream.getTracks().forEach((t) => t.stop());
-      videoRef.current.srcObject = null;
+      toast.error("Camera access was denied or is unavailable.");
       setCameraActive(false);
     }
-  }, []);
+  };
 
-  const captureAndScan = useCallback(async () => {
-    if (!videoRef.current || !canvasRef.current) return;
-
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    ctx.drawImage(video, 0, 0);
-    const imageDataUrl = canvas.toDataURL("image/png");
-
-    setIsScanning(true);
-    try {
-      const result = await scanBarcodeFromImage(imageDataUrl);
-      setResults((prev) => [result, ...prev]);
-      toast.success(`Scanned: ${result.format}`);
-    } catch {
-      toast.error("No barcode detected. Try again.");
+  const stopCamera = () => {
+    if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
     }
-    setIsScanning(false);
+    setCameraActive(false);
+  };
+
+  useEffect(() => {
+    return () => {
+      stopCamera();
+    };
   }, []);
 
-  const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle uploaded image
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = async (ev) => {
-      const dataUrl = ev.target?.result as string;
-      setImagePreview(dataUrl);
-      setIsScanning(true);
-      try {
-        const result = await scanBarcodeFromImage(dataUrl);
-        setResults((prev) => [result, ...prev]);
-        toast.success(`Detected: ${result.format}`);
-      } catch {
-        toast.error("No barcode found in image.");
+    const img = new Image();
+    img.onload = async () => {
+      const detected = await scanMediaElement(img);
+      if (!detected) {
+        // Fallback: If native BarcodeDetector is absent on this browser, inform user or accept manual entry
+        toast.info("No barcode detected automatically. You can verify or check digits with manual input.");
       }
-      setIsScanning(false);
     };
-    reader.readAsDataURL(file);
-  }, []);
+    img.src = URL.createObjectURL(file);
+  };
 
-  const handleManualScan = useCallback(() => {
-    if (!manualInput.trim()) {
-      toast.error("Please enter a barcode value.");
-      return;
-    }
-    const result: ScanResult = {
-      format: "MANUAL",
-      rawValue: manualInput.trim(),
-      type: detectType(manualInput.trim()),
-      timestamp: Date.now(),
-    };
-    setResults((prev) => [result, ...prev]);
+  const handleManualSubmit = () => {
+    if (!manualInput.trim()) return;
+    handleNewScan(manualInput.trim(), "MANUAL_INPUT");
     setManualInput("");
-    toast.success("Barcode added!");
-  }, [manualInput]);
+  };
 
-  const handleCopy = useCallback(async (value: string, index: number) => {
-    await navigator.clipboard.writeText(value);
-    setCopiedIndex(index);
-    setTimeout(() => setCopiedIndex(null), 2000);
-    toast.success("Copied!");
-  }, []);
+  const handleCopy = async (text: string) => {
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+    toast.success("Copied to clipboard!");
+  };
 
-  const handleClearHistory = useCallback(() => {
-    setResults([]);
-    localStorage.removeItem(STORAGE_KEY);
-    toast.success("History cleared.");
-  }, []);
-
-  const handleExportHistory = useCallback(() => {
-    const text = results
-      .map((r) => `[${r.format}] ${r.rawValue} (${r.type}) - ${new Date(r.timestamp).toLocaleString()}`)
-      .join("\n");
-    const blob = new Blob([text], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `barcode-scans-${new Date().toISOString().split("T")[0]}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success("History exported!");
-  }, [results]);
+  const handleClearHistory = () => {
+    setHistory([]);
+    toast.success("Scan history cleared.");
+  };
 
   return (
     <div className="space-y-4">
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v ?? "")}>
-        <TabsList className="w-full">
-          <TabsTrigger value="camera" className="flex-1 gap-1.5"><Camera className="h-3.5 w-3.5" /> Camera</TabsTrigger>
-          <TabsTrigger value="upload" className="flex-1 gap-1.5"><Upload className="h-3.5 w-3.5" /> Upload</TabsTrigger>
-          <TabsTrigger value="manual" className="flex-1 gap-1.5"><Barcode className="h-3.5 w-3.5" /> Manual</TabsTrigger>
-          <TabsTrigger value="history" className="flex-1 gap-1.5"><Scan className="h-3.5 w-3.5" /> History ({results.length})</TabsTrigger>
-        </TabsList>
+      {/* Top Header */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-bold flex items-center gap-2">
+            <Scan className="h-5 w-5 text-primary" /> Barcode & QR Code Scanner
+          </h2>
+          <p className="text-sm text-muted-foreground">Scan and validate UPC, EAN-13, and QR codes via camera, image upload, or digits</p>
+        </div>
+        {history.length > 0 && (
+          <Button variant="ghost" size="sm" onClick={handleClearHistory} className="text-xs text-muted-foreground hover:text-destructive">
+            <Trash2 className="h-3.5 w-3.5 mr-1" /> Clear History
+          </Button>
+        )}
+      </div>
 
-        <TabsContent value="camera" className="mt-4 space-y-3">
-          <Card>
-            <CardContent className="p-4 space-y-3">
-              <div className="relative bg-black rounded-lg overflow-hidden aspect-video">
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+        {/* Scanner Controls (7 cols) */}
+        <div className="md:col-span-7 space-y-3">
+          <Tabs
+            value={activeTab}
+            onValueChange={(v) => {
+              if (activeTab === "camera" && v !== "camera") stopCamera();
+              setActiveTab(v as "camera" | "upload" | "manual");
+            }}
+          >
+            <TabsList className="grid grid-cols-3">
+              <TabsTrigger value="upload" className="text-xs gap-1.5">
+                <Upload className="h-3.5 w-3.5" /> Upload Image
+              </TabsTrigger>
+              <TabsTrigger value="camera" className="text-xs gap-1.5">
+                <Camera className="h-3.5 w-3.5" /> Camera
+              </TabsTrigger>
+              <TabsTrigger value="manual" className="text-xs gap-1.5">
+                <QrCode className="h-3.5 w-3.5" /> Manual Digits
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="upload" className="mt-3">
+              <label className="border-2 border-dashed border-border hover:border-primary/50 transition-colors rounded-xl p-8 flex flex-col items-center justify-center cursor-pointer bg-muted/20 hover:bg-muted/30 text-center min-h-[220px]">
+                <Upload className="h-8 w-8 text-muted-foreground mb-2" />
+                <p className="text-xs font-semibold">Click to upload barcode or QR code image</p>
+                <p className="text-[10px] text-muted-foreground mt-1">PNG, JPG, WebP supported</p>
+                <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+              </label>
+            </TabsContent>
+
+            <TabsContent value="camera" className="mt-3">
+              <div className="relative rounded-xl overflow-hidden bg-black aspect-video flex items-center justify-center border">
                 <video ref={videoRef} className="w-full h-full object-cover" playsInline muted />
-                {!cameraActive && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/60">
-                    <div className="text-center text-white">
-                      <Camera className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                      <p className="text-sm">Camera is off</p>
-                    </div>
-                  </div>
-                )}
-                {isScanning && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-                    <div className="text-center text-white">
-                      <Loader2 className="h-8 w-8 mx-auto animate-spin mb-2" />
-                      <p className="text-sm">Scanning...</p>
-                    </div>
-                  </div>
-                )}
-                {/* Scan frame overlay */}
-                {cameraActive && !isScanning && (
-                  <div className="absolute inset-0 border-2 border-green-400/60 m-12 rounded-lg pointer-events-none">
-                    <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-green-400 rounded-tl" />
-                    <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-green-400 rounded-tr" />
-                    <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-green-400 rounded-bl" />
-                    <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-green-400 rounded-br" />
-                  </div>
-                )}
-              </div>
-              <canvas ref={canvasRef} className="hidden" />
-              <div className="flex gap-2">
-                {!cameraActive ? (
-                  <Button onClick={startCamera} className="flex-1 gap-1.5">
-                    <Camera className="h-4 w-4" /> Start Camera
-                  </Button>
-                ) : (
-                  <>
-                    <Button onClick={captureAndScan} disabled={isScanning} className="flex-1 gap-1.5">
-                      <Scan className="h-4 w-4" /> Scan Barcode
-                    </Button>
-                    <Button variant="outline" onClick={stopCamera} className="gap-1.5">
-                      Stop
-                    </Button>
-                  </>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+                <canvas ref={canvasRef} className="hidden" />
 
-        <TabsContent value="upload" className="mt-4 space-y-3">
-          <Card>
-            <CardContent className="p-4 space-y-3">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleFileUpload}
-                className="hidden"
-              />
-              <div
-                className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-primary/50 transition-colors"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                {imagePreview ? (
-                  <img src={imagePreview} alt="Preview" className="max-h-48 mx-auto rounded-lg" />
-                ) : (
-                  <>
-                    <Upload className="h-10 w-10 mx-auto mb-2 text-muted-foreground" />
-                    <p className="text-sm font-medium">Click to upload an image</p>
-                    <p className="text-xs text-muted-foreground mt-1">PNG, JPG, GIF, WebP</p>
-                  </>
+                {!cameraActive && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 p-4 text-center">
+                    <Camera className="h-8 w-8 text-muted-foreground mb-2" />
+                    <Button onClick={startCamera} size="sm" className="text-xs gap-1.5">
+                      Start Camera Scanner
+                    </Button>
+                  </div>
+                )}
+
+                {cameraActive && (
+                  <div className="absolute inset-x-0 bottom-3 flex justify-center">
+                    <Button onClick={stopCamera} variant="destructive" size="sm" className="text-xs">
+                      Stop Camera
+                    </Button>
+                  </div>
                 )}
               </div>
-              {isScanning && (
-                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin" /> Scanning image...
+            </TabsContent>
+
+            <TabsContent value="manual" className="mt-3 space-y-2">
+              <Card className="p-4">
+                <Label className="text-xs mb-1 block">Barcode / QR String Verification</Label>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Enter EAN-13, UPC-A, or QR text..."
+                    value={manualInput}
+                    onChange={(e) => setManualInput(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleManualSubmit()}
+                    className="h-8 text-xs font-mono"
+                  />
+                  <Button onClick={handleManualSubmit} size="sm" className="h-8 text-xs px-3">
+                    Verify
+                  </Button>
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-2">
+                  Example valid EAN-13: <code>4006381333931</code> | Valid UPC-A: <code>036000291452</code>
+                </p>
+              </Card>
+            </TabsContent>
+          </Tabs>
+
+          {/* Active Result Card */}
+          {scannedResult && (
+            <Card className="p-4 border-primary/40 bg-primary/5">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-wider text-primary">Scan Result</span>
+                  <div className="flex items-center gap-1.5">
+                    <Badge variant="outline" className="text-[10px] uppercase font-mono">
+                      {scannedResult.format}
+                    </Badge>
+                    {scannedResult.isValidChecksum ? (
+                      <Badge variant="outline" className="text-[10px] gap-1 text-green-500 border-green-500/30">
+                        <CheckCircle2 className="h-3 w-3" /> Checksum Valid
+                      </Badge>
+                    ) : (
+                      <Badge variant="destructive" className="text-[10px] gap-1">
+                        <AlertCircle className="h-3 w-3" /> Invalid Checksum
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+
+                <div className="p-3 bg-background rounded-lg border font-mono text-xs break-all select-all flex items-center justify-between gap-2">
+                  <span>{scannedResult.rawValue}</span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 shrink-0"
+                    onClick={() => handleCopy(scannedResult.rawValue)}
+                  >
+                    {copied ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3" />}
+                  </Button>
+                </div>
+
+                {/* Structured Metadata Actions */}
+                {scannedResult.dataType === "url" && (
+                  <Button
+                    size="sm"
+                    className="w-full text-xs gap-1.5"
+                    onClick={() => window.open(scannedResult.rawValue, "_blank", "noopener,noreferrer")}
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" /> Open Link in Browser
+                  </Button>
+                )}
+
+                {scannedResult.dataType === "wifi" && scannedResult.metadata && (
+                  <div className="p-3 bg-background rounded-lg border text-xs space-y-1">
+                    <p className="font-semibold flex items-center gap-1 text-primary">
+                      <Wifi className="h-3.5 w-3.5" /> WiFi Network Details
+                    </p>
+                    <p><strong className="text-muted-foreground">SSID:</strong> {scannedResult.metadata.ssid}</p>
+                    <p><strong className="text-muted-foreground">Security:</strong> {scannedResult.metadata.type}</p>
+                    <div className="flex items-center justify-between pt-1">
+                      <span><strong className="text-muted-foreground">Password:</strong> {scannedResult.metadata.password}</span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-6 text-[10px]"
+                        onClick={() => handleCopy(scannedResult.metadata?.password || "")}
+                      >
+                        Copy Password
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </Card>
+          )}
+        </div>
+
+        {/* Scan History (5 cols) */}
+        <div className="md:col-span-5 space-y-2">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs text-muted-foreground uppercase">Scan History ({history.length})</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              {history.length === 0 ? (
+                <div className="text-center py-10 text-xs text-muted-foreground">
+                  No scan history yet.
+                </div>
+              ) : (
+                <div className="divide-y divide-border max-h-[360px] overflow-y-auto">
+                  {history.map((item, idx) => (
+                    <div key={`${item.rawValue}_${idx}`} className="p-3 text-xs space-y-1 hover:bg-muted/20">
+                      <div className="flex items-center justify-between">
+                        <Badge variant="outline" className="text-[9px] font-mono">
+                          {item.format}
+                        </Badge>
+                        <span className="text-[10px] text-muted-foreground capitalize">
+                          {item.dataType}
+                        </span>
+                      </div>
+                      <p className="font-mono text-[11px] truncate text-foreground select-all">
+                        {item.rawValue}
+                      </p>
+                    </div>
+                  ))}
                 </div>
               )}
             </CardContent>
           </Card>
-        </TabsContent>
-
-        <TabsContent value="manual" className="mt-4 space-y-3">
-          <Card>
-            <CardContent className="p-4 space-y-3">
-              <Label className="text-sm font-medium">Enter Barcode Value</Label>
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Type or paste barcode number..."
-                  value={manualInput}
-                  onChange={(e) => setManualInput(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleManualScan()}
-                />
-                <Button onClick={handleManualScan} disabled={!manualInput.trim()} className="gap-1.5">
-                  <Scan className="h-4 w-4" /> Add
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="history" className="mt-4 space-y-3">
-          <div className="flex justify-end gap-2">
-            <Button variant="ghost" size="sm" onClick={handleExportHistory} className="gap-1.5" disabled={results.length === 0}>
-              <Download className="h-3.5 w-3.5" /> Export
-            </Button>
-            <Button variant="ghost" size="sm" onClick={handleClearHistory} className="gap-1.5 text-destructive" disabled={results.length === 0}>
-              <Trash2 className="h-3.5 w-3.5" /> Clear
-            </Button>
-          </div>
-          {results.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Scan className="h-10 w-10 mx-auto mb-2 opacity-30" />
-              <p className="text-sm">No scans yet. Use the camera, upload, or manual tab to scan barcodes.</p>
-            </div>
-          ) : (
-            results.map((result, i) => (
-              <Card key={`${result.timestamp}-${i}`}>
-                <CardContent className="p-3 flex items-center justify-between">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Badge variant="outline" className="text-[10px]">{result.format}</Badge>
-                      <Badge className="text-[10px] capitalize">{result.type}</Badge>
-                    </div>
-                    <p className="text-sm font-mono truncate">{result.rawValue}</p>
-                    <p className="text-[10px] text-muted-foreground mt-1">
-                      {new Date(result.timestamp).toLocaleString()}
-                    </p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleCopy(result.rawValue, i)}
-                    className="gap-1 shrink-0"
-                  >
-                    {copiedIndex === i ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
-                    Copy
-                  </Button>
-                </CardContent>
-              </Card>
-            ))
-          )}
-        </TabsContent>
-      </Tabs>
+        </div>
+      </div>
     </div>
   );
 }

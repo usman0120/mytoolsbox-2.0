@@ -1,249 +1,332 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
-import { Palette, Copy, Check, RefreshCw, Shuffle } from "lucide-react";
+import { useState } from "react";
+import { Palette, Copy, Check, Shuffle, Download, Eye, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "sonner";
+import {
+  generatePalette,
+  getContrastRatio,
+  generateShades,
+  exportCssVariables,
+  exportTailwindConfig,
+  rgbToCmyk,
+  type HarmonyRule,
+  type PaletteColor,
+} from "@/features/tools/color-palette";
 
-type HarmonyRule = "complementary" | "analogous" | "triadic" | "tetradic" | "monochromatic" | "split-complementary";
+const HARMONY_RULES: { id: HarmonyRule; label: string }[] = [
+  { id: "analogous", label: "Analogous" },
+  { id: "complementary", label: "Complementary" },
+  { id: "triadic", label: "Triadic" },
+  { id: "tetradic", label: "Tetradic" },
+  { id: "monochromatic", label: "Monochromatic" },
+  { id: "split-complementary", label: "Split Comp." },
+];
 
-function hslToHex(h: number, s: number, l: number): string {
-  s /= 100;
-  l /= 100;
-  const a = s * Math.min(l, 1 - l);
-  const f = (n: number) => {
-    const k = (n + h / 30) % 12;
-    const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
-    return Math.round(255 * color).toString(16).padStart(2, "0");
-  };
-  return `#${f(0)}${f(8)}${f(4)}`;
-}
-
-function hexToHsl(hex: string): { h: number; s: number; l: number } {
-  let r = 0, g = 0, b = 0;
-  hex = hex.replace("#", "");
-  if (hex.length === 3) {
-    r = parseInt(hex[0] + hex[0], 16) / 255;
-    g = parseInt(hex[1] + hex[1], 16) / 255;
-    b = parseInt(hex[2] + hex[2], 16) / 255;
-  } else {
-    r = parseInt(hex.substring(0, 2), 16) / 255;
-    g = parseInt(hex.substring(2, 4), 16) / 255;
-    b = parseInt(hex.substring(4, 6), 16) / 255;
+function getRandomHex(): string {
+  const letters = "0123456789ABCDEF";
+  let color = "#";
+  for (let i = 0; i < 6; i++) {
+    color += letters[Math.floor(Math.random() * 16)];
   }
-  const max = Math.max(r, g, b), min = Math.min(r, g, b);
-  let h = 0, s = 0;
-  const l = (max + min) / 2;
-  if (max !== min) {
-    const d = max - min;
-    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-    switch (max) {
-      case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
-      case g: h = ((b - r) / d + 2) / 6; break;
-      case b: h = ((r - g) / d + 4) / 6; break;
-    }
-  }
-  return { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100) };
+  return color;
 }
-
-function generatePalette(baseHex: string, rule: HarmonyRule): string[] {
-  const { h, s, l } = hexToHsl(baseHex);
-
-  switch (rule) {
-    case "complementary":
-      return [baseHex, hslToHex((h + 180) % 360, s, l)];
-    case "analogous":
-      return [
-        hslToHex((h - 30 + 360) % 360, s, l),
-        baseHex,
-        hslToHex((h + 30) % 360, s, l),
-        hslToHex((h + 60) % 360, s, l),
-      ];
-    case "triadic":
-      return [baseHex, hslToHex((h + 120) % 360, s, l), hslToHex((h + 240) % 360, s, l)];
-    case "tetradic":
-      return [
-        baseHex,
-        hslToHex((h + 90) % 360, s, l),
-        hslToHex((h + 180) % 360, s, l),
-        hslToHex((h + 270) % 360, s, l),
-      ];
-    case "monochromatic":
-      return [
-        hslToHex(h, s, Math.min(100, l + 30)),
-        hslToHex(h, s, Math.min(100, l + 15)),
-        baseHex,
-        hslToHex(h, s, Math.max(0, l - 15)),
-        hslToHex(h, s, Math.max(0, l - 30)),
-      ];
-    case "split-complementary":
-      return [
-        baseHex,
-        hslToHex((h + 150) % 360, s, l),
-        hslToHex((h + 210) % 360, s, l),
-      ];
-    default:
-      return [baseHex];
-  }
-}
-
-function randomHex(): string {
-  return hslToHex(Math.floor(Math.random() * 360), 60 + Math.floor(Math.random() * 30), 45 + Math.floor(Math.random() * 15));
-}
-
-const harmonyLabels: Record<HarmonyRule, string> = {
-  complementary: "Complementary",
-  analogous: "Analogous",
-  triadic: "Triadic",
-  tetradic: "Tetradic",
-  monochromatic: "Monochromatic",
-  "split-complementary": "Split Comp.",
-};
 
 export function ColorPaletteEngine() {
-  const [mounted, setMounted] = useState(false);
-  const [baseColor, setBaseColor] = useState(() => randomHex());
+  const [baseColor, setBaseColor] = useState("#3B82F6");
   const [rule, setRule] = useState<HarmonyRule>("analogous");
-  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"palette" | "shades" | "contrast">("palette");
 
-  // Mark as mounted on first render
-  if (!mounted) {
-    setMounted(true);
-  }
+  const palette: PaletteColor[] = generatePalette(baseColor, rule, 5);
+  const shades = generateShades(baseColor);
 
-  const palette = generatePalette(baseColor, rule);
-
-  const handleCopy = async (color: string, index: number) => {
-    await navigator.clipboard.writeText(color);
-    setCopiedIndex(index);
-    setTimeout(() => setCopiedIndex(null), 1500);
+  const handleCopy = async (text: string, key: string) => {
+    await navigator.clipboard.writeText(text);
+    setCopiedKey(key);
+    toast.success(`Copied ${text} to clipboard!`);
+    setTimeout(() => setCopiedKey(null), 1500);
   };
 
-  const handleRandom = () => {
-    setBaseColor(randomHex());
+  const handleRandomize = () => {
+    setBaseColor(getRandomHex());
   };
 
-  const handleExport = () => {
-    const text = palette.join("\n");
-    const blob = new Blob([text], { type: "text/plain" });
+  const handleExport = (type: "css" | "tailwind" | "json") => {
+    let content = "";
+    let filename = "";
+
+    if (type === "css") {
+      content = exportCssVariables(palette);
+      filename = `palette-vars-${baseColor.replace("#", "")}.css`;
+    } else if (type === "tailwind") {
+      content = exportTailwindConfig(palette);
+      filename = `tailwind-colors-${baseColor.replace("#", "")}.js`;
+    } else {
+      content = JSON.stringify(
+        palette.map((p) => ({
+          hex: p.hex,
+          rgb: p.rgb,
+          hsl: p.hsl,
+          cmyk: rgbToCmyk(p.rgb.r, p.rgb.g, p.rgb.b),
+        })),
+        null,
+        2
+      );
+      filename = `palette-${baseColor.replace("#", "")}.json`;
+    }
+
+    const blob = new Blob([content], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `palette-${baseColor.replace("#", "")}.txt`;
+    a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
+    toast.success(`Downloaded ${filename}!`);
   };
 
   return (
     <div className="space-y-6">
-      {/* Base Color Picker */}
-      <div className="flex items-center gap-4">
-        <div className="relative">
+      {/* Top Header / Color Controls */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border rounded-xl bg-card shadow-xs">
+        <div className="flex items-center gap-3">
           <input
             type="color"
             value={baseColor}
             onChange={(e) => setBaseColor(e.target.value)}
-            className="w-12 h-12 rounded-lg cursor-pointer border-2 border-border/50"
+            className="w-12 h-12 rounded-lg cursor-pointer border border-border shadow-xs"
           />
-        </div>
-        <div className="flex-1">
-          <Label className="text-xs text-muted-foreground">Base Color</Label>
-          <div className="font-mono text-lg font-bold" suppressHydrationWarning>
-            {baseColor.toUpperCase()}
+          <div>
+            <Label className="text-xs text-muted-foreground">Base Color</Label>
+            <div className="font-mono text-xl font-bold tracking-tight">
+              {baseColor.toUpperCase()}
+            </div>
           </div>
         </div>
-        <Button onClick={handleRandom} variant="outline" size="sm" className="gap-2">
-          <Shuffle className="h-4 w-4" /> Random
-        </Button>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <Button onClick={handleRandomize} variant="outline" size="sm" className="gap-1.5 text-xs">
+            <Shuffle className="h-3.5 w-3.5" /> Randomize
+          </Button>
+          <Button onClick={() => handleExport("css")} variant="outline" size="sm" className="gap-1.5 text-xs">
+            <Download className="h-3.5 w-3.5" /> CSS Vars
+          </Button>
+          <Button onClick={() => handleExport("tailwind")} variant="outline" size="sm" className="gap-1.5 text-xs">
+            <Download className="h-3.5 w-3.5" /> Tailwind
+          </Button>
+        </div>
       </div>
 
-      {/* Harmony Rules */}
+      {/* Harmony Selector */}
       <div className="flex flex-wrap gap-2">
-        {(Object.keys(harmonyLabels) as HarmonyRule[]).map((r) => (
+        {HARMONY_RULES.map((r) => (
           <Button
-            key={r}
-            variant={rule === r ? "default" : "outline"}
+            key={r.id}
+            variant={rule === r.id ? "default" : "outline"}
             size="sm"
-            onClick={() => setRule(r)}
-            className="rounded-full text-xs"
+            onClick={() => setRule(r.id)}
+            className="text-xs h-8"
           >
-            {harmonyLabels[r]}
+            {r.label}
           </Button>
         ))}
       </div>
 
-      {/* Palette Display */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-        {palette.map((color, i) => (
-          <Card key={i} className="overflow-hidden border-border/50">
-            <div
-              className="h-24 w-full transition-transform hover:scale-105 cursor-pointer"
-              style={{ backgroundColor: color }}
-              onClick={() => handleCopy(color, i)}
-            />
-            <CardContent className="p-3">
-              <div className="flex items-center justify-between">
-                <span className="font-mono text-sm font-medium">{color.toUpperCase()}</span>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7"
-                  onClick={() => handleCopy(color, i)}
+      {/* Main Tabs */}
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab((v as "palette" | "shades" | "contrast") ?? "palette")}>
+        <TabsList className="grid grid-cols-3 max-w-sm">
+          <TabsTrigger value="palette" className="text-xs gap-1.5">
+            <Palette className="h-3.5 w-3.5" /> Harmonies
+          </TabsTrigger>
+          <TabsTrigger value="shades" className="text-xs gap-1.5">
+            <Layers className="h-3.5 w-3.5" /> 50–900 Shades
+          </TabsTrigger>
+          <TabsTrigger value="contrast" className="text-xs gap-1.5">
+            <Eye className="h-3.5 w-3.5" /> WCAG Contrast
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Tab 1: Harmonies Palette */}
+        <TabsContent value="palette" className="space-y-4 pt-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            {palette.map((item, i) => {
+              const cmyk = rgbToCmyk(item.rgb.r, item.rgb.g, item.rgb.b);
+              const contrastWhite = getContrastRatio(item.hex, "#FFFFFF");
+              const isDark = contrastWhite >= 4.5;
+
+              return (
+                <Card key={i} className="overflow-hidden border shadow-xs group">
+                  <div
+                    className="h-28 w-full p-2 flex flex-col justify-between cursor-pointer transition-transform group-hover:scale-[1.02]"
+                    style={{ backgroundColor: item.hex }}
+                    onClick={() => handleCopy(item.hex, `hex-${i}`)}
+                  >
+                    <div className="flex justify-end">
+                      <Badge
+                        variant="secondary"
+                        className="text-[10px] opacity-90 backdrop-blur-xs px-1.5 py-0 h-5"
+                      >
+                        {i === 0 ? "Root" : `Accent ${i}`}
+                      </Badge>
+                    </div>
+                    <span
+                      className={`text-xs font-mono font-bold px-1.5 py-0.5 rounded-sm w-fit ${
+                        isDark ? "text-white bg-black/30" : "text-black bg-white/40"
+                      }`}
+                    >
+                      {item.hex.toUpperCase()}
+                    </span>
+                  </div>
+
+                  <CardContent className="p-3 space-y-2 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono font-semibold">{item.hex.toUpperCase()}</span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={() => handleCopy(item.hex, `hex-${i}`)}
+                      >
+                        {copiedKey === `hex-${i}` ? (
+                          <Check className="h-3.5 w-3.5 text-green-500" />
+                        ) : (
+                          <Copy className="h-3.5 w-3.5" />
+                        )}
+                      </Button>
+                    </div>
+
+                    <div className="text-[11px] text-muted-foreground space-y-0.5 font-mono">
+                      <div>RGB: {item.rgb.r}, {item.rgb.g}, {item.rgb.b}</div>
+                      <div>HSL: {item.hsl.h}°, {item.hsl.s}%, {item.hsl.l}%</div>
+                      <div>CMYK: {cmyk.c}%, {cmyk.m}%, {cmyk.y}%, {cmyk.k}%</div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+
+          {/* Real-time UI Component Preview */}
+          <Card className="border">
+            <CardContent className="p-4 space-y-3">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Live UI Mockup Preview
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div
+                  className="rounded-lg p-4 text-center font-medium text-sm shadow-xs flex items-center justify-center min-h-[50px]"
+                  style={{
+                    backgroundColor: palette[0]?.hex || baseColor,
+                    color: getContrastRatio(palette[0]?.hex || baseColor, "#FFFFFF") >= 4.5 ? "#FFF" : "#000",
+                  }}
                 >
-                  {copiedIndex === i ? (
-                    <Check className="h-3.5 w-3.5 text-green-500" />
-                  ) : (
-                    <Copy className="h-3.5 w-3.5" />
-                  )}
-                </Button>
+                  Primary Action Button
+                </div>
+                <div
+                  className="rounded-lg p-4 text-center font-medium text-sm shadow-xs border flex items-center justify-center min-h-[50px]"
+                  style={{
+                    backgroundColor: palette[1]?.hex || baseColor,
+                    color: getContrastRatio(palette[1]?.hex || baseColor, "#FFFFFF") >= 4.5 ? "#FFF" : "#000",
+                  }}
+                >
+                  Secondary Action
+                </div>
+                <div
+                  className="rounded-lg p-4 text-center font-medium text-sm shadow-xs border flex items-center justify-center min-h-[50px]"
+                  style={{
+                    backgroundColor: palette[2]?.hex || baseColor,
+                    color: getContrastRatio(palette[2]?.hex || baseColor, "#FFFFFF") >= 4.5 ? "#FFF" : "#000",
+                  }}
+                >
+                  Accent Badge / Tag
+                </div>
               </div>
             </CardContent>
           </Card>
-        ))}
-      </div>
+        </TabsContent>
 
-      {/* Preview */}
-      <Card>
-        <CardContent className="p-4">
-          <h3 className="text-sm font-medium mb-3">UI Preview</h3>
-          <div className="space-y-3">
-            <div
-              className="h-10 rounded-lg flex items-center px-4 text-white font-medium text-sm"
-              style={{ backgroundColor: palette[0] }}
-            >
-              Primary Button
-            </div>
-            <div className="flex gap-2">
-              {palette.slice(0, 3).map((color, i) => (
+        {/* Tab 2: 50-900 Shades */}
+        <TabsContent value="shades" className="space-y-3 pt-2">
+          <div className="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-10 gap-2">
+            {shades.map((s) => {
+              const isDark = getContrastRatio(s.hex, "#FFFFFF") >= 4.5;
+              return (
                 <div
-                  key={i}
-                  className="flex-1 h-8 rounded-lg"
-                  style={{ backgroundColor: color, opacity: 0.3 + i * 0.2 }}
-                />
-              ))}
-            </div>
-            <div className="flex gap-2">
-              {palette.slice(0, 4).map((color, i) => (
-                <div
-                  key={i}
-                  className="w-6 h-6 rounded-full border-2 border-background"
-                  style={{ backgroundColor: color }}
-                />
-              ))}
-              <span className="text-xs text-muted-foreground self-center ml-1">Avatar colors</span>
-            </div>
+                  key={s.shade}
+                  onClick={() => handleCopy(s.hex, `shade-${s.shade}`)}
+                  className="rounded-lg border overflow-hidden cursor-pointer hover:scale-105 transition-transform"
+                >
+                  <div
+                    className="h-16 w-full flex items-end p-1.5"
+                    style={{ backgroundColor: s.hex }}
+                  >
+                    <span
+                      className={`text-[10px] font-bold font-mono px-1 rounded-sm ${
+                        isDark ? "text-white bg-black/30" : "text-black bg-white/40"
+                      }`}
+                    >
+                      {s.shade}
+                    </span>
+                  </div>
+                  <div className="p-1.5 text-center bg-card">
+                    <p className="font-mono text-[10px] font-medium truncate">{s.hex.toUpperCase()}</p>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        </CardContent>
-      </Card>
+        </TabsContent>
 
-      {/* Export */}
-      <div className="flex gap-2">
-        <Button onClick={handleExport} variant="outline" size="sm" className="gap-2">
-          <Palette className="h-4 w-4" /> Export Palette
-        </Button>
-      </div>
+        {/* Tab 3: WCAG Contrast Analysis */}
+        <TabsContent value="contrast" className="space-y-3 pt-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {palette.map((item, idx) => {
+              const contrastOnWhite = getContrastRatio(item.hex, "#FFFFFF");
+              const contrastOnBlack = getContrastRatio(item.hex, "#000000");
+
+              return (
+                <Card key={idx} className="border p-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 rounded-md border" style={{ backgroundColor: item.hex }} />
+                    <span className="font-mono font-semibold text-xs">{item.hex.toUpperCase()}</span>
+                    <Badge variant="outline" className="text-[10px] ml-auto">
+                      {idx === 0 ? "Primary" : `Color ${idx + 1}`}
+                    </Badge>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="p-2.5 rounded-lg border bg-white text-black space-y-1">
+                      <div className="flex justify-between font-semibold">
+                        <span>On White</span>
+                        <span>{contrastOnWhite}:1</span>
+                      </div>
+                      <Badge variant={contrastOnWhite >= 4.5 ? "default" : "secondary"} className="text-[9px]">
+                        {contrastOnWhite >= 7 ? "AAA Pass" : contrastOnWhite >= 4.5 ? "AA Pass" : "Fail (Normal Text)"}
+                      </Badge>
+                    </div>
+
+                    <div className="p-2.5 rounded-lg border bg-black text-white space-y-1">
+                      <div className="flex justify-between font-semibold">
+                        <span>On Black</span>
+                        <span>{contrastOnBlack}:1</span>
+                      </div>
+                      <Badge variant={contrastOnBlack >= 4.5 ? "default" : "secondary"} className="text-[9px]">
+                        {contrastOnBlack >= 7 ? "AAA Pass" : contrastOnBlack >= 4.5 ? "AA Pass" : "Fail (Normal Text)"}
+                      </Badge>
+                    </div>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

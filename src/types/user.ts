@@ -20,6 +20,7 @@ export interface FavoriteItem {
   toolName: string;
   toolSlug: string;
   category: ToolCategory;
+  productType?: "tool" | "app";
   addedAt: number; // timestamp
 }
 
@@ -29,15 +30,23 @@ export interface HistoryItem {
   toolName: string;
   toolSlug: string;
   category: ToolCategory;
+  productType?: "tool" | "app";
   action: string; // e.g. "used", "downloaded", "converted"
   timestamp: number;
   details?: string; // brief description of what was done
 }
 
+export type AccountStatus = "active" | "disabled" | "pending_deletion";
+
 export interface UserProfile {
   displayName: string;
   bio: string;
   website: string;
+  location?: string;
+  status?: AccountStatus;
+  deletionRequestedAt?: number; // timestamp when deletion was requested
+  deletionScheduledAt?: number; // timestamp when deletion will be executed (30 days later)
+  disabledAt?: number;
   createdAt: number;
   updatedAt: number;
 }
@@ -46,6 +55,8 @@ export const DEFAULT_PROFILE: UserProfile = {
   displayName: "",
   bio: "",
   website: "",
+  location: "",
+  status: "active",
   createdAt: 0,
   updatedAt: 0,
 };

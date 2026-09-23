@@ -5,6 +5,8 @@ export interface InvoiceLineItem {
   unitPrice: number;
 }
 
+export type DiscountType = "percentage" | "fixed";
+
 export interface InvoiceData {
   invoiceNumber: string;
   date: string;
@@ -16,10 +18,13 @@ export interface InvoiceData {
   toEmail: string;
   toAddress: string;
   lineItems: InvoiceLineItem[];
-  taxRate: number;
+  taxRate: number; // percentage, e.g. 10 for 10%
   discount: number;
+  discountType?: DiscountType;
+  shipping?: number;
   notes: string;
   currency: string;
+  paymentTerms?: string;
 }
 
 export function generateInvoiceId(): string {
@@ -34,12 +39,27 @@ export function calculateSubtotal(items: InvoiceLineItem[]): number {
   return Math.round(items.reduce((sum, item) => sum + calculateLineTotal(item), 0) * 100) / 100;
 }
 
-export function calculateTax(subtotal: number, taxRate: number): number {
-  return Math.round(subtotal * (taxRate / 100) * 100) / 100;
+export function calculateDiscountAmount(subtotal: number, discount: number, type: DiscountType = "fixed"): number {
+  if (discount <= 0 || subtotal <= 0) return 0;
+  if (type === "percentage") {
+    return Math.round((subtotal * (discount / 100)) * 100) / 100;
+  }
+  return Math.min(subtotal, Math.round(discount * 100) / 100);
 }
 
-export function calculateTotal(subtotal: number, tax: number, discount: number): number {
-  return Math.round((subtotal + tax - discount) * 100) / 100;
+export function calculateTax(taxableAmount: number, taxRate: number): number {
+  if (taxRate <= 0 || taxableAmount <= 0) return 0;
+  return Math.round(taxableAmount * (taxRate / 100) * 100) / 100;
+}
+
+export function calculateTotal(
+  subtotal: number,
+  tax: number,
+  discount: number,
+  shipping: number = 0
+): number {
+  const finalTotal = subtotal - discount + tax + shipping;
+  return Math.max(0, Math.round(finalTotal * 100) / 100);
 }
 
 export function formatCurrency(amount: number, currency: string = "USD"): string {
@@ -58,5 +78,33 @@ export const CURRENCIES = [
   { value: "AUD", label: "AUD (A$)" },
   { value: "INR", label: "INR (₹)" },
   { value: "JPY", label: "JPY (¥)" },
-  { value: "CNY", label: "CNY (¥)" },
 ];
+
+export function exportInvoiceCSV(data: InvoiceData): string {
+  const subtotal = calculateSubtotal(data.lineItems);
+  const discountAmount = calculateDiscountAmount(subtotal, data.discount, data.discountType);
+  const tax = calculateTax(subtotal - discountAmount, data.taxRate);
+  const total = calculateTotal(subtotal, tax, discountAmount, data.shipping || 0);
+
+  const lines = [
+    `"Invoice Number","${data.invoiceNumber}"`,
+    `"Date","${data.date}"`,
+    `"Due Date","${data.dueDate}"`,
+    `"From","${data.fromName} (${data.fromEmail}) - ${data.fromAddress.replace(/\n/g, ' ')}"`,
+    `"To","${data.toName} (${data.toEmail}) - ${data.toAddress.replace(/\n/g, ' ')}"`,
+    `"Currency","${data.currency}"`,
+    "",
+    `"Item Description","Quantity","Unit Price","Total"`,
+    ...data.lineItems.map(
+      (item) =>
+        `"${item.description.replace(/"/g, '""')}","${item.quantity}","${item.unitPrice}","${calculateLineTotal(item)}"`
+    ),
+    "",
+    `"Subtotal","${subtotal}"`,
+    `"Discount","${discountAmount}"`,
+    `"Tax (${data.taxRate}%)","${tax}"`,
+    `"Shipping","${data.shipping || 0}"`,
+    `"Grand Total","${total}"`,
+  ];
+  return lines.join("\n");
+}

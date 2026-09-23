@@ -4,6 +4,7 @@ import { getAppBySlug, getActiveApps } from "@/content/apps/registry";
 import {
   generateToolMetadata,
   generateSoftwareAppJsonLd,
+  generateHowToJsonLd,
   generateFAQJsonLd,
   generateBreadcrumbJsonLd,
 } from "@/lib/seo";
@@ -42,15 +43,20 @@ export default async function AppPage({ params }: AppPageProps) {
 
   if (!app) notFound();
 
-  // Build JSON-LD structured data
-  const jsonLd = {
-    ...generateSoftwareAppJsonLd(app),
-    ...(app.faq.length > 0 && { mainEntity: generateFAQJsonLd(app.faq)?.mainEntity }),
-  };
+  // 1. Software / WebApplication Schema
+  const softwareAppLd = generateSoftwareAppJsonLd(app);
 
+  // 2. HowTo Step Schema
+  const howToLd = generateHowToJsonLd(app);
+
+  // 3. FAQ Schema
+  const faqLd = app.faq && app.faq.length > 0 ? generateFAQJsonLd(app.faq) : null;
+
+  // 4. Breadcrumb Schema
   const breadcrumbLd = generateBreadcrumbJsonLd([
     { name: "Home", url: "/" },
     { name: "Apps", url: "/apps" },
+    { name: app.category.charAt(0).toUpperCase() + app.category.slice(1), url: `/apps?category=${app.category}` },
     { name: app.name, url: `/apps/${app.slug}` },
   ]);
 
@@ -58,8 +64,18 @@ export default async function AppPage({ params }: AppPageProps) {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareAppLd) }}
       />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(howToLd) }}
+      />
+      {faqLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }}
+        />
+      )}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}

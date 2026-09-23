@@ -28,6 +28,8 @@ export type CreditOperation =
   | "doc_generation"      // 5 credits
   | "error_explanation"   // 5 credits
   | "farming_assistant"   // 5 credits
+  | "fitness_coach"       // 20 credits
+  | "nutrition_planner"   // 20 credits
   | "chat_message";       // 1 credit
 
 // ---------------------------------------------------------------------------
@@ -35,28 +37,30 @@ export type CreditOperation =
 // ---------------------------------------------------------------------------
 
 export const CREDIT_COSTS: Record<CreditOperation, number> = {
-  simple_rewrite: 1,
-  ai_summary: 5,
-  complex_reasoning: 10,
-  vision_analysis: 15,
+  simple_rewrite: 10,
+  ai_summary: 15,
+  complex_reasoning: 25,
+  vision_analysis: 25,
   image_generation: 50,
   video_ai: 100,
-  diagram_generation: 10,
-  planning: 10,
-  project_ideas: 5,
-  quiz_generation: 5,
-  notes_generation: 5,
-  code_explanation: 5,
-  math_solving: 5,
-  grammar_check: 1,
-  paraphrase: 1,
-  citation: 1,
-  sql_assistant: 5,
-  regex_builder: 5,
-  doc_generation: 5,
-  error_explanation: 5,
-  farming_assistant: 5,
-  chat_message: 1,
+  diagram_generation: 20,
+  planning: 20,
+  project_ideas: 10,
+  quiz_generation: 15,
+  notes_generation: 15,
+  code_explanation: 20,
+  math_solving: 20,
+  grammar_check: 10,
+  paraphrase: 15,
+  citation: 5,
+  sql_assistant: 20,
+  regex_builder: 15,
+  doc_generation: 20,
+  error_explanation: 20,
+  farming_assistant: 15,
+  fitness_coach: 20,
+  nutrition_planner: 20,
+  chat_message: 10,
 };
 
 // ---------------------------------------------------------------------------
@@ -107,12 +111,12 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionTier, SubscriptionPlan> = {
     name: "Free Account",
     priceMonthly: null,
     priceYearly: null,
-    monthlyCredits: 500,
+    monthlyCredits: 1000,
     features: [
       "Everything in Free",
       "Favorites & history",
       "Saved results",
-      "500 AI credits/month",
+      "1,000 AI credits/month",
       "Personal preferences",
       "Saved templates",
     ],

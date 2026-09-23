@@ -8,7 +8,6 @@
 "use client";
 
 import { useState, useCallback, useMemo } from "react";
-import { useRouter } from "next/navigation";
 import {
   Plus,
   Trash2,
@@ -19,7 +18,15 @@ import {
   Search,
   ChevronDown,
   Wand2,
+  CheckCircle2,
+  AlertTriangle,
+  Layers,
+  BookOpen,
+  Presentation,
+  Network,
+  Code2,
 } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,8 +53,24 @@ interface BuilderStep {
   config?: Record<string, unknown>;
 }
 
+interface TemplatePreset {
+  id: string;
+  name: string;
+  shortDescription: string;
+  description: string;
+  icon: string;
+  iconComponent: React.ComponentType<{ className?: string }>;
+  steps: Array<{
+    toolSlug: string;
+    label: string;
+    productType: "tool" | "app" | "ai";
+    inputTypes: string[];
+    outputTypes: string[];
+  }>;
+}
+
 // ---------------------------------------------------------------------------
-// Available tools for the builder (simplified — in production, load from registry)
+// Available tools for the builder
 // ---------------------------------------------------------------------------
 
 const AVAILABLE_TOOLS: Array<{
@@ -82,24 +105,17 @@ const AVAILABLE_TOOLS: Array<{
   { slug: "ai-text-summarizer", name: "AI Summarizer", productType: "ai", inputTypes: ["text/plain"], outputTypes: ["text/plain"], category: "ai" },
   { slug: "ai-notes-generator", name: "AI Notes Generator", productType: "ai", inputTypes: ["text/plain"], outputTypes: ["text/markdown", "application/pdf"], category: "ai" },
   { slug: "ai-quiz-generator", name: "AI Quiz Generator", productType: "ai", inputTypes: ["text/plain"], outputTypes: ["application/json"], category: "ai" },
-  { slug: "ai-regex-builder", name: "AI Regex Builder", productType: "ai", inputTypes: ["text/plain"], outputTypes: ["text/plain"], category: "ai" },
-  { slug: "ai-sql-assistant", name: "AI SQL Assistant", productType: "ai", inputTypes: ["text/plain"], outputTypes: ["text/plain"], category: "ai" },
+  { slug: "ai-diagram-generator", name: "AI Diagram Generator", productType: "ai", inputTypes: ["text/plain"], outputTypes: ["image/svg+xml"], category: "ai" },
+  { slug: "presentation-maker", name: "Presentation Maker", productType: "ai", inputTypes: ["text/plain"], outputTypes: ["text/markdown"], category: "ai" },
+  { slug: "ai-project-ideas", name: "AI System Architect", productType: "ai", inputTypes: ["text/plain"], outputTypes: ["text/markdown"], category: "ai" },
+  { slug: "ai-planning", name: "AI Action Planner", productType: "ai", inputTypes: ["text/plain"], outputTypes: ["text/markdown"], category: "ai" },
   { slug: "ai-doc-generator", name: "AI Doc Generator", productType: "ai", inputTypes: ["text/plain"], outputTypes: ["text/markdown"], category: "ai" },
   { slug: "ai-error-explainer", name: "AI Error Explainer", productType: "ai", inputTypes: ["text/plain"], outputTypes: ["text/plain"], category: "ai" },
+  { slug: "math-solver", name: "Step-by-Step Math Solver", productType: "tool", inputTypes: ["text/plain"], outputTypes: ["text/markdown"], category: "developer" },
   // Document tools
-  { slug: "markdown-to-pdf", name: "Markdown to PDF", productType: "tool", inputTypes: ["text/markdown", "text/plain"], outputTypes: ["application/pdf"], category: "documents" },
+  { slug: "pdf-to-text", name: "Document Text Extractor", productType: "tool", inputTypes: ["application/pdf", "text/plain"], outputTypes: ["text/plain"], category: "documents" },
+  { slug: "markdown-to-pdf", name: "Markdown to PDF Document", productType: "tool", inputTypes: ["text/markdown", "text/plain"], outputTypes: ["application/pdf"], category: "documents" },
 ];
-
-// Group tools by category
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const TOOLS_BY_CATEGORY = AVAILABLE_TOOLS.reduce(
-  (acc, tool) => {
-    if (!acc[tool.category]) acc[tool.category] = [];
-    acc[tool.category].push(tool);
-    return acc;
-  },
-  {} as Record<string, typeof AVAILABLE_TOOLS>
-);
 
 const CATEGORY_LABELS: Record<string, string> = {
   writing: "Writing",
@@ -107,6 +123,84 @@ const CATEGORY_LABELS: Record<string, string> = {
   ai: "AI",
   documents: "Documents",
 };
+
+// ---------------------------------------------------------------------------
+// Predefined Builder Templates
+// ---------------------------------------------------------------------------
+
+const BUILDER_TEMPLATES: TemplatePreset[] = [
+  {
+    id: "tpl-study-notes",
+    name: "Study Guide Pipeline",
+    shortDescription: "Text Cleaner → Summarizer → Cornell Notes → Quiz Generator",
+    description: "Transforms raw documents or articles into structured study notes and active recall practice quizzes.",
+    icon: "GraduationCap",
+    iconComponent: BookOpen,
+    steps: [
+      { toolSlug: "text-cleaner", label: "Text Cleaner", productType: "tool", inputTypes: ["text/plain"], outputTypes: ["text/plain"] },
+      { toolSlug: "ai-text-summarizer", label: "AI Summarizer", productType: "ai", inputTypes: ["text/plain"], outputTypes: ["text/plain"] },
+      { toolSlug: "ai-notes-generator", label: "AI Notes Generator", productType: "ai", inputTypes: ["text/plain"], outputTypes: ["text/markdown", "application/pdf"] },
+      { toolSlug: "ai-quiz-generator", label: "AI Quiz Generator", productType: "ai", inputTypes: ["text/plain"], outputTypes: ["application/json"] },
+    ],
+  },
+  {
+    id: "tpl-pitch-deck",
+    name: "Slide Pitch Deck",
+    shortDescription: "Text Cleaner → AI Summarizer → Presentation Maker",
+    description: "Synthesizes long-form proposals or briefs directly into an interactive presentation deck.",
+    icon: "Presentation",
+    iconComponent: Presentation,
+    steps: [
+      { toolSlug: "text-cleaner", label: "Text Cleaner", productType: "tool", inputTypes: ["text/plain"], outputTypes: ["text/plain"] },
+      { toolSlug: "ai-text-summarizer", label: "AI Summarizer", productType: "ai", inputTypes: ["text/plain"], outputTypes: ["text/plain"] },
+      { toolSlug: "presentation-maker", label: "Presentation Maker", productType: "ai", inputTypes: ["text/plain"], outputTypes: ["text/markdown"] },
+    ],
+  },
+  {
+    id: "tpl-idea-architecture",
+    name: "Idea to Diagram & Plan",
+    shortDescription: "Idea Architect → Action Planner → SVG Diagram",
+    description: "Takes a high-level software concept and produces technical architecture, execution roadmap, and SVG vector diagram.",
+    icon: "Network",
+    iconComponent: Network,
+    steps: [
+      { toolSlug: "ai-project-ideas", label: "AI System Architect", productType: "ai", inputTypes: ["text/plain"], outputTypes: ["text/markdown"] },
+      { toolSlug: "ai-planning", label: "AI Action Planner", productType: "ai", inputTypes: ["text/plain"], outputTypes: ["text/markdown"] },
+      { toolSlug: "ai-diagram-generator", label: "AI Diagram Generator", productType: "ai", inputTypes: ["text/plain"], outputTypes: ["image/svg+xml"] },
+    ],
+  },
+  {
+    id: "tpl-code-docs",
+    name: "API & Code Documenter",
+    shortDescription: "JSON Validator → JSON Formatter → AI Doc Generator",
+    description: "Validates API specifications or schemas, formats them, and writes comprehensive technical documentation.",
+    icon: "Code2",
+    iconComponent: Code2,
+    steps: [
+      { toolSlug: "json-validator", label: "JSON Validator", productType: "tool", inputTypes: ["application/json", "text/plain"], outputTypes: ["application/json"] },
+      { toolSlug: "json-formatter", label: "JSON Formatter", productType: "tool", inputTypes: ["application/json", "text/plain"], outputTypes: ["application/json"] },
+      { toolSlug: "ai-doc-generator", label: "AI Doc Generator", productType: "ai", inputTypes: ["text/plain"], outputTypes: ["text/markdown"] },
+    ],
+  },
+];
+
+// Helper to test compatibility between two adjacent steps
+function checkStepCompatibility(stepA: BuilderStep, stepB: BuilderStep): { compatible: boolean; matchType: string } {
+  // Direct overlap
+  for (const out of stepA.outputTypes) {
+    if (stepB.inputTypes.includes(out)) {
+      return { compatible: true, matchType: out };
+    }
+  }
+  // Coercion logic: text/markdown or application/json easily casts to text/plain
+  if (stepB.inputTypes.includes("text/plain")) {
+    return { compatible: true, matchType: "Auto-cast to text/plain" };
+  }
+  if (stepA.outputTypes.includes("text/plain")) {
+    return { compatible: true, matchType: "Text stream" };
+  }
+  return { compatible: false, matchType: `${stepA.outputTypes[0]} ≠ ${stepB.inputTypes[0]}` };
+}
 
 // ---------------------------------------------------------------------------
 // WorkflowBuilder Component
@@ -119,8 +213,6 @@ interface WorkflowBuilderProps {
 }
 
 export function WorkflowBuilder({ className, onSave, onRun }: WorkflowBuilderProps) {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const router = useRouter();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [shortDescription, setShortDescription] = useState("");
@@ -143,6 +235,25 @@ export function WorkflowBuilder({ className, onSave, onRun }: WorkflowBuilderPro
     });
   }, [searchQuery, selectedCategory]);
 
+  // Load a preset template
+  const loadPreset = useCallback((preset: TemplatePreset) => {
+    setName(preset.name);
+    setShortDescription(preset.shortDescription);
+    setDescription(preset.description);
+    setIcon(preset.icon);
+    setSteps(
+      preset.steps.map((s, idx) => ({
+        id: `step-${Date.now()}-${idx}-${s.toolSlug}`,
+        toolSlug: s.toolSlug,
+        label: s.label,
+        productType: s.productType,
+        inputTypes: s.inputTypes,
+        outputTypes: s.outputTypes,
+      }))
+    );
+    toast.success(`Loaded template: ${preset.name}`);
+  }, []);
+
   // Add a step to the pipeline
   const addStep = useCallback(
     (tool: (typeof AVAILABLE_TOOLS)[0]) => {
@@ -155,6 +266,7 @@ export function WorkflowBuilder({ className, onSave, onRun }: WorkflowBuilderPro
         outputTypes: tool.outputTypes,
       };
       setSteps((prev) => [...prev, step]);
+      toast.success(`Added ${tool.name} to pipeline`);
     },
     []
   );
@@ -181,8 +293,7 @@ export function WorkflowBuilder({ className, onSave, onRun }: WorkflowBuilderPro
   const buildDefinition = useCallback((): WorkflowDefinition | null => {
     if (steps.length === 0) return null;
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const workflowSteps: WorkflowStep[] = steps.map((s, i) => ({
+    const workflowSteps: WorkflowStep[] = steps.map((s) => ({
       id: s.id,
       toolSlug: s.toolSlug,
       label: s.label,
@@ -205,7 +316,7 @@ export function WorkflowBuilder({ className, onSave, onRun }: WorkflowBuilderPro
       outputType: steps[steps.length - 1]?.outputTypes[0] ?? "text/plain",
       categories: ["custom"],
       keywords: [],
-      estimatedTime: `${steps.length * 3}-${steps.length * 10}s`,
+      estimatedTime: `${steps.length * 2}-${steps.length * 6}s`,
     };
   }, [steps, name, description, shortDescription, icon]);
 
@@ -222,6 +333,7 @@ export function WorkflowBuilder({ className, onSave, onRun }: WorkflowBuilderPro
     });
 
     setSaved(true);
+    toast.success("Workflow saved to your local library!");
     setTimeout(() => setSaved(false), 2000);
     onSave?.(def);
   }, [buildDefinition, name, onSave]);
@@ -237,263 +349,329 @@ export function WorkflowBuilder({ className, onSave, onRun }: WorkflowBuilderPro
   const previewDefinition = useMemo(() => buildDefinition(), [buildDefinition]);
 
   return (
-    <div className={cn("grid grid-cols-1 lg:grid-cols-3 gap-6", className)}>
-      {/* Left: Tool Palette */}
-      <div className="lg:col-span-1">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-semibold flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-brand" />
-              Available Tools
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-              <Input
-                placeholder="Search tools..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8 h-8 text-xs"
-              />
-            </div>
-
-            {/* Category filters */}
-            <div className="flex flex-wrap gap-1">
-              <Badge
-                variant={!selectedCategory ? "default" : "outline"}
-                className="cursor-pointer text-[10px] h-5 px-1.5"
-                onClick={() => setSelectedCategory(null)}
-              >
-                All
-              </Badge>
-              {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
-                <Badge
-                  key={key}
-                  variant={selectedCategory === key ? "default" : "outline"}
-                  className="cursor-pointer text-[10px] h-5 px-1.5"
-                  onClick={() => setSelectedCategory(key)}
+    <div className={cn("space-y-6", className)}>
+      {/* Template Presets Bar */}
+      <Card className="border-border/60 bg-gradient-to-r from-brand/5 via-transparent to-brand/5">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-semibold flex items-center gap-2">
+            <Layers className="h-4 w-4 text-brand" />
+            Quick Pipeline Templates
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {BUILDER_TEMPLATES.map((tpl) => {
+              const Icon = tpl.iconComponent;
+              return (
+                <button
+                  key={tpl.id}
+                  type="button"
+                  onClick={() => loadPreset(tpl)}
+                  className="flex flex-col text-left p-3 rounded-xl border border-border/60 bg-card hover:border-brand/40 hover:bg-brand/5 transition-all group"
                 >
-                  {label}
-                </Badge>
-              ))}
-            </div>
-
-            {/* Tool list */}
-            <ScrollArea className="h-100">
-              <div className="space-y-1 pr-2">
-                {filteredTools.map((tool) => (
-                  <button
-                    key={tool.slug}
-                    onClick={() => addStep(tool)}
-                    className={cn(
-                      "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-colors",
-                      "hover:bg-muted/60 border border-transparent hover:border-border/60",
-                      "text-xs"
-                    )}
-                  >
-                    <div
-                      className={cn(
-                        "flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[10px]",
-                        tool.productType === "ai" && "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
-                        tool.productType === "app" && "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-                        tool.productType === "tool" && "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
-                      )}
-                    >
-                      {tool.productType === "ai" ? "AI" : tool.productType === "app" ? "Ap" : "To"}
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <div className="p-1.5 rounded-lg bg-brand/10 text-brand group-hover:bg-brand group-hover:text-primary-foreground transition-colors">
+                      <Icon className="h-4 w-4" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{tool.name}</p>
-                      <p className="text-[10px] text-muted-foreground truncate">
-                        {tool.inputTypes[0]} → {tool.outputTypes[0]}
-                      </p>
-                    </div>
-                    <Plus className="h-3 w-3 shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </button>
-                ))}
-                {filteredTools.length === 0 && (
-                  <p className="text-xs text-muted-foreground text-center py-8">
-                    No tools found
+                    <span className="font-semibold text-xs text-foreground group-hover:text-brand transition-colors">
+                      {tpl.name}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground line-clamp-2">
+                    {tpl.shortDescription}
                   </p>
-                )}
-              </div>
-            </ScrollArea>
-          </CardContent>
-        </Card>
-      </div>
+                </button>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
 
-      {/* Center: Pipeline Builder */}
-      <div className="lg:col-span-2 space-y-6">
-        {/* Workflow metadata */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-semibold">Workflow Details</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label className="text-xs">Name</Label>
-                <Input
-                  placeholder="My Custom Workflow"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="h-8 text-xs"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Icon (Lucide)</Label>
-                <Input
-                  placeholder="Workflow"
-                  value={icon}
-                  onChange={(e) => setIcon(e.target.value)}
-                  className="h-8 text-xs"
-                />
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Short Description</Label>
-              <Input
-                placeholder="Brief description for cards..."
-                value={shortDescription}
-                onChange={(e) => setShortDescription(e.target.value)}
-                className="h-8 text-xs"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Full Description</Label>
-              <Textarea
-                placeholder="Describe what this workflow does..."
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                className="min-h-15 text-xs"
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Pipeline steps */}
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-semibold">
-                Pipeline ({steps.length} {steps.length === 1 ? "step" : "steps"})
-              </CardTitle>
-              {steps.length > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSteps([])}
-                  className="h-7 text-xs text-muted-foreground"
-                >
-                  Clear all
-                </Button>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent>
-            {steps.length === 0 ? (
-              <div className="text-center py-12 border-2 border-dashed rounded-xl border-border/60">
-                <Wand2 className="h-8 w-8 mx-auto text-muted-foreground/40 mb-3" />
-                <p className="text-sm text-muted-foreground mb-1">No steps yet</p>
-                <p className="text-xs text-muted-foreground/60">
-                  Click tools from the palette to add them to your pipeline
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {steps.map((step, index) => (
-                  <div
-                    key={step.id}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl border bg-card/50 group"
-                  >
-                    {/* Drag handle */}
-                    <div className="flex flex-col gap-0.5">
-                      <button
-                        onClick={() => moveStep(step.id, "up")}
-                        disabled={index === 0}
-                        className="p-0.5 rounded hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed"
-                        aria-label="Move step up"
-                      >
-                        <ChevronDown className="h-3 w-3 rotate-180 text-muted-foreground" />
-                      </button>
-                      <button
-                        onClick={() => moveStep(step.id, "down")}
-                        disabled={index === steps.length - 1}
-                        className="p-0.5 rounded hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed"
-                        aria-label="Move step down"
-                      >
-                        <ChevronDown className="h-3 w-3 text-muted-foreground" />
-                      </button>
-                    </div>
-
-                    {/* Step number */}
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-muted text-xs font-medium text-muted-foreground">
-                      {index + 1}
-                    </div>
-
-                    {/* Step info */}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{step.label}</p>
-                      <p className="text-[10px] text-muted-foreground">
-                        {step.productType === "ai" ? "AI" : step.productType === "app" ? "App" : "Tool"}
-                        {" · "}
-                        {step.inputTypes[0]} → {step.outputTypes[0]}
-                      </p>
-                    </div>
-
-                    {/* Remove */}
-                    <button
-                      onClick={() => removeStep(step.id)}
-                      className="p-1 rounded-md hover:bg-destructive/10 hover:text-destructive text-muted-foreground opacity-0 group-hover:opacity-100 transition-all"
-                      aria-label={`Remove ${step.label}`}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                ))}
-
-                {/* Connector arrows between steps */}
-                {steps.length > 1 && (
-                  <div className="flex items-center justify-center gap-1 py-1">
-                    {steps.slice(0, -1).map((_, i) => (
-                      <div key={i} className="flex items-center gap-1">
-                        {i > 0 && <span className="text-[10px] text-muted-foreground/40">···</span>}
-                        <ArrowRight className="h-3 w-3 text-muted-foreground/40" />
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Preview */}
-        {previewDefinition && steps.length > 0 && (
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left: Tool Palette */}
+        <div className="lg:col-span-1">
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-semibold">Preview</CardTitle>
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-brand" />
+                Available Tools
+              </CardTitle>
             </CardHeader>
-            <CardContent>
-              <WorkflowPipeline workflow={previewDefinition} />
+            <CardContent className="space-y-3">
+              {/* Search */}
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input
+                  placeholder="Search tools..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-8 h-8 text-xs"
+                />
+              </div>
+
+              {/* Category filters */}
+              <div className="flex flex-wrap gap-1">
+                <Badge
+                  variant={!selectedCategory ? "default" : "outline"}
+                  className="cursor-pointer text-[10px] h-5 px-1.5"
+                  onClick={() => setSelectedCategory(null)}
+                >
+                  All
+                </Badge>
+                {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
+                  <Badge
+                    key={key}
+                    variant={selectedCategory === key ? "default" : "outline"}
+                    className="cursor-pointer text-[10px] h-5 px-1.5"
+                    onClick={() => setSelectedCategory(key)}
+                  >
+                    {label}
+                  </Badge>
+                ))}
+              </div>
+
+              {/* Tool list */}
+              <ScrollArea className="h-[460px]">
+                <div className="space-y-1 pr-2">
+                  {filteredTools.map((tool) => (
+                    <button
+                      key={tool.slug}
+                      onClick={() => addStep(tool)}
+                      className={cn(
+                        "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-colors",
+                        "hover:bg-muted/60 border border-transparent hover:border-border/60",
+                        "text-xs group"
+                      )}
+                    >
+                      <div
+                        className={cn(
+                          "flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[10px] font-semibold",
+                          tool.productType === "ai" && "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
+                          tool.productType === "app" && "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+                          tool.productType === "tool" && "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                        )}
+                      >
+                        {tool.productType === "ai" ? "AI" : tool.productType === "app" ? "Ap" : "To"}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{tool.name}</p>
+                        <p className="text-[10px] text-muted-foreground truncate">
+                          {tool.inputTypes[0]} → {tool.outputTypes[0]}
+                        </p>
+                      </div>
+                      <Plus className="h-3 w-3 shrink-0 text-muted-foreground opacity-60 group-hover:opacity-100 group-hover:text-brand transition-all" />
+                    </button>
+                  ))}
+                  {filteredTools.length === 0 && (
+                    <p className="text-xs text-muted-foreground text-center py-8">
+                      No tools found
+                    </p>
+                  )}
+                </div>
+              </ScrollArea>
             </CardContent>
           </Card>
-        )}
+        </div>
 
-        {/* Actions */}
-        {steps.length > 0 && (
-          <div className="flex items-center gap-3">
-            <Button onClick={handleSave} variant="outline" className="gap-2" disabled={!name}>
-              <Save className="h-4 w-4" />
-              {saved ? "Saved!" : "Save Workflow"}
-            </Button>
-            <Button onClick={handleRun} className="gap-2">
-              <Play className="h-4 w-4" />
-              Run Workflow
-            </Button>
-          </div>
-        )}
+        {/* Center: Pipeline Builder */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Workflow metadata */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold">Workflow Details</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Workflow Name</Label>
+                  <Input
+                    placeholder="My Custom Workflow"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="h-8 text-xs"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Icon Name</Label>
+                  <Input
+                    placeholder="Workflow"
+                    value={icon}
+                    onChange={(e) => setIcon(e.target.value)}
+                    className="h-8 text-xs"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Short Description</Label>
+                <Input
+                  placeholder="Brief summary of pipeline..."
+                  value={shortDescription}
+                  onChange={(e) => setShortDescription(e.target.value)}
+                  className="h-8 text-xs"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Detailed Description</Label>
+                <Textarea
+                  placeholder="Describe the end-to-end functionality of this pipeline..."
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="min-h-15 text-xs"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Pipeline steps */}
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-semibold">
+                  Pipeline ({steps.length} {steps.length === 1 ? "step" : "steps"})
+                </CardTitle>
+                {steps.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setSteps([]);
+                      toast.info("Cleared all steps");
+                    }}
+                    className="h-7 text-xs text-muted-foreground"
+                  >
+                    Clear all
+                  </Button>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              {steps.length === 0 ? (
+                <div className="text-center py-12 border-2 border-dashed rounded-xl border-border/60">
+                  <Wand2 className="h-8 w-8 mx-auto text-muted-foreground/40 mb-3" />
+                  <p className="text-sm text-muted-foreground mb-1">No steps yet</p>
+                  <p className="text-xs text-muted-foreground/60">
+                    Pick a quick template above or select tools from the palette
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {steps.map((step, index) => {
+                    const nextStep = steps[index + 1];
+                    const compat = nextStep ? checkStepCompatibility(step, nextStep) : null;
+
+                    return (
+                      <div key={step.id} className="space-y-2">
+                        <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl border bg-card/60 group hover:border-border transition-colors">
+                          {/* Re-order controls */}
+                          <div className="flex flex-col gap-0.5">
+                            <button
+                              onClick={() => moveStep(step.id, "up")}
+                              disabled={index === 0}
+                              className="p-0.5 rounded hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed"
+                              aria-label="Move step up"
+                            >
+                              <ChevronDown className="h-3 w-3 rotate-180 text-muted-foreground" />
+                            </button>
+                            <button
+                              onClick={() => moveStep(step.id, "down")}
+                              disabled={index === steps.length - 1}
+                              className="p-0.5 rounded hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed"
+                              aria-label="Move step down"
+                            >
+                              <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                            </button>
+                          </div>
+
+                          {/* Step number */}
+                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-muted text-xs font-semibold text-muted-foreground">
+                            {index + 1}
+                          </div>
+
+                          {/* Step info */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-semibold truncate">{step.label}</p>
+                              <Badge variant="outline" className="text-[10px] h-4 px-1 py-0 uppercase">
+                                {step.productType}
+                              </Badge>
+                            </div>
+                            <p className="text-[10px] text-muted-foreground">
+                              Accepts: <span className="font-mono text-foreground/80">{step.inputTypes.join(", ")}</span>
+                              {" → Yields: "}
+                              <span className="font-mono text-foreground/80">{step.outputTypes.join(", ")}</span>
+                            </p>
+                          </div>
+
+                          {/* Remove */}
+                          <button
+                            onClick={() => {
+                              removeStep(step.id);
+                              toast.info(`Removed ${step.label}`);
+                            }}
+                            className="p-1 rounded-md hover:bg-destructive/10 hover:text-destructive text-muted-foreground opacity-60 group-hover:opacity-100 transition-all"
+                            aria-label={`Remove ${step.label}`}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+
+                        {/* Pipeline Connector with Compatibility Badge */}
+                        {compat && (
+                          <div className="flex items-center justify-center gap-2 py-1 px-4">
+                            <div className="h-px flex-1 bg-border/60" />
+                            <div
+                              className={cn(
+                                "flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-medium border shadow-xs",
+                                compat.compatible
+                                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                                  : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
+                              )}
+                            >
+                              {compat.compatible ? (
+                                <CheckCircle2 className="h-3 w-3" />
+                              ) : (
+                                <AlertTriangle className="h-3 w-3" />
+                              )}
+                              <span>{compat.matchType}</span>
+                              <ArrowRight className="h-2.5 w-2.5 opacity-60" />
+                            </div>
+                            <div className="h-px flex-1 bg-border/60" />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Preview */}
+          {previewDefinition && steps.length > 0 && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-semibold">Live Pipeline Preview</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <WorkflowPipeline workflow={previewDefinition} />
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Actions */}
+          {steps.length > 0 && (
+            <div className="flex items-center gap-3">
+              <Button onClick={handleSave} variant="outline" className="gap-2" disabled={!name}>
+                <Save className="h-4 w-4" />
+                {saved ? "Saved to Library!" : "Save Workflow"}
+              </Button>
+              <Button onClick={handleRun} className="gap-2">
+                <Play className="h-4 w-4" />
+                Run Pipeline
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

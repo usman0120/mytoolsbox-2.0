@@ -44,6 +44,12 @@ service cloud.firestore {
         allow write: if isOwner();
       }
 
+      // Credits: owner read
+      match /credits/{doc} {
+        allow read: if isOwner();
+        allow write: if isOwner();
+      }
+
       // Saved items: owner read/write
       match /saved/{doc} {
         allow read, delete: if isOwner();

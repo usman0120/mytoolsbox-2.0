@@ -18,5 +18,6 @@ export {
   getSavedWorkflows,
   saveWorkflow,
   removeSavedWorkflow,
+  getSavedWorkflowById,
 } from "./history";
 export type { WorkflowRunRecord, SavedWorkflow } from "./history";

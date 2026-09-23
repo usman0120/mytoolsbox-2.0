@@ -1,6 +1,4 @@
-// ---------------------------------------------------------------------------
-// Hash Generator — Pure logic functions for hash computation
-// ---------------------------------------------------------------------------
+// Pure logic engine for Hash Generator (MD5, SHA families, CRC-32, HMAC)
 
 export type HashAlgorithm =
   | "MD5"
@@ -8,13 +6,50 @@ export type HashAlgorithm =
   | "SHA-256"
   | "SHA-384"
   | "SHA-512"
-  | "SHA-3-256"
-  | "SHA-3-512"
-  | "BLAKE2b-256"
-  | "BLAKE2b-512";
+  | "CRC-32";
+
+export interface HashAlgorithmInfo {
+  id: HashAlgorithm;
+  label: string;
+  bits: number;
+  category: "secure" | "legacy" | "checksum";
+  description: string;
+}
+
+export const HASH_ALGORITHMS: HashAlgorithmInfo[] = [
+  { id: "MD5", label: "MD5", bits: 128, category: "legacy", description: "128-bit checksum; fast but cryptographically broken" },
+  { id: "SHA-1", label: "SHA-1", bits: 160, category: "legacy", description: "160-bit hash; legacy git and protocol usage" },
+  { id: "SHA-256", label: "SHA-256", bits: 256, category: "secure", description: "Standard secure cryptographic hash (NIST FIPS 180-4)" },
+  { id: "SHA-384", label: "SHA-384", bits: 384, category: "secure", description: "High security truncated SHA-512 variant" },
+  { id: "SHA-512", label: "SHA-512", bits: 512, category: "secure", description: "512-bit maximum strength cryptographic digest" },
+  { id: "CRC-32", label: "CRC-32", bits: 32, category: "checksum", description: "Cyclic redundancy check for file integrity" },
+];
+
+// Pure JS CRC32 implementation
+const CRC32_TABLE: Uint32Array = (() => {
+  const table = new Uint32Array(256);
+  for (let i = 0; i < 256; i++) {
+    let c = i;
+    for (let k = 0; k < 8; k++) {
+      c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+    }
+    table[i] = c >>> 0;
+  }
+  return table;
+})();
+
+export function crc32(strOrBytes: string | Uint8Array): string {
+  const bytes = typeof strOrBytes === "string" ? new TextEncoder().encode(strOrBytes) : strOrBytes;
+  let crc = 0xffffffff;
+  for (let i = 0; i < bytes.length; i++) {
+    crc = (crc >>> 8) ^ CRC32_TABLE[(crc ^ bytes[i]) & 0xff];
+  }
+  const result = (crc ^ 0xffffffff) >>> 0;
+  return result.toString(16).padStart(8, "0");
+}
 
 // Pure JS MD5 implementation
-function md5(string: string): string {
+export function md5(string: string): string {
   function md5cycle(x: number[], k: number[]) {
     let a = x[0], b = x[1], c = x[2], d = x[3];
     a = ff(a, b, c, d, k[0], 7, -680876936);
@@ -33,6 +68,7 @@ function md5(string: string): string {
     d = ff(d, a, b, c, k[13], 12, -40341101);
     c = ff(c, d, a, b, k[14], 17, -1502002290);
     b = ff(b, c, d, a, k[15], 22, 1236535329);
+
     a = gg(a, b, c, d, k[1], 5, -165796510);
     d = gg(d, a, b, c, k[6], 9, -1069501632);
     c = gg(c, d, a, b, k[11], 14, 643717713);
@@ -49,6 +85,7 @@ function md5(string: string): string {
     d = gg(d, a, b, c, k[2], 9, -51403784);
     c = gg(c, d, a, b, k[7], 14, 1735328473);
     b = gg(b, c, d, a, k[12], 20, -1926607734);
+
     a = hh(a, b, c, d, k[5], 4, -378558);
     d = hh(d, a, b, c, k[8], 11, -2022574463);
     c = hh(c, d, a, b, k[11], 16, 1839030562);
@@ -65,6 +102,7 @@ function md5(string: string): string {
     d = hh(d, a, b, c, k[12], 11, -421815835);
     c = hh(c, d, a, b, k[15], 16, 530742520);
     b = hh(b, c, d, a, k[2], 23, -995338651);
+
     a = ii(a, b, c, d, k[0], 6, -198630844);
     d = ii(d, a, b, c, k[7], 10, 1126891415);
     c = ii(c, d, a, b, k[14], 15, -1416354905);
@@ -81,6 +119,7 @@ function md5(string: string): string {
     d = ii(d, a, b, c, k[11], 10, -1120210379);
     c = ii(c, d, a, b, k[2], 15, 718787259);
     b = ii(b, c, d, a, k[9], 21, -343485551);
+
     x[0] = add32(a, x[0]);
     x[1] = add32(b, x[1]);
     x[2] = add32(c, x[2]);
@@ -108,6 +147,10 @@ function md5(string: string): string {
     return cmn(c ^ (b | ~d), a, b, x, s, t);
   }
 
+  function add32(a: number, b: number) {
+    return (a + b) & 0xffffffff;
+  }
+
   function md5blk(s: string) {
     const md5blks: number[] = [];
     for (let i = 0; i < 64; i += 4) {
@@ -123,7 +166,8 @@ function md5(string: string): string {
   function md5blk_array(a: number[]) {
     const md5blks: number[] = [];
     for (let i = 0; i < 64; i += 4) {
-      md5blks[i >> 2] = a[i] + (a[i + 1] << 8) + (a[i + 2] << 16) + (a[i + 3] << 24);
+      md5blks[i >> 2] =
+        a[i] + (a[i + 1] << 8) + (a[i + 2] << 16) + (a[i + 3] << 24);
     }
     return md5blks;
   }
@@ -150,56 +194,78 @@ function md5(string: string): string {
     return state;
   }
 
-  function hex_chr(n: number) {
-    const hex = "0123456789abcdef";
+  function hex(x: number[]) {
+    const hexChars = "0123456789abcdef";
     let s = "";
     for (let j = 0; j < 4; j++) {
-      s += hex.charAt((n >> (j * 8 + 4)) & 0x0f) + hex.charAt((n >> (j * 8)) & 0x0f);
+      for (let k = 0; k < 4; k++) {
+        const byte = (x[j] >> (k * 8)) & 0xff;
+        s += hexChars.charAt((byte >> 4) & 0x0f) + hexChars.charAt(byte & 0x0f);
+      }
     }
     return s;
-  }
-
-  function hex(x: number[]) {
-    return x.map(hex_chr).join("");
-  }
-
-  function add32(a: number, b: number) {
-    return (a + b) & 0xffffffff;
   }
 
   return hex(md51(string));
 }
 
-export async function generateHash(
-  input: string,
-  algorithm: HashAlgorithm = "SHA-256"
-): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(input);
+export function bufferToHex(buffer: ArrayBuffer | Uint8Array): string {
+  const bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
+  return Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
 
+export async function computeHash(
+  input: string,
+  algorithm: HashAlgorithm
+): Promise<string> {
   if (algorithm === "MD5") {
     return md5(input);
   }
-
-  if (algorithm.startsWith("BLAKE2b")) {
-    const hashBuffer = await crypto.subtle.digest("SHA-512", data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+  if (algorithm === "CRC-32") {
+    return crc32(input);
   }
 
-  const algoMap: Record<string, string> = {
-    "SHA-1": "SHA-1",
-    "SHA-256": "SHA-256",
-    "SHA-384": "SHA-384",
-    "SHA-512": "SHA-512",
-    "SHA-3-256": "SHA-256",
-    "SHA-3-512": "SHA-512",
-  };
+  const encoder = new TextEncoder();
+  const data = encoder.encode(input);
+  const hashBuffer = await crypto.subtle.digest(algorithm, data);
+  return bufferToHex(hashBuffer);
+}
 
-  const hashBuffer = await crypto.subtle.digest(
-    algoMap[algorithm] || "SHA-256",
-    data
+export const generateHash = computeHash;
+
+export async function computeHMAC(
+  key: string,
+  message: string,
+  algorithm: "SHA-256" | "SHA-512" | "SHA-1" = "SHA-256"
+): Promise<string> {
+  const enc = new TextEncoder();
+  const keyData = enc.encode(key);
+  const msgData = enc.encode(message);
+
+  const cryptoKey = await crypto.subtle.importKey(
+    "raw",
+    keyData,
+    { name: "HMAC", hash: { name: algorithm } },
+    false,
+    ["sign"]
   );
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+
+  const signature = await crypto.subtle.sign("HMAC", cryptoKey, msgData);
+  return bufferToHex(signature);
+}
+
+export async function computeAllHashes(
+  input: string
+): Promise<Record<HashAlgorithm, string>> {
+  const results: Partial<Record<HashAlgorithm, string>> = {};
+  for (const algo of HASH_ALGORITHMS) {
+    results[algo.id] = await computeHash(input, algo.id);
+  }
+  return results as Record<HashAlgorithm, string>;
+}
+
+export function compareHashes(hashA: string, hashB: string): boolean {
+  return hashA.trim().toLowerCase() === hashB.trim().toLowerCase();
 }

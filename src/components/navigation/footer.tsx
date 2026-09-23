@@ -1,26 +1,44 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { SITE_CONFIG } from "@/lib/constants";
-import { Heart, Globe, ExternalLink } from "lucide-react";
+import { Heart, Globe, ExternalLink, Sparkles } from "lucide-react";
+import { useAuth } from "@/lib/auth/auth-context";
 
 export function Footer() {
+  const pathname = usePathname();
+  const { user, isAnonymous } = useAuth();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // When on AI workspace or logged in, hide footer completely
+  if (pathname === "/ai" || (mounted && user && !isAnonymous)) {
+    return null;
+  }
+
   return (
     <footer className="border-t border-border/50 bg-card/30 backdrop-blur-sm" role="contentinfo">
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
-            <Link href="/" className="inline-flex items-center gap-2.5 mb-4 group" aria-label={`${SITE_CONFIG.name} home`}>
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-linear-to-br from-primary/20 to-primary/10 ring-1 ring-primary/20 group-hover:scale-105 transition-transform">
+            <Link href="/" className="inline-flex items-center gap-3 mb-4 group" aria-label={`${SITE_CONFIG.name} home`}>
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-linear-to-br from-primary/20 to-primary/10 ring-1 ring-primary/25 group-hover:scale-105 transition-transform shadow-xs">
                 <img
                   src="/mytoolsbox logo.png"
                   alt={SITE_CONFIG.name}
-                  className="h-5 w-5 object-contain"
+                  className="h-7 w-7 object-contain"
                 />
               </div>
-              <span className="font-semibold text-sm">{SITE_CONFIG.name}</span>
+              <span className="font-bold text-base tracking-tight">{SITE_CONFIG.name}</span>
             </Link>
             <p className="text-xs text-muted-foreground leading-relaxed mb-4">
-              Free online tools for everyday tasks. No sign-up required. All processing happens in your browser.
+              Free online tools and next-gen AI workspace for everyday tasks. Private, fast, and multi-provider.
             </p>
             <div className="flex items-center gap-2">
               <a
@@ -57,14 +75,33 @@ export function Footer() {
               <Link href="/workflows" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Workflows
               </Link>
-              <Link href="/ai" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                AI Assistant
-              </Link>
               <Link href="/hubs" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Hubs
               </Link>
               <Link href="/resources" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Resources
+              </Link>
+            </div>
+          </nav>
+
+          {/* AI Features */}
+          <nav aria-label="AI Platform links">
+            <h4 className="font-semibold mb-4 text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+              <Sparkles className="h-3.5 w-3.5 text-primary" />
+              AI Suite
+            </h4>
+            <div className="flex flex-col gap-2.5">
+              <Link href="/ai" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                Chat Workspace
+              </Link>
+              <Link href="/ai/prompts" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                Prompt Library (160+)
+              </Link>
+              <Link href="/ai/compare" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                Compare Models
+              </Link>
+              <Link href="/ai/personas" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                Personas & Tools
               </Link>
             </div>
           </nav>
@@ -93,29 +130,8 @@ export function Footer() {
             </div>
           </nav>
 
-          {/* Resources */}
-          <nav aria-label="Resource links">
-            <h4 className="font-semibold mb-4 text-xs uppercase tracking-wider text-muted-foreground">
-              Resources
-            </h4>
-            <div className="flex flex-col gap-2.5">
-              <Link href="/resources?tab=guides" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                Guides
-              </Link>
-              <Link href="/resources?tab=templates" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                Templates
-              </Link>
-              <Link href="/resources?tab=faqs" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                FAQs
-              </Link>
-              <Link href="/blog" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                Blog
-              </Link>
-            </div>
-          </nav>
-
-          {/* Company */}
-          <nav aria-label="Company links">
+          {/* Legal & Info */}
+          <nav aria-label="Legal links">
             <h4 className="font-semibold mb-4 text-xs uppercase tracking-wider text-muted-foreground">
               Company
             </h4>
@@ -123,26 +139,26 @@ export function Footer() {
               <Link href="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 About
               </Link>
-              <Link href="/privacy" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                Privacy
-              </Link>
-              <Link href="/terms" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                Terms
-              </Link>
               <Link href="/contact" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Contact
+              </Link>
+              <Link href="/privacy" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                Privacy Policy
+              </Link>
+              <Link href="/terms" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                Terms of Service
               </Link>
             </div>
           </nav>
         </div>
 
         {/* Bottom bar */}
-        <div className="mt-12 pt-6 border-t border-border/50 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-xs text-muted-foreground">
+        <div className="mt-12 pt-6 border-t border-border/40 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
+          <p>
             &copy; {new Date().getFullYear()} {SITE_CONFIG.name}. All rights reserved.
           </p>
-          <p className="text-xs text-muted-foreground flex items-center gap-1">
-            Made with <Heart className="h-3 w-3 text-red-500 fill-red-500" /> for everyone
+          <p className="flex items-center gap-1">
+            Built with <Heart className="h-3.5 w-3.5 text-rose-500 fill-rose-500 inline" /> for everyday creators & developers
           </p>
         </div>
       </div>

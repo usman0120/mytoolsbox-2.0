@@ -11,6 +11,7 @@ import {
 import {
   type User,
   onAuthStateChanged,
+  onIdTokenChanged,
   signInWithPopup,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
@@ -51,21 +52,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+    const unsubscribe = onIdTokenChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
       setLoading(false);
 
-      // Set or clear the session cookie for middleware protection
+      // Set or clear session and UID cookies for server route protection
       if (firebaseUser) {
         try {
           const token = await firebaseUser.getIdToken();
-          document.cookie = `__session=${token}; path=/; max-age=${60 * 60 * 24 * 5}; SameSite=Lax`;
+          const maxAge = 60 * 60 * 24 * 30; // 30 days
+          document.cookie = `__session=${token}; path=/; max-age=${maxAge}; SameSite=Lax`;
+          document.cookie = `__uid=${firebaseUser.uid}; path=/; max-age=${maxAge}; SameSite=Lax`;
         } catch {
-          // Token retrieval failed — clear any stale cookie
+          // Token retrieval failed — clear any stale cookies
           document.cookie = "__session=; path=/; max-age=0";
+          document.cookie = "__uid=; path=/; max-age=0";
         }
       } else {
         document.cookie = "__session=; path=/; max-age=0";
+        document.cookie = "__uid=; path=/; max-age=0";
       }
     });
 
@@ -133,6 +138,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const auth = getFirebaseAuth();
     if (!auth) throw new Error("Auth not available");
     await signOut(auth);
+    document.cookie = "__session=; path=/; max-age=0";
+    document.cookie = "__uid=; path=/; max-age=0";
   }, []);
 
   const resetPassword = useCallback(async (email: string) => {

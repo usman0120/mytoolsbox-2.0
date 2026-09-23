@@ -1,16 +1,23 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import {
-  FileText, Download, Copy, Check, Trash2, Loader2,
-  Sparkles, User, Briefcase, GraduationCap, Mail, Phone,
-  MapPin, Globe, Plus, X, GripVertical,
+  FileText,
+  Download,
+  Copy,
+  Check,
+  Trash2,
+  User,
+  Plus,
+  X,
+  Printer,
+  Upload,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
@@ -23,25 +30,64 @@ interface ResumeData {
   website: string;
   summary: string;
   skills: string[];
-  experience: { title: string; company: string; startDate: string; endDate: string; description: string }[];
+  experience: {
+    title: string;
+    company: string;
+    startDate: string;
+    endDate: string;
+    description: string;
+  }[];
   education: { degree: string; school: string; year: string }[];
   template: "modern" | "classic" | "minimal";
 }
 
 const STORAGE_KEY = "mytoolsbox-resume-data";
 
-function loadResume(): ResumeData | null {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-}
-
-function saveResume(data: ResumeData) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-}
+const SAMPLE_RESUME: ResumeData = {
+  fullName: "Alex Morgan",
+  email: "alex.morgan@example.com",
+  phone: "+1 (555) 234-5678",
+  location: "San Francisco, CA",
+  website: "https://github.com/alexmorgan",
+  summary:
+    "Senior Full-Stack Software Engineer with 7+ years of experience architecting resilient cloud systems, microservices, and modern web applications. Proven track record leading engineering squads to scale applications to millions of active users.",
+  skills: [
+    "TypeScript",
+    "React / Next.js",
+    "Node.js",
+    "Go",
+    "PostgreSQL",
+    "AWS & Docker",
+    "System Design",
+    "GraphQL",
+  ],
+  experience: [
+    {
+      title: "Staff Software Engineer",
+      company: "Apex Cloud Technologies",
+      startDate: "2021",
+      endDate: "Present",
+      description:
+        "Architected distributed event-driven processing pipeline reducing data latency by 45%. Mentored 8 junior engineers and established zero-downtime CI/CD deployment pipelines.",
+    },
+    {
+      title: "Senior Full-Stack Developer",
+      company: "Horizon Innovations",
+      startDate: "2018",
+      endDate: "2021",
+      description:
+        "Built customer analytics dashboard in React/Next.js and FastAPI used by 250k+ daily users. Optimized database query performance by 60%.",
+    },
+  ],
+  education: [
+    {
+      degree: "B.S. in Computer Science",
+      school: "University of California, Berkeley",
+      year: "2014 – 2018",
+    },
+  ],
+  template: "modern",
+};
 
 const DEFAULT_RESUME: ResumeData = {
   fullName: "",
@@ -56,10 +102,24 @@ const DEFAULT_RESUME: ResumeData = {
   template: "modern",
 };
 
+function loadResume(): ResumeData | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveResume(data: ResumeData) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
 export function ResumeBuilderEngine() {
-  const [data, setData] = useState<ResumeData>(() => loadResume() || DEFAULT_RESUME);
+  const [data, setData] = useState<ResumeData>(() => loadResume() || SAMPLE_RESUME);
   const [activeTab, setActiveTab] = useState("edit");
   const [copied, setCopied] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const updateField = useCallback(
     <K extends keyof ResumeData>(field: K, value: ResumeData[K]) => {
@@ -115,7 +175,10 @@ export function ResumeBuilderEngine() {
     setData((prev) => {
       const updated = {
         ...prev,
-        experience: [...prev.experience, { title: "", company: "", startDate: "", endDate: "", description: "" }],
+        experience: [
+          ...prev.experience,
+          { title: "", company: "", startDate: "", endDate: "", description: "" },
+        ],
       };
       saveResume(updated);
       return updated;
@@ -145,7 +208,10 @@ export function ResumeBuilderEngine() {
 
   const addEducation = useCallback(() => {
     setData((prev) => {
-      const updated = { ...prev, education: [...prev.education, { degree: "", school: "", year: "" }] };
+      const updated = {
+        ...prev,
+        education: [...prev.education, { degree: "", school: "", year: "" }],
+      };
       saveResume(updated);
       return updated;
     });
@@ -164,50 +230,62 @@ export function ResumeBuilderEngine() {
 
     const templateStyles: Record<string, string> = {
       modern: `
-        .resume { font-family: 'Segoe UI', system-ui, sans-serif; max-width: 800px; margin: 0 auto; padding: 40px; color: #1a1a2e; }
-        .header { text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 3px solid #6366f1; }
-        .name { font-size: 32px; font-weight: 700; color: #6366f1; margin-bottom: 8px; }
-        .contact { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; font-size: 14px; color: #64748b; }
-        .section { margin-bottom: 24px; }
-        .section-title { font-size: 18px; font-weight: 600; color: #6366f1; border-bottom: 2px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 12px; }
-        .skills { display: flex; flex-wrap: wrap; gap: 8px; }
-        .skill-tag { background: #eef2ff; color: #4338ca; padding: 4px 12px; border-radius: 20px; font-size: 13px; }
+        @media print {
+          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          .resume { padding: 0 !important; max-width: 100% !important; }
+        }
+        .resume { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 800px; margin: 0 auto; padding: 40px; color: #1e293b; background: #ffffff; }
+        .header { text-align: left; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 3px solid #2563eb; }
+        .name { font-size: 32px; font-weight: 800; color: #0f172a; margin-bottom: 6px; letter-spacing: -0.5px; }
+        .contact { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; color: #475569; }
+        .section { margin-bottom: 22px; }
+        .section-title { font-size: 15px; font-weight: 700; color: #2563eb; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1.5px solid #e2e8f0; padding-bottom: 4px; margin-bottom: 12px; }
+        .skills { display: flex; flex-wrap: wrap; gap: 6px; }
+        .skill-tag { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; padding: 3px 10px; border-radius: 6px; font-size: 12px; font-weight: 500; }
         .exp-item { margin-bottom: 16px; }
         .exp-header { display: flex; justify-content: space-between; align-items: baseline; }
-        .exp-title { font-weight: 600; font-size: 16px; }
-        .exp-company { color: #6366f1; font-weight: 500; }
-        .exp-date { color: #94a3b8; font-size: 13px; }
-        .exp-desc { margin-top: 6px; font-size: 14px; line-height: 1.6; color: #475569; }
+        .exp-title { font-weight: 700; font-size: 15px; color: #0f172a; }
+        .exp-company { color: #2563eb; font-weight: 600; font-size: 13px; }
+        .exp-date { color: #64748b; font-size: 12px; font-weight: 500; }
+        .exp-desc { margin-top: 4px; font-size: 13px; line-height: 1.6; color: #334155; }
       `,
       classic: `
-        .resume { font-family: Georgia, serif; max-width: 800px; margin: 0 auto; padding: 40px; color: #1a1a1a; }
-        .header { text-align: center; margin-bottom: 30px; }
-        .name { font-size: 28px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; }
-        .contact { font-size: 13px; color: #555; }
-        .section { margin-bottom: 24px; }
-        .section-title { font-size: 16px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #333; padding-bottom: 4px; margin-bottom: 12px; }
+        @media print {
+          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          .resume { padding: 0 !important; max-width: 100% !important; }
+        }
+        .resume { font-family: Georgia, 'Times New Roman', serif; max-width: 800px; margin: 0 auto; padding: 40px; color: #1a1a1a; background: #ffffff; }
+        .header { text-align: center; margin-bottom: 24px; }
+        .name { font-size: 28px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 6px; }
+        .contact { font-size: 12px; color: #555; }
+        .section { margin-bottom: 20px; }
+        .section-title { font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #333; padding-bottom: 3px; margin-bottom: 10px; }
         .skills { display: flex; flex-wrap: wrap; gap: 6px; }
-        .skill-tag { font-size: 13px; }
-        .exp-item { margin-bottom: 16px; }
-        .exp-title { font-weight: 700; font-size: 15px; }
+        .skill-tag { font-size: 12px; }
+        .exp-item { margin-bottom: 14px; }
+        .exp-title { font-weight: 700; font-size: 14px; }
         .exp-company { font-style: italic; }
-        .exp-date { font-size: 13px; color: #666; }
-        .exp-desc { margin-top: 4px; font-size: 13px; line-height: 1.6; }
+        .exp-date { font-size: 12px; color: #666; }
+        .exp-desc { margin-top: 4px; font-size: 12.5px; line-height: 1.6; }
       `,
       minimal: `
-        .resume { font-family: 'Inter', system-ui, sans-serif; max-width: 800px; margin: 0 auto; padding: 40px; color: #18181b; }
-        .header { margin-bottom: 30px; }
-        .name { font-size: 36px; font-weight: 300; margin-bottom: 4px; }
-        .contact { font-size: 13px; color: #71717a; display: flex; gap: 16px; flex-wrap: wrap; }
-        .section { margin-bottom: 24px; }
-        .section-title { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 2px; color: #a1a1aa; margin-bottom: 12px; }
+        @media print {
+          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          .resume { padding: 0 !important; max-width: 100% !important; }
+        }
+        .resume { font-family: system-ui, -apple-system, sans-serif; max-width: 800px; margin: 0 auto; padding: 40px; color: #18181b; background: #ffffff; }
+        .header { margin-bottom: 24px; }
+        .name { font-size: 32px; font-weight: 300; margin-bottom: 4px; }
+        .contact { font-size: 12px; color: #71717a; display: flex; gap: 14px; flex-wrap: wrap; }
+        .section { margin-bottom: 20px; }
+        .section-title { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 2px; color: #a1a1aa; margin-bottom: 10px; }
         .skills { display: flex; flex-wrap: wrap; gap: 6px; }
-        .skill-tag { font-size: 13px; color: #52525b; }
-        .exp-item { margin-bottom: 16px; }
-        .exp-title { font-weight: 500; font-size: 15px; }
+        .skill-tag { font-size: 12px; color: #52525b; }
+        .exp-item { margin-bottom: 14px; }
+        .exp-title { font-weight: 600; font-size: 14px; }
         .exp-company { color: #71717a; }
-        .exp-date { font-size: 12px; color: #a1a1aa; }
-        .exp-desc { margin-top: 4px; font-size: 13px; line-height: 1.6; color: #52525b; }
+        .exp-date { font-size: 11px; color: #a1a1aa; }
+        .exp-desc { margin-top: 4px; font-size: 12.5px; line-height: 1.6; color: #52525b; }
       `,
     };
 
@@ -246,23 +324,54 @@ export function ResumeBuilderEngine() {
 
     return `<!DOCTYPE html>
 <html>
-<head><meta charset="UTF-8"><title>${fullName || "Resume"}</title><style>${templateStyles[template] || templateStyles.modern}</style></head>
+<head><meta charset="UTF-8"><title>${fullName || "Resume"}</title><style>${
+      templateStyles[template] || templateStyles.modern
+    }</style></head>
 <body>
 <div class="resume">
   <div class="header">
     <div class="name">${fullName || "Your Name"}</div>
     <div class="contact">${contactParts.join(" · ")}</div>
   </div>
-  ${summary ? `<div class="section"><div class="section-title">Summary</div><p style="font-size:14px;line-height:1.6;">${summary}</p></div>` : ""}
-  ${skillsHTML ? `<div class="section"><div class="section-title">Skills</div><div class="skills">${skillsHTML}</div></div>` : ""}
-  ${experienceHTML ? `<div class="section"><div class="section-title">Experience</div>${experienceHTML}</div>` : ""}
-  ${educationHTML ? `<div class="section"><div class="section-title">Education</div>${educationHTML}</div>` : ""}
+  ${
+    summary
+      ? `<div class="section"><div class="section-title">Summary</div><p style="font-size:13.5px;line-height:1.6;color:#334155;">${summary}</p></div>`
+      : ""
+  }
+  ${
+    skillsHTML
+      ? `<div class="section"><div class="section-title">Technical Skills</div><div class="skills">${skillsHTML}</div></div>`
+      : ""
+  }
+  ${
+    experienceHTML
+      ? `<div class="section"><div class="section-title">Professional Experience</div>${experienceHTML}</div>`
+      : ""
+  }
+  ${
+    educationHTML
+      ? `<div class="section"><div class="section-title">Education & Credentials</div>${educationHTML}</div>`
+      : ""
+  }
 </div>
 </body>
 </html>`;
   }, [data]);
 
-  const handleDownload = useCallback(() => {
+  const handlePrint = () => {
+    const html = generateResumeHTML();
+    const win = window.open("", "_blank");
+    if (win) {
+      win.document.write(html);
+      win.document.close();
+      win.focus();
+      setTimeout(() => {
+        win.print();
+      }, 300);
+    }
+  };
+
+  const handleDownloadHTML = useCallback(() => {
     const html = generateResumeHTML();
     const blob = new Blob([html], { type: "text/html" });
     const url = URL.createObjectURL(blob);
@@ -271,79 +380,137 @@ export function ResumeBuilderEngine() {
     a.download = `resume-${data.fullName?.replace(/\s+/g, "-").toLowerCase() || "untitled"}.html`;
     a.click();
     URL.revokeObjectURL(url);
-    toast.success("Resume downloaded as HTML! Open in browser and print to PDF.");
+    toast.success("Resume downloaded as HTML! (Open in browser and Print to PDF)");
   }, [generateResumeHTML, data.fullName]);
 
-  const handleCopy = useCallback(async () => {
+  const handleExportJSON = () => {
+    const blob = new Blob([JSON.stringify(data, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `resume-backup-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Downloaded resume JSON backup!");
+  };
+
+  const handleImportJSON = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const parsed = JSON.parse(event.target?.result as string);
+        setData(parsed);
+        saveResume(parsed);
+        toast.success("Resume restored from JSON backup!");
+      } catch {
+        toast.error("Invalid JSON resume file.");
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const handleCopyHTML = useCallback(async () => {
     const html = generateResumeHTML();
     await navigator.clipboard.writeText(html);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-    toast.success("HTML copied to clipboard!");
+    toast.success("Resume HTML copied to clipboard!");
   }, [generateResumeHTML]);
+
+  const handleLoadSample = () => {
+    setData(SAMPLE_RESUME);
+    saveResume(SAMPLE_RESUME);
+    toast.success("Loaded Software Engineer sample data!");
+  };
 
   const handleReset = useCallback(() => {
     setData(DEFAULT_RESUME);
     localStorage.removeItem(STORAGE_KEY);
-    toast.success("Resume reset.");
+    toast.success("Resume cleared.");
   }, []);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v ?? "")}>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b">
           <TabsList>
-            <TabsTrigger value="edit" className="gap-1.5">
-              <FileText className="h-3.5 w-3.5" /> Edit
+            <TabsTrigger value="edit" className="gap-1.5 text-xs">
+              <FileText className="h-3.5 w-3.5" /> Resume Editor
             </TabsTrigger>
-            <TabsTrigger value="preview" className="gap-1.5">
-              <User className="h-3.5 w-3.5" /> Preview
+            <TabsTrigger value="preview" className="gap-1.5 text-xs">
+              <User className="h-3.5 w-3.5" /> Live Preview
             </TabsTrigger>
           </TabsList>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={handleCopy} className="gap-1.5">
-              {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <Button variant="outline" size="sm" onClick={handleLoadSample} className="gap-1 h-8 text-xs">
+              <Sparkles className="h-3.5 w-3.5 text-amber-500" /> Sample
+            </Button>
+            <Button variant="outline" size="sm" onClick={handlePrint} className="gap-1 h-8 text-xs">
+              <Printer className="h-3.5 w-3.5 text-primary" /> Print / PDF
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleCopyHTML} className="gap-1 h-8 text-xs">
+              {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
               Copy HTML
             </Button>
-            <Button variant="outline" size="sm" onClick={handleDownload} className="gap-1.5">
-              <Download className="h-3.5 w-3.5" /> Download
+            <Button variant="outline" size="sm" onClick={handleDownloadHTML} className="gap-1 h-8 text-xs">
+              <Download className="h-3.5 w-3.5" /> Save HTML
             </Button>
-            <Button variant="ghost" size="sm" onClick={handleReset} className="gap-1.5 text-destructive">
-              <Trash2 className="h-3.5 w-3.5" /> Reset
+            <Button variant="ghost" size="sm" onClick={handleExportJSON} className="gap-1 h-8 text-xs text-muted-foreground">
+              Backup JSON
+            </Button>
+            <input ref={fileInputRef} type="file" accept=".json" onChange={handleImportJSON} className="hidden" />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => fileInputRef.current?.click()}
+              className="gap-1 h-8 text-xs text-muted-foreground"
+            >
+              <Upload className="h-3.5 w-3.5" /> Restore
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleReset} className="gap-1 h-8 text-xs text-destructive">
+              <Trash2 className="h-3.5 w-3.5" /> Clear
             </Button>
           </div>
         </div>
 
         <TabsContent value="edit" className="mt-4 space-y-4">
-          {/* Template selector */}
-          <div className="flex gap-2">
+          {/* Template Style Selector */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-muted-foreground mr-1">Resume Style:</span>
             {(["modern", "classic", "minimal"] as const).map((t) => (
               <Button
                 key={t}
                 variant={data.template === t ? "default" : "outline"}
                 size="sm"
                 onClick={() => updateField("template", t)}
-                className="capitalize"
+                className="capitalize text-xs h-7"
               >
                 {t}
               </Button>
             ))}
           </div>
 
-          {/* Personal Info */}
-          <Card>
+          {/* Contact & Personal Info */}
+          <Card className="shadow-xs">
             <CardContent className="p-4 space-y-3">
-              <Label className="text-sm font-medium">Personal Information</Label>
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Personal Information
+              </Label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <Input placeholder="Full Name" value={data.fullName} onChange={(e) => updateField("fullName", e.target.value)} />
-                <Input placeholder="Email" type="email" value={data.email} onChange={(e) => updateField("email", e.target.value)} />
-                <Input placeholder="Phone" value={data.phone} onChange={(e) => updateField("phone", e.target.value)} />
-                <Input placeholder="Location" value={data.location} onChange={(e) => updateField("location", e.target.value)} />
-                <Input placeholder="Website / LinkedIn" value={data.website} onChange={(e) => updateField("website", e.target.value)} className="sm:col-span-2" />
+                <Input placeholder="Full Name (e.g. Alex Morgan)" value={data.fullName} onChange={(e) => updateField("fullName", e.target.value)} className="h-9 text-xs" />
+                <Input placeholder="Email (e.g. alex@example.com)" type="email" value={data.email} onChange={(e) => updateField("email", e.target.value)} className="h-9 text-xs" />
+                <Input placeholder="Phone (e.g. +1 555 123 4567)" value={data.phone} onChange={(e) => updateField("phone", e.target.value)} className="h-9 text-xs" />
+                <Input placeholder="Location (e.g. San Francisco, CA)" value={data.location} onChange={(e) => updateField("location", e.target.value)} className="h-9 text-xs" />
+                <Input placeholder="Website / Portfolio / LinkedIn URL" value={data.website} onChange={(e) => updateField("website", e.target.value)} className="sm:col-span-2 h-9 text-xs" />
               </div>
               <Textarea
-                placeholder="Professional summary..."
-                className="min-h-20"
+                placeholder="Professional executive summary..."
+                className="min-h-20 text-xs font-sans leading-relaxed"
                 value={data.summary}
                 onChange={(e) => updateField("summary", e.target.value)}
               />
@@ -351,12 +518,14 @@ export function ResumeBuilderEngine() {
           </Card>
 
           {/* Skills */}
-          <Card>
+          <Card className="shadow-xs">
             <CardContent className="p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <Label className="text-sm font-medium">Skills</Label>
-                <Button variant="ghost" size="sm" onClick={addSkill} className="gap-1 h-7">
-                  <Plus className="h-3.5 w-3.5" /> Add
+                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Skills & Proficiencies ({data.skills.filter(Boolean).length})
+                </Label>
+                <Button variant="ghost" size="sm" onClick={addSkill} className="gap-1 h-7 text-xs">
+                  <Plus className="h-3.5 w-3.5" /> Add Skill
                 </Button>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -366,9 +535,9 @@ export function ResumeBuilderEngine() {
                       placeholder={`Skill ${i + 1}`}
                       value={skill}
                       onChange={(e) => updateSkill(i, e.target.value)}
-                      className="w-32 h-8 text-sm"
+                      className="w-36 h-8 text-xs font-medium"
                     />
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeSkill(i)}>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => removeSkill(i)}>
                       <X className="h-3.5 w-3.5" />
                     </Button>
                   </div>
@@ -377,30 +546,32 @@ export function ResumeBuilderEngine() {
             </CardContent>
           </Card>
 
-          {/* Experience */}
-          <Card>
+          {/* Work Experience */}
+          <Card className="shadow-xs">
             <CardContent className="p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <Label className="text-sm font-medium">Experience</Label>
-                <Button variant="ghost" size="sm" onClick={addExperience} className="gap-1 h-7">
-                  <Plus className="h-3.5 w-3.5" /> Add
+                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Work Experience
+                </Label>
+                <Button variant="ghost" size="sm" onClick={addExperience} className="gap-1 h-7 text-xs">
+                  <Plus className="h-3.5 w-3.5" /> Add Position
                 </Button>
               </div>
               {data.experience.map((exp, i) => (
-                <div key={i} className="space-y-2 p-3 border rounded-lg relative">
-                  <div className="grid grid-cols-2 gap-2">
-                    <Input placeholder="Job Title" value={exp.title} onChange={(e) => updateExperience(i, "title", e.target.value)} className="h-8 text-sm" />
-                    <Input placeholder="Company" value={exp.company} onChange={(e) => updateExperience(i, "company", e.target.value)} className="h-8 text-sm" />
-                    <Input placeholder="Start Date" value={exp.startDate} onChange={(e) => updateExperience(i, "startDate", e.target.value)} className="h-8 text-sm" />
-                    <Input placeholder="End Date" value={exp.endDate} onChange={(e) => updateExperience(i, "endDate", e.target.value)} className="h-8 text-sm" />
+                <div key={i} className="space-y-2 p-3 border rounded-xl relative bg-card shadow-2xs">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <Input placeholder="Job Title (e.g. Senior Software Engineer)" value={exp.title} onChange={(e) => updateExperience(i, "title", e.target.value)} className="h-8 text-xs font-semibold" />
+                    <Input placeholder="Company Name (e.g. Google, Stripe)" value={exp.company} onChange={(e) => updateExperience(i, "company", e.target.value)} className="h-8 text-xs" />
+                    <Input placeholder="Start Date (e.g. Jan 2021)" value={exp.startDate} onChange={(e) => updateExperience(i, "startDate", e.target.value)} className="h-8 text-xs" />
+                    <Input placeholder="End Date (e.g. Present)" value={exp.endDate} onChange={(e) => updateExperience(i, "endDate", e.target.value)} className="h-8 text-xs" />
                   </div>
                   <Textarea
-                    placeholder="Description..."
-                    className="min-h-15 text-sm"
+                    placeholder="Key achievements, responsibilities, quantifiable impact..."
+                    className="min-h-16 text-xs leading-relaxed"
                     value={exp.description}
                     onChange={(e) => updateExperience(i, "description", e.target.value)}
                   />
-                  <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-7 w-7" onClick={() => removeExperience(i)}>
+                  <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => removeExperience(i)}>
                     <X className="h-3.5 w-3.5" />
                   </Button>
                 </div>
@@ -409,22 +580,24 @@ export function ResumeBuilderEngine() {
           </Card>
 
           {/* Education */}
-          <Card>
+          <Card className="shadow-xs">
             <CardContent className="p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <Label className="text-sm font-medium">Education</Label>
-                <Button variant="ghost" size="sm" onClick={addEducation} className="gap-1 h-7">
-                  <Plus className="h-3.5 w-3.5" /> Add
+                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Education & Degrees
+                </Label>
+                <Button variant="ghost" size="sm" onClick={addEducation} className="gap-1 h-7 text-xs">
+                  <Plus className="h-3.5 w-3.5" /> Add Degree
                 </Button>
               </div>
               {data.education.map((edu, i) => (
-                <div key={i} className="space-y-2 p-3 border rounded-lg relative">
-                  <div className="grid grid-cols-3 gap-2">
-                    <Input placeholder="Degree" value={edu.degree} onChange={(e) => updateEducation(i, "degree", e.target.value)} className="h-8 text-sm" />
-                    <Input placeholder="School" value={edu.school} onChange={(e) => updateEducation(i, "school", e.target.value)} className="h-8 text-sm" />
-                    <Input placeholder="Year" value={edu.year} onChange={(e) => updateEducation(i, "year", e.target.value)} className="h-8 text-sm" />
+                <div key={i} className="space-y-2 p-3 border rounded-xl relative bg-card shadow-2xs">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <Input placeholder="Degree (e.g. B.S. in Computer Science)" value={edu.degree} onChange={(e) => updateEducation(i, "degree", e.target.value)} className="h-8 text-xs font-semibold" />
+                    <Input placeholder="University / School" value={edu.school} onChange={(e) => updateEducation(i, "school", e.target.value)} className="h-8 text-xs" />
+                    <Input placeholder="Year (e.g. 2018 – 2022)" value={edu.year} onChange={(e) => updateEducation(i, "year", e.target.value)} className="h-8 text-xs" />
                   </div>
-                  <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-7 w-7" onClick={() => removeEducation(i)}>
+                  <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => removeEducation(i)}>
                     <X className="h-3.5 w-3.5" />
                   </Button>
                 </div>
@@ -434,12 +607,12 @@ export function ResumeBuilderEngine() {
         </TabsContent>
 
         <TabsContent value="preview" className="mt-4">
-          <Card>
-            <CardContent className="p-0">
+          <Card className="shadow-xs overflow-hidden border">
+            <CardContent className="p-0 bg-muted/10">
               <iframe
                 srcDoc={generateResumeHTML()}
-                className="w-full min-h-[600px] border-0"
-                title="Resume Preview"
+                className="w-full min-h-[700px] border-0 bg-white"
+                title="Resume Live Preview"
               />
             </CardContent>
           </Card>

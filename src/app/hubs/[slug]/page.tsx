@@ -3,7 +3,11 @@ import { notFound } from "next/navigation";
 import { getHubBySlug, getActiveHubs } from "@/content/hubs/registry";
 import { getToolBySlug } from "@/content/tools/registry";
 import { getAppBySlug } from "@/content/apps/registry";
-import { generateMetadata as generateSEOMetadata, generateBreadcrumbJsonLd } from "@/lib/seo";
+import {
+  generateMetadata as generateSEOMetadata,
+  generateBreadcrumbJsonLd,
+  generateCollectionPageJsonLd,
+} from "@/lib/seo";
 import { HubDetailClient } from "./page-client";
 
 interface HubPageProps {
@@ -28,10 +32,10 @@ export async function generateMetadata({ params }: HubPageProps): Promise<Metada
   if (!hub) return {};
 
   return generateSEOMetadata({
-    title: `${hub.name} Tools & Resources`,
+    title: `${hub.name} Hub - Free Online Tools & Resources`,
     description: hub.description,
     path: `/hubs/${hub.slug}`,
-    keywords: [hub.name.toLowerCase(), "tools", "resources", "utilities"],
+    keywords: [hub.name.toLowerCase(), "tools", "resources", "utilities", "free online tools"],
   });
 }
 
@@ -60,8 +64,22 @@ export default async function HubPage({ params }: HubPageProps) {
     { name: hub.name, url: `/hubs/${hub.slug}` },
   ]);
 
+  const collectionLd = generateCollectionPageJsonLd({
+    name: `${hub.name} Tools & Resources`,
+    description: hub.description,
+    url: `/hubs/${hub.slug}`,
+    items: [
+      ...tools.map((t) => ({ name: t.name, url: `/tools/${t.slug}`, description: t.shortDescription })),
+      ...apps.map((a) => ({ name: a.name, url: `/apps/${a.slug}`, description: a.shortDescription })),
+    ],
+  });
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionLd) }}
+      />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}

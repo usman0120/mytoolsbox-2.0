@@ -2,329 +2,326 @@
 
 import { useState, useCallback, useEffect } from "react";
 import {
-  CalendarDays, Download, Copy, Check, Trash2, Plus,
-  Clock, Sun, Moon, Coffee, Utensils, Dumbbell, BookOpen,
-  Briefcase, Heart, Star, Smile,
+  CalendarDays, Download, Printer, Check, Circle, Trash2, Plus,
+  Clock, Sun, Coffee, Briefcase, Heart, Smile, Sparkles, Target
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
+import {
+  DayPlan,
+  TimeSlot,
+  DailyPriority,
+  generateDefaultTimeSlots,
+  calculateProductivityScore,
+  exportPlanMarkdown,
+} from "@/features/tools/daily-planner";
 
-interface TimeSlot {
-  id: string;
-  time: string;
-  activity: string;
-  icon: string;
-  color: string;
-}
-
-interface PlannerDay {
-  date: string;
-  focus: string;
-  gratitude: string;
-  priorities: string[];
-  slots: TimeSlot[];
-  notes: string;
-}
-
-const DEFAULT_SLOTS: TimeSlot[] = [
-  { id: "1", time: "06:00 - 07:00", activity: "Morning Routine", icon: "Sun", color: "#f97316" },
-  { id: "2", time: "07:00 - 08:00", activity: "Breakfast", icon: "Coffee", color: "#eab308" },
-  { id: "3", time: "08:00 - 12:00", activity: "Deep Work", icon: "Briefcase", color: "#3b82f6" },
-  { id: "4", time: "12:00 - 13:00", activity: "Lunch Break", icon: "Utensils", color: "#22c55e" },
-  { id: "5", time: "13:00 - 17:00", activity: "Meetings & Tasks", icon: "Briefcase", color: "#8b5cf6" },
-  { id: "6", time: "17:00 - 18:00", activity: "Exercise", icon: "Dumbbell", color: "#ef4444" },
-  { id: "7", time: "18:00 - 19:00", activity: "Dinner", icon: "Utensils", color: "#ec4899" },
-  { id: "8", time: "19:00 - 22:00", activity: "Free Time", icon: "Smile", color: "#06b6d4" },
-];
-
-const STORAGE_KEY = "mytoolsbox-daily-planner";
-
-function getTodayStr(): string {
-  return new Date().toISOString().split("T")[0];
-}
-
-function loadPlanner(): PlannerDay | null {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    const data = JSON.parse(raw);
-    if (data.date !== getTodayStr()) return null;
-    return data;
-  } catch {
-    return null;
-  }
-}
-
-function savePlanner(data: PlannerDay) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-}
-
-const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
-  Sun, Coffee, Utensils, Dumbbell, BookOpen, Briefcase, Heart, Star, Smile, Moon, Clock,
-};
+const STORAGE_PREFIX = "mytoolsbox-daily-planner-";
 
 export function DailyPlannerEngine() {
-  const [planner, setPlanner] = useState<PlannerDay>(() => {
-    const saved = loadPlanner();
-    return (
-      saved || {
-        date: getTodayStr(),
-        focus: "",
-        gratitude: "",
-        priorities: ["", "", ""],
-        slots: DEFAULT_SLOTS.map((s) => ({ ...s, id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6) })),
-        notes: "",
-      }
-    );
-  });
-  const [copied, setCopied] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split("T")[0]);
 
-  useEffect(() => {
-    savePlanner(planner);
-  }, [planner]);
-
-  const updateSlot = useCallback(
-    (id: string, field: keyof TimeSlot, value: string) => {
-      setPlanner((prev) => ({
-        ...prev,
-        slots: prev.slots.map((s) => (s.id === id ? { ...s, [field]: value } : s)),
-      }));
-    },
-    []
-  );
-
-  const addSlot = useCallback(() => {
-    setPlanner((prev) => ({
-      ...prev,
-      slots: [
-        ...prev.slots,
-        {
-          id: Date.now().toString(36),
-          time: "",
-          activity: "",
-          icon: "Clock",
-          color: "#78716c",
-        },
+  const [plan, setPlan] = useState<DayPlan>(() => {
+    const today = new Date().toISOString().split("T")[0];
+    try {
+      const raw = localStorage.getItem(`${STORAGE_PREFIX}${today}`);
+      if (raw) return JSON.parse(raw);
+    } catch {}
+    return {
+      date: today,
+      focusGoal: "Ship the MVP features and maintain clear daily momentum",
+      gratitude: "Great coffee and supportive teammates",
+      priorities: [
+        { id: "p1", text: "Complete core architecture refactoring", completed: false },
+        { id: "p2", text: "Conduct user feedback review session", completed: false },
+        { id: "p3", text: "Review pull requests & merge tests", completed: false },
       ],
-    }));
-  }, []);
+      slots: generateDefaultTimeSlots(),
+      notes: "Remember to drink water every 2 hours!",
+    };
+  });
 
-  const removeSlot = useCallback((id: string) => {
-    setPlanner((prev) => ({
-      ...prev,
-      slots: prev.slots.filter((s) => s.id !== id),
-    }));
-  }, []);
+  const [newPriorityText, setNewPriorityText] = useState("");
 
-  const updatePriority = useCallback((index: number, value: string) => {
-    setPlanner((prev) => {
-      const priorities = [...prev.priorities];
-      priorities[index] = value;
-      return { ...prev, priorities };
+  // Load plan when date changes
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(`${STORAGE_PREFIX}${selectedDate}`);
+      if (raw) {
+        setPlan(JSON.parse(raw));
+        return;
+      }
+    } catch {}
+    // If no plan exists for this date, start clean
+    setPlan({
+      date: selectedDate,
+      focusGoal: "",
+      gratitude: "",
+      priorities: [],
+      slots: generateDefaultTimeSlots(),
+      notes: "",
     });
-  }, []);
+  }, [selectedDate]);
 
-  const handleCopy = useCallback(async () => {
-    const text = generatePlannerText(planner);
-    await navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-    toast.success("Copied to clipboard!");
-  }, [planner]);
+  // Persist plan changes
+  useEffect(() => {
+    localStorage.setItem(`${STORAGE_PREFIX}${plan.date}`, JSON.stringify(plan));
+  }, [plan]);
 
-  const handleDownload = useCallback(() => {
-    const text = generatePlannerText(planner);
-    const blob = new Blob([text], { type: "text/plain" });
+  const handleTogglePriority = (id: string) => {
+    setPlan((prev) => ({
+      ...prev,
+      priorities: prev.priorities.map((p) => (p.id === id ? { ...p, completed: !p.completed } : p)),
+    }));
+  };
+
+  const handleAddPriority = () => {
+    if (!newPriorityText.trim()) return;
+    const newP: DailyPriority = {
+      id: `p_${Date.now()}`,
+      text: newPriorityText.trim(),
+      completed: false,
+    };
+    setPlan((prev) => ({ ...prev, priorities: [...prev.priorities, newP] }));
+    setNewPriorityText("");
+  };
+
+  const handleDeletePriority = (id: string) => {
+    setPlan((prev) => ({ ...prev, priorities: prev.priorities.filter((p) => p.id !== id) }));
+  };
+
+  const handleToggleSlot = (id: string) => {
+    setPlan((prev) => ({
+      ...prev,
+      slots: prev.slots.map((s) => (s.id === id ? { ...s, completed: !s.completed } : s)),
+    }));
+  };
+
+  const handleUpdateSlot = (id: string, activity: string) => {
+    setPlan((prev) => ({
+      ...prev,
+      slots: prev.slots.map((s) => (s.id === id ? { ...s, activity } : s)),
+    }));
+  };
+
+  const handleExportMarkdown = () => {
+    const md = exportPlanMarkdown(plan);
+    const blob = new Blob([md], { type: "text/markdown;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `daily-planner-${planner.date}.txt`;
+    a.download = `daily-plan-${plan.date}.md`;
     a.click();
     URL.revokeObjectURL(url);
-    toast.success("Downloaded!");
-  }, [planner]);
+    toast.success("Daily plan exported as Markdown!");
+  };
 
-  const handleReset = useCallback(() => {
-    setPlanner({
-      date: getTodayStr(),
-      focus: "",
-      gratitude: "",
-      priorities: ["", "", ""],
-      slots: DEFAULT_SLOTS.map((s) => ({ ...s, id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6) })),
-      notes: "",
-    });
-    toast.success("Planner reset.");
-  }, []);
+  const handlePrint = () => window.print();
 
-  const formattedDate = new Date(planner.date + "T00:00:00").toLocaleDateString("en-US", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  const { score, completedSlots, totalSlots, completedPriorities, totalPriorities } =
+    calculateProductivityScore(plan);
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="space-y-4">
+      {/* Top Header */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="text-lg font-semibold">{formattedDate}</h3>
-          <p className="text-sm text-muted-foreground">Daily Planner</p>
+          <h2 className="text-xl font-bold flex items-center gap-2">
+            <CalendarDays className="h-5 w-5 text-primary" /> Daily Planner & Time Blocker
+          </h2>
+          <p className="text-sm text-muted-foreground">Plan daily time blocks, top 3 priorities, and track your daily productivity score</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={handleCopy} className="gap-1.5">
-            {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
-            Copy
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleDownload} className="gap-1.5">
-            <Download className="h-3.5 w-3.5" /> Download
-          </Button>
-          <Button variant="ghost" size="sm" onClick={handleReset} className="gap-1.5 text-destructive">
-            <Trash2 className="h-3.5 w-3.5" /> Reset
-          </Button>
-        </div>
-      </div>
-
-      {/* Focus & Gratitude */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Card>
-          <CardContent className="p-4 space-y-2">
-            <Label className="text-sm font-medium flex items-center gap-1.5">
-              <Star className="h-4 w-4 text-amber-500" /> Today&apos;s Focus
-            </Label>
-            <Input
-              placeholder="What's your main focus today?"
-              value={planner.focus}
-              onChange={(e) => setPlanner((p) => ({ ...p, focus: e.target.value }))}
-            />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 space-y-2">
-            <Label className="text-sm font-medium flex items-center gap-1.5">
-              <Heart className="h-4 w-4 text-red-500" /> Gratitude
-            </Label>
-            <Input
-              placeholder="What are you grateful for?"
-              value={planner.gratitude}
-              onChange={(e) => setPlanner((p) => ({ ...p, gratitude: e.target.value }))}
-            />
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Top 3 Priorities */}
-      <Card>
-        <CardContent className="p-4 space-y-3">
-          <Label className="text-sm font-medium flex items-center gap-1.5">
-            <Target className="h-4 w-4 text-primary" /> Top 3 Priorities
-          </Label>
-          {planner.priorities.map((p, i) => (
-            <div key={i} className="flex items-center gap-2">
-              <Badge variant="secondary" className="w-6 h-6 rounded-full flex items-center justify-center p-0 text-xs">
-                {i + 1}
-              </Badge>
-              <Input
-                placeholder={`Priority ${i + 1}...`}
-                value={p}
-                onChange={(e) => updatePriority(i, e.target.value)}
-                className="flex-1 h-8 text-sm"
-              />
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-
-      {/* Time Slots */}
-      <Card>
-        <CardContent className="p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <Label className="text-sm font-medium flex items-center gap-1.5">
-              <Clock className="h-4 w-4 text-blue-500" /> Schedule
-            </Label>
-            <Button variant="ghost" size="sm" onClick={addSlot} className="gap-1 h-7">
-              <Plus className="h-3.5 w-3.5" /> Add Slot
-            </Button>
-          </div>
-          <div className="space-y-2">
-            {planner.slots.map((slot) => {
-              const Icon = ICON_MAP[slot.icon] || Clock;
-              return (
-                <div key={slot.id} className="flex items-center gap-2 group">
-                  <div
-                    className="w-1 h-10 rounded-full shrink-0"
-                    style={{ backgroundColor: slot.color }}
-                  />
-                  <Input
-                    placeholder="Time"
-                    value={slot.time}
-                    onChange={(e) => updateSlot(slot.id, "time", e.target.value)}
-                    className="w-32 h-8 text-xs font-mono"
-                  />
-                  <Input
-                    placeholder="Activity"
-                    value={slot.activity}
-                    onChange={(e) => updateSlot(slot.id, "activity", e.target.value)}
-                    className="flex-1 h-8 text-sm"
-                  />
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 opacity-0 group-hover:opacity-100"
-                    onClick={() => removeSlot(slot.id)}
-                  >
-                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                  </Button>
-                </div>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Notes */}
-      <Card>
-        <CardContent className="p-4 space-y-2">
-          <Label className="text-sm font-medium">Notes</Label>
-          <Textarea
-            placeholder="Any additional notes, reminders, or thoughts..."
-            className="min-h-25"
-            value={planner.notes}
-            onChange={(e) => setPlanner((p) => ({ ...p, notes: e.target.value }))}
+        <div className="flex items-center gap-2">
+          <Input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            className="w-36 h-8 text-xs font-mono"
           />
-        </CardContent>
+          <Button variant="outline" size="sm" onClick={handleExportMarkdown} className="text-xs gap-1.5 h-8">
+            <Download className="h-3.5 w-3.5" /> Markdown
+          </Button>
+          <Button variant="default" size="sm" onClick={handlePrint} className="text-xs gap-1.5 h-8">
+            <Printer className="h-3.5 w-3.5" /> Print
+          </Button>
+        </div>
+      </div>
+
+      {/* Productivity Score Bar */}
+      <Card className="bg-primary/5 border-primary/20 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="relative w-12 h-12 flex items-center justify-center rounded-full bg-primary/10 border border-primary/30">
+              <span className="font-mono font-bold text-sm text-primary">{score}%</span>
+            </div>
+            <div>
+              <p className="font-semibold text-xs">Daily Productivity Score</p>
+              <p className="text-[11px] text-muted-foreground">
+                {completedPriorities}/{totalPriorities} priorities & {completedSlots}/{totalSlots} schedule blocks completed
+              </p>
+            </div>
+          </div>
+          <Badge variant="outline" className="text-xs font-mono border-primary/30 text-primary">
+            {score >= 80 ? "🔥 High Output" : score >= 50 ? "⚡ Steady Flow" : "🌱 In Progress"}
+          </Badge>
+        </div>
       </Card>
+
+      {/* Focus & Gratitude Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <Card className="p-3 space-y-1">
+          <Label className="text-xs flex items-center gap-1 font-semibold text-primary">
+            <Target className="h-3.5 w-3.5" /> Main Focus Goal
+          </Label>
+          <Input
+            placeholder="What single achievement defines success today?"
+            value={plan.focusGoal}
+            onChange={(e) => setPlan((p) => ({ ...p, focusGoal: e.target.value }))}
+            className="h-8 text-xs"
+          />
+        </Card>
+        <Card className="p-3 space-y-1">
+          <Label className="text-xs flex items-center gap-1 font-semibold text-green-500">
+            <Heart className="h-3.5 w-3.5" /> Gratitude & Wins
+          </Label>
+          <Input
+            placeholder="Something I appreciate or a recent win..."
+            value={plan.gratitude}
+            onChange={(e) => setPlan((p) => ({ ...p, gratitude: e.target.value }))}
+            className="h-8 text-xs"
+          />
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+        {/* Top Priorities (5 cols) */}
+        <div className="md:col-span-5 space-y-3">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs text-muted-foreground uppercase flex items-center justify-between">
+                <span>Top Priorities</span>
+                <span className="font-mono text-[10px]">{completedPriorities}/{plan.priorities.length}</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <div className="flex gap-1.5">
+                <Input
+                  placeholder="Add high-impact task..."
+                  value={newPriorityText}
+                  onChange={(e) => setNewPriorityText(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleAddPriority()}
+                  className="h-7 text-xs flex-1"
+                />
+                <Button size="sm" onClick={handleAddPriority} className="h-7 text-xs px-2.5">
+                  <Plus className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+
+              <div className="space-y-1.5 pt-1">
+                {plan.priorities.map((item) => (
+                  <div
+                    key={item.id}
+                    className={`flex items-center justify-between p-2 rounded border text-xs ${
+                      item.completed ? "bg-muted/40 opacity-70 line-through text-muted-foreground" : "bg-card"
+                    }`}
+                  >
+                    <div
+                      onClick={() => handleTogglePriority(item.id)}
+                      className="flex items-center gap-2 flex-1 cursor-pointer truncate"
+                    >
+                      {item.completed ? (
+                        <Check className="h-3.5 w-3.5 text-green-500 shrink-0" />
+                      ) : (
+                        <Circle className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      )}
+                      <span className="truncate">{item.text}</span>
+                    </div>
+                    <button
+                      onClick={() => handleDeletePriority(item.id)}
+                      className="text-muted-foreground hover:text-destructive p-0.5"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Notes Card */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs text-muted-foreground uppercase">Day Notes & Reflection</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Textarea
+                placeholder="Thoughts, meeting insights, or evening reflection..."
+                rows={4}
+                value={plan.notes}
+                onChange={(e) => setPlan((p) => ({ ...p, notes: e.target.value }))}
+                className="text-xs resize-none"
+              />
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Time Blocks Schedule (7 cols) */}
+        <div className="md:col-span-7 space-y-2">
+          <Card>
+            <CardHeader className="pb-2 flex flex-row items-center justify-between">
+              <CardTitle className="text-xs text-muted-foreground uppercase">Time-Blocked Schedule</CardTitle>
+              <span className="text-[10px] text-muted-foreground font-mono">
+                {completedSlots}/{plan.slots.length} Blocks Finished
+              </span>
+            </CardHeader>
+            <CardContent className="space-y-1.5 p-3">
+              {plan.slots.map((slot) => (
+                <div
+                  key={slot.id}
+                  className={`flex items-center gap-2 p-2 rounded-lg border text-xs transition-colors ${
+                    slot.completed ? "bg-muted/30 opacity-70" : "bg-card hover:border-primary/40"
+                  }`}
+                >
+                  <button
+                    onClick={() => handleToggleSlot(slot.id)}
+                    className="text-muted-foreground hover:text-primary shrink-0 transition-colors"
+                  >
+                    {slot.completed ? (
+                      <Check className="h-4 w-4 text-green-500" />
+                    ) : (
+                      <Circle className="h-4 w-4" />
+                    )}
+                  </button>
+
+                  <span className="font-mono text-[11px] text-muted-foreground w-24 shrink-0 font-medium">
+                    {slot.startTime} - {slot.endTime}
+                  </span>
+
+                  <Input
+                    value={slot.activity}
+                    onChange={(e) => handleUpdateSlot(slot.id, e.target.value)}
+                    placeholder="Activity or scheduled work..."
+                    className={`h-7 text-xs border-transparent hover:border-input focus:border-input ${
+                      slot.completed ? "line-through text-muted-foreground" : ""
+                    }`}
+                  />
+
+                  {slot.category && (
+                    <Badge variant="outline" className="text-[9px] uppercase font-mono px-1 py-0 shrink-0">
+                      {slot.category}
+                    </Badge>
+                  )}
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }
-
-function generatePlannerText(planner: PlannerDay): string {
-  const date = new Date(planner.date + "T00:00:00").toLocaleDateString("en-US", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-  let text = `📅 DAILY PLANNER - ${date}\n`;
-  text += `${"─".repeat(40)}\n\n`;
-  if (planner.focus) text += `🎯 FOCUS: ${planner.focus}\n`;
-  if (planner.gratitude) text += `💖 GRATITUDE: ${planner.gratitude}\n`;
-  text += `\n📋 TOP PRIORITIES:\n`;
-  planner.priorities.forEach((p, i) => {
-    if (p.trim()) text += `  ${i + 1}. ${p}\n`;
-  });
-  text += `\n⏰ SCHEDULE:\n`;
-  planner.slots.forEach((s) => {
-    if (s.time || s.activity) text += `  ${s.time || "..."}  ${s.activity || "..."}\n`;
-  });
-  if (planner.notes) text += `\n📝 NOTES:\n${planner.notes}\n`;
-  return text;
-}
-
-// Need Target icon
-import { Target } from "lucide-react";

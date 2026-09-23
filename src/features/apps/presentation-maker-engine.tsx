@@ -47,18 +47,42 @@ const SLIDE_TYPES = [
   { type: "quote" as const, label: "Quote", icon: Type },
 ];
 
+const PRESET_DECKS: { name: string; data: PresentationData }[] = [
+  {
+    name: "🚀 Startup Pitch",
+    data: {
+      title: "HyperScale AI",
+      subtitle: "The Next-Gen Autonomous Workflow Engine",
+      author: "Founder & Team",
+      theme: "modern",
+      slides: [
+        { id: "p1", type: "title", title: "HyperScale AI", content: "Empowering developers to build autonomous systems in minutes" },
+        { id: "p2", type: "bullets", title: "The Problem", content: "", bullets: ["Developers spend 60% of time on boilerplate & config", "Fragmented API tooling causes delivery bottlenecks", "High latency across heterogeneous microservices"] },
+        { id: "p3", type: "two-column", title: "Our Solution", content: "Unified AI-driven agent pipeline with automatic error correction and native credit-based billing infrastructure." },
+        { id: "p4", type: "bullets", title: "Traction & Metrics", content: "", bullets: ["120,000+ Active Monthly Developers", "4.9/5 Average Developer Experience Rating", "99.98% System Availability SLA"] },
+        { id: "p5", type: "quote", title: "TechCrunch Review", content: "HyperScale AI is revolutionizing how modern distributed teams ship software." },
+      ],
+    },
+  },
+  {
+    name: "🏗️ Tech Architecture",
+    data: {
+      title: "Distributed Architecture",
+      subtitle: "Cloud-Native Infrastructure & Resilience",
+      author: "Principal Systems Architect",
+      theme: "dark",
+      slides: [
+        { id: "a1", type: "title", title: "Distributed Cloud Architecture", content: "High-throughput, low-latency microservices with zero single points of failure" },
+        { id: "a2", type: "bullets", title: "Key Tenets", content: "", bullets: ["Stateless compute nodes behind global anycast DNS", "Event-driven pub/sub for asynchronous task scheduling", "Multi-region fallback with automatic failover in <500ms"] },
+        { id: "a3", type: "content", title: "Security & Zero Trust", content: "Mutual TLS on all internal service mesh calls, strict RBAC authorization policies, and cryptographic payload signing." },
+        { id: "a4", type: "bullets", title: "Next Milestones", content: "", bullets: ["Zero-downtime database schema migrations", "Edge execution nodes deployed across 35 PoPs", "Real-time distributed tracing with OpenTelemetry"] },
+      ],
+    },
+  },
+];
+
 export function PresentationMakerEngine() {
-  const [data, setData] = useState<PresentationData>({
-    title: "My Presentation",
-    subtitle: "Click to edit subtitle",
-    author: "",
-    theme: "modern",
-    slides: [
-      { id: "1", type: "title", title: "Welcome", content: "My Presentation" },
-      { id: "2", type: "bullets", title: "Agenda", content: "", bullets: ["Topic 1", "Topic 2", "Topic 3"] },
-      { id: "3", type: "content", title: "Introduction", content: "Start with an engaging introduction..." },
-    ],
-  });
+  const [data, setData] = useState<PresentationData>(PRESET_DECKS[0].data);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [presenterMode, setPresenterMode] = useState(false);
   const [showEditor, setShowEditor] = useState(true);
@@ -195,6 +219,23 @@ export function PresentationMakerEngine() {
               />
             ))}
           </div>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs text-muted-foreground">Presets:</span>
+          {PRESET_DECKS.map((preset) => (
+            <Button
+              key={preset.name}
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => {
+                setData(preset.data);
+                setCurrentSlide(0);
+              }}
+            >
+              {preset.name}
+            </Button>
+          ))}
         </div>
         <div className="flex-1" />
         <Button variant="outline" size="sm" onClick={() => setShowEditor(!showEditor)}>

@@ -4,16 +4,16 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Sparkles, Plus, History, Wand2 } from "lucide-react";
+import { Search, Sparkles, Plus, Wand2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { PageShell, ToolHeader } from "@/components/common/workload-layouts";
 import { WorkflowCard, WorkflowHistoryList } from "@/features/workflows/workflow-components";
 import { workflowRegistry, getFeaturedWorkflows } from "@/lib/workflow/registry";
-import { getWorkflowHistory, clearWorkflowHistory } from "@/lib/workflow/history";
+import { getWorkflowHistory, clearWorkflowHistory, getSavedWorkflows } from "@/lib/workflow/history";
 import type { WorkflowDefinition } from "@/types/workflow";
 import type { WorkflowRunRecord } from "@/lib/workflow/history";
 
@@ -44,7 +44,17 @@ export function WorkflowsPageClient() {
 
   const featured = getFeaturedWorkflows();
 
-  const filtered = workflowRegistry.filter((w) => {
+  // Merge static registry with saved custom workflows
+  const allWorkflows = useMemo(() => {
+    const saved = getSavedWorkflows();
+    const savedDefinitions = saved.map((s) => s.definition);
+    // Deduplicate by ID — saved workflows override registry ones
+    const registryIds = new Set(workflowRegistry.map((w) => w.id));
+    const uniqueSaved = savedDefinitions.filter((d) => !registryIds.has(d.id));
+    return [...workflowRegistry, ...uniqueSaved];
+  }, []);
+
+  const filtered = allWorkflows.filter((w) => {
     const matchesSearch =
       !search ||
       w.name.toLowerCase().includes(search.toLowerCase()) ||

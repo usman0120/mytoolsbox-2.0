@@ -1,126 +1,24 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
-import { Upload, FileText, Download, Copy, Check, Trash2, Languages, ImageIcon } from "lucide-react";
+import {
+  Upload,
+  FileText,
+  Download,
+  Copy,
+  Check,
+  Trash2,
+  Languages,
+  Sparkles,
+  Zap,
+  Sliders,
+  AlignLeft,
+  FileCode,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useProcessing } from "@/hooks/use-processing";
-import type { ProcessingResult } from "@/lib/processing/types";
-
-// Simple client-side OCR using canvas pixel analysis
-// For production, this would use Tesseract.js or a server-side OCR API
-function performOCR(imageDataUrl: string, language: string): Promise<ProcessingResult> {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d");
-      if (!ctx) { resolve({ status: "error", error: "Unable to process image" }); return; }
-
-      canvas.width = img.width;
-      canvas.height = img.height;
-      ctx.drawImage(img, 0, 0);
-
-      // Extract text regions by analyzing pixel density
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const { data, width, height } = imageData;
-
-      // Simple OCR: detect dark pixels and group them into character-like regions
-      const threshold = 128;
-      const charRegions: { x: number; y: number; w: number; h: number }[] = [];
-      const visited = new Set<string>();
-
-      // Scan for dark pixel clusters
-      for (let y = 0; y < height; y += 4) {
-        for (let x = 0; x < width; x += 4) {
-          const idx = (y * width + x) * 4;
-          const gray = (data[idx] + data[idx + 1] + data[idx + 2]) / 3;
-
-          if (gray < threshold && !visited.has(`${x},${y}`)) {
-            // Found a dark pixel - flood fill to find region bounds
-            let minX = x, maxX = x, minY = y, maxY = y;
-            const stack = [[x, y]];
-
-            while (stack.length > 0) {
-              const [cx, cy] = stack.pop()!;
-              const key = `${cx},${cy}`;
-              if (visited.has(key) || cx < 0 || cy < 0 || cx >= width || cy >= height) continue;
-
-              const cidx = (cy * width + cx) * 4;
-              const cgray = (data[cidx] + data[cidx + 1] + data[cidx + 2]) / 3;
-              if (cgray >= threshold) continue;
-
-              visited.add(key);
-              minX = Math.min(minX, cx);
-              maxX = Math.max(maxX, cx);
-              minY = Math.min(minY, cy);
-              maxY = Math.max(maxY, cy);
-
-              stack.push([cx - 1, cy], [cx + 1, cy], [cx, cy - 1], [cx, cy + 1]);
-            }
-
-            const w = maxX - minX;
-            const h = maxY - minY;
-            if (w > 3 && h > 5 && w < width * 0.8 && h < height * 0.3) {
-              charRegions.push({ x: minX, y: minY, w, h });
-            }
-          }
-        }
-      }
-
-      // Sort regions by position (top-to-bottom, left-to-right)
-      charRegions.sort((a, b) => {
-        const rowDiff = a.y - b.y;
-        if (Math.abs(rowDiff) < 20) return a.x - b.x;
-        return rowDiff;
-      });
-
-      // Group into lines
-      const lines: { x: number; y: number; w: number; h: number }[][] = [];
-      let currentLine: typeof charRegions = [];
-      let lastY = -100;
-
-      for (const region of charRegions) {
-        if (Math.abs(region.y - lastY) > 20 && currentLine.length > 0) {
-          lines.push([...currentLine]);
-          currentLine = [];
-        }
-        currentLine.push(region);
-        lastY = region.y;
-      }
-      if (currentLine.length > 0) lines.push(currentLine);
-
-      // Generate placeholder text based on detected regions
-      const resultLines: string[] = [];
-      for (const line of lines) {
-        const avgHeight = line.reduce((s, r) => s + r.h, 0) / line.length;
-        const charCount = Math.max(1, Math.round(line.length * 0.8));
-
-        // Generate readable placeholder based on region count
-        const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 .,!?";
-        let text = "";
-        for (let i = 0; i < charCount; i++) {
-          text += chars[Math.floor(Math.random() * chars.length)];
-        }
-        resultLines.push(text.trim());
-      }
-
-      // For a real implementation, this would use Tesseract.js
-      const mockResult = resultLines.length > 0
-        ? `[OCR detected ${charRegions.length} character regions across ${lines.length} lines]\n\nFor production OCR, integrate Tesseract.js or a cloud OCR API.\n\nDetected text regions suggest approximately ${resultLines.reduce((s, l) => s + l.length, 0)} characters of content.`
-        : "No text regions detected in the image. Try a clearer image with dark text on a light background.";
-
-      resolve({
-        status: "success",
-        message: `Detected ${charRegions.length} character regions`,
-        data: mockResult,
-      });
-    };
-    img.src = imageDataUrl;
-  });
-}
+import { Switch } from "@/components/ui/switch";
 
 const LANGUAGES = [
   { value: "eng", label: "English" },
@@ -129,7 +27,6 @@ const LANGUAGES = [
   { value: "deu", label: "German" },
   { value: "chi_sim", label: "Chinese (Simplified)" },
   { value: "jpn", label: "Japanese" },
-  { value: "kor", label: "Korean" },
   { value: "ara", label: "Arabic" },
   { value: "hin", label: "Hindi" },
   { value: "por", label: "Portuguese" },
@@ -140,147 +37,386 @@ const LANGUAGES = [
 export function ImageToTextOCREngine() {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
-  const [dragOver, setDragOver] = useState(false);
+  const [engineMode, setEngineMode] = useState<"ai" | "tesseract">("ai");
   const [language, setLanguage] = useState("eng");
-  const [copied, setCopied] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const { status, result, error, process, reset: resetProcessing } = useProcessing();
+  const [autoEnhance, setAutoEnhance] = useState(true);
 
-  const loadFile = useCallback((f: File) => {
+  // Status & Results
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [progressMsg, setProgressMsg] = useState("");
+  const [progressPercent, setProgressPercent] = useState(0);
+  const [extractedText, setExtractedText] = useState<string>("");
+  const [copied, setCopied] = useState(false);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleLoadFile = (f: File) => {
     if (!f.type.startsWith("image/") && f.type !== "application/pdf") return;
     setFile(f);
-    resetProcessing();
+    setExtractedText("");
+    setProgressMsg("");
+    setProgressPercent(0);
+
     const reader = new FileReader();
     reader.onload = () => setPreview(reader.result as string);
     reader.readAsDataURL(f);
-  }, [resetProcessing]);
-
-  const handleExtract = async () => {
-    if (!preview) return;
-    await process(() => performOCR(preview, language));
   };
 
-  const handleCopy = async () => {
-    if (result?.data) {
-      await navigator.clipboard.writeText(result.data as string);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+  // Pre-process canvas for OCR (Binarization & contrast stretch)
+  const preprocessImage = (dataUrl: string): Promise<string> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.naturalWidth || img.width;
+        canvas.height = img.naturalHeight || img.height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          resolve(dataUrl);
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0);
+        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const d = imgData.data;
+
+        // Binarize high-contrast
+        for (let i = 0; i < d.length; i += 4) {
+          const lum = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+          const val = lum < 140 ? 0 : 255;
+          d[i] = val;
+          d[i + 1] = val;
+          d[i + 2] = val;
+        }
+        ctx.putImageData(imgData, 0, 0);
+        resolve(canvas.toDataURL("image/png"));
+      };
+      img.onerror = () => resolve(dataUrl);
+      img.src = dataUrl;
+    });
+  };
+
+  const handleExtractText = async () => {
+    if (!preview) return;
+    setIsProcessing(true);
+    setProgressMsg("Preparing image...");
+    setProgressPercent(10);
+
+    const imageToScan = autoEnhance ? await preprocessImage(preview) : preview;
+
+    if (engineMode === "ai") {
+      setProgressMsg("Querying neural vision OCR model...");
+      setProgressPercent(40);
+
+      try {
+        const langObj = LANGUAGES.find((l) => l.value === language);
+        const langName = langObj ? langObj.label : "English";
+
+        const res = await fetch("/api/ai", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            prompt: `Transcribe and extract ALL text, numbers, labels, tables, and handwritten/printed content from this image verbatim.
+Language expected: ${langName}.
+Maintain original layout, paragraph breaks, and table structure where applicable. Output ONLY the extracted text with no conversational preamble.`,
+          }),
+        });
+
+        setProgressPercent(80);
+
+        if (res.ok) {
+          const json = await res.json();
+          if (json.text) {
+            setExtractedText(json.text.trim());
+            setIsProcessing(false);
+            setProgressPercent(100);
+            return;
+          }
+        }
+      } catch {
+        // Fallback to Tesseract if AI route fails
+      }
+    }
+
+    // Tesseract.js Client-side local OCR
+    try {
+      setProgressMsg("Loading Tesseract OCR engine...");
+      setProgressPercent(25);
+
+      const { createWorker } = await import("tesseract.js");
+      const worker = await createWorker(language, 1, {
+        logger: (m) => {
+          if (m.status === "recognizing text") {
+            setProgressMsg(`Recognizing text (${Math.round(m.progress * 100)}%)...`);
+            setProgressPercent(30 + Math.round(m.progress * 65));
+          } else if (m.status) {
+            setProgressMsg(`${m.status}...`);
+          }
+        },
+      });
+
+      const ret = await worker.recognize(imageToScan);
+      await worker.terminate();
+
+      const text = ret.data.text.trim();
+      setExtractedText(text || "No legible text found in this document.");
+      setProgressPercent(100);
+    } catch (err: unknown) {
+      console.error("OCR execution error:", err);
+      setExtractedText("Failed to process OCR. Please check that the image contains clear, legible text.");
+    } finally {
+      setIsProcessing(false);
     }
   };
 
-  const handleDownload = () => {
-    if (!result?.data) return;
-    const blob = new Blob([result.data as string], { type: "text/plain" });
+  const handleCopy = async () => {
+    if (!extractedText) return;
+    await navigator.clipboard.writeText(extractedText);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleDownloadTxt = () => {
+    if (!extractedText) return;
+    const blob = new Blob([extractedText], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.download = `ocr-result-${Date.now()}.txt`;
-    link.href = url;
-    link.click();
+    const a = document.createElement("a");
+    const base = file?.name.replace(/\.[^.]+$/, "") || "ocr_result";
+    a.download = `${base}_extracted.txt`;
+    a.href = url;
+    a.click();
     URL.revokeObjectURL(url);
   };
 
-  const handleReset = () => {
-    resetProcessing();
-    setFile(null);
-    setPreview(null);
+  const handleDownloadJson = () => {
+    if (!extractedText) return;
+    const data = {
+      filename: file?.name || "image",
+      extractedAt: new Date().toISOString(),
+      language,
+      wordCount: extractedText.split(/\s+/).filter(Boolean).length,
+      text: extractedText,
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const base = file?.name.replace(/\.[^.]+$/, "") || "ocr_result";
+    a.download = `${base}_ocr.json`;
+    a.href = url;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
+  const handleCleanFormatting = () => {
+    if (!extractedText) return;
+    // Remove extra line breaks, fix hyphens
+    const cleaned = extractedText
+      .replace(/(\w+)-\n(\w+)/g, "$1$2")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+    setExtractedText(cleaned);
+  };
+
+  const handleReset = () => {
+    setFile(null);
+    setPreview(null);
+    setExtractedText("");
+    setIsProcessing(false);
+  };
+
+  const words = extractedText.split(/\s+/).filter(Boolean).length;
+  const chars = extractedText.length;
+
   return (
-    <div className="space-y-4">
-      {status === "idle" && !file && (
+    <div className="space-y-6">
+      {!file && (
         <div
-          className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer ${
-            dragOver ? "border-primary bg-primary/5" : "border-muted-foreground/25"
-          }`}
-          onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={(e) => { e.preventDefault(); setDragOver(false); e.dataTransfer.files[0] && loadFile(e.dataTransfer.files[0]); }}
+          className="border-2 border-dashed rounded-2xl p-10 text-center transition-all cursor-pointer hover:border-primary/50 hover:bg-primary/5 border-muted-foreground/25"
           onClick={() => fileInputRef.current?.click()}
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => {
+            e.preventDefault();
+            if (e.dataTransfer.files[0]) handleLoadFile(e.dataTransfer.files[0]);
+          }}
         >
-          <FileText className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
-          <p className="font-medium mb-1">Drop an image to extract text</p>
-          <p className="text-sm text-muted-foreground">JPG, PNG, WebP, or PDF. OCR works best with clear, high-contrast images.</p>
+          <div className="h-14 w-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mx-auto mb-4">
+            <FileText className="h-7 w-7" />
+          </div>
+          <h3 className="font-semibold text-lg mb-1">Optical Character Recognition (OCR)</h3>
+          <p className="text-sm text-muted-foreground max-w-sm mx-auto mb-4">
+            Extract text from scanned documents, receipts, invoices, book pages, and screenshots into editable text.
+          </p>
+          <Button variant="outline" className="rounded-xl shadow-xs">
+            Browse Document or Image
+          </Button>
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/jpeg,image/png,image/webp,image/bmp,application/pdf"
+            accept="image/*,application/pdf"
             className="hidden"
-            onChange={(e) => e.target.files?.[0] && loadFile(e.target.files[0])}
+            onChange={(e) => e.target.files?.[0] && handleLoadFile(e.target.files[0])}
           />
         </div>
       )}
 
-      {status === "idle" && file && preview && (
-        <div className="space-y-4">
-          <div className="flex items-start gap-4">
-            <img src={preview} alt="Preview" className="w-32 h-32 object-cover rounded-lg border" />
-            <div className="flex-1 min-w-0">
-              <p className="font-medium text-sm truncate">{file.name}</p>
-              <p className="text-xs text-muted-foreground">{(file.size / 1024).toFixed(1)} KB</p>
-              <Button variant="ghost" size="sm" className="mt-2" onClick={handleReset}>
-                <Trash2 className="h-3 w-3 mr-1" /> Remove
-              </Button>
+      {file && preview && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Controls & Image Panel */}
+          <div className="lg:col-span-5 space-y-4">
+            <div className="p-5 rounded-2xl border bg-card/60 backdrop-blur-sm space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="font-semibold text-sm">OCR Engine Mode</h4>
+                  <p className="text-xs text-muted-foreground">Select transcription pipeline</p>
+                </div>
+                <div className="flex gap-1 p-1 bg-muted rounded-xl">
+                  <Button
+                    size="sm"
+                    variant={engineMode === "ai" ? "default" : "ghost"}
+                    className="h-8 rounded-lg text-xs"
+                    onClick={() => setEngineMode("ai")}
+                  >
+                    <Sparkles className="h-3.5 w-3.5 mr-1 text-yellow-500" /> AI Vision
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={engineMode === "tesseract" ? "default" : "ghost"}
+                    className="h-8 rounded-lg text-xs"
+                    onClick={() => setEngineMode("tesseract")}
+                  >
+                    <Zap className="h-3.5 w-3.5 mr-1" /> Browser OCR
+                  </Button>
+                </div>
+              </div>
+
+              {/* Language selection */}
+              <div className="space-y-1.5 pt-2 border-t">
+                <Label className="text-xs font-medium flex items-center gap-1.5">
+                  <Languages className="h-3.5 w-3.5" /> Document Language
+                </Label>
+                <select
+                  aria-label="Document Language Selection"
+                  value={language}
+                  onChange={(e) => setLanguage(e.target.value)}
+                  className="w-full text-xs rounded-xl border bg-background px-3 py-2"
+                >
+                  {LANGUAGES.map((l) => (
+                    <option key={l.value} value={l.value}>
+                      {l.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Pre-processing */}
+              <div className="flex items-center justify-between pt-2 border-t">
+                <div className="space-y-0.5">
+                  <Label htmlFor="enhance-toggle" className="text-xs font-medium">
+                    Auto-Binarize & Contrast Stretch
+                  </Label>
+                  <p className="text-[11px] text-muted-foreground">Cleans faint or blurry document text</p>
+                </div>
+                <Switch id="enhance-toggle" checked={autoEnhance} onCheckedChange={setAutoEnhance} />
+              </div>
+
+              {/* Action Button */}
+              <div className="pt-2 border-t">
+                <Button
+                  onClick={handleExtractText}
+                  disabled={isProcessing}
+                  className="w-full gap-2 rounded-xl font-medium"
+                >
+                  <FileText className="h-4 w-4" />
+                  {isProcessing ? "Extracting Text..." : "Extract Text Now"}
+                </Button>
+              </div>
+            </div>
+
+            {/* Document Thumbnail Preview */}
+            <div className="p-3 border rounded-2xl bg-card space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-medium text-muted-foreground truncate max-w-[200px]">{file.name}</span>
+                <Button variant="ghost" size="sm" onClick={handleReset} className="h-6 text-xs text-muted-foreground">
+                  <Trash2 className="h-3.5 w-3.5 mr-1" /> Remove
+                </Button>
+              </div>
+              <div className="rounded-xl overflow-hidden max-h-52 bg-muted/40 flex items-center justify-center border">
+                <img src={preview} alt="Document" className="max-h-52 w-auto object-contain" />
+              </div>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label className="text-sm flex items-center gap-1">
-              <Languages className="h-3.5 w-3.5" /> Language
-            </Label>
-            <Select value={language} onValueChange={(v) => v && setLanguage(v)}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select language" />
-              </SelectTrigger>
-              <SelectContent>
-                {LANGUAGES.map((lang) => (
-                  <SelectItem key={lang.value} value={lang.value}>{lang.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Extracted Text Editor & Actions */}
+          <div className="lg:col-span-7 flex flex-col space-y-3">
+            <div className="p-5 rounded-2xl border bg-card flex flex-col justify-between min-h-[460px] shadow-xs">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between flex-wrap gap-2 pb-3 border-b">
+                  <div>
+                    <h4 className="font-semibold text-sm flex items-center gap-1.5">
+                      <AlignLeft className="h-4 w-4 text-primary" /> Extracted Text Content
+                    </h4>
+                    {extractedText && (
+                      <p className="text-[11px] text-muted-foreground">
+                        {words} words · {chars} characters
+                      </p>
+                    )}
+                  </div>
 
-          <Button onClick={handleExtract} className="w-full gap-2">
-            <FileText className="h-4 w-4" /> Extract Text
-          </Button>
-        </div>
-      )}
+                  {extractedText && (
+                    <div className="flex items-center gap-1.5">
+                      <Button size="sm" variant="outline" onClick={handleCleanFormatting} className="h-7 text-xs rounded-lg">
+                        Clean Layout
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={handleCopy} className="h-7 text-xs rounded-lg">
+                        {copied ? <Check className="h-3 w-3 mr-1 text-green-500" /> : <Copy className="h-3 w-3 mr-1" />}
+                        {copied ? "Copied" : "Copy"}
+                      </Button>
+                    </div>
+                  )}
+                </div>
 
-      {status === "processing" && (
-        <div className="text-center py-8">
-          <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-3" />
-          <p className="text-sm text-muted-foreground">Analyzing image and extracting text...</p>
-        </div>
-      )}
+                {isProcessing && (
+                  <div className="py-20 text-center space-y-3">
+                    <div className="h-9 w-9 border-3 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+                    <p className="font-medium text-xs text-foreground">{progressMsg}</p>
+                    <div className="w-48 bg-muted rounded-full h-1.5 mx-auto overflow-hidden">
+                      <div
+                        className="bg-primary h-full transition-all duration-300"
+                        style={{ width: `${progressPercent}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
 
-      {status === "success" && result?.data != null && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="font-medium text-sm flex items-center gap-2">
-              <FileText className="h-4 w-4" /> Extracted Text
-            </h3>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={handleCopy}>
-                {copied ? <Check className="h-4 w-4 mr-1" /> : <Copy className="h-4 w-4 mr-1" />}
-                {copied ? "Copied!" : "Copy"}
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleDownload}>
-                <Download className="h-4 w-4 mr-1" /> TXT
-              </Button>
+                {!isProcessing && !extractedText && (
+                  <div className="py-24 text-center text-muted-foreground space-y-2">
+                    <FileText className="h-10 w-10 mx-auto opacity-30" />
+                    <p className="text-xs">Click &quot;Extract Text Now&quot; to scan and transcribe this document.</p>
+                  </div>
+                )}
+
+                {!isProcessing && extractedText && (
+                  <Textarea
+                    value={extractedText}
+                    onChange={(e) => setExtractedText(e.target.value)}
+                    className="min-h-[320px] rounded-xl text-xs font-mono leading-relaxed resize-none bg-background/80"
+                    placeholder="Extracted text will appear here..."
+                  />
+                )}
+              </div>
+
+              {extractedText && (
+                <div className="flex gap-2 pt-3 border-t">
+                  <Button onClick={handleDownloadTxt} className="flex-1 rounded-xl gap-1.5 text-xs font-medium">
+                    <Download className="h-4 w-4" /> Save as .TXT
+                  </Button>
+                  <Button variant="outline" onClick={handleDownloadJson} className="rounded-xl gap-1.5 text-xs">
+                    <FileCode className="h-4 w-4" /> Save as .JSON
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
-          <div className="border rounded-lg p-4 bg-muted/30 max-h-100 overflow-y-auto">
-            <pre className="text-sm whitespace-pre-wrap font-sans">{String(result.data)}</pre>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={handleReset}>Extract Another</Button>
-          </div>
-        </div>
-      )}
-
-      {status === "error" && (
-        <div className="text-center py-8">
-          <p className="text-red-500 mb-2">{error || "OCR extraction failed"}</p>
-          <Button variant="outline" size="sm" onClick={handleReset}>Try Again</Button>
         </div>
       )}
     </div>

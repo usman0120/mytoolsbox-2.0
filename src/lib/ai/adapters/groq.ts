@@ -1,10 +1,10 @@
 import { AIProviderAdapter, AIRequest, AIResponse } from "../types";
 
 const GROQ_MODELS: Record<string, string> = {
-  cheap: "llama-3.3-70b-versatile",
-  reasoning: "deepseek-r1-distill-llama-70b",
-  vision: "llama-3.2-90b-vision-preview",
-  image: "llama-3.3-70b-versatile",
+  cheap: "openai/gpt-oss-20b",
+  reasoning: "openai/gpt-oss-120b",
+  vision: "openai/gpt-oss-20b",
+  image: "openai/gpt-oss-20b",
 };
 
 export function createGroqAdapter(): AIProviderAdapter {

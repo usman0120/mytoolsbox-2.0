@@ -1,171 +1,373 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Copy, Check, Loader2, Sparkles, Globe, FileText, Code2, BookOpen } from "lucide-react";
+import {
+  Copy,
+  Check,
+  Loader2,
+  Sparkles,
+  Globe,
+  FileCode,
+  FileText,
+  Code2,
+  Server,
+  Layers,
+} from "lucide-react";
 import { generateAPIDocs, type APIDocGeneratorOutput } from "@/lib/ai/services/api-doc-generator";
 import { getAvailableProviders } from "@/lib/ai";
+import { toast } from "sonner";
 
-function basicAPIDocGenerate(code: string): APIDocGeneratorOutput {
+function ruleBasedAPIDocGenerate(code: string, format = "markdown"): APIDocGeneratorOutput {
+  const lines = code.split("\n");
+  const endpoints: APIDocGeneratorOutput["endpoints"] = [];
+
+  // Match Express: app.get('/users/:id', ...) or router.post('/checkout', ...)
+  const expressRegex = /(?:app|router)\.(get|post|put|patch|delete)\s*\(\s*['"`]([^'"`]+)['"`]/gi;
+  let match: RegExpExecArray | null;
+
+  while ((match = expressRegex.exec(code)) !== null) {
+    const method = match[1].toUpperCase();
+    const path = match[2];
+
+    // Extract path params e.g. :id or :slug
+    const pathParams = (path.match(/:([a-zA-Z0-9_]+)/g) || []).map((p) => ({
+      name: p.slice(1),
+      in: "path",
+      type: "string",
+      required: true,
+      description: `Unique identifier for ${p.slice(1)}.`,
+    }));
+
+    // If POST/PUT, add sample body param
+    const bodyParams = (method === "POST" || method === "PUT") ? [
+      {
+        name: "payload",
+        in: "body",
+        type: "object",
+        required: true,
+        description: "Request JSON payload body.",
+      },
+    ] : [];
+
+    endpoints.push({
+      method,
+      path,
+      summary: `${method} ${path}`,
+      description: `Handles ${method} requests for resource at ${path}.`,
+      parameters: [...pathParams, ...bodyParams],
+      responses: [
+        { code: method === "POST" ? 201 : 200, description: "Successful response" },
+        { code: 400, description: "Validation Error" },
+        { code: 500, description: "Internal Server Error" },
+      ],
+    });
+  }
+
+  // Next.js App Router matcher: export async function GET / POST
+  if (endpoints.length === 0) {
+    const nextjsMethods = (code.match(/export\s+async\s+function\s+(GET|POST|PUT|PATCH|DELETE)\b/g) || []).map(
+      (m) => m.split(/\s+/).pop()!
+    );
+
+    if (nextjsMethods.length > 0) {
+      nextjsMethods.forEach((m) => {
+        endpoints.push({
+          method: m,
+          path: "/api/resource",
+          summary: `${m} Route Handler`,
+          description: `Next.js App Router API Route Handler for ${m} operations.`,
+          parameters: m === "POST" ? [{ name: "body", in: "body", type: "object", required: true, description: "JSON body" }] : [],
+          responses: [
+            { code: 200, description: "Success response payload" },
+            { code: 401, description: "Unauthorized" },
+          ],
+        });
+      });
+    }
+  }
+
+  // Default fallback if no endpoints detected
+  if (endpoints.length === 0) {
+    endpoints.push({
+      method: "GET",
+      path: "/api/v1/health",
+      summary: "Health Check Endpoint",
+      description: "Returns service operational health status.",
+      parameters: [],
+      responses: [{ code: 200, description: "Service is healthy" }],
+    });
+  }
+
+  // Generate OpenAPI 3.0 JSON specification
+  const openApiSpec = {
+    openapi: "3.0.3",
+    info: {
+      title: "Generated Service API",
+      version: "1.0.0",
+      description: "Auto-generated API documentation specification.",
+    },
+    paths: endpoints.reduce((acc, ep) => {
+      const openApiPath = ep.path.replace(/:([a-zA-Z0-9_]+)/g, "{$1}");
+      if (!acc[openApiPath]) acc[openApiPath] = {};
+      acc[openApiPath][ep.method.toLowerCase()] = {
+        summary: ep.summary,
+        description: ep.description,
+        parameters: ep.parameters.filter((p) => p.in !== "body").map((p) => ({
+          name: p.name,
+          in: p.in,
+          required: p.required,
+          schema: { type: p.type },
+          description: p.description,
+        })),
+        responses: ep.responses.reduce((rAcc, r) => {
+          rAcc[r.code] = { description: r.description };
+          return rAcc;
+        }, {} as Record<number, { description: string }>),
+      };
+      return acc;
+    }, {} as Record<string, any>),
+  };
+
+  // Generate Markdown
+  let md = `# API Documentation\n\n`;
+  md += `## Overview\nAuto-generated documentation containing ${endpoints.length} endpoint(s).\n\n`;
+  md += `## Endpoints\n\n`;
+
+  endpoints.forEach((ep) => {
+    md += `### \`${ep.method} ${ep.path}\`\n\n`;
+    md += `${ep.description}\n\n`;
+    if (ep.parameters.length > 0) {
+      md += `| Parameter | Location | Type | Required | Description |\n`;
+      md += `| :--- | :--- | :--- | :--- | :--- |\n`;
+      ep.parameters.forEach((p) => {
+        md += `| \`${p.name}\` | ${p.in} | \`${p.type}\` | ${p.required ? "Yes" : "No"} | ${p.description} |\n`;
+      });
+      md += `\n`;
+    }
+    md += `**Responses:**\n`;
+    ep.responses.forEach((r) => {
+      md += `- \`${r.code}\`: ${r.description}\n`;
+    });
+    md += `\n---\n\n`;
+  });
+
   return {
-    title: "API Documentation",
-    description: "Auto-generated API documentation. Use AI for detailed results.",
-    endpoints: [],
-    markdown: `# API Documentation\n\nThis is a basic documentation stub. Enable AI for comprehensive API documentation.\n\n## Code\n\n\`\`\`\n${code.slice(0, 500)}${code.length > 500 ? "\n..." : ""}\n\`\`\``,
+    title: "Generated API Documentation",
+    description: `Discovered and documented ${endpoints.length} endpoint(s) across source code.`,
+    endpoints,
+    markdown: format === "openapi" ? JSON.stringify(openApiSpec, null, 2) : md,
   };
 }
 
-const LANGUAGES = ["auto", "javascript", "typescript", "python", "java", "go", "rust", "ruby", "php", "csharp"];
-const FORMATS = ["auto", "openapi", "swagger", "markdown"];
+const SAMPLE_API_CODE = `const express = require('express');
+const app = express();
+
+// Retrieve all user accounts
+app.get('/api/v1/users', async (req, res) => {
+  res.status(200).json({ users: [] });
+});
+
+// Retrieve specific user by ID
+app.get('/api/v1/users/:id', async (req, res) => {
+  res.status(200).json({ user: { id: req.params.id } });
+});
+
+// Create new user profile
+app.post('/api/v1/users', async (req, res) => {
+  res.status(201).json({ created: true });
+});
+
+// Delete user account
+app.delete('/api/v1/users/:id', async (req, res) => {
+  res.status(200).json({ deleted: true });
+});`;
 
 export function AIAPIDocumentationGeneratorEngine() {
-  const [input, setInput] = useState("");
-  const [language, setLanguage] = useState("auto");
-  const [format, setFormat] = useState("auto");
-  const [result, setResult] = useState<APIDocGeneratorOutput | null>(null);
+  const [code, setCode] = useState(SAMPLE_API_CODE);
+  const [language, setLanguage] = useState("javascript");
+  const [format, setFormat] = useState<"markdown" | "openapi">("markdown");
+  const [result, setResult] = useState<APIDocGeneratorOutput>(() =>
+    ruleBasedAPIDocGenerate(SAMPLE_API_CODE, "markdown")
+  );
+  const [activeTab, setActiveTab] = useState<"visual" | "raw">("visual");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [copied, setCopied] = useState("");
-  const [activeTab, setActiveTab] = useState("overview");
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   const hasAIProvider = getAvailableProviders().length > 0;
 
   const handleGenerate = useCallback(async () => {
-    if (!input.trim()) return;
+    if (!code.trim()) return;
     setIsLoading(true);
     setError("");
     try {
       if (hasAIProvider) {
         const r = await generateAPIDocs({
-          code: input.trim(),
+          code: code.trim(),
           language: language === "auto" ? undefined : language,
-          format: format === "auto" ? undefined : (format as "openapi" | "swagger" | "markdown"),
+          format: format as any,
         });
         setResult(r);
       } else {
-        setResult(basicAPIDocGenerate(input.trim()));
+        setResult(ruleBasedAPIDocGenerate(code.trim(), format));
       }
     } catch {
-      setResult(basicAPIDocGenerate(input.trim()));
-      setError("AI service unavailable. Showing basic result.");
+      setResult(ruleBasedAPIDocGenerate(code.trim(), format));
+      setError("AI service unavailable. Generated schema with code analyzer.");
     }
     setIsLoading(false);
-  }, [input, language, format, hasAIProvider]);
+  }, [code, language, format, hasAIProvider]);
 
   const handleCopy = async (text: string, key: string) => {
     await navigator.clipboard.writeText(text);
-    setCopied(key);
-    setTimeout(() => setCopied(""), 2000);
+    setCopiedKey(key);
+    setTimeout(() => setCopiedKey(null), 2000);
+    toast.success("Copied to clipboard!");
+  };
+
+  const getMethodBadgeVariant = (method: string) => {
+    switch (method.toUpperCase()) {
+      case "GET":
+        return "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30";
+      case "POST":
+        return "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/30";
+      case "PUT":
+      case "PATCH":
+        return "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30";
+      case "DELETE":
+        return "bg-destructive/10 text-destructive border-destructive/30";
+      default:
+        return "bg-muted text-muted-foreground";
+    }
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
+      {/* Code Input */}
       <div className="space-y-1.5">
-        <Label className="text-xs">Paste your API code</Label>
+        <div className="flex items-center justify-between">
+          <Label className="text-sm font-semibold flex items-center gap-1.5">
+            <Globe className="h-4 w-4 text-primary" /> API Route Handler Source Code
+          </Label>
+          {hasAIProvider && (
+            <Badge className="bg-primary/10 text-primary border-primary/20 text-[11px] gap-1">
+              <Sparkles className="h-3 w-3" /> AI Active
+            </Badge>
+          )}
+        </div>
         <Textarea
-          placeholder="app.get('/users', (req, res) => { ... })"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          className="min-h-37.5 font-mono text-sm"
+          placeholder="Paste Express, Next.js, FastAPI, or Gin route handlers..."
+          value={code}
+          onChange={(e) => setCode(e.target.value)}
+          className="min-h-36 font-mono text-xs leading-relaxed"
         />
       </div>
 
-      <div className="flex gap-2">
-        <Select value={language} onValueChange={(v) => setLanguage(v ?? "")}>
-          <SelectTrigger className="w-32.5 h-8 text-xs">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {LANGUAGES.map((l) => (
-              <SelectItem key={l} value={l} className="text-xs">{l}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={format} onValueChange={(v) => setFormat(v ?? "")}>
-          <SelectTrigger className="w-32.5 h-8 text-xs">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {FORMATS.map((f) => (
-              <SelectItem key={f} value={f} className="text-xs">{f}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      {/* Settings Row */}
+      <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-muted/40 rounded-xl text-xs">
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-2">
+            <span className="text-muted-foreground font-medium">Output Format:</span>
+            <select
+              value={format}
+              onChange={(e) => setFormat(e.target.value as any)}
+              className="text-xs border rounded-md px-2 py-1 bg-background font-medium"
+            >
+              <option value="markdown">Markdown Table Documentation</option>
+              <option value="openapi">OpenAPI 3.0 / Swagger JSON</option>
+            </select>
+          </div>
+        </div>
 
-      <Button onClick={handleGenerate} disabled={isLoading} className="w-full gap-2">
-        {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Globe className="h-4 w-4" />}
-        Generate API Documentation
-      </Button>
+        <Button onClick={handleGenerate} disabled={isLoading} className="gap-2 h-8 text-xs ml-auto">
+          {isLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+          Generate API Docs
+        </Button>
+      </div>
 
       {error && <p className="text-xs text-amber-500">{error}</p>}
 
+      {/* Results Display */}
       {result && (
-        <div className="space-y-3 animate-fade-in-up">
-          {/* Title & Description */}
-          <Card>
-            <CardContent className="p-4 space-y-2">
-              <h3 className="font-bold text-lg">{result.title}</h3>
-              <p className="text-sm text-muted-foreground">{result.description}</p>
-            </CardContent>
-          </Card>
+        <div className="space-y-4 pt-2">
+          <div className="flex items-center justify-between border-b pb-2">
+            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
+              <TabsList className="h-8">
+                <TabsTrigger value="visual" className="text-xs gap-1.5">
+                  <Layers className="h-3.5 w-3.5" /> Endpoints View ({result.endpoints.length})
+                </TabsTrigger>
+                <TabsTrigger value="raw" className="text-xs gap-1.5">
+                  <FileText className="h-3.5 w-3.5" /> {format === "openapi" ? "OpenAPI JSON" : "Markdown"}
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
 
-          {/* Endpoints */}
-          {result.endpoints.length > 0 && (
-            <div className="space-y-2">
-              <p className="text-xs font-medium">Endpoints</p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs gap-1"
+              onClick={() => handleCopy(result.markdown || JSON.stringify(result, null, 2), "doc-copy")}
+            >
+              {copiedKey === "doc-copy" ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3" />}
+              Copy All Docs
+            </Button>
+          </div>
+
+          {activeTab === "visual" ? (
+            <div className="space-y-3">
               {result.endpoints.map((ep, i) => (
-                <Card key={i}>
-                  <CardContent className="p-3 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Badge
-                        variant={
-                          ep.method === "GET" ? "default" :
-                          ep.method === "POST" ? "secondary" :
-                          ep.method === "DELETE" ? "destructive" : "outline"
-                        }
-                        className="font-mono text-xs"
-                      >
-                        {ep.method}
-                      </Badge>
-                      <code className="text-sm font-mono">{ep.path}</code>
+                <Card key={i} className="border shadow-sm">
+                  <CardContent className="p-4 space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b pb-2">
+                      <div className="flex items-center gap-2.5">
+                        <span className={`font-mono font-bold text-xs px-2.5 py-0.5 rounded border ${getMethodBadgeVariant(ep.method)}`}>
+                          {ep.method}
+                        </span>
+                        <code className="font-mono font-bold text-sm text-foreground">{ep.path}</code>
+                      </div>
+                      <span className="text-xs text-muted-foreground">{ep.summary}</span>
                     </div>
-                    <p className="text-sm font-medium">{ep.summary}</p>
-                    <p className="text-xs text-muted-foreground">{ep.description}</p>
+
+                    <p className="text-xs text-muted-foreground leading-relaxed">{ep.description}</p>
 
                     {/* Parameters */}
                     {ep.parameters.length > 0 && (
-                      <div className="space-y-1">
-                        <p className="text-[10px] text-muted-foreground uppercase">Parameters</p>
-                        {ep.parameters.map((p, j) => (
-                          <div key={j} className="flex items-center gap-2 text-xs">
-                            <Badge variant="outline" className="font-mono text-[10px]">{p.name}</Badge>
-                            <span className="text-muted-foreground">{p.in}</span>
-                            <Badge variant="secondary" className="text-[10px]">{p.type}</Badge>
-                            {p.required && <Badge variant="destructive" className="text-[10px]">required</Badge>}
-                            <span className="text-muted-foreground">{p.description}</span>
-                          </div>
-                        ))}
+                      <div className="space-y-1.5">
+                        <Label className="text-[11px] font-semibold text-muted-foreground uppercase">Parameters</Label>
+                        <div className="border rounded-lg divide-y text-xs overflow-hidden">
+                          {ep.parameters.map((p, j) => (
+                            <div key={j} className="grid grid-cols-12 gap-2 p-2 items-center hover:bg-muted/20">
+                              <div className="col-span-3 font-mono font-semibold text-primary">{p.name}</div>
+                              <div className="col-span-2">
+                                <Badge variant="outline" className="text-[10px]">{p.in}</Badge>
+                              </div>
+                              <div className="col-span-2">
+                                <Badge variant="secondary" className="font-mono text-[10px]">{p.type}</Badge>
+                              </div>
+                              <div className="col-span-5 text-muted-foreground">{p.description}</div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
 
                     {/* Responses */}
                     {ep.responses.length > 0 && (
-                      <div className="space-y-1">
-                        <p className="text-[10px] text-muted-foreground uppercase">Responses</p>
+                      <div className="flex flex-wrap items-center gap-2 pt-1">
+                        <span className="text-[11px] text-muted-foreground font-medium">Responses:</span>
                         {ep.responses.map((r, j) => (
-                          <div key={j} className="flex items-center gap-2 text-xs">
-                            <Badge variant={r.code < 300 ? "default" : "destructive"} className="text-[10px]">
+                          <Badge key={j} variant="outline" className="text-[11px] font-mono gap-1">
+                            <span className={r.code < 300 ? "text-green-500 font-bold" : "text-destructive font-bold"}>
                               {r.code}
-                            </Badge>
-                            <span className="text-muted-foreground">{r.description}</span>
-                          </div>
+                            </span>
+                            <span>{r.description}</span>
+                          </Badge>
                         ))}
                       </div>
                     )}
@@ -173,25 +375,10 @@ export function AIAPIDocumentationGeneratorEngine() {
                 </Card>
               ))}
             </div>
-          )}
-
-          {/* Markdown */}
-          {result.markdown && (
+          ) : (
             <Card>
-              <CardContent className="p-4 space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs font-medium">Markdown Documentation</Label>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 gap-1"
-                    onClick={() => handleCopy(result.markdown!, "markdown")}
-                  >
-                    {copied === "markdown" ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
-                    Copy
-                  </Button>
-                </div>
-                <pre className="text-xs font-mono whitespace-pre-wrap bg-muted p-3 rounded-lg max-h-75 overflow-y-auto">
+              <CardContent className="p-4">
+                <pre className="p-3.5 rounded-xl bg-muted/40 font-mono text-xs overflow-x-auto whitespace-pre-wrap select-all max-h-120">
                   {result.markdown}
                 </pre>
               </CardContent>

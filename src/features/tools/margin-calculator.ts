@@ -1,33 +1,84 @@
+// Margin & Markup Calculator Engine
+
 export interface MarginResult {
   cost: number;
   sellingPrice: number;
-  markup: number;
-  markupPercent: number;
   grossProfit: number;
   grossMarginPercent: number;
+  markup: number;
+  markupPercent: number;
+  profitMultiplier: number;
+}
+
+export interface PricingTier {
+  marginPercent: number;
+  sellingPrice: number;
+  markupPercent: number;
+  profit: number;
 }
 
 export function calculateMargin(cost: number, sellingPrice: number): MarginResult {
-  const grossProfit = sellingPrice - cost;
+  const safeCost = Math.max(0, cost);
+  const safePrice = Math.max(0, sellingPrice);
+
+  const grossProfit = safePrice - safeCost;
   const markup = grossProfit;
-  const markupPercent = cost > 0 ? (markup / cost) * 100 : 0;
-  const grossMarginPercent = sellingPrice > 0 ? (grossProfit / sellingPrice) * 100 : 0;
+  const markupPercent = safeCost > 0 ? (markup / safeCost) * 100 : 0;
+  const grossMarginPercent = safePrice > 0 ? (grossProfit / safePrice) * 100 : 0;
+  const profitMultiplier = safeCost > 0 ? safePrice / safeCost : 0;
 
   return {
-    cost: Math.round(cost * 100) / 100,
-    sellingPrice: Math.round(sellingPrice * 100) / 100,
-    markup: Math.round(markup * 100) / 100,
-    markupPercent: Math.round(markupPercent * 100) / 100,
-    grossProfit: Math.round(grossProfit * 100) / 100,
-    grossMarginPercent: Math.round(grossMarginPercent * 100) / 100,
+    cost: round(safeCost),
+    sellingPrice: round(safePrice),
+    grossProfit: round(grossProfit),
+    grossMarginPercent: round(grossMarginPercent),
+    markup: round(markup),
+    markupPercent: round(markupPercent),
+    profitMultiplier: round(profitMultiplier),
   };
 }
 
-export function calculateSellingPrice(cost: number, targetMarginPercent: number): number {
-  if (targetMarginPercent >= 100) return cost;
-  return Math.round((cost / (1 - targetMarginPercent / 100)) * 100) / 100;
+export function calculateSellingPriceFromMargin(cost: number, targetMarginPercent: number): MarginResult {
+  const safeCost = Math.max(0, cost);
+  const marginFrac = Math.min(0.9999, Math.max(0, targetMarginPercent / 100));
+  const sellingPrice = marginFrac < 1 ? safeCost / (1 - marginFrac) : safeCost;
+
+  return calculateMargin(safeCost, sellingPrice);
 }
 
-export function calculateCostFromPrice(sellingPrice: number, marginPercent: number): number {
-  return Math.round((sellingPrice * (1 - marginPercent / 100)) * 100) / 100;
+export function calculateSellingPriceFromMarkup(cost: number, targetMarkupPercent: number): MarginResult {
+  const safeCost = Math.max(0, cost);
+  const markupFrac = Math.max(0, targetMarkupPercent / 100);
+  const sellingPrice = safeCost * (1 + markupFrac);
+
+  return calculateMargin(safeCost, sellingPrice);
+}
+
+export function calculateCostFromPrice(sellingPrice: number, marginPercent: number): MarginResult {
+  const safePrice = Math.max(0, sellingPrice);
+  const marginFrac = Math.min(1, Math.max(0, marginPercent / 100));
+  const allowableCost = safePrice * (1 - marginFrac);
+
+  return calculateMargin(allowableCost, safePrice);
+}
+
+export function generatePricingTiers(cost: number, margins: number[] = [10, 20, 30, 40, 50, 60, 70]): PricingTier[] {
+  return margins.map(margin => {
+    const res = calculateSellingPriceFromMargin(cost, margin);
+    return {
+      marginPercent: margin,
+      sellingPrice: res.sellingPrice,
+      markupPercent: res.markupPercent,
+      profit: res.grossProfit,
+    };
+  });
+}
+
+// Backward compatibility alias
+export function calculateSellingPrice(cost: number, targetMarginPercent: number): number {
+  return calculateSellingPriceFromMargin(cost, targetMarginPercent).sellingPrice;
+}
+
+function round(val: number): number {
+  return Math.round(val * 100) / 100;
 }

@@ -1,43 +1,65 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Pencil, Copy, Check, Trash2, Download, Save, FileText, Bold, Italic, Underline, List, ListOrdered } from "lucide-react";
+import {
+  FileText, Copy, Check, Trash2, Download, Save, Clock,
+  ArrowUpDown, Search, Replace, Sparkles, Sliders
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import {
+  computeTextStatistics,
+  transformCase,
+  sortLines,
+  removeDuplicateLines,
+  findAndReplace,
+  CaseTransform,
+} from "@/features/tools/online-notepad";
+
+const STORAGE_KEY = "mytoolsbox-online-notepad-content";
+const SAVED_AT_KEY = "mytoolsbox-online-notepad-saved-at";
 
 export function OnlineNotepadEngine() {
-  // Load saved content from localStorage on mount (lazy initializer)
   const [content, setContent] = useState(() => {
-    if (typeof window === "undefined") return "";
-    return localStorage.getItem("online-notepad-content") || "";
+    try {
+      return localStorage.getItem(STORAGE_KEY) || "";
+    } catch {
+      return "";
+    }
   });
+
   const [copied, setCopied] = useState(false);
-  const [saved, setSaved] = useState(false);
   const [lastSaved, setLastSaved] = useState<string | null>(() => {
-    if (typeof window === "undefined") return null;
-    return localStorage.getItem("online-notepad-saved-at") || null;
+    try {
+      return localStorage.getItem(SAVED_AT_KEY) || null;
+    } catch {
+      return null;
+    }
   });
 
-  // Compute stats during render
-  const trimmed = content.trim();
-  const charCount = content.length;
-  const wordCount = trimmed ? trimmed.split(/\s+/).filter((w) => w.length > 0).length : 0;
+  const [showFindReplace, setShowFindReplace] = useState(false);
+  const [findQuery, setFindQuery] = useState("");
+  const [replaceQuery, setReplaceQuery] = useState("");
+  const [caseSensitive, setCaseSensitive] = useState(false);
 
-  // Auto-save every 30 seconds
+  // Auto-save on edit with debounce
   useEffect(() => {
-    const interval = setInterval(() => {
-      if (content) {
-        localStorage.setItem("online-notepad-content", content);
+    const timer = setTimeout(() => {
+      if (content !== undefined) {
+        localStorage.setItem(STORAGE_KEY, content);
         const now = new Date().toLocaleTimeString();
-        localStorage.setItem("online-notepad-saved-at", now);
+        localStorage.setItem(SAVED_AT_KEY, now);
         setLastSaved(now);
       }
-    }, 30000);
-    return () => clearInterval(interval);
+    }, 1000);
+    return () => clearTimeout(timer);
   }, [content]);
+
+  const stats = computeTextStatistics(content);
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(content);
@@ -47,134 +69,175 @@ export function OnlineNotepadEngine() {
   };
 
   const handleClear = () => {
-    if (content && !confirm("Are you sure you want to clear all content?")) return;
-    setContent("");
-    localStorage.removeItem("online-notepad-content");
-    localStorage.removeItem("online-notepad-saved-at");
-    setLastSaved(null);
-    toast.success("Notepad cleared.");
+    if (content && confirm("Are you sure you want to clear your notepad?")) {
+      setContent("");
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(SAVED_AT_KEY);
+      setLastSaved(null);
+      toast.success("Notepad cleared.");
+    }
   };
 
-  const handleSave = () => {
-    localStorage.setItem("online-notepad-content", content);
-    const now = new Date().toLocaleTimeString();
-    localStorage.setItem("online-notepad-saved-at", now);
-    setLastSaved(now);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-    toast.success("Saved to browser storage!");
-  };
-
-  const handleDownload = () => {
-    const blob = new Blob([content], { type: "text/plain" });
+  const handleDownload = (format: "txt" | "md") => {
+    const mime = format === "md" ? "text/markdown" : "text/plain";
+    const blob = new Blob([content], { type: `${mime};charset=utf-8;` });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `notepad-${new Date().toISOString().split("T")[0]}.txt`;
+    a.download = `notes-${Date.now()}.${format}`;
     a.click();
     URL.revokeObjectURL(url);
-    toast.success("Downloaded as .txt file!");
+    toast.success(`Notes downloaded as .${format}!`);
   };
 
-  const insertFormatting = (format: "bold" | "italic" | "underline" | "bullet" | "number") => {
-    const textarea = document.querySelector("textarea");
-    if (!textarea) return;
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selected = content.substring(start, end);
+  const applyCase = (type: CaseTransform) => {
+    if (!content) return;
+    setContent(transformCase(content, type));
+    toast.success(`Transformed to ${type}!`);
+  };
 
-    let replacement = "";
-    switch (format) {
-      case "bold": replacement = `**${selected || "bold text"}**`; break;
-      case "italic": replacement = `*${selected || "italic text"}*`; break;
-      case "underline": replacement = `<u>${selected || "underlined text"}</u>`; break;
-      case "bullet": replacement = `\n- ${selected || "list item"}`; break;
-      case "number": replacement = `\n1. ${selected || "list item"}`; break;
+  const handleSort = (dir: "asc" | "desc") => {
+    if (!content) return;
+    setContent(sortLines(content, dir));
+    toast.success(`Lines sorted ${dir === "asc" ? "A-Z" : "Z-A"}!`);
+  };
+
+  const handleDedupe = () => {
+    if (!content) return;
+    setContent(removeDuplicateLines(content));
+    toast.success("Duplicate lines removed!");
+  };
+
+  const handleExecuteReplace = () => {
+    if (!findQuery) {
+      toast.error("Please enter a term to find.");
+      return;
     }
-
-    const newContent = content.substring(0, start) + replacement + content.substring(end);
-    setContent(newContent);
+    const updated = findAndReplace(content, findQuery, replaceQuery, { caseSensitive });
+    setContent(updated);
+    toast.success("Find & replace executed!");
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2 mb-2">
-        <Badge variant="secondary" className="rounded-full">Online Notepad</Badge>
-        <span className="text-xs text-muted-foreground">Quick text editor with auto-save</span>
-      </div>
-
-      {/* Toolbar */}
-      <div className="flex items-center gap-1 flex-wrap">
-        <div className="flex items-center gap-0.5 p-1 bg-muted/50 rounded-xl">
-          <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg" onClick={() => insertFormatting("bold")} title="Bold">
-            <Bold className="h-3.5 w-3.5" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg" onClick={() => insertFormatting("italic")} title="Italic">
-            <Italic className="h-3.5 w-3.5" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg" onClick={() => insertFormatting("underline")} title="Underline">
-            <Underline className="h-3.5 w-3.5" />
-          </Button>
-          <span className="w-px h-4 bg-border mx-0.5" />
-          <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg" onClick={() => insertFormatting("bullet")} title="Bullet List">
-            <List className="h-3.5 w-3.5" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg" onClick={() => insertFormatting("number")} title="Numbered List">
-            <ListOrdered className="h-3.5 w-3.5" />
-          </Button>
-        </div>
-        <div className="flex-1" />
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" size="sm" onClick={handleCopy} className="gap-1.5 h-7">
-            {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
-            {copied ? "Copied" : "Copy"}
-          </Button>
-          <Button variant="ghost" size="sm" onClick={handleSave} className="gap-1.5 h-7">
-            {saved ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Save className="h-3.5 w-3.5" />}
-            {saved ? "Saved" : "Save"}
-          </Button>
-          <Button variant="ghost" size="sm" onClick={handleDownload} className="gap-1.5 h-7">
-            <Download className="h-3.5 w-3.5" />
-            Download
-          </Button>
-          <Button variant="ghost" size="sm" onClick={handleClear} className="gap-1.5 h-7 text-destructive">
-            <Trash2 className="h-3.5 w-3.5" />
-            Clear
-          </Button>
-        </div>
-      </div>
-
-      {/* Editor */}
-      <Textarea
-        placeholder="Start typing here... (auto-saves every 30 seconds)"
-        className="min-h-87.5 rounded-xl font-mono text-sm leading-relaxed"
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-      />
-
-      {/* Stats bar */}
-      <div className="flex items-center justify-between text-xs text-muted-foreground">
-        <div className="flex items-center gap-4">
-          <span>Words: <strong>{wordCount.toLocaleString()}</strong></span>
-          <span>Characters: <strong>{charCount.toLocaleString()}</strong></span>
-        </div>
+    <div className="space-y-3">
+      {/* Top action bar */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
+          <h2 className="text-xl font-bold flex items-center gap-2">
+            <FileText className="h-5 w-5 text-primary" /> Online Notepad
+          </h2>
           {lastSaved && (
-            <span className="flex items-center gap-1">
-              <Save className="h-3 w-3" />
-              Last saved: {lastSaved}
+            <span className="text-[10px] text-muted-foreground flex items-center gap-1 font-mono">
+              <Check className="h-3 w-3 text-green-500" /> Auto-saved {lastSaved}
             </span>
           )}
-          <Badge variant="outline" className="text-[10px] h-5 px-1.5 rounded-full">Local Storage</Badge>
+        </div>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Button
+            variant={showFindReplace ? "default" : "outline"}
+            size="sm"
+            onClick={() => setShowFindReplace(!showFindReplace)}
+            className="text-xs h-8 gap-1"
+          >
+            <Search className="h-3.5 w-3.5" /> Find & Replace
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleCopy} className="text-xs h-8 gap-1">
+            {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />} Copy
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => handleDownload("txt")} className="text-xs h-8 gap-1">
+            <Download className="h-3.5 w-3.5" /> TXT
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => handleDownload("md")} className="text-xs h-8 gap-1">
+            <Download className="h-3.5 w-3.5" /> MD
+          </Button>
+          <Button variant="ghost" size="sm" onClick={handleClear} className="text-xs h-8 text-muted-foreground hover:text-destructive">
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
         </div>
       </div>
 
-      {!content && (
-        <div className="text-center py-6 text-muted-foreground">
-          <Pencil className="h-10 w-10 mx-auto mb-3 opacity-30" />
-          <p className="text-sm">Start typing to use the notepad. Content is saved in your browser.</p>
-        </div>
+      {/* Find & Replace Bar */}
+      {showFindReplace && (
+        <Card className="p-3 bg-muted/40 border border-border">
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <div className="flex items-center gap-1.5 flex-1 min-w-44">
+              <Input
+                placeholder="Find..."
+                value={findQuery}
+                onChange={(e) => setFindQuery(e.target.value)}
+                className="h-7 text-xs"
+              />
+              <Input
+                placeholder="Replace with..."
+                value={replaceQuery}
+                onChange={(e) => setReplaceQuery(e.target.value)}
+                className="h-7 text-xs"
+              />
+            </div>
+            <label className="flex items-center gap-1 cursor-pointer text-muted-foreground select-none">
+              <input
+                type="checkbox"
+                checked={caseSensitive}
+                onChange={(e) => setCaseSensitive(e.target.checked)}
+                className="rounded"
+              />
+              Match case
+            </label>
+            <Button size="sm" onClick={handleExecuteReplace} className="h-7 text-xs gap-1">
+              <Replace className="h-3 w-3" /> Replace All
+            </Button>
+          </div>
+        </Card>
       )}
+
+      {/* Text Transformations Toolbar */}
+      <div className="flex flex-wrap items-center gap-1 text-xs">
+        <span className="text-[10px] text-muted-foreground mr-1 uppercase font-semibold">Transform:</span>
+        <Button variant="ghost" size="sm" onClick={() => applyCase("titlecase")} className="h-6 text-[10px] px-2">
+          Title Case
+        </Button>
+        <Button variant="ghost" size="sm" onClick={() => applyCase("sentencecase")} className="h-6 text-[10px] px-2">
+          Sentence case
+        </Button>
+        <Button variant="ghost" size="sm" onClick={() => applyCase("uppercase")} className="h-6 text-[10px] px-2">
+          UPPERCASE
+        </Button>
+        <Button variant="ghost" size="sm" onClick={() => applyCase("lowercase")} className="h-6 text-[10px] px-2">
+          lowercase
+        </Button>
+        <span className="text-muted-foreground">|</span>
+        <Button variant="ghost" size="sm" onClick={() => handleSort("asc")} className="h-6 text-[10px] px-2">
+          Sort A-Z
+        </Button>
+        <Button variant="ghost" size="sm" onClick={() => handleSort("desc")} className="h-6 text-[10px] px-2">
+          Sort Z-A
+        </Button>
+        <Button variant="ghost" size="sm" onClick={handleDedupe} className="h-6 text-[10px] px-2">
+          Deduplicate Lines
+        </Button>
+      </div>
+
+      {/* Editor Area */}
+      <Textarea
+        value={content}
+        onChange={(e) => setContent(e.target.value)}
+        placeholder="Start typing your notes, thoughts, or drafts here..."
+        className="font-mono text-xs min-h-[380px] leading-relaxed p-4 border rounded-xl resize-y shadow-xs"
+      />
+
+      {/* Statistics Bar */}
+      <div className="flex flex-wrap items-center justify-between text-xs text-muted-foreground px-1 gap-2 border-t pt-2">
+        <div className="flex flex-wrap items-center gap-3 font-mono text-[11px]">
+          <span><strong>{stats.words.toLocaleString()}</strong> words</span>
+          <span><strong>{stats.characters.toLocaleString()}</strong> characters</span>
+          <span><strong>{stats.sentences}</strong> sentences</span>
+          <span><strong>{stats.paragraphs}</strong> paragraphs</span>
+        </div>
+        <div className="flex items-center gap-3 font-mono text-[11px]">
+          <span>~{stats.readingTimeMinutes}m read</span>
+          <span>~{stats.speakingTimeMinutes}m speech</span>
+        </div>
+      </div>
     </div>
   );
 }

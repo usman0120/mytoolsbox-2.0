@@ -4,6 +4,7 @@ import { getToolBySlug, getActiveTools } from "@/content/tools/registry";
 import {
   generateToolMetadata,
   generateSoftwareAppJsonLd,
+  generateHowToJsonLd,
   generateFAQJsonLd,
   generateBreadcrumbJsonLd,
 } from "@/lib/seo";
@@ -33,7 +34,7 @@ export async function generateMetadata({ params }: ToolPageProps): Promise<Metad
 }
 
 // ---------------------------------------------------------------------------
-// Page component with JSON-LD structured data
+// Page component with comprehensive JSON-LD structured data
 // ---------------------------------------------------------------------------
 
 export default async function ToolPage({ params }: ToolPageProps) {
@@ -42,15 +43,20 @@ export default async function ToolPage({ params }: ToolPageProps) {
 
   if (!tool) notFound();
 
-  // Build JSON-LD structured data
-  const jsonLd = {
-    ...generateSoftwareAppJsonLd(tool),
-    ...(tool.faq.length > 0 && { mainEntity: generateFAQJsonLd(tool.faq)?.mainEntity }),
-  };
+  // 1. Software / WebApplication Schema
+  const softwareAppLd = generateSoftwareAppJsonLd(tool);
 
+  // 2. HowTo Step Schema (Captures Google Rich How-To Cards)
+  const howToLd = generateHowToJsonLd(tool);
+
+  // 3. FAQ Schema (Captures Google "People Also Ask" Rich Results)
+  const faqLd = tool.faq && tool.faq.length > 0 ? generateFAQJsonLd(tool.faq) : null;
+
+  // 4. Breadcrumb Schema (Hierarchical Silo: Home > Tools > Category > Tool)
   const breadcrumbLd = generateBreadcrumbJsonLd([
     { name: "Home", url: "/" },
     { name: "Tools", url: "/tools" },
+    { name: tool.category.charAt(0).toUpperCase() + tool.category.slice(1), url: `/tools?category=${tool.category}` },
     { name: tool.name, url: `/tools/${tool.slug}` },
   ]);
 
@@ -58,8 +64,18 @@ export default async function ToolPage({ params }: ToolPageProps) {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareAppLd) }}
       />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(howToLd) }}
+      />
+      {faqLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }}
+        />
+      )}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}

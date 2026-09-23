@@ -8,28 +8,39 @@ import { Slider } from "@/components/ui/slider";
 import { toast } from "sonner";
 import {
   Film, Upload, Download, Loader2, CheckCircle2, XCircle,
-  Image, Settings2, Scissors,
+  Image as ImageIcon, Settings2, Repeat, ArrowLeftRight, Sparkles,
 } from "lucide-react";
+import { GifEncoder } from "@/lib/processing/client/gif-encoder";
 
 export function VideoToGifMakerEngine() {
   const [file, setFile] = useState<File | null>(null);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [isConverting, setIsConverting] = useState(false);
   const [outputUrl, setOutputUrl] = useState<string | null>(null);
   const [outputName, setOutputName] = useState("");
+  const [outputSize, setOutputSize] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
-  const [fps, setFps] = useState(10);
-  const [width, setWidth] = useState(480);
+  const [statusMessage, setStatusMessage] = useState("");
+
+  // Settings
+  const [fps, setFps] = useState(12);
+  const [width, setWidth] = useState(440);
   const [startTime, setStartTime] = useState(0);
-  const [duration, setDuration] = useState(5);
+  const [duration, setDuration] = useState(4);
   const [videoDuration, setVideoDuration] = useState(0);
+  const [bounceLoop, setBounceLoop] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0];
     if (!selected) return;
     setError(null);
     setOutputUrl(null);
+    setOutputSize(null);
 
     if (!selected.type.startsWith("video/")) {
       setError("Please select a valid video file.");
@@ -42,37 +53,34 @@ export function VideoToGifMakerEngine() {
     }
 
     setFile(selected);
-
-    // Get video duration
     const url = URL.createObjectURL(selected);
-    const video = document.createElement("video");
-    video.src = url;
-    video.onloadedmetadata = () => {
-      setVideoDuration(video.duration);
-      setDuration(Math.min(5, video.duration));
-      URL.revokeObjectURL(url);
+    setVideoUrl(url);
+
+    const temp = document.createElement("video");
+    temp.src = url;
+    temp.onloadedmetadata = () => {
+      setVideoDuration(temp.duration);
+      setDuration(Math.min(5, Math.max(1, temp.duration)));
     };
   }, []);
 
   const handleConvert = useCallback(async () => {
-    if (!file) return;
+    if (!file || !videoUrl) return;
     setIsConverting(true);
     setError(null);
     setProgress(0);
+    setStatusMessage("Initializing video extraction...");
 
     try {
-      const videoUrl = URL.createObjectURL(file);
       const video = document.createElement("video");
       video.src = videoUrl;
       video.muted = true;
 
       await new Promise<void>((resolve, reject) => {
         video.onloadedmetadata = () => resolve();
-        video.onerror = () => reject(new Error("Failed to load video"));
+        video.onerror = () => reject(new Error("Failed to load video stream"));
         video.load();
       });
-
-      setProgress(10);
 
       const aspectRatio = video.videoHeight / video.videoWidth;
       const height = Math.round(width * aspectRatio);
@@ -80,77 +88,61 @@ export function VideoToGifMakerEngine() {
       const canvas = document.createElement("canvas");
       canvas.width = width;
       canvas.height = height;
-      const ctx = canvas.getContext("2d")!;
+      const ctx = canvas.getContext("2d", { willReadFrequently: true })!;
 
-      const frameDelay = 1000 / fps;
-      const totalFrames = Math.floor(duration * fps);
+      const frameDelay = Math.round(1000 / fps);
+      const totalFrames = Math.max(1, Math.floor(duration * fps));
       const frames: ImageData[] = [];
 
-      video.currentTime = startTime;
-      await new Promise<void>((resolve) => {
-        video.onseeked = () => resolve();
-      });
+      setStatusMessage("Extracting video frames...");
 
-      setProgress(20);
-
-      // Capture frames
       for (let i = 0; i < totalFrames; i++) {
-        const targetTime = startTime + (i * frameDelay) / 1000;
-        video.currentTime = targetTime;
+        const targetTime = startTime + i / fps;
+        video.currentTime = Math.min(targetTime, video.duration);
 
         await new Promise<void>((resolve) => {
-          video.onseeked = () => {
-            ctx.drawImage(video, 0, 0, width, height);
-            frames.push(ctx.getImageData(0, 0, width, height));
-            setProgress(20 + Math.round((i / totalFrames) * 60));
-            resolve();
-          };
+          video.onseeked = () => resolve();
         });
+
+        ctx.drawImage(video, 0, 0, width, height);
+        frames.push(ctx.getImageData(0, 0, width, height));
+
+        const pct = Math.round(((i + 1) / totalFrames) * 70);
+        setProgress(pct);
+        setStatusMessage(`Captured frame ${i + 1} of ${totalFrames}...`);
       }
 
-      setProgress(80);
+      // If bounce loop is active, add reversed frames
+      const finalFrames = [...frames];
+      if (bounceLoop && frames.length > 2) {
+        for (let j = frames.length - 2; j > 0; j--) {
+          finalFrames.push(frames[j]);
+        }
+      }
 
-      // Create GIF using canvas frames
-      // Since we can't easily create real GIFs in browser, we'll create an animated WebP/APNG-like experience
-      // Instead, create a video loop of the frames as a WebM
-      const stream = canvas.captureStream(fps);
-      const recorder = new MediaRecorder(stream, {
-        mimeType: MediaRecorder.isTypeSupported("video/webm;codecs=vp9") ? "video/webm;codecs=vp9" : "video/webm",
+      setStatusMessage("Generating 256-color palette and LZW compressed GIF...");
+      setProgress(75);
+
+      const encoder = new GifEncoder({
+        width,
+        height,
+        repeat: 0,
       });
 
-      const chunks: Blob[] = [];
-      recorder.ondataavailable = (e) => chunks.push(e.data);
+      for (let k = 0; k < finalFrames.length; k++) {
+        encoder.addFrame(finalFrames[k], { delay: frameDelay });
+      }
 
-      recorder.onstop = () => {
-        const blob = new Blob(chunks, { type: "video/webm" });
-        const url = URL.createObjectURL(blob);
-        setOutputUrl(url);
-        setOutputName(file.name.replace(/\.[^.]+$/, ".webm"));
-        setProgress(100);
-        URL.revokeObjectURL(videoUrl);
-        toast.success("GIF-like video created successfully!");
-      };
+      const gifBlob = encoder.render();
+      const url = URL.createObjectURL(gifBlob);
+      const gifName = file.name.replace(/\.[^.]+$/, ".gif");
 
-      recorder.start();
-
-      // Play back frames
-      let frameIdx = 0;
-      const playFrames = () => {
-        if (frameIdx < frames.length) {
-          ctx.putImageData(frames[frameIdx], 0, 0);
-          frameIdx++;
-          setTimeout(playFrames, frameDelay);
-        } else {
-          // Loop a few times for a good preview
-          frameIdx = 0;
-          setTimeout(() => {
-            recorder.stop();
-          }, frameDelay * frames.length * 2);
-        }
-      };
-
-      playFrames();
-
+      setOutputUrl(url);
+      setOutputName(gifName);
+      setOutputSize(gifBlob.size);
+      setProgress(100);
+      setStatusMessage("Complete!");
+      toast.success(`GIF created! ${(gifBlob.size / 1024).toFixed(1)} KB`);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Conversion failed";
       setError(message);
@@ -158,92 +150,172 @@ export function VideoToGifMakerEngine() {
     } finally {
       setIsConverting(false);
     }
-  }, [file, fps, width, startTime, duration]);
+  }, [file, videoUrl, fps, width, startTime, duration, bounceLoop]);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <Badge variant="outline" className="gap-1.5">
-        <Image className="h-3.5 w-3.5" /> Video to GIF Maker
+        <ImageIcon className="h-3.5 w-3.5" /> Video to GIF Maker
       </Badge>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Upload Video</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="video/*"
-            onChange={handleFileSelect}
-            className="hidden"
-          />
-          <div
-            onClick={() => fileInputRef.current?.click()}
-            className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-primary/50 transition-colors"
-          >
-            {file ? (
-              <div className="space-y-2">
-                <CheckCircle2 className="h-8 w-8 text-green-500 mx-auto" />
-                <p className="font-medium">{file.name}</p>
-                <p className="text-sm text-muted-foreground">
-                  {(file.size / (1024 * 1024)).toFixed(1)} MB
-                </p>
+      {!file ? (
+        <Card className="border-2 border-dashed">
+          <CardContent className="p-8 text-center">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="video/*"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              className="cursor-pointer space-y-3"
+            >
+              <Film className="h-12 w-12 text-primary opacity-80 mx-auto" />
+              <h3 className="font-semibold text-lg">Upload Video to Convert</h3>
+              <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+                Turn MP4, WebM, or MOV clips into high-quality, looping animated GIFs with custom speed and resolution.
+              </p>
+              <Button className="gap-2">
+                <Upload className="h-4 w-4" /> Browse Video
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Left: Video Preview */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium flex items-center justify-between">
+                <span className="truncate max-w-[200px]">{file.name}</span>
+                <Badge variant="secondary">{(file.size / (1024 * 1024)).toFixed(1)} MB</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {videoUrl && (
+                <video
+                  ref={videoRef}
+                  src={videoUrl}
+                  controls
+                  className="w-full rounded-lg border border-border bg-black aspect-video object-contain"
+                />
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full gap-2"
+                onClick={() => {
+                  setFile(null);
+                  setVideoUrl(null);
+                  setOutputUrl(null);
+                }}
+              >
+                <Upload className="h-4 w-4" /> Choose Different Video
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Right: GIF Controls */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <Settings2 className="h-4 w-4 text-primary" /> Output & Animation Settings
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-medium">Start: {startTime.toFixed(1)}s</label>
+                  <Slider
+                    value={[startTime]}
+                    min={0}
+                    max={Math.max(0, videoDuration - 0.5)}
+                    step={0.1}
+                    onValueChange={(v) => setStartTime(Array.isArray(v) ? v[0] : v)}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium">Duration: {duration.toFixed(1)}s</label>
+                  <Slider
+                    value={[duration]}
+                    min={0.5}
+                    max={Math.min(15, Math.max(1, videoDuration - startTime))}
+                    step={0.5}
+                    onValueChange={(v) => setDuration(Array.isArray(v) ? v[0] : v)}
+                  />
+                </div>
               </div>
-            ) : (
-              <div className="space-y-2">
-                <Film className="h-8 w-8 text-muted-foreground mx-auto" />
-                <p className="font-medium">Drop video here or click to browse</p>
-                <p className="text-sm text-muted-foreground">MP4, WebM — Max 200MB</p>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-medium">Frame Rate: {fps} FPS</label>
+                  <Slider
+                    value={[fps]}
+                    min={5}
+                    max={25}
+                    step={1}
+                    onValueChange={(v) => setFps(Array.isArray(v) ? v[0] : v)}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium">Width: {width}px</label>
+                  <Slider
+                    value={[width]}
+                    min={200}
+                    max={640}
+                    step={20}
+                    onValueChange={(v) => setWidth(Array.isArray(v) ? v[0] : v)}
+                  />
+                </div>
               </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
 
-      {/* Settings */}
-      <Card>
-        <CardContent className="py-4">
-          <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <Settings2 className="h-4 w-4" />
-              <span className="text-sm font-medium">Output Settings</span>
-            </div>
+              {/* Loop style */}
+              <div className="pt-2 border-t">
+                <label className="flex items-center gap-2 text-xs font-medium cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={bounceLoop}
+                    onChange={(e) => setBounceLoop(e.target.checked)}
+                    className="rounded"
+                  />
+                  <ArrowLeftRight className="h-3.5 w-3.5 text-primary" />
+                  <span>Bounce Loop (play forward then backwards)</span>
+                </label>
+              </div>
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium">FPS: {fps}</label>
-              <Slider value={[fps]} min={5} max={30} step={1} onValueChange={(v) => setFps(Array.isArray(v) ? v[0] : v)} />
-            </div>
+              <Button
+                onClick={handleConvert}
+                disabled={isConverting}
+                className="w-full gap-2"
+              >
+                {isConverting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" /> {statusMessage} ({progress}%)
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4" /> Create Animated GIF
+                  </>
+                )}
+              </Button>
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium">Width: {width}px</label>
-              <Slider value={[width]} min={160} max={960} step={16} onValueChange={(v) => setWidth(Array.isArray(v) ? v[0] : v)} />
-            </div>
+              {isConverting && (
+                <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+                  <div
+                    className="bg-primary h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium">Start Time: {startTime.toFixed(1)}s</label>
-              <Slider
-                value={[startTime]}
-                min={0}
-                max={Math.max(0, videoDuration - 0.5)}
-                step={0.1}
-                onValueChange={(v) => setStartTime(Array.isArray(v) ? v[0] : v)}
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium">Duration: {duration.toFixed(1)}s</label>
-              <Slider
-                value={[duration]}
-                min={0.5}
-                max={Math.min(30, videoDuration - startTime)}
-                step={0.5}
-                onValueChange={(v) => setDuration(Array.isArray(v) ? v[0] : v)}
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Hidden Canvas */}
+      <canvas ref={canvasRef} className="hidden" />
 
       {error && (
         <Card className="border-destructive/50 bg-destructive/5">
@@ -256,56 +328,44 @@ export function VideoToGifMakerEngine() {
         </Card>
       )}
 
-      {isConverting && (
-        <Card>
-          <CardContent className="py-4">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span className="text-sm">Creating GIF... {progress}%</span>
-              </div>
-              <div className="w-full bg-muted rounded-full h-2">
-                <div
-                  className="bg-primary h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       {outputUrl && (
-        <Card>
-          <CardContent className="py-4">
+        <Card className="border-green-500/40 bg-green-500/5">
+          <CardContent className="p-6 space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-5 w-5 text-green-500" />
                 <div>
-                  <p className="font-medium text-sm">Ready!</p>
-                  <p className="text-xs text-muted-foreground">{outputName}</p>
+                  <h4 className="font-semibold text-sm">{outputName}</h4>
+                  <p className="text-xs text-muted-foreground">
+                    {outputSize ? `${(outputSize / 1024).toFixed(1)} KB • ` : ""}
+                    Animated GIF89a
+                  </p>
                 </div>
               </div>
-              <Button size="sm" className="gap-1.5" onClick={() => { const a = document.createElement("a"); a.href = outputUrl; a.download = outputName; a.click(); }}>
-                <Download className="h-3.5 w-3.5" />
-                Download
+              <Button
+                className="gap-2 bg-green-600 hover:bg-green-700"
+                onClick={() => {
+                  const a = document.createElement("a");
+                  a.href = outputUrl;
+                  a.download = outputName;
+                  a.click();
+                }}
+              >
+                <Download className="h-4 w-4" /> Download .GIF
               </Button>
+            </div>
+
+            <div className="flex justify-center bg-black/20 rounded-lg p-4">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={outputUrl}
+                alt="Generated GIF"
+                className="max-h-[350px] rounded-lg shadow-md object-contain"
+              />
             </div>
           </CardContent>
         </Card>
       )}
-
-      <Button
-        onClick={handleConvert}
-        disabled={!file || isConverting}
-        className="w-full gap-2"
-      >
-        {isConverting ? (
-          <><Loader2 className="h-4 w-4 animate-spin" /> Creating...</>
-        ) : (
-          <><Image className="h-4 w-4" /> Create GIF</>
-        )}
-      </Button>
     </div>
   );
 }

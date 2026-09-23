@@ -1,12 +1,21 @@
 import { ProcessingResult } from "@/lib/processing/types";
-import { PDFDocument } from "pdf-lib";
+import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
+import { parsePptxSlides, PptxSlide } from "@/lib/documents/openxml-builder";
 
-export async function pptToPDF(file: File): Promise<ProcessingResult> {
+export interface PptToPdfOptions {
+  theme?: "clean-light" | "modern-navy" | "dark-slate";
+}
+
+export async function pptToPDF(
+  file: File,
+  options: PptToPdfOptions = {}
+): Promise<ProcessingResult> {
   if (!file) {
     return { status: "error", error: "No file provided." };
   }
 
-  const isPPT = file.name.toLowerCase().endsWith(".pptx") ||
+  const isPPT =
+    file.name.toLowerCase().endsWith(".pptx") ||
     file.name.toLowerCase().endsWith(".ppt") ||
     file.type === "application/vnd.openxmlformats-officedocument.presentationml.presentation" ||
     file.type === "application/vnd.ms-powerpoint";
@@ -16,116 +25,233 @@ export async function pptToPDF(file: File): Promise<ProcessingResult> {
   }
 
   try {
-    // For PPTX files, we can extract the text content and create a PDF
-    // PPTX is a ZIP containing XML slides. We'll read the raw content.
-    const arrayBuffer = await file.arrayBuffer();
-    const text = new TextDecoder().decode(arrayBuffer);
+    const theme = options.theme || "clean-light";
+    // 1. Unpack and parse genuine PPTX structure using OpenXML builder
+    let parsedSlides: PptxSlide[] = [];
+    try {
+      parsedSlides = await parsePptxSlides(file);
+    } catch (parseErr) {
+      console.warn("Could not unpack PPTX with JSZip:", parseErr);
+    }
 
-    // Extract readable text from the PPTX binary/text content
-    const extractTextFromPPTX = (raw: string): string[] => {
-      const slides: string[] = [];
-      // PPTX stores slide text between <a:t> tags
-      const textRegex = /<a:t[^>]*>([^<]*)<\/a:t>/g;
-      const slideRegex = /<p:slide[^>]*>/g;
-
-      // Split by slide markers
-      const slideParts = raw.split(/<p:slide[^>]*>/);
-      for (let i = 1; i < slideParts.length; i++) {
-        const slideContent = slideParts[i];
-        const texts: string[] = [];
-        let match;
-        const localRegex = /<a:t[^>]*>([^<]*)<\/a:t>/g;
-        while ((match = localRegex.exec(slideContent)) !== null) {
-          const t = match[1].trim();
-          if (t) texts.push(t);
-        }
-        if (texts.length > 0) {
-          slides.push(texts.join("\n"));
-        }
-      }
-
-      // If no slides found via regex, try to extract any readable text
-      if (slides.length === 0) {
-        const allTexts: string[] = [];
-        let match;
-        while ((match = textRegex.exec(raw)) !== null) {
-          const t = match[1].trim();
-          if (t) allTexts.push(t);
-        }
-        if (allTexts.length > 0) {
-          slides.push(allTexts.join("\n"));
-        }
-      }
-
-      return slides;
-    };
-
-    const slides = extractTextFromPPTX(text);
-
-    if (slides.length === 0) {
-      // Fallback: create a PDF with file info
-      const pdf = await PDFDocument.create();
-      const { StandardFonts, rgb } = await import("pdf-lib");
-      const font = await pdf.embedFont(StandardFonts.Helvetica);
-      const boldFont = await pdf.embedFont(StandardFonts.HelveticaBold);
-
-      const page = pdf.addPage([612, 792]);
-      page.drawText("PowerPoint to PDF Conversion", { x: 60, y: 700, size: 18, font: boldFont, color: rgb(0, 0, 0) });
-      page.drawText(`Original file: ${file.name}`, { x: 60, y: 660, size: 12, font, color: rgb(0, 0, 0) });
-      page.drawText(`Size: ${(file.size / 1024).toFixed(1)} KB`, { x: 60, y: 640, size: 12, font, color: rgb(0, 0, 0) });
-      page.drawText("", { x: 60, y: 600, size: 12, font, color: rgb(0, 0, 0) });
-      page.drawText("For full PPT-to-PDF conversion with slide rendering,", { x: 60, y: 580, size: 11, font, color: rgb(0.3, 0.3, 0.3) });
-      page.drawText("deploy a server-side converter like LibreOffice or Gotenberg.", { x: 60, y: 560, size: 11, font, color: rgb(0.3, 0.3, 0.3) });
-
-      const pdfBytes = await pdf.save();
-      const blob = new Blob([pdfBytes as BlobPart], { type: "application/pdf" });
-      const url = URL.createObjectURL(blob);
-
+    if (parsedSlides.length === 0) {
       return {
-        status: "success",
-        outputBlob: blob,
-        outputUrl: url,
-        message: "PPT file analyzed. For full slide rendering, use a server-side converter.",
-        data: { downloadName: file.name.replace(/\.pptx?$/i, "") + ".pdf" },
+        status: "error",
+        error: "Could not find any readable slides in this presentation. Please ensure it is a valid .pptx file.",
       };
     }
 
-    // Create PDF with extracted slide content
+    // 2. Create Landscape 16:9 PDF (842 x 474 pt)
     const pdf = await PDFDocument.create();
-    const { StandardFonts, rgb } = await import("pdf-lib");
+    pdf.setTitle(file.name.replace(/\.[^.]+$/, ""));
+    pdf.setProducer("MyToolsBox PowerPoint Engine");
+    pdf.setCreator("MyToolsBox Presentation Studio");
+
     const font = await pdf.embedFont(StandardFonts.Helvetica);
     const boldFont = await pdf.embedFont(StandardFonts.HelveticaBold);
 
-    for (let i = 0; i < slides.length; i++) {
-      const page = pdf.addPage([612, 792]);
-      const slideLines = slides[i].split("\n");
+    const slideWidth = 842;
+    const slideHeight = 474;
 
-      page.drawText(`Slide ${i + 1}`, {
-        x: 60, y: 740, size: 16, font: boldFont, color: rgb(0, 0, 0),
+    // Theme color palettes
+    const themes = {
+      "clean-light": {
+        bg: rgb(0.98, 0.98, 0.99),
+        titleBar: rgb(0.12, 0.22, 0.45),
+        titleText: rgb(1, 1, 1),
+        bodyText: rgb(0.15, 0.15, 0.2),
+        bulletColor: rgb(0.2, 0.45, 0.85),
+        cardBg: rgb(1, 1, 1),
+        cardBorder: rgb(0.88, 0.9, 0.94),
+        footerText: rgb(0.5, 0.5, 0.55),
+      },
+      "modern-navy": {
+        bg: rgb(0.06, 0.1, 0.2),
+        titleBar: rgb(0.1, 0.18, 0.35),
+        titleText: rgb(0.95, 0.97, 1),
+        bodyText: rgb(0.85, 0.9, 0.98),
+        bulletColor: rgb(0.3, 0.65, 1),
+        cardBg: rgb(0.09, 0.15, 0.28),
+        cardBorder: rgb(0.18, 0.28, 0.48),
+        footerText: rgb(0.55, 0.65, 0.8),
+      },
+      "dark-slate": {
+        bg: rgb(0.1, 0.1, 0.12),
+        titleBar: rgb(0.16, 0.16, 0.2),
+        titleText: rgb(1, 1, 1),
+        bodyText: rgb(0.88, 0.88, 0.9),
+        bulletColor: rgb(0.9, 0.6, 0.2),
+        cardBg: rgb(0.14, 0.14, 0.18),
+        cardBorder: rgb(0.24, 0.24, 0.3),
+        footerText: rgb(0.55, 0.55, 0.6),
+      },
+    };
+
+    const activeTheme = themes[theme] || themes["clean-light"];
+    const totalSlides = parsedSlides.length;
+
+    const wrapText = (text: string, maxWidth: number, fontSize: number): string[] => {
+      const words = text.split(" ");
+      const result: string[] = [];
+      let currentLine = "";
+
+      for (const word of words) {
+        const testLine = currentLine ? `${currentLine} ${word}` : word;
+        const width = font.widthOfTextAtSize(testLine, fontSize);
+        if (width > maxWidth && currentLine) {
+          result.push(currentLine);
+          currentLine = word;
+        } else {
+          currentLine = testLine;
+        }
+      }
+      if (currentLine) result.push(currentLine);
+      return result.length > 0 ? result : [""];
+    };
+
+    for (let i = 0; i < totalSlides; i++) {
+      const slide = parsedSlides[i];
+      const page = pdf.addPage([slideWidth, slideHeight]);
+
+      // 1. Background fill
+      page.drawRectangle({
+        x: 0,
+        y: 0,
+        width: slideWidth,
+        height: slideHeight,
+        color: activeTheme.bg,
       });
 
-      let y = 700;
-      for (const line of slideLines) {
-        if (y < 60) break;
-        page.drawText(line.substring(0, 100), {
-          x: 60, y, size: 11, font, color: rgb(0, 0, 0),
+      // 2. Title Header Banner
+      const titleBannerHeight = 72;
+      page.drawRectangle({
+        x: 0,
+        y: slideHeight - titleBannerHeight,
+        width: slideWidth,
+        height: titleBannerHeight,
+        color: activeTheme.titleBar,
+      });
+
+      // Slide Title
+      const slideTitle = slide.title || `Slide ${slide.slideNumber}`;
+      page.drawText(slideTitle, {
+        x: 44,
+        y: slideHeight - 46,
+        size: 20,
+        font: boldFont,
+        color: activeTheme.titleText,
+      });
+
+      // Slide number pill on title banner
+      const slideBadge = `SLIDE ${slide.slideNumber} / ${totalSlides}`;
+      const badgeWidth = font.widthOfTextAtSize(slideBadge, 10);
+      page.drawText(slideBadge, {
+        x: slideWidth - badgeWidth - 44,
+        y: slideHeight - 44,
+        size: 10,
+        font: boldFont,
+        color: activeTheme.titleText,
+      });
+
+      // 3. Slide Content Area (Card Container)
+      const contentX = 44;
+      const contentY = 40;
+      const contentWidth = slideWidth - 88;
+      const contentHeight = slideHeight - titleBannerHeight - 64;
+
+      page.drawRectangle({
+        x: contentX,
+        y: contentY,
+        width: contentWidth,
+        height: contentHeight,
+        color: activeTheme.cardBg,
+        borderColor: activeTheme.cardBorder,
+        borderWidth: 1,
+      });
+
+      // Render bullet items / text lines
+      let textY = contentY + contentHeight - 34;
+      const bodyFontSize = 13;
+      const bodyLineSpacing = 22;
+
+      const bodyItems = slide.body || slide.bullets || [];
+
+      if (bodyItems.length === 0) {
+        page.drawText("(Slide contains graphics or diagrams without textual annotations)", {
+          x: contentX + 32,
+          y: textY,
+          size: 11,
+          font,
+          color: activeTheme.footerText,
         });
-        y -= 20;
+      } else {
+        for (const rawLine of bodyItems) {
+          if (textY < contentY + 30) break; // prevent overflowing off card
+
+          const wrappedLines = wrapText(rawLine, contentWidth - 70, bodyFontSize);
+
+          for (let wIdx = 0; wIdx < wrappedLines.length; wIdx++) {
+            if (textY < contentY + 30) break;
+
+            const wl = wrappedLines[wIdx];
+
+            // Draw bullet marker for the first line of an item
+            if (wIdx === 0) {
+              page.drawCircle({
+                x: contentX + 36,
+                y: textY + 4,
+                size: 3,
+                color: activeTheme.bulletColor,
+              });
+            }
+
+            page.drawText(wl, {
+              x: contentX + 50,
+              y: textY,
+              size: bodyFontSize,
+              font,
+              color: activeTheme.bodyText,
+            });
+
+            textY -= bodyLineSpacing;
+          }
+
+          textY -= 6; // paragraph gap
+        }
       }
+
+      // 4. Footer
+      const footerText = `${file.name} • Converted with MyToolsBox`;
+      page.drawText(footerText, {
+        x: 44,
+        y: 18,
+        size: 8.5,
+        font,
+        color: activeTheme.footerText,
+      });
     }
 
     const pdfBytes = await pdf.save();
     const blob = new Blob([pdfBytes as BlobPart], { type: "application/pdf" });
     const url = URL.createObjectURL(blob);
 
+    const downloadName = `${file.name.replace(/\.[^.]+$/, "")}.pdf`;
+
     return {
       status: "success",
       outputBlob: blob,
       outputUrl: url,
-      message: `Converted PPT to PDF with ${slides.length} slide(s) extracted`,
-      data: { downloadName: file.name.replace(/\.pptx?$/i, "") + ".pdf" },
+      message: `Successfully rendered ${totalSlides} slides into presentation PDF`,
+      data: {
+        downloadName,
+        totalSlides,
+        slidesPreview: parsedSlides,
+      },
     };
   } catch (err: unknown) {
-    return { status: "error", error: err instanceof Error ? err.message : "Failed to convert PPT to PDF." };
+    return {
+      status: "error",
+      error: err instanceof Error ? err.message : "Failed to convert PPT to PDF.",
+    };
   }
 }
