@@ -1,9 +1,12 @@
+"use client";
+
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ToolDefinition } from "@/types";
 import * as Icons from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n";
 
 interface ToolCardProps {
   tool: ToolDefinition;
@@ -11,10 +14,13 @@ interface ToolCardProps {
 }
 
 export function ToolCard({ tool, className }: ToolCardProps) {
+  const { getToolName, localizePath } = useI18n();
   const IconComponent = (Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[tool.icon] || Icons.Wrench;
+  const displayName = getToolName(tool.slug, tool.name);
+  const href = localizePath(`/${tool.productType}s/${tool.slug}`);
 
   return (
-    <Link href={`/${tool.productType}s/${tool.slug}`} className="block group">
+    <Link href={href} className="block group">
       <Card
         className={cn(
           "card-lift cursor-pointer h-full border-border/60 hover:border-brand/25 transition-all duration-200",
@@ -23,7 +29,7 @@ export function ToolCard({ tool, className }: ToolCardProps) {
       >
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">
-            {/* Icon — subtle, not a giant gradient blob */}
+            {/* Icon */}
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted text-muted-foreground group-hover:bg-brand-muted group-hover:text-brand transition-colors duration-200">
               <IconComponent className="size-4.5" />
             </div>
@@ -41,7 +47,7 @@ export function ToolCard({ tool, className }: ToolCardProps) {
             </div>
           </div>
           <CardTitle className="text-sm font-medium mt-2.5 group-hover:text-brand transition-colors duration-200">
-            {tool.name}
+            {displayName}
           </CardTitle>
           <CardDescription className="text-xs line-clamp-2 leading-relaxed">
             {tool.shortDescription}

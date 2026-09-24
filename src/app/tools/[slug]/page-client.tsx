@@ -59,7 +59,7 @@ interface ToolPageClientProps {
 
 export function ToolPageClient({ tool }: ToolPageClientProps) {
   const { user } = useAuth();
-  const { t, getToolName } = useI18n();
+  const { t, getToolName, getCategoryName, localizePath } = useI18n();
   const localizedName = getToolName(tool.slug, tool.name);
   const [favorited, setFavorited] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -199,7 +199,11 @@ export function ToolPageClient({ tool }: ToolPageClientProps) {
   }, [embedCode]);
 
   // Category title display helper
-  const categoryTitle = tool.category.charAt(0).toUpperCase() + tool.category.slice(1);
+  const localizedCategoryTitle = getCategoryName(
+    tool.category,
+    tool.category.charAt(0).toUpperCase() + tool.category.slice(1)
+  );
+  const categoryTitle = localizedCategoryTitle;
 
   // Default fallback FAQs for E-E-A-T trust if tool has fewer than 2
   const displayFaqs = useMemo(() => {
@@ -223,7 +227,7 @@ export function ToolPageClient({ tool }: ToolPageClientProps) {
       <nav aria-label="Breadcrumb" className="mb-6 animate-fade-in-up">
         <ol className="flex items-center gap-1.5 text-sm text-muted-foreground flex-wrap">
           <li>
-            <Link href="/" className="hover:text-foreground transition-colors">
+            <Link href={localizePath("/")} className="hover:text-foreground transition-colors">
               Home
             </Link>
           </li>
@@ -231,8 +235,8 @@ export function ToolPageClient({ tool }: ToolPageClientProps) {
             <ChevronRight className="h-3.5 w-3.5" />
           </li>
           <li>
-            <Link href="/tools" className="hover:text-foreground transition-colors">
-              Tools
+            <Link href={localizePath("/tools")} className="hover:text-foreground transition-colors">
+              {t("nav_tools", "Tools")}
             </Link>
           </li>
           <li aria-hidden="true">
@@ -240,10 +244,10 @@ export function ToolPageClient({ tool }: ToolPageClientProps) {
           </li>
           <li>
             <Link
-              href={`/tools?category=${tool.category}`}
+              href={localizePath(`/tools?category=${tool.category}`)}
               className="hover:text-foreground capitalize transition-colors"
             >
-              {categoryTitle}
+              {localizedCategoryTitle}
             </Link>
           </li>
           <li aria-hidden="true">
@@ -616,10 +620,10 @@ export function ToolPageClient({ tool }: ToolPageClientProps) {
                 </div>
                 <div>
                   <Link
-                    href={`/tools?category=${tool.category}`}
+                    href={localizePath(`/tools?category=${tool.category}`)}
                     className="font-semibold text-xs capitalize hover:text-primary transition-colors block"
                   >
-                    {tool.category} Cluster
+                    {localizedCategoryTitle} Cluster
                   </Link>
                   <p className="text-xs text-muted-foreground">View all category utilities</p>
                 </div>
@@ -669,12 +673,12 @@ export function ToolPageClient({ tool }: ToolPageClientProps) {
           {relatedTools.length > 0 && (
             <Card className="border-border/50">
               <CardHeader className="pb-3 flex flex-row items-center justify-between">
-                <CardTitle className="text-base">Related {categoryTitle} Tools</CardTitle>
+                <CardTitle className="text-base">{t("related_tools_title", `Related ${categoryTitle} Tools`)}</CardTitle>
                 <Link
-                  href={`/tools?category=${tool.category}`}
+                  href={localizePath(`/tools?category=${tool.category}`)}
                   className="text-xs text-primary hover:underline font-medium"
                 >
-                  View All
+                  {t("action_all_tools", "View All")}
                 </Link>
               </CardHeader>
               <CardContent className="space-y-2.5">
@@ -692,7 +696,7 @@ export function ToolPageClient({ tool }: ToolPageClientProps) {
               <p className="text-xs text-muted-foreground">
                 Browse our curated directory of browser-powered tools and apps.
               </p>
-              <Link href={`/tools?category=${tool.category}`} className="block pt-1">
+              <Link href={localizePath(`/tools?category=${tool.category}`)} className="block pt-1">
                 <Button size="sm" variant="default" className="w-full text-xs font-medium">
                   Explore {categoryTitle} Hub <ArrowRight className="h-3 w-3 ml-1" />
                 </Button>

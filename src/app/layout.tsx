@@ -10,6 +10,7 @@ import { AuthProvider } from "@/lib/auth";
 import { SITE_CONFIG } from "@/lib/constants";
 import { SkipLink } from "@/components/common/accessibility";
 import { I18nProvider } from "@/lib/i18n";
+import { GoogleAnalytics } from "@/components/analytics/google-analytics";
 import "./globals.css";
 
 const GA_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
@@ -100,25 +101,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
-        {/* Google Analytics 4 Scripts */}
-        {GA_ID && (
-          <>
-            <Script
-              src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
-              strategy="afterInteractive"
-            />
-            <Script id="google-analytics" strategy="afterInteractive">
-              {`
-                window.dataLayer = window.dataLayer || [];
-                function gtag(){dataLayer.push(arguments);}
-                gtag('js', new Date());
-                gtag('config', '${GA_ID}', {
-                  page_path: window.location.pathname,
-                });
-              `}
-            </Script>
-          </>
-        )}
+        {/* Google Analytics 4 Scripts & Route Navigation Tracker */}
+        {GA_ID && <GoogleAnalytics measurementId={GA_ID} />}
         <SkipLink />
         <I18nProvider>
           <ThemeProvider>

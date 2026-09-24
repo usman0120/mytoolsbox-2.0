@@ -19,6 +19,7 @@ import { searchTools } from "@/content/tools/registry";
 import { getActiveApps } from "@/content/apps/registry";
 import { ToolDefinition } from "@/types";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n";
 import * as Icons from "lucide-react";
 
 // ---------- Intent-based search helpers ----------
@@ -149,6 +150,7 @@ interface SearchCommandProps {
 
 export function SearchCommand({ className, variant = "hero", onClose }: SearchCommandProps) {
   const router = useRouter();
+  const { t, getToolName, localizePath } = useI18n();
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
@@ -202,12 +204,12 @@ export function SearchCommand({ className, variant = "hero", onClose }: SearchCo
   const navigateToResult = useCallback(
     (result: SearchResult) => {
       const path = result.type === "tool" ? `/tools/${result.item.slug}` : `/apps/${result.item.slug}`;
-      router.push(path);
+      router.push(localizePath(path));
       setIsOpen(false);
       setQuery("");
       onClose?.();
     },
-    [router, onClose]
+    [router, onClose, localizePath]
   );
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -221,7 +223,7 @@ export function SearchCommand({ className, variant = "hero", onClose }: SearchCo
     if (!isOpen || results.length === 0) {
       if (e.key === "Enter" && query.trim()) {
         e.preventDefault();
-        router.push(`/search?q=${encodeURIComponent(query.trim())}`);
+        router.push(localizePath(`/search?q=${encodeURIComponent(query.trim())}`));
         setIsOpen(false);
         setQuery("");
         onClose?.();
@@ -241,7 +243,7 @@ export function SearchCommand({ className, variant = "hero", onClose }: SearchCo
         navigateToResult(results[selectedIndex]);
       } else {
         // "See all results" selected
-        router.push(`/search?q=${encodeURIComponent(query.trim())}`);
+        router.push(localizePath(`/search?q=${encodeURIComponent(query.trim())}`));
         setIsOpen(false);
         setQuery("");
         onClose?.();
@@ -265,8 +267,8 @@ export function SearchCommand({ className, variant = "hero", onClose }: SearchCo
           type="search"
           placeholder={
             isNavbar
-              ? "Search tools..."
-              : "What do you need to do? Compress a PDF, solve math, edit image..."
+              ? t("nav_search_placeholder", "Search tools...")
+              : t("hero_subtitle", "What do you need to do? Compress a PDF, solve math, edit image...")
           }
           className={cn(
             "rounded-xl border-2 focus-visible:border-primary/50 transition-all",
@@ -312,6 +314,7 @@ export function SearchCommand({ className, variant = "hero", onClose }: SearchCo
                 {results.map((result, i) => {
                   const IconComponent = (Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[result.item.icon] || Wrench;
                   const isSelected = i === selectedIndex;
+                  const displayName = result.type === "tool" ? getToolName(result.item.slug, result.item.name) : result.item.name;
                   return (
                     <button
                       key={`${result.type}:${result.item.slug}`}
@@ -334,7 +337,7 @@ export function SearchCommand({ className, variant = "hero", onClose }: SearchCo
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium truncate">{result.item.name}</span>
+                          <span className="text-sm font-medium truncate">{displayName}</span>
                           <Badge
                             variant="outline"
                             className={cn(

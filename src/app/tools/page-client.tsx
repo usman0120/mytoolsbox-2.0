@@ -3,16 +3,18 @@
 import { useState, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Search, SlidersHorizontal, X, Wrench, Grid3X3, List, ArrowUpDown } from "lucide-react";
+import { Search, SlidersHorizontal, X, Wrench, Grid3X3, List } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ToolCard } from "@/components/common/tool-card";
 import { getActiveTools, searchTools } from "@/content/tools/registry";
 import { CATEGORIES } from "@/lib/constants";
+import { useI18n } from "@/lib/i18n";
 import * as Icons from "lucide-react";
 
 export function ToolsPageClient() {
+  const { t, getToolName, getCategoryName, localizePath } = useI18n();
   const searchParams = useSearchParams();
   const initialCategory = searchParams.get("category") || "";
 
@@ -34,10 +36,10 @@ export function ToolsPageClient() {
     }
 
     return tools;
-  }, [searchQuery, activeCategory]);
+  }, [allTools, searchQuery, activeCategory]);
 
-  const activeCategoryName = CATEGORIES.find((c) => c.id === activeCategory)?.name;
-  const activeCategoryIcon = CATEGORIES.find((c) => c.id === activeCategory)?.icon;
+  const activeCategoryObj = CATEGORIES.find((c) => c.id === activeCategory);
+  const activeCategoryName = activeCategoryObj ? getCategoryName(activeCategoryObj.id, activeCategoryObj.name) : "";
 
   return (
     <div className="container mx-auto px-4 py-10">
@@ -48,9 +50,11 @@ export function ToolsPageClient() {
             <Wrench className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">All Tools</h1>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+              {t("tools_page_title", "All Tools")}
+            </h1>
             <p className="text-sm text-muted-foreground mt-0.5">
-              Browse {allTools.length} free online tools across {CATEGORIES.length} categories
+              {t("tools_page_subtitle", `Browse ${allTools.length} free online tools across ${CATEGORIES.length} categories`)}
             </p>
           </div>
         </div>
@@ -62,7 +66,7 @@ export function ToolsPageClient() {
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             type="search"
-            placeholder="Search tools..."
+            placeholder={t("tools_search_placeholder", "Search tools...")}
             className="pl-10 h-11 rounded-xl border-border/60 focus-visible:ring-primary/30 bg-background"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -104,11 +108,12 @@ export function ToolsPageClient() {
           onClick={() => setActiveCategory("")}
         >
           <Grid3X3 className="h-3.5 w-3.5 mr-1.5" />
-          All Categories
+          {t("tools_all_categories", "All Categories")}
         </Badge>
         {CATEGORIES.map((cat) => {
           const IconComponent = (Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[cat.icon] || Icons.Folder;
           const count = allTools.filter((t) => t.category === cat.id).length;
+          const localizedName = getCategoryName(cat.id, cat.name);
           return (
             <Badge
               key={cat.id}
@@ -117,7 +122,7 @@ export function ToolsPageClient() {
               onClick={() => setActiveCategory(activeCategory === cat.id ? "" : cat.id)}
             >
               <IconComponent className="h-3.5 w-3.5 mr-1.5" />
-              {cat.name}
+              {localizedName}
               <span className="ml-1.5 text-xs opacity-60">({count})</span>
             </Badge>
           );
@@ -147,7 +152,7 @@ export function ToolsPageClient() {
           <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-muted/50">
             <Search className="h-10 w-10" />
           </div>
-          <p className="text-lg font-medium">No tools found</p>
+          <p className="text-lg font-medium">{t("tools_no_results", "No tools found")}</p>
           <p className="text-sm max-w-sm text-center">Try a different search term or category filter</p>
           <Button
             variant="outline"
@@ -172,10 +177,12 @@ export function ToolsPageClient() {
         <div className="flex flex-col gap-2">
           {filteredTools.map((tool, i) => {
             const IconComponent = (Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[tool.icon] || Icons.Wrench;
+            const localizedToolName = getToolName(tool.slug, tool.name);
+            const localizedCatName = getCategoryName(tool.category, tool.category);
             return (
               <Link
                 key={tool.id}
-                href={`/${tool.productType}s/${tool.slug}`}
+                href={localizePath(`/${tool.productType}s/${tool.slug}`)}
                 className="group flex items-center gap-4 p-4 rounded-xl border border-border/50 hover:border-primary/30 bg-card hover:bg-accent/30 transition-all duration-200 card-lift animate-fade-in-up"
                 style={{ animationDelay: `${i * 30}ms` }}
               >
@@ -183,11 +190,11 @@ export function ToolsPageClient() {
                   <IconComponent className="h-5 w-5" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-medium text-sm group-hover:text-primary transition-colors">{tool.name}</h3>
+                  <h3 className="font-medium text-sm group-hover:text-primary transition-colors">{localizedToolName}</h3>
                   <p className="text-xs text-muted-foreground truncate">{tool.shortDescription}</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <Badge variant="secondary" className="text-[10px] capitalize">{tool.category}</Badge>
+                  <Badge variant="secondary" className="text-[10px] capitalize">{localizedCatName}</Badge>
                   {tool.status === "beta" && (
                     <Badge className="text-[10px] bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20">Beta</Badge>
                   )}

@@ -22,6 +22,8 @@ interface I18nContextType {
   t: (key: keyof TranslationDictionary, fallback?: string) => string;
   setLocale: (newLocale: LocaleCode) => void;
   getToolName: (slug: string, defaultName: string) => string;
+  getCategoryName: (categoryId: string, defaultName: string) => string;
+  localizePath: (path: string) => string;
 }
 
 const I18nContext = createContext<I18nContextType | null>(null);
@@ -96,15 +98,25 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
       // ignore
     }
 
-    // Update URL query parameter or rewrite path without full reload
+    // Update browser URL smoothly without full reload
     if (typeof window !== "undefined") {
-      const url = new URL(window.location.href);
-      if (newLocale === DEFAULT_LOCALE) {
-        url.searchParams.delete("lang");
-      } else {
-        url.searchParams.set("lang", newLocale);
+      const pathname = window.location.pathname;
+      const segments = pathname.split("/").filter(Boolean);
+      const search = window.location.search;
+      let newPath = pathname;
+
+      if (segments.length > 0 && isSupportedLocale(segments[0])) {
+        if (newLocale === DEFAULT_LOCALE) {
+          newPath = "/" + segments.slice(1).join("/");
+          if (newPath === "") newPath = "/";
+        } else {
+          newPath = `/${newLocale}/` + segments.slice(1).join("/");
+        }
+      } else if (newLocale !== DEFAULT_LOCALE) {
+        newPath = `/${newLocale}${pathname === "/" ? "" : pathname}`;
       }
-      window.history.replaceState({}, "", url.toString());
+
+      window.history.replaceState({}, "", `${newPath}${search}`);
     }
   }, []);
 
@@ -129,6 +141,31 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     [locale]
   );
 
+  const getCategoryName = useCallback(
+    (categoryId: string, defaultName: string): string => {
+      const key = `cat_${categoryId}` as keyof TranslationDictionary;
+      const dict = TRANSLATIONS[locale] || TRANSLATIONS[DEFAULT_LOCALE];
+      if (dict && dict[key]) {
+        return dict[key];
+      }
+      return defaultName;
+    },
+    [locale]
+  );
+
+  const localizePath = useCallback(
+    (path: string): string => {
+      const clean = path ? (path.startsWith("/") ? path : `/${path}`) : "/";
+      if (locale === DEFAULT_LOCALE) return clean;
+      const segments = clean.split("/").filter(Boolean);
+      if (segments.length > 0 && isSupportedLocale(segments[0])) {
+        return `/${locale}/${segments.slice(1).join("/")}`;
+      }
+      return `/${locale}${clean === "/" ? "" : clean}`;
+    },
+    [locale]
+  );
+
   const currentConfig = useMemo(() => LOCALES[locale] || LOCALES[DEFAULT_LOCALE], [locale]);
 
   const contextValue = useMemo(
@@ -139,8 +176,10 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
       t,
       setLocale,
       getToolName,
+      getCategoryName,
+      localizePath,
     }),
-    [locale, currentConfig, t, setLocale, getToolName]
+    [locale, currentConfig, t, setLocale, getToolName, getCategoryName, localizePath]
   );
 
   return <I18nContext.Provider value={contextValue}>{children}</I18nContext.Provider>;
@@ -149,7 +188,6 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
 export function useI18n(): I18nContextType {
   const ctx = useContext(I18nContext);
   if (!ctx) {
-    // Graceful fallback if rendered outside provider
     return {
       locale: DEFAULT_LOCALE,
       dir: "ltr",
@@ -157,6 +195,8 @@ export function useI18n(): I18nContextType {
       t: (key, fallback) => fallback || TRANSLATIONS[DEFAULT_LOCALE][key] || key,
       setLocale: () => {},
       getToolName: (_, name) => name,
+      getCategoryName: (_, name) => name,
+      localizePath: (path) => path,
     };
   }
   return ctx;

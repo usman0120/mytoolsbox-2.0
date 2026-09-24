@@ -39,10 +39,21 @@ export function Navbar() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { user, loading } = useAuth();
-  const { t } = useI18n();
+  const { t, localizePath } = useI18n();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [signInOpen, setSignInOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+
+  const getNavLabel = (href: string, fallback: string) => {
+    switch (href) {
+      case "/tools": return t("nav_tools");
+      case "/apps": return t("nav_apps");
+      case "/ai": return t("nav_ai");
+      case "/hubs": return t("nav_hubs");
+      case "/resources": return t("nav_resources");
+      default: return fallback;
+    }
+  };
 
   // Track scroll for shadow effect
   useEffect(() => {
@@ -84,6 +95,9 @@ export function Navbar() {
         {/* Desktop Nav */}
         <nav className="hidden md:flex items-center gap-1" aria-label="Main navigation">
           {NAV_ITEMS.map((item) => {
+            const localizedHref = localizePath(item.href);
+            const label = getNavLabel(item.href, item.label);
+
             // Handle AI specially with a dropdown menu
             if (item.href === "/ai") {
               return (
@@ -96,7 +110,7 @@ export function Navbar() {
                         : "text-muted-foreground hover:text-foreground"
                     )}
                   >
-                    <span>AI Suite</span>
+                    <span>{t("nav_ai")}</span>
                     <ChevronDown className="h-3 w-3 opacity-60" />
                     {isAIActive && (
                       <span className="absolute inset-x-2 -bottom-px h-0.5 bg-primary rounded-full" />
@@ -105,14 +119,14 @@ export function Navbar() {
                   <DropdownMenuContent align="center" className="w-56 rounded-2xl p-1.5 text-xs shadow-lg">
                     <DropdownMenuItem className="p-0 cursor-pointer rounded-xl">
                       <Link
-                        href="/ai"
+                        href={localizePath("/ai")}
                         className="flex items-center gap-2.5 p-2 w-full rounded-xl hover:bg-accent/60"
                       >
                         <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-500/10 text-violet-600 dark:text-violet-400">
                           <MessageSquare className="h-3.5 w-3.5" />
                         </div>
                         <div>
-                          <div className="font-semibold text-foreground">Chat Workspace</div>
+                          <div className="font-semibold text-foreground">{t("ai_new_chat")}</div>
                           <div className="text-[10px] text-muted-foreground">Multi-turn AI Assistant</div>
                         </div>
                       </Link>
@@ -120,14 +134,14 @@ export function Navbar() {
 
                     <DropdownMenuItem className="p-0 cursor-pointer rounded-xl">
                       <Link
-                        href="/ai/prompts"
+                        href={localizePath("/ai/prompts")}
                         className="flex items-center gap-2.5 p-2 w-full rounded-xl hover:bg-accent/60"
                       >
                         <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
                           <Lightbulb className="h-3.5 w-3.5" />
                         </div>
                         <div>
-                          <div className="font-semibold text-foreground">Prompt Library</div>
+                          <div className="font-semibold text-foreground">{t("ai_prompt_library")}</div>
                           <div className="text-[10px] text-muted-foreground">160+ Curated Templates</div>
                         </div>
                       </Link>
@@ -135,14 +149,14 @@ export function Navbar() {
 
                     <DropdownMenuItem className="p-0 cursor-pointer rounded-xl">
                       <Link
-                        href="/ai/compare"
+                        href={localizePath("/ai/compare")}
                         className="flex items-center gap-2.5 p-2 w-full rounded-xl hover:bg-accent/60"
                       >
                         <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400">
                           <Cpu className="h-3.5 w-3.5" />
                         </div>
                         <div>
-                          <div className="font-semibold text-foreground">Compare Models</div>
+                          <div className="font-semibold text-foreground">{t("ai_compare_models")}</div>
                           <div className="text-[10px] text-muted-foreground">Side-by-side Arena</div>
                         </div>
                       </Link>
@@ -150,14 +164,14 @@ export function Navbar() {
 
                     <DropdownMenuItem className="p-0 cursor-pointer rounded-xl">
                       <Link
-                        href="/ai/personas"
+                        href={localizePath("/ai/personas")}
                         className="flex items-center gap-2.5 p-2 w-full rounded-xl hover:bg-accent/60"
                       >
                         <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
                           <Layers className="h-3.5 w-3.5" />
                         </div>
                         <div>
-                          <div className="font-semibold text-foreground">Personas & Tools</div>
+                          <div className="font-semibold text-foreground">{t("ai_personas")}</div>
                           <div className="text-[10px] text-muted-foreground">Specialized Engines</div>
                         </div>
                       </Link>
@@ -171,7 +185,7 @@ export function Navbar() {
             return (
               <Link
                 key={item.href}
-                href={item.href}
+                href={localizedHref}
                 aria-current={isActive ? "page" : undefined}
                 className={cn(
                   "relative px-3 py-1.5 text-sm rounded-lg transition-colors hover:bg-accent/60",
@@ -183,7 +197,7 @@ export function Navbar() {
                 {isActive && (
                   <span className="absolute inset-x-2 -bottom-px h-0.5 bg-primary rounded-full" />
                 )}
-                {item.label}
+                {label}
               </Link>
             );
           })}

@@ -6,11 +6,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Layout, Search, X, Sparkles, ArrowRight, Grid3X3, List } from "lucide-react";
+import { Layout, Search, X, ArrowRight, Grid3X3, List } from "lucide-react";
 import { getActiveApps } from "@/content/apps/registry";
+import { useI18n } from "@/lib/i18n";
 import * as Icons from "lucide-react";
 
 export function AppsPageClient() {
+  const { t, localizePath, getCategoryName } = useI18n();
   const apps = getActiveApps();
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -33,9 +35,11 @@ export function AppsPageClient() {
             <Layout className="h-6 w-6 text-cyan-500" />
           </div>
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Apps</h1>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+              {t("apps_page_title", "Apps")}
+            </h1>
             <p className="text-sm text-muted-foreground mt-0.5">
-              Multi-step mini applications for productivity, creativity, and daily tasks
+              {t("apps_page_subtitle", "Multi-step mini applications for productivity, creativity, and daily tasks")}
             </p>
           </div>
         </div>
@@ -47,7 +51,7 @@ export function AppsPageClient() {
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             type="search"
-            placeholder="Search apps..."
+            placeholder={t("tools_search_placeholder", "Search apps...")}
             className="pl-10 h-11 rounded-xl border-border/60 focus-visible:ring-primary/30 bg-background"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -87,7 +91,7 @@ export function AppsPageClient() {
           <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-muted/50">
             <Search className="h-10 w-10" />
           </div>
-          <p className="text-lg font-medium">No apps found</p>
+          <p className="text-lg font-medium">{t("tools_no_results", "No apps found")}</p>
           <p className="text-sm">Try a different search term</p>
           <Button variant="outline" className="rounded-xl mt-2" onClick={() => setSearchQuery("")}>
             Clear search
@@ -98,7 +102,7 @@ export function AppsPageClient() {
           {filteredApps.map((app, i) => {
             const IconComponent = (Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[app.icon] || Icons.Layout;
             return (
-              <Link key={app.id} href={`/apps/${app.slug}`}>
+              <Link key={app.id} href={localizePath(`/apps/${app.slug}`)}>
                 <Card
                   className="group card-lift cursor-pointer h-full border-border/50 hover:border-primary/30 overflow-hidden animate-fade-in-up"
                   style={{ animationDelay: `${i * 50}ms` }}
@@ -141,10 +145,11 @@ export function AppsPageClient() {
         <div className="flex flex-col gap-2">
           {filteredApps.map((app, i) => {
             const IconComponent = (Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[app.icon] || Icons.Layout;
+            const localizedCat = getCategoryName(app.category, app.category);
             return (
               <Link
                 key={app.id}
-                href={`/apps/${app.slug}`}
+                href={localizePath(`/apps/${app.slug}`)}
                 className="group flex items-center gap-4 p-4 rounded-xl border border-border/50 hover:border-primary/30 bg-card hover:bg-accent/30 transition-all duration-200 card-lift animate-fade-in-up"
                 style={{ animationDelay: `${i * 30}ms` }}
               >
@@ -156,7 +161,7 @@ export function AppsPageClient() {
                   <p className="text-xs text-muted-foreground truncate">{app.shortDescription}</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <Badge variant="secondary" className="text-[10px] capitalize">{app.category}</Badge>
+                  <Badge variant="secondary" className="text-[10px] capitalize">{localizedCat}</Badge>
                   {app.status === "beta" && (
                     <Badge className="text-[10px] bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20">Beta</Badge>
                   )}
