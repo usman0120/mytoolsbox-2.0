@@ -4,7 +4,7 @@ import type { AIRequest, AIResponse, AIProvider } from "@/lib/ai/types";
 import { getCreditCost, tierToCreditOperation, type CreditOperation, type SubscriptionTier } from "@/lib/ai/credits";
 import { checkAbuse } from "@/lib/payments/abuse";
 import { checkCredits, deductCredits } from "@/lib/credits";
-import { extractAuthUserFromCookies } from "@/lib/auth/server-auth";
+import { extractAuthUser, extractAuthUserFromCookies } from "@/lib/auth/server-auth";
 import { SUPPORTED_PROVIDERS, getProviderConfig } from "@/lib/ai/providers-config";
 
 // ---------------------------------------------------------------------------
@@ -439,7 +439,7 @@ export async function POST(request: NextRequest) {
     // 2. Authentication & Session Validation (Anti-Fraud & Security)
     // -----------------------------------------------------------------------
     const cookieStore = await cookies();
-    const authUser = extractAuthUserFromCookies(cookieStore);
+    const authUser = extractAuthUser(request, cookieStore);
     const userId = authUser?.userId ?? null;
 
     // Strict security rule: Guests & unauthenticated requests are blocked from AI

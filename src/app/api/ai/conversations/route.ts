@@ -11,12 +11,13 @@ import {
   updateConversation,
   deleteConversation,
 } from "@/features/ai/chat-persistence";
+import { extractAuthUser } from "@/lib/auth/server-auth";
 
-export async function GET(_request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
     const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get("__session");
-    const userId = sessionCookie?.value ?? null;
+    const authUser = extractAuthUser(request, cookieStore);
+    const userId = authUser?.userId ?? null;
 
     if (!userId) {
       return NextResponse.json(
@@ -39,8 +40,8 @@ export async function GET(_request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get("__session");
-    const userId = sessionCookie?.value ?? null;
+    const authUser = extractAuthUser(request, cookieStore);
+    const userId = authUser?.userId ?? null;
 
     if (!userId) {
       return NextResponse.json(
@@ -70,7 +71,7 @@ export async function POST(request: NextRequest) {
             { status: 400 }
           );
         }
-        await updateConversation(conversation.id, conversation);
+        await updateConversation(userId, conversation.id, conversation);
         return NextResponse.json({ success: true });
 
       case "delete":
@@ -80,7 +81,7 @@ export async function POST(request: NextRequest) {
             { status: 400 }
           );
         }
-        await deleteConversation(conversation.id);
+        await deleteConversation(userId, conversation.id);
         return NextResponse.json({ success: true });
 
       default:

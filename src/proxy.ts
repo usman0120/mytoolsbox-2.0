@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { checkAbuse } from "@/lib/payments/abuse";
 
+// Non-default supported locale prefixes for localized URL rewriting
+const LOCALES = ["es", "ur", "fr", "de", "pt", "hi", "ar"];
+
 // Paths that require authentication
 const PROTECTED_PATHS = ["/dashboard", "/settings", "/favorites", "/history", "/account"];
 
@@ -14,26 +17,34 @@ const ABUSE_CHECK_PATHS = ["/api/", "/tools/", "/apps/"];
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // -------------------------------------------------------------------------
+  // Multi-Language Subpath Detection & Normalization (e.g. /es/tools/... -> /tools/...)
+  // -------------------------------------------------------------------------
+  const pathSegments = pathname.split("/").filter(Boolean);
+  const firstSegment = pathSegments[0];
+  const isLocalePrefix = firstSegment && LOCALES.includes(firstSegment);
+  const locale = isLocalePrefix ? firstSegment : null;
+  const normalizedPath = isLocalePrefix
+    ? "/" + pathSegments.slice(1).join("/")
+    : pathname;
+
   // Check if the path is protected
   const isProtected = PROTECTED_PATHS.some(
-    (path) => pathname === path || pathname.startsWith(path + "/")
+    (path) => normalizedPath === path || normalizedPath.startsWith(path + "/")
   );
 
   // Check if it's an auth page (signin/signup)
   const isAuthPath = AUTH_PATHS.some(
-    (path) => pathname === path || pathname.startsWith(path + "/")
+    (path) => normalizedPath === path || normalizedPath.startsWith(path + "/")
   );
 
-  // For now, we use a simple cookie-based check
-  // Firebase Auth will handle the actual session on the client side
-  // This middleware provides a basic server-side guard
   const sessionCookie = request.cookies.get("__session");
 
   // -------------------------------------------------------------------------
   // Abuse prevention for API routes and high-value paths
   // -------------------------------------------------------------------------
   const shouldCheckAbuse = ABUSE_CHECK_PATHS.some(
-    (path) => pathname.startsWith(path)
+    (path) => normalizedPath.startsWith(path)
   );
 
   if (shouldCheckAbuse) {
@@ -47,13 +58,12 @@ export function proxy(request: NextRequest) {
       isGuest,
       userAgent: request.headers.get("user-agent") ?? undefined,
       tier: "free",
-      path: pathname,
+      path: normalizedPath,
       timestamp: Date.now(),
     });
 
     if (!abuseCheck.allowed) {
-      // For API routes, return JSON error
-      if (pathname.startsWith("/api/")) {
+      if (normalizedPath.startsWith("/api/")) {
         return NextResponse.json(
           {
             error: abuseCheck.reason ?? "Request blocked by abuse prevention.",
@@ -70,7 +80,6 @@ export function proxy(request: NextRequest) {
         );
       }
 
-      // For page routes, redirect to a blocked page or show error
       const blockedUrl = new URL("/?blocked=true", request.url);
       return NextResponse.redirect(blockedUrl);
     }
@@ -84,6 +93,21 @@ export function proxy(request: NextRequest) {
 
   if (isAuthPath && sessionCookie) {
     return NextResponse.redirect(new URL("/", request.url));
+  }
+
+  // -------------------------------------------------------------------------
+  // Internal rewrite for localized paths (preserves URL in browser for Googlebot)
+  // -------------------------------------------------------------------------
+  if (locale) {
+    const targetUrl = new URL(normalizedPath === "" ? "/" : normalizedPath, request.url);
+    targetUrl.searchParams.set("lang", locale);
+    request.nextUrl.searchParams.forEach((val, key) => {
+      if (key !== "lang") targetUrl.searchParams.set(key, val);
+    });
+
+    const response = NextResponse.rewrite(targetUrl);
+    response.headers.set("x-locale", locale);
+    return response;
   }
 
   return NextResponse.next();

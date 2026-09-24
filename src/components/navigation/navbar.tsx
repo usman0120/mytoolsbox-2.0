@@ -31,12 +31,15 @@ import { SignInDialog } from "@/components/auth/signin-dialog";
 import { UserMenu } from "@/components/auth/user-menu";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { SearchCommand } from "@/components/common/search-command";
+import { LanguageSwitcher } from "@/components/common/language-switcher";
+import { useI18n } from "@/lib/i18n";
 
 export function Navbar() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
   const { user, loading } = useAuth();
+  const { t } = useI18n();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [signInOpen, setSignInOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -187,10 +190,11 @@ export function Navbar() {
         </nav>
 
         {/* Search + Auth */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           <div className="hidden sm:block">
             <SearchCommand variant="navbar" />
           </div>
+          <LanguageSwitcher variant="navbar" />
           <ThemeToggle />
 
           {/* Desktop Auth */}
@@ -206,7 +210,7 @@ export function Navbar() {
                 className="rounded-xl h-8 text-xs font-medium"
                 onClick={() => setSignInOpen(true)}
               >
-                Sign in
+                {t("nav_signin")}
               </Button>
             )}
           </div>
@@ -235,8 +239,12 @@ export function Navbar() {
                   <span className="font-bold text-base">{SITE_CONFIG.name}</span>
                 </div>
 
-                <div className="mb-4">
+                <div className="mb-3">
                   <SearchCommand variant="navbar" />
+                </div>
+
+                <div className="mb-4">
+                  <LanguageSwitcher variant="mobile" />
                 </div>
 
                 <div className="space-y-1">
@@ -253,13 +261,6 @@ export function Navbar() {
                     className="flex items-center px-3 py-2 text-sm font-medium rounded-xl hover:bg-muted"
                   >
                     Apps
-                  </Link>
-                  <Link
-                    href="/workflows"
-                    onClick={() => setMobileOpen(false)}
-                    className="flex items-center px-3 py-2 text-sm font-medium rounded-xl hover:bg-muted"
-                  >
-                    Workflows
                   </Link>
 
                   {/* AI Mobile Submenu */}

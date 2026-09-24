@@ -4,16 +4,46 @@ export const SITE_CONFIG = {
   description: "One place for small jobs, daily work, learning, creation and problem solving.",
   domain: "mytoolsbox.me",
   url: "https://mytoolsbox.me",
+  defaultLocale: "en",
 } as const;
 
 export const NAV_ITEMS = [
   { label: "Tools", href: "/tools" },
   { label: "Apps", href: "/apps" },
-  { label: "Workflows", href: "/workflows" },
   { label: "AI", href: "/ai" },
   { label: "Hubs", href: "/hubs" },
   { label: "Resources", href: "/resources" },
 ] as const;
+
+// ---------------------------------------------------------------------------
+// Internationalization & Geo-Targeting Constants
+// ---------------------------------------------------------------------------
+export const SUPPORTED_LOCALES = [
+  { code: "en", hreflang: "en", name: "English", flag: "🇺🇸", dir: "ltr" },
+  { code: "es", hreflang: "es", name: "Español", flag: "🇪🇸", dir: "ltr" },
+  { code: "fr", hreflang: "fr", name: "Français", flag: "🇫🇷", dir: "ltr" },
+  { code: "de", hreflang: "de", name: "Deutsch", flag: "🇩🇪", dir: "ltr" },
+  { code: "pt", hreflang: "pt", name: "Português", flag: "🇧🇷", dir: "ltr" },
+  { code: "it", hreflang: "it", name: "Italiano", flag: "🇮🇹", dir: "ltr" },
+  { code: "hi", hreflang: "hi", name: "हिन्दी", flag: "🇮🇳", dir: "ltr" },
+  { code: "ar", hreflang: "ar", name: "العربية", flag: "🇸🇦", dir: "rtl" },
+  { code: "ja", hreflang: "ja", name: "日本語", flag: "🇯🇵", dir: "ltr" },
+  { code: "zh", hreflang: "zh", name: "中文", flag: "🇨🇳", dir: "ltr" },
+] as const;
+
+export const HREFLANG_LANGUAGES: Record<string, string> = {
+  "x-default": "https://mytoolsbox.me",
+  en: "https://mytoolsbox.me",
+  es: "https://mytoolsbox.me?lang=es",
+  fr: "https://mytoolsbox.me?lang=fr",
+  de: "https://mytoolsbox.me?lang=de",
+  pt: "https://mytoolsbox.me?lang=pt",
+  it: "https://mytoolsbox.me?lang=it",
+  hi: "https://mytoolsbox.me?lang=hi",
+  ar: "https://mytoolsbox.me?lang=ar",
+  ja: "https://mytoolsbox.me?lang=ja",
+  zh: "https://mytoolsbox.me?lang=zh",
+};
 
 export const CATEGORIES = [
   { id: "documents", name: "Documents", icon: "FileText", description: "PDF, Word, text tools" },

@@ -3,28 +3,50 @@ import { getActiveTools } from "@/content/tools/registry";
 import { getActiveApps } from "@/content/apps/registry";
 import { getActiveHubs } from "@/content/hubs/registry";
 import { RESOURCE_GUIDES } from "@/features/resources/resources-data";
-import { workflowRegistry } from "@/lib/workflow/registry";
-import { CATEGORIES, SITE_CONFIG } from "@/lib/constants";
+import { CATEGORIES, SITE_CONFIG, SUPPORTED_LOCALES } from "@/lib/constants";
+
+function buildLanguageAlternates(path: string) {
+  const cleanPath = path ? (path.startsWith("/") ? path : `/${path}`) : "";
+  const languages: Record<string, string> = {
+    "x-default": `${SITE_CONFIG.url}${cleanPath}`,
+    en: `${SITE_CONFIG.url}${cleanPath}`,
+  };
+  SUPPORTED_LOCALES.forEach((locale) => {
+    if (locale.code !== "en") {
+      languages[locale.hreflang] = `${SITE_CONFIG.url}/${locale.code}${cleanPath}`;
+    }
+  });
+  return languages;
+}
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = SITE_CONFIG.url;
   const now = new Date();
 
   // 1. Static Core Platform Pages
-  const staticPages: MetadataRoute.Sitemap = [
-    { url: baseUrl, lastModified: now, changeFrequency: "daily", priority: 1.0 },
-    { url: `${baseUrl}/tools`, lastModified: now, changeFrequency: "daily", priority: 0.95 },
-    { url: `${baseUrl}/apps`, lastModified: now, changeFrequency: "daily", priority: 0.95 },
-    { url: `${baseUrl}/workflows`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
-    { url: `${baseUrl}/ai`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
-    { url: `${baseUrl}/hubs`, lastModified: now, changeFrequency: "weekly", priority: 0.85 },
-    { url: `${baseUrl}/resources`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
-    { url: `${baseUrl}/search`, lastModified: now, changeFrequency: "weekly", priority: 0.7 },
-    { url: `${baseUrl}/about`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
-    { url: `${baseUrl}/contact`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
-    { url: `${baseUrl}/privacy`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
-    { url: `${baseUrl}/terms`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
+  const staticPaths = [
+    { path: "", changeFrequency: "daily" as const, priority: 1.0 },
+    { path: "/tools", changeFrequency: "daily" as const, priority: 0.95 },
+    { path: "/apps", changeFrequency: "daily" as const, priority: 0.95 },
+    { path: "/ai", changeFrequency: "weekly" as const, priority: 0.9 },
+    { path: "/hubs", changeFrequency: "weekly" as const, priority: 0.85 },
+    { path: "/resources", changeFrequency: "weekly" as const, priority: 0.8 },
+    { path: "/search", changeFrequency: "weekly" as const, priority: 0.7 },
+    { path: "/about", changeFrequency: "monthly" as const, priority: 0.5 },
+    { path: "/contact", changeFrequency: "monthly" as const, priority: 0.5 },
+    { path: "/privacy", changeFrequency: "monthly" as const, priority: 0.5 },
+    { path: "/terms", changeFrequency: "monthly" as const, priority: 0.5 },
   ];
+
+  const staticPages: MetadataRoute.Sitemap = staticPaths.map((item) => ({
+    url: `${baseUrl}${item.path}`,
+    lastModified: now,
+    changeFrequency: item.changeFrequency,
+    priority: item.priority,
+    alternates: {
+      languages: buildLanguageAlternates(item.path),
+    },
+  }));
 
   // 2. Category Cluster & Silo Landing URLs
   const categoryPages: MetadataRoute.Sitemap = CATEGORIES.map((cat) => ({
@@ -32,6 +54,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
     lastModified: now,
     changeFrequency: "daily" as const,
     priority: 0.85,
+    alternates: {
+      languages: buildLanguageAlternates(`/tools?category=${cat.id}`),
+    },
   }));
 
   // 3. Topic Hub Pillar Pages
@@ -40,6 +65,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
     lastModified: now,
     changeFrequency: "weekly" as const,
     priority: 0.85,
+    alternates: {
+      languages: buildLanguageAlternates(`/hubs/${hub.slug}`),
+    },
   }));
 
   // 4. Resource Learning & Guide Pages
@@ -48,23 +76,38 @@ export default function sitemap(): MetadataRoute.Sitemap {
     lastModified: now,
     changeFrequency: "weekly" as const,
     priority: 0.75,
+    alternates: {
+      languages: buildLanguageAlternates(`/resources/${guide.slug}`),
+    },
   }));
 
-  // 5. Multi-tool Workflow Pipeline Pages
-  const workflowPages: MetadataRoute.Sitemap = workflowRegistry.map((wf) => ({
-    url: `${baseUrl}/workflows/${wf.id}`,
-    lastModified: now,
-    changeFrequency: "weekly" as const,
-    priority: 0.8,
-  }));
-
-  // 6. High-Intent Tool Pages
-  const toolPages: MetadataRoute.Sitemap = getActiveTools().map((tool) => ({
+  // 5. High-Intent Tool Pages (Canonical English)
+  const activeTools = getActiveTools();
+  const toolPages: MetadataRoute.Sitemap = activeTools.map((tool) => ({
     url: `${baseUrl}/tools/${tool.slug}`,
     lastModified: now,
     changeFrequency: "weekly" as const,
     priority: 0.85,
+    alternates: {
+      languages: buildLanguageAlternates(`/tools/${tool.slug}`),
+    },
   }));
+
+  // 6. Localized High-Demand Tool Pages (Spanish, Urdu, French, German, Portuguese, Hindi, Arabic)
+  const localizedToolPages: MetadataRoute.Sitemap = [];
+  SUPPORTED_LOCALES.filter((l) => l.code !== "en").forEach((loc) => {
+    activeTools.forEach((tool) => {
+      localizedToolPages.push({
+        url: `${baseUrl}/${loc.code}/tools/${tool.slug}`,
+        lastModified: now,
+        changeFrequency: "weekly" as const,
+        priority: 0.8,
+        alternates: {
+          languages: buildLanguageAlternates(`/tools/${tool.slug}`),
+        },
+      });
+    });
+  });
 
   // 7. Interactive Web App Pages
   const appPages: MetadataRoute.Sitemap = getActiveApps().map((app) => ({
@@ -72,6 +115,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
     lastModified: now,
     changeFrequency: "weekly" as const,
     priority: 0.85,
+    alternates: {
+      languages: buildLanguageAlternates(`/apps/${app.slug}`),
+    },
   }));
 
   return [
@@ -79,8 +125,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     ...categoryPages,
     ...hubPages,
     ...resourcePages,
-    ...workflowPages,
     ...toolPages,
+    ...localizedToolPages,
     ...appPages,
   ];
 }

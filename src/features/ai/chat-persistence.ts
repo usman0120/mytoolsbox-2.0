@@ -19,15 +19,15 @@ import {
   limit,
   serverTimestamp,
   writeBatch,
-  type Timestamp,
+  onSnapshot,
 } from "firebase/firestore";
 import type { ChatConversation, ChatMessage } from "./types";
 
-const COLLECTION = "ai_conversations";
+const TOP_COLLECTION = "ai_conversations";
 
 function getDb() {
   const db = getFirebaseFirestore();
-  if (!db) throw new Error("Firestore not available");
+  if (!db) return null;
   return db;
 }
 
@@ -88,29 +88,96 @@ function deserializeConversation(
 // CRUD Operations
 // ---------------------------------------------------------------------------
 
+/**
+ * Fetch all conversations for a user.
+ * Queries primary subcollection `users/{userId}/ai_conversations`,
+ * and falls back to top-level `ai_conversations` collection if needed.
+ */
 export async function fetchConversations(
   userId: string
 ): Promise<ChatConversation[]> {
   const db = getDb();
-  const q = query(
-    collection(db, COLLECTION),
-    where("userId", "==", userId),
-    orderBy("updatedAt", "desc"),
-    limit(100)
-  );
+  if (!db || !userId) return [];
 
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map((d) => deserializeConversation(d.data()));
+  try {
+    // 1. Primary: users/{userId}/ai_conversations
+    const subCol = collection(db, "users", userId, "ai_conversations");
+    const qSub = query(subCol, orderBy("updatedAt", "desc"), limit(100));
+    const snapshot = await getDocs(qSub);
+
+    if (!snapshot.empty) {
+      return snapshot.docs.map((d) => deserializeConversation(d.data()));
+    }
+  } catch (err) {
+    console.warn("Subcollection fetch note:", err);
+  }
+
+  try {
+    // 2. Fallback: top-level ai_conversations collection
+    const qTop = query(
+      collection(db, TOP_COLLECTION),
+      where("userId", "==", userId),
+      orderBy("updatedAt", "desc"),
+      limit(100)
+    );
+    const snapshotTop = await getDocs(qTop);
+    return snapshotTop.docs.map((d) => deserializeConversation(d.data()));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Real-time listener for user's conversations.
+ * Updates instantly whenever a chat is modified, created, or deleted across tabs/devices.
+ */
+export function subscribeConversations(
+  userId: string,
+  callback: (conversations: ChatConversation[]) => void
+): () => void {
+  const db = getDb();
+  if (!db || !userId) return () => {};
+
+  try {
+    const subCol = collection(db, "users", userId, "ai_conversations");
+    const q = query(subCol, orderBy("updatedAt", "desc"), limit(100));
+    return onSnapshot(
+      q,
+      (snapshot) => {
+        const convs = snapshot.docs.map((d) => deserializeConversation(d.data()));
+        callback(convs);
+      },
+      (error) => {
+        console.warn("Conversations real-time subscription note:", error);
+      }
+    );
+  } catch {
+    return () => {};
+  }
 }
 
 export async function fetchConversation(
+  userId: string,
   conversationId: string
 ): Promise<ChatConversation | null> {
   const db = getDb();
-  const ref = doc(db, COLLECTION, conversationId);
-  const snap = await getDoc(ref);
-  if (!snap.exists()) return null;
-  return deserializeConversation(snap.data());
+  if (!db) return null;
+
+  try {
+    // Try subcollection
+    const subRef = doc(db, "users", userId, "ai_conversations", conversationId);
+    const snap = await getDoc(subRef);
+    if (snap.exists()) return deserializeConversation(snap.data());
+  } catch {}
+
+  try {
+    // Try top-level
+    const topRef = doc(db, TOP_COLLECTION, conversationId);
+    const snap = await getDoc(topRef);
+    if (snap.exists()) return deserializeConversation(snap.data());
+  } catch {}
+
+  return null;
 }
 
 export async function saveConversation(
@@ -118,22 +185,53 @@ export async function saveConversation(
   conversation: ChatConversation
 ): Promise<void> {
   const db = getDb();
-  const ref = doc(db, COLLECTION, conversation.id);
-  await setDoc(ref, {
+  if (!db || !userId || !conversation?.id) return;
+
+  const data = {
     ...serializeConversation(conversation),
     userId,
     _serverUpdatedAt: serverTimestamp(),
-  });
+  };
+
+  // 1. Write to users/{userId}/ai_conversations (user-scoped, matching firestore security rules)
+  try {
+    const subRef = doc(db, "users", userId, "ai_conversations", conversation.id);
+    await setDoc(subRef, data);
+  } catch (err) {
+    console.warn("Firestore subcollection save note:", err);
+  }
+
+  // 2. Also write to top-level collection for backwards compatibility
+  try {
+    const topRef = doc(db, TOP_COLLECTION, conversation.id);
+    await setDoc(topRef, data);
+  } catch {
+    // Best effort
+  }
 }
 
 export async function updateConversation(
-  conversationId: string,
-  updates: Partial<ChatConversation>
+  userIdOrConvId: string,
+  convIdOrUpdates: string | Partial<ChatConversation>,
+  maybeUpdates?: Partial<ChatConversation>
 ): Promise<void> {
   const db = getDb();
-  const ref = doc(db, COLLECTION, conversationId);
-  const data: Record<string, unknown> = {};
+  if (!db) return;
 
+  let userId: string | null = null;
+  let conversationId: string = "";
+  let updates: Partial<ChatConversation> = {};
+
+  if (typeof convIdOrUpdates === "string" && maybeUpdates) {
+    userId = userIdOrConvId;
+    conversationId = convIdOrUpdates;
+    updates = maybeUpdates;
+  } else if (typeof convIdOrUpdates === "object") {
+    conversationId = userIdOrConvId;
+    updates = convIdOrUpdates;
+  }
+
+  const data: Record<string, unknown> = {};
   if (updates.title !== undefined) data.title = updates.title;
   if (updates.messages !== undefined) {
     data.messages = updates.messages.map((m) => ({
@@ -153,28 +251,62 @@ export async function updateConversation(
   data.updatedAt = updates.updatedAt ?? Date.now();
   data._serverUpdatedAt = serverTimestamp();
 
-  await updateDoc(ref, data);
+  if (userId) {
+    try {
+      const subRef = doc(db, "users", userId, "ai_conversations", conversationId);
+      await updateDoc(subRef, data);
+    } catch {}
+  }
+
+  try {
+    const topRef = doc(db, TOP_COLLECTION, conversationId);
+    await updateDoc(topRef, data);
+  } catch {}
 }
 
 export async function deleteConversation(
-  conversationId: string
+  userIdOrConvId: string,
+  maybeConvId?: string
 ): Promise<void> {
   const db = getDb();
-  const ref = doc(db, COLLECTION, conversationId);
-  await deleteDoc(ref);
+  if (!db) return;
+
+  const conversationId = maybeConvId ?? userIdOrConvId;
+  const userId = maybeConvId ? userIdOrConvId : null;
+
+  if (userId) {
+    try {
+      await deleteDoc(doc(db, "users", userId, "ai_conversations", conversationId));
+    } catch {}
+  }
+
+  try {
+    await deleteDoc(doc(db, TOP_COLLECTION, conversationId));
+  } catch {}
 }
 
 export async function deleteAllConversations(userId: string): Promise<void> {
   const db = getDb();
-  const q = query(
-    collection(db, COLLECTION),
-    where("userId", "==", userId)
-  );
-  const snapshot = await getDocs(q);
+  if (!db || !userId) return;
 
-  const batch = writeBatch(db);
-  snapshot.docs.forEach((d) => batch.delete(d.ref));
-  await batch.commit();
+  try {
+    const subCol = collection(db, "users", userId, "ai_conversations");
+    const snapshot = await getDocs(subCol);
+    const batch = writeBatch(db);
+    snapshot.docs.forEach((d) => batch.delete(d.ref));
+    await batch.commit();
+  } catch {}
+
+  try {
+    const q = query(
+      collection(db, TOP_COLLECTION),
+      where("userId", "==", userId)
+    );
+    const snapshot = await getDocs(q);
+    const batch = writeBatch(db);
+    snapshot.docs.forEach((d) => batch.delete(d.ref));
+    await batch.commit();
+  } catch {}
 }
 
 // ---------------------------------------------------------------------------

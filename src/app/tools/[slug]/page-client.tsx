@@ -17,7 +17,6 @@ import {
   Check,
   Copy,
   Code2,
-  Workflow,
   Sparkles,
   Lock,
   Layers,
@@ -46,13 +45,13 @@ import { ToolCard } from "@/components/common/tool-card";
 import { ToolEngine } from "@/features/tool-engine";
 import { ToolDefinition } from "@/types";
 import { getToolBySlug, getToolsByCategory } from "@/content/tools/registry";
-import { getWorkflowsByCategory } from "@/lib/workflow/registry";
 import { SITE_CONFIG } from "@/lib/constants";
 import { useAuth } from "@/lib/auth";
 import { addFavorite, getFavorites, removeFavorite, isFavorited, addHistoryEntry } from "@/lib/firebase/user-service";
 import { trackEvent } from "@/lib/analytics";
 import { toast } from "sonner";
 import * as Icons from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 interface ToolPageClientProps {
   tool: ToolDefinition;
@@ -60,6 +59,8 @@ interface ToolPageClientProps {
 
 export function ToolPageClient({ tool }: ToolPageClientProps) {
   const { user } = useAuth();
+  const { t, getToolName } = useI18n();
+  const localizedName = getToolName(tool.slug, tool.name);
   const [favorited, setFavorited] = useState(false);
   const [copied, setCopied] = useState(false);
   const [embedCopied, setEmbedCopied] = useState(false);
@@ -87,11 +88,6 @@ export function ToolPageClient({ tool }: ToolPageClientProps) {
     }
     return resolved;
   }, [tool]);
-
-  // Resolve category workflows
-  const relatedWorkflows = useMemo(() => {
-    return getWorkflowsByCategory(tool.category).slice(0, 2);
-  }, [tool.category]);
 
   // Check favorite status
   useEffect(() => {
@@ -254,7 +250,7 @@ export function ToolPageClient({ tool }: ToolPageClientProps) {
             <ChevronRight className="h-3.5 w-3.5" />
           </li>
           <li className="text-foreground font-medium truncate" aria-current="page">
-            {tool.name}
+            {localizedName}
           </li>
         </ol>
       </nav>
@@ -270,7 +266,7 @@ export function ToolPageClient({ tool }: ToolPageClientProps) {
               </div>
               <div className="flex-1 min-w-0">
                 <h1 className="text-2xl md:text-3xl lg:text-4xl font-extrabold tracking-tight text-foreground">
-                  {tool.name}
+                  {localizedName}
                 </h1>
                 <div className="flex flex-wrap items-center gap-2 mt-2.5">
                   <Badge variant="secondary" className="text-xs font-semibold capitalize rounded-full">
@@ -283,7 +279,7 @@ export function ToolPageClient({ tool }: ToolPageClientProps) {
                       className="text-xs gap-1.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 font-medium"
                     >
                       <Shield className="h-3.5 w-3.5" />
-                      100% Client-Side / Zero Uploads
+                      {t("badge_client_side")}
                     </Badge>
                   )}
 
@@ -292,7 +288,7 @@ export function ToolPageClient({ tool }: ToolPageClientProps) {
                     className="text-xs gap-1.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 font-medium"
                   >
                     <Zap className="h-3.5 w-3.5" />
-                    Instant & Free
+                    {t("badge_instant")}
                   </Badge>
 
                   {tool.requiresPro && (
@@ -350,7 +346,7 @@ export function ToolPageClient({ tool }: ToolPageClientProps) {
                 <CheckCircle2 className="h-4 w-4" />
               </div>
               <h2 className="text-xl md:text-2xl font-bold tracking-tight">
-                How to Use {tool.name} in 3 Easy Steps
+                {t("how_to_use_title")}
               </h2>
             </div>
 
@@ -363,11 +359,11 @@ export function ToolPageClient({ tool }: ToolPageClientProps) {
                     </span>
                     <Upload className="h-4 w-4 text-muted-foreground" />
                   </div>
-                  <CardTitle className="text-base">Upload or Input</CardTitle>
+                  <CardTitle className="text-base">{t("step_1_title")}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                    Select, drag and drop files or paste your raw input into the workspace. Files remain safely in your browser.
+                    {t("step_1_desc")}
                   </p>
                 </CardContent>
               </Card>
@@ -380,11 +376,11 @@ export function ToolPageClient({ tool }: ToolPageClientProps) {
                     </span>
                     <Sliders className="h-4 w-4 text-muted-foreground" />
                   </div>
-                  <CardTitle className="text-base">Configure & Process</CardTitle>
+                  <CardTitle className="text-base">{t("step_2_title")}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                    Adjust options, fine-tune parameters, and let the real-time engine process your work without server lag.
+                    {t("step_2_desc")}
                   </p>
                 </CardContent>
               </Card>
@@ -397,11 +393,11 @@ export function ToolPageClient({ tool }: ToolPageClientProps) {
                     </span>
                     <Download className="h-4 w-4 text-muted-foreground" />
                   </div>
-                  <CardTitle className="text-base">Download or Copy</CardTitle>
+                  <CardTitle className="text-base">{t("step_3_title")}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                    Instantly export your final output, download high-res files, or copy formatted text with zero watermarks.
+                    {t("step_3_desc")}
                   </p>
                 </CardContent>
               </Card>
@@ -415,7 +411,7 @@ export function ToolPageClient({ tool }: ToolPageClientProps) {
                 <Zap className="h-4 w-4" />
               </div>
               <h2 className="text-xl md:text-2xl font-bold tracking-tight">
-                Key Features & Capabilities
+                {t("features_title")}
               </h2>
             </div>
 
@@ -518,31 +514,29 @@ export function ToolPageClient({ tool }: ToolPageClientProps) {
                   </div>
                   <div>
                     <CardTitle className="text-lg md:text-xl">
-                      Why Client-Side Processing Protects You
+                      {t("privacy_title")}
                     </CardTitle>
                     <CardDescription>
-                      Modern browser technology engineered for zero data transmission.
+                      {t("privacy_subtitle")}
                     </CardDescription>
                   </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-3 text-sm text-muted-foreground leading-relaxed">
                 <p>
-                  Unlike traditional online converters that upload your confidential files to remote cloud servers,{" "}
-                  <strong className="text-foreground">{tool.name}</strong> operates via the HTML5 Sandbox,
-                  WebAssembly, and Web Worker APIs directly on your local hardware.
+                  {t("privacy_p1")}
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
                   <div className="p-3 rounded-lg bg-background/60 border border-border/40">
-                    <div className="font-semibold text-foreground text-xs mb-1">Zero Server Storage</div>
+                    <div className="font-semibold text-foreground text-xs mb-1">{t("badge_no_upload")}</div>
                     <div className="text-xs">Your files never touch an external hard drive or cloud database.</div>
                   </div>
                   <div className="p-3 rounded-lg bg-background/60 border border-border/40">
-                    <div className="font-semibold text-foreground text-xs mb-1">Instant Speed</div>
+                    <div className="font-semibold text-foreground text-xs mb-1">{t("badge_instant")}</div>
                     <div className="text-xs">No upload queuing or server throttling — execution runs at CPU speed.</div>
                   </div>
                   <div className="p-3 rounded-lg bg-background/60 border border-border/40">
-                    <div className="font-semibold text-foreground text-xs mb-1">GDPR & Confidential</div>
+                    <div className="font-semibold text-foreground text-xs mb-1">{t("badge_private")}</div>
                     <div className="text-xs">Strict compliance since zero personally identifiable data is captured.</div>
                   </div>
                 </div>
@@ -558,7 +552,7 @@ export function ToolPageClient({ tool }: ToolPageClientProps) {
                   <HelpCircle className="h-4 w-4" />
                 </div>
                 <h2 className="text-xl md:text-2xl font-bold tracking-tight">
-                  Frequently Asked Questions
+                  {t("faq_title")}
                 </h2>
               </div>
 
@@ -578,51 +572,6 @@ export function ToolPageClient({ tool }: ToolPageClientProps) {
                   ))}
                 </CardContent>
               </Card>
-            </section>
-          )}
-
-          {/* 8. Related Multi-Tool Workflows (Topic Silos) */}
-          {relatedWorkflows.length > 0 && (
-            <section className="space-y-4 animate-fade-in-up" style={{ animationDelay: "400ms" }}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                    <Workflow className="h-4 w-4" />
-                  </div>
-                  <h2 className="text-xl font-bold tracking-tight">
-                    Multi-Tool Workflows with {tool.name}
-                  </h2>
-                </div>
-                <Link
-                  href="/workflows"
-                  className="text-xs text-primary hover:underline flex items-center gap-1 font-medium"
-                >
-                  All Workflows <ArrowRight className="h-3 w-3" />
-                </Link>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {relatedWorkflows.map((wf) => (
-                  <Card key={wf.id} className="border-border/50 hover:border-primary/40 transition-colors">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <Workflow className="h-4 w-4 text-primary" />
-                        {wf.name}
-                      </CardTitle>
-                      <CardDescription className="text-xs line-clamp-2">
-                        {wf.shortDescription}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="pt-0">
-                      <Link href={`/workflows/${wf.id}`}>
-                        <Button variant="ghost" size="sm" className="w-full justify-between text-xs font-medium">
-                          Run Workflow <ArrowRight className="h-3.5 w-3.5" />
-                        </Button>
-                      </Link>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
             </section>
           )}
         </div>
@@ -683,10 +632,10 @@ export function ToolPageClient({ tool }: ToolPageClientProps) {
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
                 <Code2 className="h-4 w-4 text-primary" />
-                Embed This Tool
+                {t("embed_title")}
               </CardTitle>
               <CardDescription className="text-xs">
-                Add {tool.name} directly onto your own blog or website for free.
+                {t("embed_desc")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -704,12 +653,12 @@ export function ToolPageClient({ tool }: ToolPageClientProps) {
                 {embedCopied ? (
                   <>
                     <Check className="h-3.5 w-3.5 text-emerald-500" />
-                    Copied Embed Code!
+                    {t("action_copied")}
                   </>
                 ) : (
                   <>
                     <Copy className="h-3.5 w-3.5" />
-                    Copy Embed HTML Code
+                    {t("embed_copy_btn")}
                   </>
                 )}
               </Button>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/lib/auth";
+import { subscribeUserCredits, syncCreditsToFirestore } from "./credit-firestore";
 
 export interface CreditInfo {
   remaining: number;
@@ -40,7 +41,8 @@ export function useCredits(): CreditInfo {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchCredits = useCallback(async () => {
+  // 1. Real-time Firestore sync across environments (localhost <-> mytoolsbox.me)
+  useEffect(() => {
     if (!user || isAnonymous) {
       setRemaining(0);
       setTotal(1000);
@@ -49,22 +51,44 @@ export function useCredits(): CreditInfo {
       return;
     }
 
-    // Try reading cached client snapshot first to avoid layout flash
-    if (typeof window !== "undefined" && user.uid) {
-      const cached = localStorage.getItem(`mytoolsbox_credits_${user.uid}`);
-      if (cached) {
-        try {
-          const parsed = JSON.parse(cached);
-          if (typeof parsed.remaining === "number") setRemaining(parsed.remaining);
-          if (typeof parsed.total === "number") setTotal(parsed.total);
-          if (typeof parsed.used === "number") setUsed(parsed.used);
-          if (typeof parsed.tier === "string") setTier(parsed.tier);
-          if (typeof parsed.daysRemaining === "number") setDaysRemaining(parsed.daysRemaining);
-          if (parsed.periodEnd) setPeriodEnd(parsed.periodEnd);
-        } catch {
-          // Ignore parse errors
-        }
+    const unsubscribe = subscribeUserCredits(user.uid, (summary) => {
+      setRemaining(summary.remaining);
+      setTotal(summary.total);
+      setUsed(summary.used);
+      setTier(summary.tier);
+      setDaysRemaining(summary.daysRemaining);
+      setPeriodEnd(summary.periodEnd);
+      setLoading(false);
+      setError(null);
+
+      // Cache locally for instant next load
+      if (typeof window !== "undefined") {
+        localStorage.setItem(
+          `mytoolsbox_credits_${user.uid}`,
+          JSON.stringify({
+            remaining: summary.remaining,
+            total: summary.total,
+            used: summary.used,
+            tier: summary.tier,
+            daysRemaining: summary.daysRemaining,
+            periodEnd: summary.periodEnd,
+            timestamp: Date.now(),
+          })
+        );
       }
+    });
+
+    return () => unsubscribe();
+  }, [user, isAnonymous]);
+
+  // 2. Fetch credits from server endpoint as complementary check / refresh
+  const fetchCredits = useCallback(async () => {
+    if (!user || isAnonymous) {
+      setRemaining(0);
+      setTotal(1000);
+      setUsed(0);
+      setLoading(false);
+      return;
     }
 
     try {
@@ -86,6 +110,9 @@ export function useCredits(): CreditInfo {
         setTier(tr);
         setDaysRemaining(days);
         setPeriodEnd(pEnd);
+
+        // Also sync to cloud Firestore
+        syncCreditsToFirestore(user.uid, rem, us).catch(() => {});
 
         // Cache in localStorage
         if (typeof window !== "undefined" && user.uid) {
@@ -116,25 +143,31 @@ export function useCredits(): CreditInfo {
     fetchCredits();
   }, [fetchCredits]);
 
-  // Listen to live credit updates broadcasted across components
+  // 3. Listen to live credit updates broadcasted across components
   useEffect(() => {
     const handleUpdate = (e: Event) => {
       const customEvent = e as CustomEvent<{ remaining?: number; total?: number; used?: number }>;
       if (typeof customEvent.detail?.remaining === "number") {
         const newRem = customEvent.detail.remaining;
         setRemaining(newRem);
-        if (typeof window !== "undefined" && user?.uid) {
-          const cached = localStorage.getItem(`mytoolsbox_credits_${user.uid}`);
-          if (cached) {
-            try {
-              const parsed = JSON.parse(cached);
-              parsed.remaining = newRem;
-              if (typeof customEvent.detail?.used === "number") {
-                parsed.used = customEvent.detail.used;
+        const newUsed = customEvent.detail?.used;
+
+        if (user?.uid) {
+          syncCreditsToFirestore(user.uid, newRem, newUsed).catch(() => {});
+
+          if (typeof window !== "undefined") {
+            const cached = localStorage.getItem(`mytoolsbox_credits_${user.uid}`);
+            if (cached) {
+              try {
+                const parsed = JSON.parse(cached);
+                parsed.remaining = newRem;
+                if (typeof newUsed === "number") {
+                  parsed.used = newUsed;
+                }
+                localStorage.setItem(`mytoolsbox_credits_${user.uid}`, JSON.stringify(parsed));
+              } catch {
+                // Ignore
               }
-              localStorage.setItem(`mytoolsbox_credits_${user.uid}`, JSON.stringify(parsed));
-            } catch {
-              // Ignore
             }
           }
         }

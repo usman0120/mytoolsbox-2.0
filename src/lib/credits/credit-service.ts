@@ -148,7 +148,7 @@ export async function getUserCredits(userId: string): Promise<UserCreditState> {
   const db = getFirebaseFirestore();
 
   // 1. Try to fetch from Firestore
-  if (db) {
+  if (db && process.env.NODE_ENV !== "test") {
     try {
       const docRef = doc(db, getCreditDocPath(userId));
       const snapshot = await getDoc(docRef);
@@ -330,13 +330,10 @@ export async function deductCredits(
 
   // Update Firestore if available
   const db = getFirebaseFirestore();
-  if (db) {
+  if (db && process.env.NODE_ENV !== "test") {
     try {
       const docRef = doc(db, getCreditDocPath(userId));
-      await updateDoc(docRef, {
-        usedCredits: increment(cost),
-        lastUpdated: Date.now(),
-      });
+      await setDoc(docRef, updatedState, { merge: true });
     } catch {
       // Continue even if Firestore update fails
     }
@@ -388,7 +385,7 @@ export async function upgradeUserTier(
   saveToDiskLedger(userId, newState);
 
   const db = getFirebaseFirestore();
-  if (db) {
+  if (db && process.env.NODE_ENV !== "test") {
     try {
       const docRef = doc(db, getCreditDocPath(userId));
       await setDoc(docRef, newState);

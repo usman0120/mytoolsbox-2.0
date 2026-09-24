@@ -1,9 +1,9 @@
-import { SITE_CONFIG } from "@/lib/constants";
+import { SITE_CONFIG, SUPPORTED_LOCALES } from "@/lib/constants";
 import type { Metadata } from "next";
 import type { ToolDefinition } from "@/types";
 
 // ---------------------------------------------------------------------------
-// Base metadata generator for any page
+// Base metadata generator for any page (Geo-SEO & Internationalized)
 // ---------------------------------------------------------------------------
 
 interface GenerateMetadataParams {
@@ -41,18 +41,43 @@ export function generateMetadata({
       description.slice(0, 160)
     )}${category ? `&category=${encodeURIComponent(category)}` : ""}`;
 
+  // Multi-regional hreflang alternates for global search indexing (e.g. /es/tools/pdf-merger, /ur/tools/pdf-merger)
+  const cleanPath = path ? (path.startsWith("/") ? path : `/${path}`) : "";
+  const languageAlternates: Record<string, string> = {
+    "x-default": `${SITE_CONFIG.url}${cleanPath}`,
+    en: `${SITE_CONFIG.url}${cleanPath}`,
+  };
+  SUPPORTED_LOCALES.forEach((locale) => {
+    if (locale.code !== "en") {
+      languageAlternates[locale.hreflang] = `${SITE_CONFIG.url}/${locale.code}${cleanPath}`;
+    }
+  });
+
   return {
     title: fullTitle,
     description,
     keywords: keywords?.join(", "),
     alternates: {
       canonical: url,
+      languages: languageAlternates,
     },
     openGraph: {
       title: fullTitle,
       description,
       url,
       siteName: SITE_CONFIG.name,
+      locale: "en_US",
+      alternateLocale: [
+        "es_ES",
+        "fr_FR",
+        "de_DE",
+        "pt_BR",
+        "it_IT",
+        "hi_IN",
+        "ar_SA",
+        "ja_JP",
+        "zh_CN",
+      ],
       type: "website",
       images: [
         {
@@ -80,6 +105,16 @@ export function generateMetadata({
           "max-image-preview": "large",
           "max-video-preview": -1,
         },
+    other: {
+      "distribution": "global",
+      "rating": "general",
+      "revisit-after": "1 days",
+      "target": "all",
+      "geo.region": "US",
+      "geo.placename": "Worldwide",
+      "HandheldFriendly": "True",
+      "MobileOptimized": "320",
+    },
   };
 }
 
@@ -99,11 +134,22 @@ export function generateToolMetadata(tool: ToolDefinition): Metadata {
     tool.processingMode === "client" ? "100% Client-Side" : "Fast & Secure"
   )}`;
 
+  // Expanded localized geo keywords
+  const baseKeywords = tool.keywords || [];
+  const expandedKeywords = [
+    ...baseKeywords,
+    `${tool.name.toLowerCase()} online`,
+    `free ${tool.name.toLowerCase()}`,
+    `${tool.name.toLowerCase()} free without registration`,
+    `${tool.name.toLowerCase()} browser client side`,
+    `${tool.name.toLowerCase()} for students and developers`,
+  ];
+
   return generateMetadata({
     title: tool.seoTitle || `${tool.name} Online Free`,
     description: tool.seoDescription || tool.description,
     path,
-    keywords: tool.keywords,
+    keywords: expandedKeywords,
     noIndex: tool.status !== "active",
     ogImage: dynamicOgUrl,
     category: tool.category,
@@ -125,6 +171,9 @@ export function generateSoftwareAppJsonLd(tool: ToolDefinition) {
     operatingSystem: "All",
     browserRequirements: "Requires HTML5 and JavaScript. Runs directly in modern browsers.",
     softwareVersion: "2.0",
+    inLanguage: ["en", "es", "fr", "de", "pt", "it", "hi", "ar", "ja", "zh"],
+    countriesSupported: "Worldwide",
+    availableOnDevice: "Mobile, Tablet, Desktop",
     offers: {
       "@type": "Offer",
       price: tool.requiresPro ? "1.00" : "0",
@@ -153,6 +202,7 @@ export function generateHowToJsonLd(tool: ToolDefinition) {
     name: `How to Use ${tool.name} Online`,
     description: `Step-by-step guide to using ${tool.name} for free in your browser with 100% client-side privacy.`,
     totalTime: "PT1M",
+    inLanguage: "en",
     step: [
       {
         "@type": "HowToStep",
@@ -217,6 +267,7 @@ export function generateCollectionPageJsonLd(params: {
     name: params.name,
     description: params.description,
     url: `${SITE_CONFIG.url}${params.url}`,
+    inLanguage: "en",
     mainEntity: {
       "@type": "ItemList",
       itemListElement: params.items.map((item, index) => ({
@@ -230,6 +281,25 @@ export function generateCollectionPageJsonLd(params: {
   };
 }
 
+export function generateWebSiteJsonLd() {
+  return {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: SITE_CONFIG.name,
+    url: SITE_CONFIG.url,
+    description: SITE_CONFIG.description,
+    inLanguage: ["en", "es", "fr", "de", "pt", "it", "hi", "ar", "ja", "zh"],
+    potentialAction: {
+      "@type": "SearchAction",
+      target: {
+        "@type": "EntryPoint",
+        urlTemplate: `${SITE_CONFIG.url}/search?q={search_term_string}`,
+      },
+      "query-input": "required name=search_term_string",
+    },
+  };
+}
+
 export function generateOrganizationJsonLd() {
   return {
     "@context": "https://schema.org",
@@ -238,6 +308,11 @@ export function generateOrganizationJsonLd() {
     url: SITE_CONFIG.url,
     logo: `${SITE_CONFIG.url}/icon.png`,
     description: SITE_CONFIG.description,
+    areaServed: {
+      "@type": "Place",
+      name: "Worldwide",
+    },
+    knowsLanguage: ["en", "es", "fr", "de", "pt", "it", "hi", "ar", "ja", "zh"],
     sameAs: [
       "https://twitter.com/mytoolsbox",
       "https://github.com/mytoolsbox",

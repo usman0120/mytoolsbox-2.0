@@ -1,11 +1,28 @@
 // ---------------------------------------------------------------------------
-// AI Chat Store – Zustand state management with LocalStorage persistence
+// AI Chat Store – Zustand state management with LocalStorage & Firestore persistence
 // ---------------------------------------------------------------------------
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type { ChatConversation, ChatMessage } from "./types";
-import { createNewConversation } from "./chat-persistence";
+import {
+  createNewConversation,
+  fetchConversations,
+  saveConversation,
+  deleteConversation as deleteRemoteConversation,
+  deleteAllConversations as deleteRemoteAllConversations,
+} from "./chat-persistence";
+import { getFirebaseAuth } from "@/lib/firebase";
+
+function getCurrentUserId(): string | null {
+  try {
+    if (typeof window === "undefined") return null;
+    const auth = getFirebaseAuth();
+    return auth?.currentUser?.uid ?? null;
+  } catch {
+    return null;
+  }
+}
 
 interface ChatStore {
   // Conversations
@@ -34,6 +51,7 @@ interface ChatStore {
   archiveConversation: (id: string) => void;
   duplicateConversation: (id: string) => string;
   clearAllConversations: () => void;
+  syncWithFirestore: (userId: string) => Promise<void>;
 
   // Message Actions
   addMessage: (conversationId: string, message: ChatMessage) => void;
@@ -97,19 +115,36 @@ export const useChatStore = create<ChatStore>()(
           conversations: [newConv, ...state.conversations],
           activeConversationId: newConv.id,
         });
+
+        const uid = getCurrentUserId();
+        if (uid) {
+          saveConversation(uid, newConv).catch(() => {});
+        }
+
         return newConv.id;
       },
 
-      updateConversation: (id, updates) =>
-        set((state) => ({
-          conversations: state.conversations.map((c) =>
+      updateConversation: (id, updates) => {
+        set((state) => {
+          const next = state.conversations.map((c) =>
             c.id === id ? { ...c, ...updates, updatedAt: Date.now() } : c
-          ),
-        })),
+          );
+          const updatedConv = next.find((c) => c.id === id);
+          const uid = getCurrentUserId();
+          if (uid && updatedConv) {
+            saveConversation(uid, updatedConv).catch(() => {});
+          }
+          return { conversations: next };
+        });
+      },
 
-      deleteConversation: (id) =>
+      deleteConversation: (id) => {
         set((state) => {
           const filtered = state.conversations.filter((c) => c.id !== id);
+          const uid = getCurrentUserId();
+          if (uid) {
+            deleteRemoteConversation(uid, id).catch(() => {});
+          }
           return {
             conversations: filtered,
             activeConversationId:
@@ -117,28 +152,50 @@ export const useChatStore = create<ChatStore>()(
                 ? filtered[0]?.id ?? null
                 : state.activeConversationId,
           };
-        }),
+        });
+      },
 
-      renameConversation: (id, title) =>
-        set((state) => ({
-          conversations: state.conversations.map((c) =>
+      renameConversation: (id, title) => {
+        set((state) => {
+          const next = state.conversations.map((c) =>
             c.id === id ? { ...c, title: title.trim() || "Untitled Chat", updatedAt: Date.now() } : c
-          ),
-        })),
+          );
+          const updatedConv = next.find((c) => c.id === id);
+          const uid = getCurrentUserId();
+          if (uid && updatedConv) {
+            saveConversation(uid, updatedConv).catch(() => {});
+          }
+          return { conversations: next };
+        });
+      },
 
-      pinConversation: (id) =>
-        set((state) => ({
-          conversations: state.conversations.map((c) =>
+      pinConversation: (id) => {
+        set((state) => {
+          const next = state.conversations.map((c) =>
             c.id === id ? { ...c, isPinned: !c.isPinned } : c
-          ),
-        })),
+          );
+          const updatedConv = next.find((c) => c.id === id);
+          const uid = getCurrentUserId();
+          if (uid && updatedConv) {
+            saveConversation(uid, updatedConv).catch(() => {});
+          }
+          return { conversations: next };
+        });
+      },
 
-      archiveConversation: (id) =>
-        set((state) => ({
-          conversations: state.conversations.map((c) =>
+      archiveConversation: (id) => {
+        set((state) => {
+          const next = state.conversations.map((c) =>
             c.id === id ? { ...c, isArchived: !c.isArchived } : c
-          ),
-        })),
+          );
+          const updatedConv = next.find((c) => c.id === id);
+          const uid = getCurrentUserId();
+          if (uid && updatedConv) {
+            saveConversation(uid, updatedConv).catch(() => {});
+          }
+          return { conversations: next };
+        });
+      },
 
       duplicateConversation: (id) => {
         const state = get();
@@ -163,18 +220,70 @@ export const useChatStore = create<ChatStore>()(
           conversations: [copyConv, ...state.conversations],
           activeConversationId: copyConv.id,
         });
+
+        const uid = getCurrentUserId();
+        if (uid) {
+          saveConversation(uid, copyConv).catch(() => {});
+        }
+
         return copyConv.id;
       },
 
-      clearAllConversations: () =>
+      clearAllConversations: () => {
+        const uid = getCurrentUserId();
+        if (uid) {
+          deleteRemoteAllConversations(uid).catch(() => {});
+        }
         set({
           conversations: [],
           activeConversationId: null,
-        }),
+        });
+      },
 
-      addMessage: (conversationId, message) =>
-        set((state) => ({
-          conversations: state.conversations.map((c) => {
+      syncWithFirestore: async (userId: string) => {
+        if (!userId) return;
+        try {
+          const remoteConvs = await fetchConversations(userId);
+          const localConvs = get().conversations;
+
+          const remoteMap = new Map(remoteConvs.map((c) => [c.id, c]));
+
+          // If user has local conversations in localStorage that aren't on Firestore (e.g. created on localhost)
+          for (const local of localConvs) {
+            if (!remoteMap.has(local.id)) {
+              await saveConversation(userId, local).catch(() => {});
+            }
+          }
+
+          // Merge: remote takes precedence if newer, else local
+          const mergedMap = new Map<string, ChatConversation>();
+          for (const r of remoteConvs) {
+            mergedMap.set(r.id, r);
+          }
+          for (const l of localConvs) {
+            const existing = mergedMap.get(l.id);
+            if (!existing || (l.updatedAt && l.updatedAt > existing.updatedAt)) {
+              mergedMap.set(l.id, l);
+            }
+          }
+
+          const merged = Array.from(mergedMap.values()).sort(
+            (a, b) => b.updatedAt - a.updatedAt
+          );
+
+          set({ conversations: merged });
+          if (!get().activeConversationId && merged.length > 0) {
+            set({ activeConversationId: merged[0].id });
+          }
+        } catch (err) {
+          console.warn("Failed to sync conversations with Firestore:", err);
+        }
+      },
+
+      addMessage: (conversationId, message) => {
+        set((state) => {
+          let updatedConv: ChatConversation | undefined;
+          const next = state.conversations.map((c) => {
             if (c.id !== conversationId) return c;
             const updatedMessages = [...c.messages, message];
             const isFirstUserMsg =
@@ -187,43 +296,70 @@ export const useChatStore = create<ChatStore>()(
                   (message.content.length > 50 ? "..." : "")
                 : c.title;
 
-            return {
+            updatedConv = {
               ...c,
               messages: updatedMessages,
               title: newTitle,
               updatedAt: Date.now(),
             };
-          }),
-        })),
+            return updatedConv;
+          });
 
-      updateMessage: (conversationId, messageId, updates) =>
-        set((state) => ({
-          conversations: state.conversations.map((c) =>
-            c.id === conversationId
-              ? {
-                  ...c,
-                  messages: c.messages.map((m) =>
-                    m.id === messageId ? { ...m, ...updates } : m
-                  ),
-                  updatedAt: Date.now(),
-                }
-              : c
-          ),
-        })),
+          const uid = getCurrentUserId();
+          if (uid && updatedConv) {
+            saveConversation(uid, updatedConv).catch(() => {});
+          }
 
-      setMessageFeedback: (conversationId, messageId, feedback) =>
-        set((state) => ({
-          conversations: state.conversations.map((c) =>
-            c.id === conversationId
-              ? {
-                  ...c,
-                  messages: c.messages.map((m) =>
-                    m.id === messageId ? { ...m, feedback } : m
-                  ),
-                }
-              : c
-          ),
-        })),
+          return { conversations: next };
+        });
+      },
+
+      updateMessage: (conversationId, messageId, updates) => {
+        set((state) => {
+          let updatedConv: ChatConversation | undefined;
+          const next = state.conversations.map((c) => {
+            if (c.id !== conversationId) return c;
+            updatedConv = {
+              ...c,
+              messages: c.messages.map((m) =>
+                m.id === messageId ? { ...m, ...updates } : m
+              ),
+              updatedAt: Date.now(),
+            };
+            return updatedConv;
+          });
+
+          const uid = getCurrentUserId();
+          if (uid && updatedConv && !get().isStreaming) {
+            saveConversation(uid, updatedConv).catch(() => {});
+          }
+
+          return { conversations: next };
+        });
+      },
+
+      setMessageFeedback: (conversationId, messageId, feedback) => {
+        set((state) => {
+          let updatedConv: ChatConversation | undefined;
+          const next = state.conversations.map((c) => {
+            if (c.id !== conversationId) return c;
+            updatedConv = {
+              ...c,
+              messages: c.messages.map((m) =>
+                m.id === messageId ? { ...m, feedback } : m
+              ),
+            };
+            return updatedConv;
+          });
+
+          const uid = getCurrentUserId();
+          if (uid && updatedConv) {
+            saveConversation(uid, updatedConv).catch(() => {});
+          }
+
+          return { conversations: next };
+        });
+      },
 
       toggleSidebar: () =>
         set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),

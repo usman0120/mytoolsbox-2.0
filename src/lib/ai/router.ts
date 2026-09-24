@@ -11,6 +11,7 @@ import {
   createClaudeAdapter,
 } from "./adapters";
 import { tierToCreditOperation, getCreditCost, type CreditOperation } from "./credits";
+import { getFirebaseAuth } from "@/lib/firebase";
 
 const adapterFactories: Partial<Record<AIProvider, () => AIProviderAdapter>> = {
   openai: createOpenAIAdapter,
@@ -185,9 +186,19 @@ export interface ServerAIResponse extends AIResponse {
 export async function completeViaServer(
   request: AIRequest & { operation?: CreditOperation }
 ): Promise<ServerAIResponse> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+
+  try {
+    const auth = getFirebaseAuth();
+    const token = await auth?.currentUser?.getIdToken();
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+  } catch {}
+
   const response = await fetch("/api/ai", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify(request),
   });
 

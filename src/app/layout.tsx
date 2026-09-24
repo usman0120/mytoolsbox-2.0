@@ -9,6 +9,7 @@ import { Footer } from "@/components/navigation";
 import { AuthProvider } from "@/lib/auth";
 import { SITE_CONFIG } from "@/lib/constants";
 import { SkipLink } from "@/components/common/accessibility";
+import { I18nProvider } from "@/lib/i18n";
 import "./globals.css";
 
 const GA_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
@@ -69,6 +70,25 @@ export const metadata: Metadata = {
   robots: {
     index: true,
     follow: true,
+    "max-snippet": -1,
+    "max-image-preview": "large",
+    "max-video-preview": -1,
+  },
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: SITE_CONFIG.name,
+  },
+  other: {
+    "distribution": "global",
+    "rating": "general",
+    "revisit-after": "1 days",
+    "target": "all",
+    "geo.region": "US",
+    "geo.placename": "Worldwide",
+    "HandheldFriendly": "True",
+    "MobileOptimized": "320",
   },
 };
 
@@ -100,19 +120,21 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </>
         )}
         <SkipLink />
-        <ThemeProvider>
-          <AuthProvider>
-            <TooltipProvider>
-              <Suspense fallback={null}>
-                <Navbar />
-              </Suspense>
-              <main id="main-content" className="flex-1" role="main">
-                {children}
-              </main>
-              <Footer />
-            </TooltipProvider>
-          </AuthProvider>
-        </ThemeProvider>
+        <I18nProvider>
+          <ThemeProvider>
+            <AuthProvider>
+              <TooltipProvider>
+                <Suspense fallback={null}>
+                  <Navbar />
+                </Suspense>
+                <main id="main-content" className="flex-1" role="main">
+                  {children}
+                </main>
+                <Footer />
+              </TooltipProvider>
+            </AuthProvider>
+          </ThemeProvider>
+        </I18nProvider>
       </body>
     </html>
   );

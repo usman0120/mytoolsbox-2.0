@@ -11,6 +11,7 @@ import { SignInDialog } from "@/components/auth/signin-dialog";
 import { completeViaServer } from "@/lib/ai";
 import { AI_PERSONAS } from "./prompt-library-data";
 import { toast } from "sonner";
+import { subscribeConversations } from "./chat-persistence";
 import type { ChatMessage, ChatConversation } from "./types";
 import type { AIProvider } from "@/lib/ai";
 
@@ -52,6 +53,51 @@ export function AIChat({ onOpenPromptLibrary }: AIChatProps) {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Sync conversations with Firestore for authenticated users across domains & devices
+  useEffect(() => {
+    if (!user || user.isAnonymous) return;
+    const uid = user.uid;
+
+    // Initial bidirectional sync (uploads local un-synced chats, pulls remote chats)
+    useChatStore.getState().syncWithFirestore(uid);
+
+    // Real-time Firestore subscription
+    const unsubscribe = subscribeConversations(uid, (cloudConvs) => {
+      if (useChatStore.getState().isStreaming) return;
+      if (cloudConvs.length > 0) {
+        const current = useChatStore.getState().conversations;
+        const currentMap = new Map(current.map((c) => [c.id, c]));
+        let hasChanges = false;
+
+        const merged = cloudConvs.map((c) => {
+          const loc = currentMap.get(c.id);
+          if (!loc || (c.updatedAt && c.updatedAt > loc.updatedAt)) {
+            hasChanges = true;
+            return c;
+          }
+          return loc;
+        });
+
+        for (const loc of current) {
+          if (!cloudConvs.some((c) => c.id === loc.id)) {
+            merged.push(loc);
+          }
+        }
+
+        if (hasChanges || current.length === 0) {
+          useChatStore.getState().setConversations(
+            merged.sort((a, b) => b.updatedAt - a.updatedAt)
+          );
+          if (!useChatStore.getState().activeConversationId && merged.length > 0) {
+            useChatStore.getState().setActiveConversation(merged[0].id);
+          }
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, [user]);
 
   // Fetch initial credits & available providers on mount
   useEffect(() => {

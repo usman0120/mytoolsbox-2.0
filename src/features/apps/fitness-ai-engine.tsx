@@ -372,7 +372,7 @@ export function FitnessAIEngine() {
                   </CardHeader>
                   <CardContent className="pt-3 space-y-3">
                     {day.exercises.map((ex, idx) => (
-                      <div key={ex.id || idx} className="p-2.5 rounded-lg bg-card border border-border/40 text-xs space-y-1.5">
+                      <div key={`day-${day.dayNumber}-ex-${idx}-${ex.id || idx}`} className="p-2.5 rounded-lg bg-card border border-border/40 text-xs space-y-1.5">
                         <div className="flex items-center justify-between">
                           <span className="font-semibold text-foreground">{ex.name}</span>
                           <span className="font-mono text-cyan-600 dark:text-cyan-400 font-bold">

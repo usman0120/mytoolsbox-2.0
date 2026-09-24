@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { SITE_CONFIG } from "@/lib/constants";
 import { Heart, Globe, ExternalLink, Sparkles } from "lucide-react";
 import { useAuth } from "@/lib/auth/auth-context";
+import { LanguageSwitcher } from "@/components/common/language-switcher";
 
 export function Footer() {
   const pathname = usePathname();
@@ -71,9 +72,6 @@ export function Footer() {
               </Link>
               <Link href="/apps" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Apps
-              </Link>
-              <Link href="/workflows" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                Workflows
               </Link>
               <Link href="/hubs" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Hubs
@@ -154,9 +152,12 @@ export function Footer() {
 
         {/* Bottom bar */}
         <div className="mt-12 pt-6 border-t border-border/40 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
-          <p>
-            &copy; {new Date().getFullYear()} {SITE_CONFIG.name}. All rights reserved.
-          </p>
+          <div className="flex items-center gap-3">
+            <LanguageSwitcher variant="footer" />
+            <p>
+              &copy; {new Date().getFullYear()} {SITE_CONFIG.name}. All rights reserved.
+            </p>
+          </div>
           <p className="flex items-center gap-1">
             Built with <Heart className="h-3.5 w-3.5 text-rose-500 fill-rose-500 inline" /> for everyday creators & developers
           </p>

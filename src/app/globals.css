@@ -507,3 +507,28 @@
 .dark .hero-glow {
   opacity: 0.2;
 }
+
+/* ==========================================================================
+   RTL & Multi-Language Typography Support (Urdu, Arabic)
+   ========================================================================== */
+html[dir="rtl"],
+html.rtl {
+  direction: rtl;
+  text-align: right;
+}
+
+html[lang="ur"] body {
+  font-family: var(--font-geist-sans), "Noto Nastaliq Urdu", "Urdu Typesetting", "Jameel Noori Nastaleeq", Tahoma, sans-serif;
+  line-height: 1.8;
+}
+
+html[lang="ar"] body {
+  font-family: var(--font-geist-sans), "Noto Sans Arabic", "Segoe UI", Tahoma, sans-serif;
+  line-height: 1.6;
+}
+
+html[dir="rtl"] .ltr-only {
+  direction: ltr;
+  text-align: left;
+}
+
