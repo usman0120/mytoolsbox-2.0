@@ -53,10 +53,26 @@ describe("i18n Multi-Language System", () => {
       expect(dict.nav_apps).toBeTruthy();
       expect(dict.nav_ai).toBeTruthy();
       expect(dict.hero_title).toBeTruthy();
+      expect(dict.hero_tag).toBeTruthy();
       expect(dict.badge_client_side).toBeTruthy();
       expect(dict.how_to_use_title).toBeTruthy();
       expect(dict.privacy_title).toBeTruthy();
       expect(dict.faq_title).toBeTruthy();
+      expect(dict.audience_title).toBeTruthy();
+      expect(dict.ai_suite_title).toBeTruthy();
+      expect(dict.feature_privacy_title).toBeTruthy();
+      expect(dict.feature_privacy_desc).toBeTruthy();
+      expect(dict.use_cases_title).toBeTruthy();
+      expect(dict.spec_specs_title).toBeTruthy();
+      expect(dict.engine_loading).toBeTruthy();
+      expect(dict.account_title).toBeTruthy();
+      expect(dict.dash_welcome).toBeTruthy();
+      expect(dict.resources_title).toBeTruthy();
+      expect(dict.ai_subnav_title).toBeTruthy();
+      expect(dict.status_offline).toBeTruthy();
+      expect(dict.privacy_page_title).toBeTruthy();
+      expect(dict.terms_page_title).toBeTruthy();
+      expect(dict.not_found_title).toBeTruthy();
     }
   });
 

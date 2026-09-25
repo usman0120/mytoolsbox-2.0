@@ -133,7 +133,7 @@ export function ToolsPageClient() {
       {activeCategory && activeCategoryName && (
         <div className="flex items-center gap-2 mb-6 text-sm">
           <SlidersHorizontal className="h-3.5 w-3.5 text-muted-foreground" />
-          <span className="text-muted-foreground">Filtered by:</span>
+          <span className="text-muted-foreground">{t("tools_filtered_by", "Filtered by:")}</span>
           <Badge variant="secondary" className="gap-1.5 rounded-full px-3 py-1">
             {activeCategoryName}
             <button onClick={() => setActiveCategory("")} className="hover:text-foreground transition-colors">
@@ -141,7 +141,7 @@ export function ToolsPageClient() {
             </button>
           </Badge>
           <span className="text-muted-foreground ml-auto">
-            {filteredTools.length} result{filteredTools.length !== 1 ? "s" : ""}
+            {filteredTools.length} {t("tools_results_count", "results")}
           </span>
         </div>
       )}
@@ -162,7 +162,7 @@ export function ToolsPageClient() {
               setActiveCategory("");
             }}
           >
-            Clear all filters
+            {t("action_clear_all", "Clear all filters")}
           </Button>
         </div>
       ) : viewMode === "grid" ? (

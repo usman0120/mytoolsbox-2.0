@@ -22,15 +22,17 @@ import {
   Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useI18n } from "@/lib/i18n";
 
 export function UserMenu() {
   const { user, isAnonymous, logOut } = useAuth();
   const { remaining, total, daysRemaining, loading: creditsLoading } = useCredits();
   const router = useRouter();
+  const { t, localizePath } = useI18n();
 
   if (!user) return null;
 
-  const displayName = user.displayName ?? (isAnonymous ? "Guest" : "User");
+  const displayName = user.displayName ?? (isAnonymous ? t("auth_guest_title") : t("auth_profile"));
   const initials = user.displayName
     ? user.displayName
         .split(" ")
@@ -45,7 +47,7 @@ export function UserMenu() {
   const handleSignOut = async () => {
     try {
       await logOut();
-      toast.success("Signed out successfully");
+      toast.success(t("auth_signout"));
     } catch {
       toast.error("Failed to sign out");
     }
@@ -68,7 +70,7 @@ export function UserMenu() {
               {displayName}
             </p>
             <p className="text-xs leading-none text-muted-foreground truncate max-w-[220px]">
-              {user.email ?? (isAnonymous ? "Guest account" : "")}
+              {user.email ?? (isAnonymous ? t("auth_guest_title") : "")}
             </p>
           </div>
         </DropdownMenuLabel>
@@ -79,17 +81,17 @@ export function UserMenu() {
             <div>
               <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-600 dark:text-amber-400">
                 <Sparkles className="h-3.5 w-3.5" />
-                <span>Guest Account</span>
+                <span>{t("auth_guest_title")}</span>
               </div>
               <p className="mt-1 text-[11px] leading-snug text-muted-foreground">
-                Sign in to claim 1,000 free AI credits every month!
+                {t("auth_guest_desc")}
               </p>
               <button
                 type="button"
-                onClick={() => router.push("/account")}
+                onClick={() => router.push(localizePath("/account"))}
                 className="mt-2 inline-flex w-full items-center justify-center rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground shadow-sm transition hover:bg-primary/90"
               >
-                Sign In / Sign Up
+                {t("auth_signin")} / {t("auth_signup")}
               </button>
             </div>
           ) : (
@@ -97,7 +99,7 @@ export function UserMenu() {
               <div className="flex items-center justify-between text-xs mb-1.5">
                 <span className="flex items-center gap-1.5 font-medium text-foreground">
                   <Sparkles className="h-3.5 w-3.5 text-primary" />
-                  AI Credits
+                  {t("footer_ai_suite")}
                 </span>
                 <span className="font-semibold text-primary">
                   {creditsLoading ? "..." : `${remaining.toLocaleString()} / ${total.toLocaleString()}`}
@@ -110,13 +112,13 @@ export function UserMenu() {
                 />
               </div>
               <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground">
-                <span>Resets in {daysRemaining}d</span>
+                <span>{t("auth_resets_in").replace("{days}", String(daysRemaining))}</span>
                 <button
                   type="button"
-                  onClick={() => router.push("/pricing")}
+                  onClick={() => router.push(localizePath("/pricing"))}
                   className="font-medium text-primary hover:underline"
                 >
-                  Upgrade
+                  {t("auth_upgrade")}
                 </button>
               </div>
             </div>
@@ -126,27 +128,27 @@ export function UserMenu() {
         <DropdownMenuSeparator />
 
         {isAnonymous && (
-          <DropdownMenuItem onClick={() => router.push("/account")}>
+          <DropdownMenuItem onClick={() => router.push(localizePath("/account"))}>
             <ArrowUpCircle className="mr-2 h-4 w-4" />
-            Upgrade account
+            {t("auth_upgrade")}
           </DropdownMenuItem>
         )}
 
-        <DropdownMenuItem onClick={() => router.push("/settings")}>
+        <DropdownMenuItem onClick={() => router.push(localizePath("/settings"))}>
           <User className="mr-2 h-4 w-4" />
-          Profile
+          {t("auth_profile")}
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => router.push("/favorites")}>
+        <DropdownMenuItem onClick={() => router.push(localizePath("/favorites"))}>
           <Heart className="mr-2 h-4 w-4" />
-          Favorites
+          {t("auth_favorites")}
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => router.push("/history")}>
+        <DropdownMenuItem onClick={() => router.push(localizePath("/history"))}>
           <Clock className="mr-2 h-4 w-4" />
-          History
+          {t("auth_history")}
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => router.push("/settings")}>
+        <DropdownMenuItem onClick={() => router.push(localizePath("/settings"))}>
           <Settings className="mr-2 h-4 w-4" />
-          Settings
+          {t("auth_settings")}
         </DropdownMenuItem>
 
         <DropdownMenuSeparator />
@@ -156,7 +158,7 @@ export function UserMenu() {
           className="text-destructive focus:text-destructive"
         >
           <LogOut className="mr-2 h-4 w-4" />
-          Sign out
+          {t("auth_signout")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

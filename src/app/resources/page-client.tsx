@@ -28,8 +28,10 @@ import {
   type ResourceFaq,
 } from "@/features/resources/resources-data";
 import { createDocxBlob } from "@/lib/documents/openxml-builder";
+import { useI18n } from "@/lib/i18n";
 
 export function ResourcesPageClient() {
+  const { t, localizePath } = useI18n();
   const [activeTab, setActiveTab] = useState("guides");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
@@ -121,10 +123,10 @@ export function ResourcesPageClient() {
             </div>
             <div>
               <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-                Resources & Knowledge Hub
+                {t("resources_title", "Resources & Knowledge Hub")}
               </h1>
               <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-                In-depth guides, downloadable production templates, developer cheat sheets, and FAQs
+                {t("resources_subtitle", "In-depth guides, downloadable production templates, developer cheat sheets, and FAQs")}
               </p>
             </div>
           </div>
@@ -135,7 +137,7 @@ export function ResourcesPageClient() {
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search guides, templates, syntax..."
+              placeholder={t("resources_search_placeholder", "Search guides, templates, syntax...")}
               className="h-9 text-xs pl-8 pr-8"
             />
             {searchQuery && (
@@ -155,20 +157,30 @@ export function ResourcesPageClient() {
         <TabsList className="mb-6 rounded-xl p-1 bg-muted/60 w-full justify-start overflow-x-auto">
           <TabsTrigger value="guides" className="rounded-lg text-xs gap-1.5 data-[state=active]:shadow-xs">
             <BookOpen className="h-3.5 w-3.5" />
-            Guides & Tutorials ({filteredGuides.length})
+            {t("resources_tab_guides", "Guides & Tutorials")} ({filteredGuides.length})
           </TabsTrigger>
           <TabsTrigger value="templates" className="rounded-lg text-xs gap-1.5 data-[state=active]:shadow-xs">
             <Download className="h-3.5 w-3.5" />
-            Templates ({filteredTemplates.length})
+            {t("resources_tab_templates", "Templates")} ({filteredTemplates.length})
           </TabsTrigger>
           <TabsTrigger value="cheatsheets" className="rounded-lg text-xs gap-1.5 data-[state=active]:shadow-xs">
             <Code2 className="h-3.5 w-3.5" />
-            Cheat Sheets ({CHEAT_SHEETS.length})
+            {t("resources_tab_cheatsheets", "Cheat Sheets")} ({CHEAT_SHEETS.length})
           </TabsTrigger>
           <TabsTrigger value="faqs" className="rounded-lg text-xs gap-1.5 data-[state=active]:shadow-xs">
             <HelpCircle className="h-3.5 w-3.5" />
-            FAQs ({RESOURCE_FAQS.length})
+            {t("resources_tab_faqs", "FAQs")} ({RESOURCE_FAQS.length})
           </TabsTrigger>
+          <div className="ml-auto flex items-center pr-1">
+            <Link
+              href={localizePath("/blog")}
+              className="h-7 inline-flex items-center text-xs gap-1.5 px-2.5 rounded-lg text-primary hover:text-primary hover:bg-primary/10 font-medium transition-colors"
+            >
+              <Sparkles className="h-3 w-3" />
+              <span>Visit Blog & Guides</span>
+              <ArrowRight className="h-3 w-3" />
+            </Link>
+          </div>
         </TabsList>
 
         {/* ------------------------------------------------------------- */}
@@ -178,12 +190,12 @@ export function ResourcesPageClient() {
           {/* Category Chips */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
             {[
-              { id: "all", label: "All Categories" },
+              { id: "all", label: t("resources_cat_all", "All Categories") },
               { id: "getting-started", label: "Getting Started" },
               { id: "multimedia", label: "Multimedia" },
-              { id: "developer", label: "Developer" },
+              { id: "developer", label: t("cat_developer", "Developer") },
               { id: "productivity", label: "Productivity" },
-              { id: "security", label: "Security" },
+              { id: "security", label: t("cat_security", "Security") },
             ].map((cat) => (
               <Button
                 key={cat.id}
@@ -233,13 +245,13 @@ export function ResourcesPageClient() {
                       className="h-7 text-xs gap-1"
                       onClick={() => setPreviewGuide(guide)}
                     >
-                      <Eye className="h-3.5 w-3.5" /> Quick Preview
+                      <Eye className="h-3.5 w-3.5" /> {t("resources_quick_preview", "Quick Preview")}
                     </Button>
                     <Link
-                      href={`/resources/${guide.slug}`}
+                      href={localizePath(`/resources/${guide.slug}`)}
                       className="inline-flex items-center font-medium text-primary hover:underline text-xs gap-1"
                     >
-                      Read Full Guide <ArrowRight className="h-3.5 w-3.5" />
+                      {t("resources_read_full", "Read Full Guide")} <ArrowRight className="h-3.5 w-3.5" />
                     </Link>
                   </div>
                 </CardContent>
@@ -309,7 +321,7 @@ export function ResourcesPageClient() {
                         className="h-7 text-xs gap-1"
                         onClick={() => setPreviewTemplate(template)}
                       >
-                        <Eye className="h-3 w-3" /> Preview
+                        <Eye className="h-3 w-3" /> {t("resources_preview", "Preview")}
                       </Button>
                       <Button
                         variant="ghost"
@@ -318,13 +330,13 @@ export function ResourcesPageClient() {
                         onClick={() => handleCopyText(template.content, template.id)}
                       >
                         {copiedKey === template.id ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3" />}
-                        Copy
+                        {t("resources_copy", "Copy")}
                       </Button>
                     </div>
 
                     <div className="flex items-center gap-1.5">
                       {template.toolIntegration && (
-                        <Link href={`/tools/${template.toolIntegration.toolSlug}`}>
+                        <Link href={localizePath(`/tools/${template.toolIntegration.toolSlug}`)}>
                           <Button variant="ghost" size="sm" className="h-7 text-[11px] text-primary gap-1">
                             <ExternalLink className="h-3 w-3" /> {template.toolIntegration.toolName}
                           </Button>
@@ -335,7 +347,7 @@ export function ResourcesPageClient() {
                         className="h-7 text-xs gap-1 font-semibold"
                         onClick={() => handleDownloadTemplate(template)}
                       >
-                        <Download className="h-3 w-3" /> Download .{template.format.toLowerCase()}
+                        <Download className="h-3 w-3" /> {t("resources_download", "Download")} .{template.format.toLowerCase()}
                       </Button>
                     </div>
                   </div>
@@ -448,7 +460,7 @@ export function ResourcesPageClient() {
                             <div className="mt-3 pt-2 border-t flex items-center gap-2">
                               <span className="text-[10px]">Related tool:</span>
                               <Link
-                                href={`/tools/${faq.relatedToolSlug}`}
+                                href={localizePath(`/tools/${faq.relatedToolSlug}`)}
                                 className="text-[11px] font-semibold text-primary hover:underline flex items-center gap-1"
                               >
                                 Launch {faq.relatedToolSlug} <ArrowRight className="h-2.5 w-2.5" />
@@ -572,11 +584,11 @@ export function ResourcesPageClient() {
                 className="text-xs"
                 onClick={() => setPreviewGuide(null)}
               >
-                Close
+                {t("action_clear_all", "Close")}
               </Button>
-              <Link href={`/resources/${previewGuide.slug}`}>
+              <Link href={localizePath(`/resources/${previewGuide.slug}`)}>
                 <Button size="sm" className="text-xs gap-1">
-                  Open Dedicated Page <ArrowRight className="h-3.5 w-3.5" />
+                  {t("resources_read_full", "Read Full Guide")} <ArrowRight className="h-3.5 w-3.5" />
                 </Button>
               </Link>
             </div>

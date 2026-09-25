@@ -20,7 +20,6 @@ import {
   Star,
   Download,
   ArrowRightLeft,
-  Coins,
 } from "lucide-react";
 import { paraphrase, type ParaphraseVariant } from "@/lib/ai/services/paraphrase-tool";
 import { useCredits } from "@/lib/credits/use-credits";
@@ -163,7 +162,7 @@ export function ParaphraseToolEngine() {
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const [mode, setMode] = useState<Mode>("standard");
   const [error, setError] = useState<string | null>(null);
-  const { remaining, refresh } = useCredits();
+  const { refresh } = useCredits();
 
   const handleParaphrase = useCallback(async () => {
     if (!input.trim()) return;
@@ -174,7 +173,7 @@ export function ParaphraseToolEngine() {
       const result = await paraphrase({ text: input.trim(), mode });
       setVariants(result.variants);
       setBestPick(result.bestPick);
-      toast.success("Paraphrase generated! (15 credits deducted)");
+      toast.success("Paraphrase generated!");
       await refresh();
     } catch {
       const fallbackVariants = generateOfflineParaphrases(input.trim(), mode);
@@ -242,9 +241,6 @@ export function ParaphraseToolEngine() {
           ))}
         </div>
         <div className="flex items-center gap-1.5">
-          <Badge variant="outline" className="text-xs gap-1 text-muted-foreground">
-            <Coins className="h-3 w-3 text-amber-500" /> 15 credits {remaining !== undefined && remaining > 0 ? `(${remaining} left)` : ""}
-          </Badge>
           <Badge className="bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20 gap-1 text-xs">
             <Sparkles className="h-3 w-3" /> AI Powered
           </Badge>

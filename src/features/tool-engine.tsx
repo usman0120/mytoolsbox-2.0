@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { ToolDefinition } from "@/types";
+import { useI18n } from "@/lib/i18n";
 
 // Dynamic imports for all tool engines
 const engineMap: Record<string, React.ComponentType<Record<string, unknown>>> = {
@@ -467,10 +468,11 @@ const engineMap: Record<string, React.ComponentType<Record<string, unknown>>> = 
 };
 
 function EngineLoading() {
+  const { t } = useI18n();
   return (
     <div className="text-center py-8">
       <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-3" />
-      <p className="text-sm text-muted-foreground">Loading tool...</p>
+      <p className="text-sm text-muted-foreground">{t("engine_loading", "Loading tool workspace...")}</p>
     </div>
   );
 }
@@ -480,14 +482,15 @@ interface ToolEngineProps {
 }
 
 export function ToolEngine({ tool }: ToolEngineProps) {
+  const { t } = useI18n();
   const Engine = engineMap[tool.slug];
 
   if (!Engine) {
     return (
       <div className="border-2 border-dashed rounded-xl p-8 text-center">
-        <p className="font-medium mb-1">Coming Soon</p>
+        <p className="font-medium mb-1">{t("engine_coming_soon", "Coming Soon")}</p>
         <p className="text-sm text-muted-foreground">
-          The {tool.name} engine is under development. Check back soon!
+          {t("engine_under_dev", `The ${tool.name} engine is under development. Check back soon!`)}
         </p>
       </div>
     );

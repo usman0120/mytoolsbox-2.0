@@ -126,9 +126,18 @@ export function calculate30DayPeriod(fromMs: number = Date.now()): { start: stri
 }
 
 export function isPeriodExpired(state: UserCreditState, nowMs: number = Date.now()): boolean {
-  if (!state.periodEnd) return true;
-  const endMs = new Date(state.periodEnd).getTime();
-  return isNaN(endMs) || nowMs >= endMs;
+  if (!state || !state.periodEnd) return false;
+  let endMs: number;
+  if (typeof state.periodEnd === "string") {
+    endMs = new Date(state.periodEnd).getTime();
+  } else if (typeof (state.periodEnd as any)?.toMillis === "function") {
+    endMs = (state.periodEnd as any).toMillis();
+  } else if (typeof (state.periodEnd as any)?.seconds === "number") {
+    endMs = (state.periodEnd as any).seconds * 1000;
+  } else {
+    endMs = new Date(state.periodEnd).getTime();
+  }
+  return !isNaN(endMs) && endMs > 0 && nowMs >= endMs;
 }
 
 function getCreditDocPath(userId: string): string {
@@ -156,6 +165,13 @@ export async function getUserCredits(userId: string): Promise<UserCreditState> {
       if (snapshot.exists()) {
         const data = snapshot.data() as UserCreditState;
 
+        // If period dates are missing, fix them without resetting usedCredits
+        if (!data.periodEnd || isNaN(new Date(data.periodEnd).getTime())) {
+          const { start, end } = calculate30DayPeriod();
+          data.periodStart = data.periodStart || start;
+          data.periodEnd = end;
+        }
+
         // Check if 30-day period has expired
         if (isPeriodExpired(data)) {
           const tier = data.tier || "free_account";
@@ -181,6 +197,12 @@ export async function getUserCredits(userId: string): Promise<UserCreditState> {
           memoryCreditStore.set(userId, resetState);
           saveToDiskLedger(userId, resetState);
           return resetState;
+        }
+
+        // Protect against regression: if memory/disk ledger has higher recorded usage, keep it
+        const existing = memoryCreditStore.get(userId);
+        if (existing && typeof existing.usedCredits === "number" && existing.usedCredits > (data.usedCredits ?? 0)) {
+          data.usedCredits = existing.usedCredits;
         }
 
         memoryCreditStore.set(userId, data);

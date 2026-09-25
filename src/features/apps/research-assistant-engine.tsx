@@ -12,7 +12,7 @@ import {
   Microscope, Plus, Trash2, Copy, Download, BookOpen, Tag,
   Link2, FileText, Quote, Search, Bookmark, Star, Library,
   GraduationCap, Globe, Calendar, CheckCircle2, Circle, ExternalLink, X,
-  Loader2, Sparkles, Coins
+  Loader2, Sparkles
 } from "lucide-react";
 import { generateCitation, type CitationStyle as AICitationStyle } from "@/lib/ai/services/citation-generator";
 import { useCredits } from "@/lib/credits/use-credits";
@@ -234,7 +234,7 @@ export function ResearchAssistantEngine() {
   // AI citation generation
   const [aiGenerating, setAiGenerating] = useState(false);
   const [aiGeneratedCitations, setAiGeneratedCitations] = useState<string | null>(null);
-  const { remaining, refresh } = useCredits();
+  const { refresh } = useCredits();
 
   const generateAICitations = async () => {
     const citedSources = sources.filter((s) => s.cited);
@@ -259,7 +259,7 @@ export function ResearchAssistantEngine() {
         })
       );
       setAiGeneratedCitations(results.map((r: any) => r.citation).join("\n\n"));
-      toast.success("AI citations formatted! (5 credits/source)");
+      toast.success("AI citations formatted!");
       await refresh();
     } catch {
       // Fall back to local formatter on error
@@ -604,7 +604,7 @@ export function ResearchAssistantEngine() {
                       {aiGenerating ? (
                         <><Loader2 className="h-4 w-4 animate-spin" /> Generating...</>
                       ) : (
-                        <><Sparkles className="h-4 w-4" /> AI Generate <span className="text-[11px] opacity-80 flex items-center gap-0.5"><Coins className="h-3 w-3 text-amber-500" /> 5 credits/source {remaining !== undefined && remaining > 0 ? `(${remaining} left)` : ""}</span></>
+                        <><Sparkles className="h-4 w-4" /> AI Generate Citations</>
                       )}
                     </Button>
                     {aiGeneratedCitations && (

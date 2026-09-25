@@ -1,12 +1,11 @@
-import type { Metadata } from "next";
-import { ResourcesPageClient } from "./page-client";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = {
-  title: "Resources - Guides, Templates & FAQs",
-  description:
-    "Free guides, templates, and frequently asked questions about our tools and services.",
+export const metadata = {
+  title: "Redirecting...",
+  description: "Resources have moved to Blog.",
 };
 
 export default function ResourcesPage() {
-  return <ResourcesPageClient />;
+  redirect("/blog");
+  return null;
 }

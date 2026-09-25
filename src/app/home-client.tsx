@@ -61,40 +61,40 @@ export function HomeClient({ popularTools, featuredApps }: HomeClientProps) {
   ];
 
   const audienceCards = [
-    { id: "students", name: "Students", icon: GraduationCap, color: "from-violet-500 to-purple-600", bgLight: "bg-violet-500/10", textColor: "text-violet-600 dark:text-violet-400", desc: "Study tools, math solvers, citation generators" },
-    { id: "developers", name: "Developers", icon: Code2, color: "from-blue-500 to-cyan-600", bgLight: "bg-blue-500/10", textColor: "text-blue-600 dark:text-blue-400", desc: "Code formatters, API testers, dev utilities" },
-    { id: "business", name: "Business", icon: Briefcase, color: "from-amber-500 to-orange-600", bgLight: "bg-amber-500/10", textColor: "text-amber-600 dark:text-amber-400", desc: "PDF tools, invoices, calculators" },
-    { id: "designers", name: "Designers", icon: Palette, color: "from-pink-500 to-rose-600", bgLight: "bg-pink-500/10", textColor: "text-pink-600 dark:text-pink-400", desc: "Color tools, image editors, SVG tools" },
-    { id: "writers", name: "Writers", icon: PenTool, color: "from-emerald-500 to-teal-600", bgLight: "bg-emerald-500/10", textColor: "text-emerald-600 dark:text-emerald-400", desc: "Word counters, grammar, text tools" },
-    { id: "researchers", name: "Researchers", icon: Microscope, color: "from-indigo-500 to-blue-600", bgLight: "bg-indigo-500/10", textColor: "text-indigo-600 dark:text-indigo-400", desc: "Data analysis, references, calculators" },
+    { id: "students", nameKey: "aud_students" as const, descKey: "aud_students_desc" as const, icon: GraduationCap, color: "from-violet-500 to-purple-600", bgLight: "bg-violet-500/10", textColor: "text-violet-600 dark:text-violet-400" },
+    { id: "developers", nameKey: "aud_developers" as const, descKey: "aud_developers_desc" as const, icon: Code2, color: "from-blue-500 to-cyan-600", bgLight: "bg-blue-500/10", textColor: "text-blue-600 dark:text-blue-400" },
+    { id: "business", nameKey: "aud_business" as const, descKey: "aud_business_desc" as const, icon: Briefcase, color: "from-amber-500 to-orange-600", bgLight: "bg-amber-500/10", textColor: "text-amber-600 dark:text-amber-400" },
+    { id: "designers", nameKey: "aud_designers" as const, descKey: "aud_designers_desc" as const, icon: Palette, color: "from-pink-500 to-rose-600", bgLight: "bg-pink-500/10", textColor: "text-pink-600 dark:text-pink-400" },
+    { id: "writers", nameKey: "aud_writers" as const, descKey: "aud_writers_desc" as const, icon: PenTool, color: "from-emerald-500 to-teal-600", bgLight: "bg-emerald-500/10", textColor: "text-emerald-600 dark:text-emerald-400" },
+    { id: "researchers", nameKey: "aud_researchers" as const, descKey: "aud_researchers_desc" as const, icon: Microscope, color: "from-indigo-500 to-blue-600", bgLight: "bg-indigo-500/10", textColor: "text-indigo-600 dark:text-indigo-400" },
   ];
 
   const features = [
     {
       icon: Shield,
-      title: t("badge_private", "Privacy First"),
-      description: "Everything runs in your browser. Files never leave your device.",
+      title: t("feature_privacy_title", "Privacy First"),
+      description: t("feature_privacy_desc", "Everything runs in your browser. Files never leave your device."),
       gradient: "from-blue-500/10 to-cyan-500/10",
       iconColor: "text-blue-600 dark:text-blue-400",
     },
     {
       icon: Zap,
-      title: t("badge_instant", "Lightning Fast"),
-      description: "No uploads, no waiting. Instant results with client-side processing.",
+      title: t("feature_fast_title", "Lightning Fast"),
+      description: t("feature_fast_desc", "No uploads, no waiting. Instant results with client-side processing."),
       gradient: "from-amber-500/10 to-orange-500/10",
       iconColor: "text-amber-600 dark:text-amber-400",
     },
     {
       icon: Globe,
-      title: t("badge_client_side", "Works Offline"),
-      description: "Most tools work without internet. Use them anywhere, anytime.",
+      title: t("feature_offline_title", "Works Offline"),
+      description: t("feature_offline_desc", "Most tools work without internet. Use them anywhere, anytime."),
       gradient: "from-emerald-500/10 to-teal-500/10",
       iconColor: "text-emerald-600 dark:text-emerald-400",
     },
     {
       icon: Sparkles,
-      title: t("badge_free", "Always Free"),
-      description: "Core tools free forever. No hidden fees, no premium tricks.",
+      title: t("feature_free_title", "Always Free"),
+      description: t("feature_free_desc", "Core tools free forever. No hidden fees, no premium tricks."),
       gradient: "from-violet-500/10 to-purple-500/10",
       iconColor: "text-violet-600 dark:text-violet-400",
     },
@@ -183,11 +183,11 @@ export function HomeClient({ popularTools, featuredApps }: HomeClientProps) {
         <div className="text-center mb-12">
           <div className="flex items-center justify-center gap-2 mb-2">
             <Users className="h-5 w-5 text-primary" />
-            <span className="text-sm font-medium text-primary uppercase tracking-wider">Who are you?</span>
+            <span className="text-sm font-medium text-primary uppercase tracking-wider">{t("audience_tag")}</span>
           </div>
-          <h2 className="text-2xl md:text-3xl font-bold mb-3">What are you working on?</h2>
+          <h2 className="text-2xl md:text-3xl font-bold mb-3">{t("audience_title")}</h2>
           <p className="text-muted-foreground max-w-lg mx-auto">
-            We&apos;ve curated the right tools for your profession. Pick your path.
+            {t("audience_subtitle")}
           </p>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
@@ -201,8 +201,8 @@ export function HomeClient({ popularTools, featuredApps }: HomeClientProps) {
                   <div className={`flex h-14 w-14 items-center justify-center rounded-2xl ${aud.bgLight} mx-auto mb-4 group-hover:scale-110 transition-transform duration-300`}>
                     <aud.icon className={`h-7 w-7 ${aud.textColor}`} />
                   </div>
-                  <h3 className="font-semibold text-sm mb-1">{aud.name}</h3>
-                  <p className="text-xs text-muted-foreground leading-relaxed">{aud.desc}</p>
+                  <h3 className="font-semibold text-sm mb-1">{t(aud.nameKey)}</h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{t(aud.descKey)}</p>
                 </CardContent>
               </Card>
             </Link>
@@ -222,19 +222,19 @@ export function HomeClient({ popularTools, featuredApps }: HomeClientProps) {
                 </Badge>
                 <Badge variant="secondary" className="text-xs px-2.5 py-0.5 rounded-full gap-1 font-mono">
                   <Coins className="h-3 w-3 text-amber-500" />
-                  1,000 Free Credits/Mo
+                  {t("ai_credits_badge")}
                 </Badge>
               </div>
               <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">
-                {t("ai_page_title")}
+                {t("ai_suite_title")}
               </h2>
               <p className="text-sm md:text-base text-muted-foreground mt-2 max-w-2xl leading-relaxed">
-                {t("ai_page_subtitle")}
+                {t("ai_suite_desc")}
               </p>
             </div>
             <Link href={localizePath("/ai")} className="shrink-0">
               <Button size="lg" className="rounded-2xl gap-2 font-medium shadow-md">
-                <span>{t("nav_ai")}</span>
+                <span>{t("ai_workspace_btn")}</span>
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
@@ -257,11 +257,11 @@ export function HomeClient({ popularTools, featuredApps }: HomeClientProps) {
                     {t("ai_new_chat")}
                   </h3>
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    Conversational workspace with real-time routing, speech-to-text dictation, and syntax-highlighted code export.
+                    {t("ai_chat_desc")}
                   </p>
                 </div>
                 <div className="mt-5 flex items-center text-xs font-semibold text-primary gap-1 group-hover:translate-x-0.5 transition-transform">
-                  <span>Start Chatting</span>
+                  <span>{t("action_start_chat")}</span>
                   <ChevronRight className="h-3.5 w-3.5" />
                 </div>
               </Card>
@@ -283,11 +283,11 @@ export function HomeClient({ popularTools, featuredApps }: HomeClientProps) {
                     {t("ai_prompt_library")}
                   </h3>
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    Battle-tested prompts across Software Engineering, Copywriting, Mathematics, Academic Research, and Product Strategy.
+                    {t("ai_prompts_desc")}
                   </p>
                 </div>
                 <div className="mt-5 flex items-center text-xs font-semibold text-primary gap-1 group-hover:translate-x-0.5 transition-transform">
-                  <span>Browse Prompts</span>
+                  <span>{t("action_browse_prompts")}</span>
                   <ChevronRight className="h-3.5 w-3.5" />
                 </div>
               </Card>
@@ -309,11 +309,11 @@ export function HomeClient({ popularTools, featuredApps }: HomeClientProps) {
                     {t("ai_compare_models")}
                   </h3>
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    Run head-to-head comparisons of Gemini 2.0 Flash against Groq Llama 3.3 70B with real-time millisecond latency metrics.
+                    {t("ai_compare_desc")}
                   </p>
                 </div>
                 <div className="mt-5 flex items-center text-xs font-semibold text-primary gap-1 group-hover:translate-x-0.5 transition-transform">
-                  <span>Compare Models</span>
+                  <span>{t("action_compare_models")}</span>
                   <ChevronRight className="h-3.5 w-3.5" />
                 </div>
               </Card>
@@ -335,11 +335,11 @@ export function HomeClient({ popularTools, featuredApps }: HomeClientProps) {
                     {t("ai_personas")}
                   </h3>
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    Tuned system roles for Staff Software Engineers, Mathematics Professors, Master Copywriters, and Executive Product Managers.
+                    {t("ai_personas_desc")}
                   </p>
                 </div>
                 <div className="mt-5 flex items-center text-xs font-semibold text-primary gap-1 group-hover:translate-x-0.5 transition-transform">
-                  <span>View Personas</span>
+                  <span>{t("action_view_personas")}</span>
                   <ChevronRight className="h-3.5 w-3.5" />
                 </div>
               </Card>
@@ -355,10 +355,10 @@ export function HomeClient({ popularTools, featuredApps }: HomeClientProps) {
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <TrendingUp className="h-5 w-5 text-primary" />
-                <span className="text-sm font-medium text-primary uppercase tracking-wider">Most Used</span>
+                <span className="text-sm font-medium text-primary uppercase tracking-wider">{t("popular_tag")}</span>
               </div>
-              <h2 className="text-2xl md:text-3xl font-bold">Popular Tools</h2>
-              <p className="text-muted-foreground mt-1.5">The tools our community loves most</p>
+              <h2 className="text-2xl md:text-3xl font-bold">{t("popular_title")}</h2>
+              <p className="text-muted-foreground mt-1.5">{t("popular_desc")}</p>
             </div>
             <Link href={localizePath("/tools")}>
               <Button variant="ghost" className="gap-1.5 group">
@@ -383,14 +383,14 @@ export function HomeClient({ popularTools, featuredApps }: HomeClientProps) {
           <div>
             <div className="flex items-center gap-2 mb-2">
               <Layout className="h-5 w-5 text-cyan-500" />
-              <span className="text-sm font-medium text-cyan-600 dark:text-cyan-400 uppercase tracking-wider">Multi-step</span>
+              <span className="text-sm font-medium text-cyan-600 dark:text-cyan-400 uppercase tracking-wider">{t("apps_tag")}</span>
             </div>
             <h2 className="text-2xl md:text-3xl font-bold">{t("apps_page_title", "Explore Apps")}</h2>
-            <p className="text-muted-foreground mt-1.5">{t("apps_page_subtitle", "Full-featured mini applications for bigger tasks")}</p>
+            <p className="text-muted-foreground mt-1.5">{t("apps_desc")}</p>
           </div>
           <Link href={localizePath("/apps")}>
             <Button variant="ghost" className="gap-1.5 group">
-              View all apps
+              {t("action_view_all")}
               <ChevronRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
             </Button>
           </Link>
@@ -413,7 +413,7 @@ export function HomeClient({ popularTools, featuredApps }: HomeClientProps) {
                         <div className="flex items-center gap-2 mb-1">
                           <h3 className="font-semibold text-sm group-hover:text-primary transition-colors">{app.name}</h3>
                           {app.status === "beta" && (
-                            <Badge className="text-[10px] h-4 px-1.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 rounded-full">Beta</Badge>
+                            <Badge className="text-[10px] h-4 px-1.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 rounded-full">{t("badge_beta", "Beta")}</Badge>
                           )}
                         </div>
                         <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">{app.shortDescription}</p>
@@ -438,11 +438,11 @@ export function HomeClient({ popularTools, featuredApps }: HomeClientProps) {
           <div className="text-center mb-12">
             <div className="flex items-center justify-center gap-2 mb-2">
               <Star className="h-5 w-5 text-primary" />
-              <span className="text-sm font-medium text-primary uppercase tracking-wider">Explore</span>
+              <span className="text-sm font-medium text-primary uppercase tracking-wider">{t("categories_tag")}</span>
             </div>
             <h2 className="text-2xl md:text-3xl font-bold mb-3">{t("categories_title", "Browse by Category")}</h2>
             <p className="text-muted-foreground max-w-md mx-auto">
-              Find the right tool for your task across {CATEGORIES.length} categories
+              {t("categories_subtext")}
             </p>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
@@ -480,7 +480,7 @@ export function HomeClient({ popularTools, featuredApps }: HomeClientProps) {
           <div className="max-w-lg mx-auto animate-fade-in-up">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium mb-6">
               <Sparkles className="h-3.5 w-3.5" />
-              {t("badge_free", "No sign-up required")}
+              {t("badge_no_signup")}
             </div>
             <h2 className="text-2xl md:text-3xl font-bold mb-4">{t("cta_title", "Ready to get things done?")}</h2>
             <p className="text-muted-foreground mb-8 leading-relaxed">

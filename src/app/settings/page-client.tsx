@@ -50,10 +50,12 @@ import {
 import { toast } from "sonner";
 import { SignInDialog } from "@/components/auth/signin-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useI18n } from "@/lib/i18n";
 
 export function SettingsPageClient() {
   const { user, loading: authLoading, logOut } = useAuth();
   const router = useRouter();
+  const { t, localizePath } = useI18n();
 
   const [profile, setProfile] = useState<UserProfile>(DEFAULT_PROFILE);
   const [saving, setSaving] = useState(false);
@@ -194,13 +196,13 @@ export function SettingsPageClient() {
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary mx-auto mb-4">
             <User className="h-7 w-7" />
           </div>
-          <h2 className="text-2xl font-bold mb-2">Sign in to access Settings</h2>
+          <h2 className="text-2xl font-bold mb-2">{t("auth_login_required")}</h2>
           <p className="text-sm text-muted-foreground max-w-md mx-auto mb-6">
-            Sign in to customize your profile, manage account security, or review account lifecycle settings.
+            {t("auth_login_desc")}
           </p>
           <Button onClick={() => setShowSignIn(true)} className="rounded-xl px-6">
             <LogIn className="mr-2 h-4 w-4" />
-            Sign In
+            {t("auth_signin")}
           </Button>
         </Card>
         <SignInDialog open={showSignIn} onOpenChange={setShowSignIn} />
@@ -275,9 +277,9 @@ export function SettingsPageClient() {
 
       {/* Page Header */}
       <div>
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Settings & Profile</h1>
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{t("settings_title")}</h1>
         <p className="text-sm text-muted-foreground mt-0.5">
-          Manage your personal profile details, account security, and account status.
+          {t("settings_subtitle")}
         </p>
       </div>
 
@@ -286,11 +288,11 @@ export function SettingsPageClient() {
         <TabsList className="rounded-2xl p-1 bg-muted/40 border border-border/50">
           <TabsTrigger value="profile" className="rounded-xl gap-2 text-xs font-medium py-1.5 px-4">
             <User className="h-3.5 w-3.5" />
-            Profile
+            {t("settings_tab_profile")}
           </TabsTrigger>
           <TabsTrigger value="account" className="rounded-xl gap-2 text-xs font-medium py-1.5 px-4">
             <Shield className="h-3.5 w-3.5" />
-            Account & Security
+            {t("settings_tab_account")}
           </TabsTrigger>
         </TabsList>
 
@@ -395,7 +397,7 @@ export function SettingsPageClient() {
                   ) : (
                     <Save className="h-3.5 w-3.5" />
                   )}
-                  Save Profile
+                  {t("settings_save")}
                 </Button>
               </div>
             </CardContent>

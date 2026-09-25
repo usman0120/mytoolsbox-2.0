@@ -12,10 +12,12 @@ import { Clock, Trash2, Loader2, ExternalLink, History, LogIn } from "lucide-rea
 import { toast } from "sonner";
 import { CATEGORIES } from "@/lib/constants";
 import { SignInDialog } from "@/components/auth/signin-dialog";
+import { useI18n } from "@/lib/i18n";
 
 export function HistoryPageClient() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
+  const { t, localizePath, getToolName, getCategoryName: getCatNameI18n } = useI18n();
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showSignIn, setShowSignIn] = useState(false);
@@ -58,7 +60,7 @@ export function HistoryPageClient() {
     try {
       await clearHistory(user.uid);
       setHistory([]);
-      toast.success("History cleared");
+      toast.success(t("hist_cleared"));
     } catch {
       toast.error("Failed to clear history");
     }
@@ -87,19 +89,19 @@ export function HistoryPageClient() {
     return (
       <div className="container mx-auto px-4 py-16 max-w-3xl">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-2">History</h1>
-          <p className="text-muted-foreground">Your tool usage history</p>
+          <h1 className="text-3xl font-bold mb-2">{t("hist_title")}</h1>
+          <p className="text-muted-foreground">{t("hist_subtitle")}</p>
         </div>
         <Card>
           <CardContent className="py-12 text-center">
             <History className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-            <h3 className="text-lg font-medium mb-2">Please log in first</h3>
+            <h3 className="text-lg font-medium mb-2">{t("auth_login_required")}</h3>
             <p className="text-muted-foreground mb-4">
-              Sign in to save and view your tool usage history across sessions.
+              {t("auth_login_desc")}
             </p>
             <Button onClick={() => setShowSignIn(true)}>
               <LogIn className="mr-2 h-4 w-4" />
-              Sign In
+              {t("auth_signin")}
             </Button>
           </CardContent>
         </Card>
@@ -107,9 +109,6 @@ export function HistoryPageClient() {
       </div>
     );
   }
-
-  const getCategoryName = (catId: string) =>
-    CATEGORIES.find((c) => c.id === catId)?.name ?? catId;
 
   const formatTime = (ts: number) => {
     const date = new Date(ts);
@@ -127,22 +126,22 @@ export function HistoryPageClient() {
   };
 
   const getItemHref = (item: HistoryItem) =>
-    `/${item.productType === "app" ? "apps" : "tools"}/${item.toolSlug}`;
+    localizePath(`/${item.productType === "app" ? "apps" : "tools"}/${item.toolSlug}`);
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-3xl">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold mb-2">History</h1>
+          <h1 className="text-3xl font-bold mb-2">{t("hist_title")}</h1>
           <p className="text-muted-foreground">
             {history.length === 0
-              ? "No recent activity."
-              : `${history.length} recent entr${history.length !== 1 ? "ies" : "y"}`}
+              ? t("hist_empty")
+              : `${history.length} ${t("hist_title").toLowerCase()}`}
           </p>
         </div>
         {history.length > 0 && (
           <Button variant="outline" size="sm" onClick={handleClearAll}>
-            <Trash2 className="mr-2 h-4 w-4" /> Clear All
+            <Trash2 className="mr-2 h-4 w-4" /> {t("hist_clear")}
           </Button>
         )}
       </div>
@@ -151,12 +150,12 @@ export function HistoryPageClient() {
         <Card>
           <CardContent className="py-12 text-center">
             <History className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-            <h3 className="text-lg font-medium mb-2">No history yet</h3>
+            <h3 className="text-lg font-medium mb-2">{t("hist_empty")}</h3>
             <p className="text-muted-foreground mb-4">
-              Your tool usage will appear here as you use MyToolsBox.
+              {t("hist_subtitle")}
             </p>
-            <Button onClick={() => router.push("/tools")}>
-              Explore Tools
+            <Button onClick={() => router.push(localizePath("/tools"))}>
+              {t("fav_browse")}
             </Button>
           </CardContent>
         </Card>
@@ -173,7 +172,7 @@ export function HistoryPageClient() {
                         href={getItemHref(item)}
                         className="font-medium text-sm hover:text-primary transition-colors truncate"
                       >
-                        {item.toolName}
+                        {getToolName(item.toolSlug, item.toolName)}
                       </Link>
                       <span className="text-xs text-muted-foreground capitalize shrink-0">
                         {item.action}
@@ -181,7 +180,7 @@ export function HistoryPageClient() {
                     </div>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
                       <span className="px-1.5 py-0.5 rounded-full bg-muted text-[10px]">
-                        {getCategoryName(item.category)}
+                        {getCatNameI18n(item.category, item.category)}
                       </span>
                       <span>{formatTime(item.timestamp)}</span>
                       {item.details && (
@@ -190,24 +189,14 @@ export function HistoryPageClient() {
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-1 ml-3">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => router.push(getItemHref(item))}
-                  >
-                    <ExternalLink className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleRemove(item)}
-                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleRemove(item)}
+                  className="text-muted-foreground hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               </CardContent>
             </Card>
           ))}

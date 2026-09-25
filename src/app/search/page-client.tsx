@@ -1,32 +1,29 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Search,
   ChevronRight,
   Wrench,
-  Sparkles,
-  ArrowLeft,
-  Filter,
   X,
-  SlidersHorizontal,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { searchTools } from "@/content/tools/registry";
 import { getActiveApps } from "@/content/apps/registry";
 import { ToolDefinition } from "@/types";
 import { CATEGORIES } from "@/lib/constants";
+import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import * as Icons from "lucide-react";
 
 type FilterType = "all" | "tool" | "app";
 
 export function SearchPageClient() {
+  const { t, getToolName, getCategoryName, localizePath } = useI18n();
   const searchParams = useSearchParams();
   const router = useRouter();
   const initialQuery = searchParams.get("q") || "";
@@ -78,7 +75,7 @@ export function SearchPageClient() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (query.trim()) {
-      router.push(`/search?q=${encodeURIComponent(query.trim())}`);
+      router.push(localizePath(`/search?q=${encodeURIComponent(query.trim())}`));
     }
   };
 
@@ -94,15 +91,15 @@ export function SearchPageClient() {
       {/* Breadcrumb */}
       <div className="mb-6 animate-fade-in-up">
         <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-          <Link href="/" className="hover:text-foreground transition-colors">Home</Link>
+          <Link href={localizePath("/")} className="hover:text-foreground transition-colors">Home</Link>
           <ChevronRight className="h-3.5 w-3.5" />
-          <span className="text-foreground font-medium">Search</span>
+          <span className="text-foreground font-medium">{t("search_title", "Search")}</span>
         </div>
       </div>
 
       {/* Search header */}
       <div className="mb-8 animate-fade-in-up">
-        <h1 className="text-2xl md:text-3xl font-bold mb-2">Search</h1>
+        <h1 className="text-2xl md:text-3xl font-bold mb-2">{t("search_title", "Search Tools & Apps")}</h1>
         <p className="text-muted-foreground">Find tools and apps across the entire platform.</p>
       </div>
 
@@ -112,7 +109,7 @@ export function SearchPageClient() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           <Input
             type="search"
-            placeholder="What do you need to do? Compress a PDF, solve math, edit image..."
+            placeholder={t("search_placeholder", "What do you need to do? Compress a PDF, solve math, edit image...")}
             className="pl-10 h-12 text-base rounded-xl border-2 focus-visible:border-primary/50"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -135,7 +132,7 @@ export function SearchPageClient() {
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
-              {f === "all" ? "All" : f === "tool" ? "Tools" : "Apps"}
+              {f === "all" ? t("search_all", "All") : f === "tool" ? t("search_tools_tab", "Tools") : t("search_apps_tab", "Apps")}
             </button>
           ))}
         </div>
@@ -144,9 +141,9 @@ export function SearchPageClient() {
           onChange={(e) => setSelectedCategory(e.target.value)}
           className="h-8 px-2.5 text-xs rounded-lg border bg-muted text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/30"
         >
-          <option value="all">All categories</option>
+          <option value="all">{t("tools_all_categories", "All categories")}</option>
           {CATEGORIES.map((cat) => (
-            <option key={cat.id} value={cat.id}>{cat.name}</option>
+            <option key={cat.id} value={cat.id}>{getCategoryName(cat.id, cat.name)}</option>
           ))}
         </select>
         {hasActiveFilters && (
@@ -155,7 +152,7 @@ export function SearchPageClient() {
             className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
           >
             <X className="h-3 w-3" />
-            Clear
+            {t("action_clear_all", "Clear")}
           </button>
         )}
       </div>
@@ -164,15 +161,17 @@ export function SearchPageClient() {
       {query.trim().length >= 2 ? (
         <>
           <p className="text-sm text-muted-foreground mb-4 animate-fade-in-up">
-            {results.length} result{results.length !== 1 ? "s" : ""} for &quot;{query}&quot;
+            {results.length} {t("tools_results_count", "results")} for &quot;{query}&quot;
           </p>
           {results.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {results.map((result, i) => {
                 const IconComponent = (Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[result.item.icon] || Wrench;
                 const href = result.type === "tool" ? `/tools/${result.item.slug}` : `/apps/${result.item.slug}`;
+                const displayName = result.type === "tool" ? getToolName(result.item.slug, result.item.name) : result.item.name;
+                const localizedCat = getCategoryName(result.item.category, result.item.category);
                 return (
-                  <Link key={`${result.type}:${result.item.slug}`} href={href}>
+                  <Link key={`${result.type}:${result.item.slug}`} href={localizePath(href)}>
                     <Card
                       className="group card-lift border-border/50 hover:border-primary/30 overflow-hidden animate-fade-in-up"
                       style={{ animationDelay: `${i * 40}ms` }}
@@ -192,7 +191,7 @@ export function SearchPageClient() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
                               <h3 className="font-medium text-sm group-hover:text-primary transition-colors truncate">
-                                {result.item.name}
+                                {displayName}
                               </h3>
                               <Badge
                                 variant="outline"
@@ -204,9 +203,13 @@ export function SearchPageClient() {
                                 {result.type === "app" ? "App" : "Tool"}
                               </Badge>
                             </div>
-                            <p className="text-xs text-muted-foreground truncate">{result.item.shortDescription}</p>
+                            <p className="text-xs text-muted-foreground truncate mt-0.5">
+                              {result.item.shortDescription}
+                            </p>
                           </div>
-                          <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-all shrink-0" />
+                          <Badge variant="secondary" className="text-[10px] capitalize shrink-0 hidden sm:inline-flex">
+                            {localizedCat}
+                          </Badge>
                         </div>
                       </CardContent>
                     </Card>
@@ -215,29 +218,17 @@ export function SearchPageClient() {
               })}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center py-20 text-muted-foreground gap-4 animate-fade-in-up">
-              <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-muted">
-                <Search className="h-10 w-10" />
-              </div>
-              <p className="text-lg font-medium">No results found</p>
-              <p className="text-sm max-w-sm text-center">
-                Try a different search term or browse our categories to find what you need.
+            <div className="text-center py-16 animate-fade-in-up">
+              <p className="text-lg font-medium mb-1">{t("search_no_results", "No results found")}</p>
+              <p className="text-sm text-muted-foreground mb-4">
+                {t("search_try_again", "Try searching for something else.")}
               </p>
-              <Button variant="outline" className="rounded-xl" onClick={() => router.push("/tools")}>
-                Browse all tools
-              </Button>
             </div>
           )}
         </>
       ) : (
-        <div className="flex flex-col items-center justify-center py-20 text-muted-foreground gap-4 animate-fade-in-up">
-          <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-muted">
-            <Search className="h-10 w-10" />
-          </div>
-          <p className="text-lg font-medium">Start typing to search</p>
-          <p className="text-sm max-w-sm text-center">
-            Search across all tools and apps. Try &quot;compress image&quot;, &quot;calculate loan&quot;, or &quot;make flowchart&quot;.
-          </p>
+        <div className="text-center py-16 text-muted-foreground animate-fade-in-up">
+          <p className="text-sm">Type at least 2 characters to search across all tools and apps.</p>
         </div>
       )}
     </div>

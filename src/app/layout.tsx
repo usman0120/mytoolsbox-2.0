@@ -43,6 +43,20 @@ export const metadata: Metadata = {
   description: "Free online tools for documents, images, development, calculations, and more. All processing happens in your browser - no uploads required.",
   keywords: ["online tools", "free tools", "pdf tools", "image tools", "developer tools", "calculators", "utilities"],
   authors: [{ name: SITE_CONFIG.name }],
+  alternates: {
+    canonical: SITE_CONFIG.url,
+    languages: {
+      "en": `${SITE_CONFIG.url}/en`,
+      "es": `${SITE_CONFIG.url}/es`,
+      "ur": `${SITE_CONFIG.url}/ur`,
+      "fr": `${SITE_CONFIG.url}/fr`,
+      "de": `${SITE_CONFIG.url}/de`,
+      "pt": `${SITE_CONFIG.url}/pt`,
+      "hi": `${SITE_CONFIG.url}/hi`,
+      "ar": `${SITE_CONFIG.url}/ar`,
+      "x-default": SITE_CONFIG.url,
+    },
+  },
   icons: {
     icon: "/mytoolsbox logo.png",
     apple: "/mytoolsbox logo.png",

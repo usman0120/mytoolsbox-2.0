@@ -345,7 +345,7 @@ export function SearchCommand({ className, variant = "hero", onClose }: SearchCo
                               result.type === "app" && "border-violet-500/30 text-violet-600 dark:text-violet-400"
                             )}
                           >
-                            {result.type === "app" ? "App" : "Tool"}
+                            {result.type === "app" ? t("badge_app", "App") : t("badge_tool", "Tool")}
                           </Badge>
                         </div>
                         <div className="text-xs text-muted-foreground truncate">{result.item.shortDescription}</div>
@@ -363,7 +363,7 @@ export function SearchCommand({ className, variant = "hero", onClose }: SearchCo
                   selectedIndex === results.length ? "bg-accent" : "hover:bg-accent/50"
                 )}
                 onClick={() => {
-                  router.push(`/search?q=${encodeURIComponent(query.trim())}`);
+                  router.push(localizePath(`/search?q=${encodeURIComponent(query.trim())}`));
                   setIsOpen(false);
                   setQuery("");
                   onClose?.();
@@ -372,7 +372,7 @@ export function SearchCommand({ className, variant = "hero", onClose }: SearchCo
               >
                 <Search className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm text-muted-foreground flex-1">
-                  See all results for &quot;{query}&quot;
+                  {t("search_see_all", "See all results for")} &quot;{query}&quot;
                 </span>
                 <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
               </div>
@@ -382,9 +382,9 @@ export function SearchCommand({ className, variant = "hero", onClose }: SearchCo
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-muted mx-auto mb-3">
                 <Search className="h-6 w-6 text-muted-foreground" />
               </div>
-              <p className="text-sm font-medium">No results for &quot;{query}&quot;</p>
+              <p className="text-sm font-medium">{t("search_no_results", "No results found")} &quot;{query}&quot;</p>
               <p className="text-xs text-muted-foreground mt-1">
-                Try a different search term or browse categories
+                {t("search_try_different", "Try a different search term or browse categories")}
               </p>
             </div>
           )}

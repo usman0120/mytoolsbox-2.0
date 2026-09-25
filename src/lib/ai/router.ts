@@ -209,12 +209,23 @@ export async function completeViaServer(
 
   const data: ServerAIResponse = await response.json();
 
-  if (typeof window !== "undefined" && typeof data.creditsRemaining === "number") {
-    window.dispatchEvent(
-      new CustomEvent("credits-updated", {
-        detail: { remaining: data.creditsRemaining, used: data.creditsUsed },
-      })
-    );
+  if (typeof window !== "undefined") {
+    try {
+      const auth = getFirebaseAuth();
+      const currentUid = auth?.currentUser?.uid;
+      if (currentUid && typeof data.creditsRemaining === "number") {
+        const { syncCreditsToFirestore } = await import("@/lib/credits/credit-firestore");
+        syncCreditsToFirestore(currentUid, data.creditsRemaining, data.creditsUsed).catch(() => {});
+      }
+    } catch {}
+
+    if (typeof data.creditsRemaining === "number") {
+      window.dispatchEvent(
+        new CustomEvent("credits-updated", {
+          detail: { remaining: data.creditsRemaining, used: data.creditsUsed },
+        })
+      );
+    }
   }
 
   return data;

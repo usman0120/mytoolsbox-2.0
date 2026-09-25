@@ -100,29 +100,12 @@ export async function fetchConversations(
   if (!db || !userId) return [];
 
   try {
-    // 1. Primary: users/{userId}/ai_conversations
     const subCol = collection(db, "users", userId, "ai_conversations");
     const qSub = query(subCol, orderBy("updatedAt", "desc"), limit(100));
     const snapshot = await getDocs(qSub);
-
-    if (!snapshot.empty) {
-      return snapshot.docs.map((d) => deserializeConversation(d.data()));
-    }
+    return snapshot.docs.map((d) => deserializeConversation(d.data()));
   } catch (err) {
     console.warn("Subcollection fetch note:", err);
-  }
-
-  try {
-    // 2. Fallback: top-level ai_conversations collection
-    const qTop = query(
-      collection(db, TOP_COLLECTION),
-      where("userId", "==", userId),
-      orderBy("updatedAt", "desc"),
-      limit(100)
-    );
-    const snapshotTop = await getDocs(qTop);
-    return snapshotTop.docs.map((d) => deserializeConversation(d.data()));
-  } catch {
     return [];
   }
 }
@@ -269,44 +252,71 @@ export async function deleteConversation(
   maybeConvId?: string
 ): Promise<void> {
   const db = getDb();
-  if (!db) return;
-
   const conversationId = maybeConvId ?? userIdOrConvId;
   const userId = maybeConvId ? userIdOrConvId : null;
 
-  if (userId) {
+  if (db && userId) {
     try {
       await deleteDoc(doc(db, "users", userId, "ai_conversations", conversationId));
     } catch {}
   }
 
-  try {
-    await deleteDoc(doc(db, TOP_COLLECTION, conversationId));
-  } catch {}
+  if (db) {
+    try {
+      await deleteDoc(doc(db, TOP_COLLECTION, conversationId));
+    } catch {}
+  }
+
+  // Also call server API to delete with session cookie
+  if (typeof window !== "undefined") {
+    try {
+      await fetch("/api/ai/conversations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "delete",
+          conversation: { id: conversationId },
+        }),
+      });
+    } catch {}
+  }
 }
 
 export async function deleteAllConversations(userId: string): Promise<void> {
   const db = getDb();
-  if (!db || !userId) return;
+  if (db && userId) {
+    try {
+      const subCol = collection(db, "users", userId, "ai_conversations");
+      const snapshot = await getDocs(subCol);
+      const batch = writeBatch(db);
+      snapshot.docs.forEach((d) => batch.delete(d.ref));
+      await batch.commit();
+    } catch {}
 
-  try {
-    const subCol = collection(db, "users", userId, "ai_conversations");
-    const snapshot = await getDocs(subCol);
-    const batch = writeBatch(db);
-    snapshot.docs.forEach((d) => batch.delete(d.ref));
-    await batch.commit();
-  } catch {}
+    try {
+      const q = query(
+        collection(db, TOP_COLLECTION),
+        where("userId", "==", userId)
+      );
+      const snapshot = await getDocs(q);
+      const batch = writeBatch(db);
+      snapshot.docs.forEach((d) => batch.delete(d.ref));
+      await batch.commit();
+    } catch {}
+  }
 
-  try {
-    const q = query(
-      collection(db, TOP_COLLECTION),
-      where("userId", "==", userId)
-    );
-    const snapshot = await getDocs(q);
-    const batch = writeBatch(db);
-    snapshot.docs.forEach((d) => batch.delete(d.ref));
-    await batch.commit();
-  } catch {}
+  // Also call server API to clear all
+  if (typeof window !== "undefined") {
+    try {
+      await fetch("/api/ai/conversations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "clear",
+        }),
+      });
+    } catch {}
+  }
 }
 
 // ---------------------------------------------------------------------------

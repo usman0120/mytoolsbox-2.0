@@ -3,6 +3,7 @@ import { getActiveTools } from "@/content/tools/registry";
 import { getActiveApps } from "@/content/apps/registry";
 import { getActiveHubs } from "@/content/hubs/registry";
 import { RESOURCE_GUIDES } from "@/features/resources/resources-data";
+import { BLOG_POSTS } from "@/content/blog/blogs-data";
 import { CATEGORIES, SITE_CONFIG, SUPPORTED_LOCALES } from "@/lib/constants";
 
 function buildLanguageAlternates(path: string) {
@@ -30,6 +31,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: "/apps", changeFrequency: "daily" as const, priority: 0.95 },
     { path: "/ai", changeFrequency: "weekly" as const, priority: 0.9 },
     { path: "/hubs", changeFrequency: "weekly" as const, priority: 0.85 },
+    { path: "/blog", changeFrequency: "daily" as const, priority: 0.9 },
     { path: "/resources", changeFrequency: "weekly" as const, priority: 0.8 },
     { path: "/search", changeFrequency: "weekly" as const, priority: 0.7 },
     { path: "/about", changeFrequency: "monthly" as const, priority: 0.5 },
@@ -120,11 +122,23 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
   }));
 
+  // 8. Blog & High-Intent Guide Pages
+  const blogPages: MetadataRoute.Sitemap = BLOG_POSTS.map((post) => ({
+    url: `${baseUrl}/blog/${post.slug}`,
+    lastModified: new Date(post.isoDate),
+    changeFrequency: "weekly" as const,
+    priority: 0.85,
+    alternates: {
+      languages: buildLanguageAlternates(`/blog/${post.slug}`),
+    },
+  }));
+
   return [
     ...staticPages,
     ...categoryPages,
     ...hubPages,
     ...resourcePages,
+    ...blogPages,
     ...toolPages,
     ...localizedToolPages,
     ...appPages,

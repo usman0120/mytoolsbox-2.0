@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useAuth } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useI18n } from "@/lib/i18n";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, Settings, Heart, Clock, Wrench, Sparkles } from "lucide-react";
@@ -11,12 +12,13 @@ import { Loader2, Settings, Heart, Clock, Wrench, Sparkles } from "lucide-react"
 export function DashboardPageClient() {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const { t, localizePath } = useI18n();
 
   useEffect(() => {
     if (!loading && !user) {
-      router.push("/?signin=true");
+      router.push(localizePath("/?signin=true"));
     }
-  }, [loading, user, router]);
+  }, [loading, user, router, localizePath]);
 
   if (loading) {
     return (
@@ -30,32 +32,32 @@ export function DashboardPageClient() {
 
   const cards = [
     {
-      title: "Settings",
-      description: "Manage your profile, preferences, and account.",
+      title: t("dash_settings_title", "Settings"),
+      description: t("dash_settings_desc", "Manage your profile, preferences, and account security."),
       icon: Settings,
       href: "/settings",
     },
     {
-      title: "Favorites",
-      description: "Quick access to your saved tools.",
+      title: t("dash_favorites_title", "Favorites"),
+      description: t("dash_favorites_desc", "Quick access to your saved tools and apps."),
       icon: Heart,
       href: "/favorites",
     },
     {
-      title: "History",
-      description: "View your recent tool usage.",
+      title: t("dash_history_title", "History"),
+      description: t("dash_history_desc", "View your recent tool usage and past activities."),
       icon: Clock,
       href: "/history",
     },
     {
-      title: "All Tools",
-      description: "Browse the complete tools catalog.",
+      title: t("dash_all_tools_title", "All Tools"),
+      description: t("dash_all_tools_desc", "Browse our complete catalog of 130+ privacy-first tools."),
       icon: Wrench,
       href: "/tools",
     },
     {
-      title: "AI Chat",
-      description: "Chat with AI assistants.",
+      title: t("dash_ai_title", "AI Studio"),
+      description: t("dash_ai_desc", "Chat with AI assistants, compare models, and browse curated prompts."),
       icon: Sparkles,
       href: "/ai",
     },
@@ -65,16 +67,16 @@ export function DashboardPageClient() {
     <div className="container mx-auto px-4 py-8 max-w-3xl">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">
-          Welcome{user.displayName ? `, ${user.displayName.split(" ")[0]}` : ""}
+          {t("dash_welcome", "Welcome")}{user.displayName ? `, ${user.displayName.split(" ")[0]}` : ""}
         </h1>
         <p className="text-muted-foreground">
-          Your MyToolsBox dashboard — access your tools, favorites, and settings.
+          {t("dash_subtitle", "Your MyToolsBox dashboard — access your tools, favorites, and settings.")}
         </p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {cards.map((card) => (
-          <Link key={card.href} href={card.href}>
+          <Link key={card.href} href={localizePath(card.href)}>
             <Card className="h-full hover:border-primary/50 transition-colors cursor-pointer">
               <CardHeader className="pb-2">
                 <card.icon className="h-5 w-5 text-primary mb-1" />

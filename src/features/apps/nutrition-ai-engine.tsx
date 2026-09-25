@@ -24,8 +24,7 @@ import {
 } from "./nutrition/nutrition-engine-logic";
 
 export function NutritionAIEngine() {
-  const { remaining, refresh } = useCredits();
-  const isLow = remaining < 100;
+  const { refresh } = useCredits();
 
   // Tab State
   const [activeTab, setActiveTab] = useState<"planner" | "grocery" | "analyzer" | "consult">("planner");
@@ -125,12 +124,6 @@ export function NutritionAIEngine() {
       return;
     }
 
-    const cost = 20;
-    if (remaining < cost) {
-      toast.error(`Requires ${cost} AI credits. Current balance: ${remaining}.`);
-      return;
-    }
-
     setIsNutriLoading(true);
     setNutriResponse("");
 
@@ -154,7 +147,7 @@ export function NutritionAIEngine() {
       const data = await res.json();
       setNutriResponse(data.text);
       refresh();
-      toast.success("Nutrition advice generated! 20 credits used.");
+      toast.success("Nutrition advice generated!");
     } catch {
       // Graceful offline fallback
       const offline = generateOfflineNutritionAdvice(textToAsk);
@@ -184,13 +177,6 @@ export function NutritionAIEngine() {
             <h2 className="text-xl font-bold tracking-tight">AI Nutrition & Meal Planner Platform</h2>
             <p className="text-xs text-muted-foreground">7-day tailored meal blueprints, automated grocery checklists & clinical AI nutrition</p>
           </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="gap-1.5 px-3 py-1 font-mono text-xs">
-            <Sparkles className="h-3 w-3 text-emerald-500" />
-            <span>AI Credits: <strong className={isLow ? "text-amber-500" : "text-emerald-500"}>{remaining}</strong></span>
-          </Badge>
         </div>
       </div>
 
@@ -588,9 +574,6 @@ export function NutritionAIEngine() {
                     Receive tailored guidance on macro ratios, satiety, food intolerances, and metabolic health.
                   </CardDescription>
                 </div>
-                <Badge variant="secondary" className="text-xs">
-                  Cost: 20 credits / query
-                </Badge>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -624,10 +607,7 @@ export function NutritionAIEngine() {
                   rows={3}
                   className="text-sm"
                 />
-                <div className="flex justify-between items-center">
-                  <span className="text-[11px] text-muted-foreground">
-                    Available balance: <strong>{remaining}</strong> credits
-                  </span>
+                <div className="flex justify-end items-center">
                   <Button
                     onClick={() => handleConsultNutritionist()}
                     disabled={isNutriLoading}

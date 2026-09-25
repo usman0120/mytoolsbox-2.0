@@ -23,7 +23,7 @@ import {
   Trash2,
   Copy,
   Download,
-  Coins,
+
   Sparkles,
   ChevronLeft,
   X,
@@ -348,24 +348,7 @@ export function ChatSidebar({
 
       {/* Footer / Account & Storage Status */}
       <div className="p-3 border-t border-border/50 bg-background/50 space-y-2">
-        {creditsRemaining !== null && (
-          <div className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-muted/50 text-xs">
-            <span className="flex items-center gap-1.5 text-muted-foreground font-medium">
-              <Coins className="h-3.5 w-3.5 text-amber-500" />
-              Credits
-            </span>
-            <Badge
-              variant="outline"
-              className={`h-5 px-1.5 text-[11px] rounded-md font-mono ${
-                creditsRemaining < 50
-                  ? "bg-amber-500/10 text-amber-600 border-amber-500/20"
-                  : "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
-              }`}
-            >
-              {creditsRemaining}
-            </Badge>
-          </div>
-        )}
+        
 
         {conversations.length > 0 && (
           <div className="flex items-center justify-between pt-1">

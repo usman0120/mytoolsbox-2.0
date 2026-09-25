@@ -16,7 +16,7 @@ import {
   PanelLeftClose,
   Share2,
   Plus,
-  Coins,
+
   Copy,
   FileText,
   Download,
@@ -210,17 +210,8 @@ export function ChatHeader({
 
       {/* Right: Credits Badge, New Chat, Export / Share */}
       <div className="flex items-center gap-1.5 md:gap-2">
-        {/* Credits Badge */}
-        {creditsRemaining !== null && (
-          <Badge
-            variant="outline"
-            className="h-8 px-2.5 text-xs rounded-xl font-mono gap-1.5 text-muted-foreground border-border/60"
-            title="Remaining AI Credits (resets every 30 days)"
-          >
-            <Coins className="h-3.5 w-3.5 text-amber-500" />
-            <span>{creditsRemaining.toLocaleString()}</span>
-          </Badge>
-        )}
+
+
 
         {/* New Chat Button */}
         <Button

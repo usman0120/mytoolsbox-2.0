@@ -1,6 +1,7 @@
 import { ProcessingStatus } from "@/lib/processing/types";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n";
 import {
   Loader2,
   CheckCircle2,
@@ -90,15 +91,29 @@ interface ProcessingStatusBadgeProps {
 
 export function ProcessingStatusBadge({ status }: ProcessingStatusBadgeProps) {
   const config = STATUS_CONFIG[status];
+  const { t } = useI18n();
   if (!config) return null;
 
   const Icon = config.icon;
   const isSpinner = status === "processing";
 
+  const statusKeyMap: Record<ProcessingStatus, string> = {
+    idle: "status_ready",
+    uploading: "status_uploading",
+    processing: "status_processing",
+    success: "status_done",
+    error: "status_error",
+    cancelled: "status_cancelled",
+    unsupported: "status_unsupported",
+    "limit-exceeded": "status_limit_exceeded",
+  };
+
+  const label = statusKeyMap[status] ? t(statusKeyMap[status] as any, config.label) : config.label;
+
   return (
     <Badge variant={config.variant} className={cn("gap-1", config.className)}>
       <Icon className={cn("h-3 w-3", isSpinner && "animate-spin")} />
-      {config.label}
+      {label}
     </Badge>
   );
 }

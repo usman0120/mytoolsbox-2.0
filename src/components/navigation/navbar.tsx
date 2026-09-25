@@ -50,6 +50,7 @@ export function Navbar() {
       case "/apps": return t("nav_apps");
       case "/ai": return t("nav_ai");
       case "/hubs": return t("nav_hubs");
+      case "/blog": return "Blog";
       case "/resources": return t("nav_resources");
       default: return fallback;
     }
@@ -127,7 +128,7 @@ export function Navbar() {
                         </div>
                         <div>
                           <div className="font-semibold text-foreground">{t("ai_new_chat")}</div>
-                          <div className="text-[10px] text-muted-foreground">Multi-turn AI Assistant</div>
+                          <div className="text-[10px] text-muted-foreground">{t("nav_ai_chat_sub")}</div>
                         </div>
                       </Link>
                     </DropdownMenuItem>
@@ -142,7 +143,7 @@ export function Navbar() {
                         </div>
                         <div>
                           <div className="font-semibold text-foreground">{t("ai_prompt_library")}</div>
-                          <div className="text-[10px] text-muted-foreground">160+ Curated Templates</div>
+                          <div className="text-[10px] text-muted-foreground">{t("nav_ai_prompts_sub")}</div>
                         </div>
                       </Link>
                     </DropdownMenuItem>
@@ -157,7 +158,7 @@ export function Navbar() {
                         </div>
                         <div>
                           <div className="font-semibold text-foreground">{t("ai_compare_models")}</div>
-                          <div className="text-[10px] text-muted-foreground">Side-by-side Arena</div>
+                          <div className="text-[10px] text-muted-foreground">{t("nav_ai_compare_sub")}</div>
                         </div>
                       </Link>
                     </DropdownMenuItem>
@@ -172,7 +173,7 @@ export function Navbar() {
                         </div>
                         <div>
                           <div className="font-semibold text-foreground">{t("ai_personas")}</div>
-                          <div className="text-[10px] text-muted-foreground">Specialized Engines</div>
+                          <div className="text-[10px] text-muted-foreground">{t("nav_ai_personas_sub")}</div>
                         </div>
                       </Link>
                     </DropdownMenuItem>
@@ -263,72 +264,80 @@ export function Navbar() {
 
                 <div className="space-y-1">
                   <Link
-                    href="/tools"
+                    href={localizePath("/tools")}
                     onClick={() => setMobileOpen(false)}
                     className="flex items-center px-3 py-2 text-sm font-medium rounded-xl hover:bg-muted"
                   >
-                    Tools
+                    {t("nav_tools")}
                   </Link>
                   <Link
-                    href="/apps"
+                    href={localizePath("/apps")}
                     onClick={() => setMobileOpen(false)}
                     className="flex items-center px-3 py-2 text-sm font-medium rounded-xl hover:bg-muted"
                   >
-                    Apps
+                    {t("nav_apps")}
                   </Link>
 
                   {/* AI Mobile Submenu */}
                   <div className="py-2 border-y border-border/50 my-2 space-y-1">
                     <div className="px-3 text-xs font-semibold text-primary uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                      AI Suite
+                      {t("footer_ai_suite")}
                     </div>
                     <Link
-                      href="/ai"
+                      href={localizePath("/ai")}
                       onClick={() => setMobileOpen(false)}
                       className="flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-xl hover:bg-muted"
                     >
                       <MessageSquare className="h-3.5 w-3.5 text-violet-500" />
-                      Chat Workspace
+                      {t("ai_new_chat")}
                     </Link>
                     <Link
-                      href="/ai/prompts"
+                      href={localizePath("/ai/prompts")}
                       onClick={() => setMobileOpen(false)}
                       className="flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-xl hover:bg-muted"
                     >
                       <Lightbulb className="h-3.5 w-3.5 text-amber-500" />
-                      Prompt Library (160+)
+                      {t("ai_prompt_library")}
                     </Link>
                     <Link
-                      href="/ai/compare"
+                      href={localizePath("/ai/compare")}
                       onClick={() => setMobileOpen(false)}
                       className="flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-xl hover:bg-muted"
                     >
                       <Cpu className="h-3.5 w-3.5 text-blue-500" />
-                      Compare Models
+                      {t("ai_compare_models")}
                     </Link>
                     <Link
-                      href="/ai/personas"
+                      href={localizePath("/ai/personas")}
                       onClick={() => setMobileOpen(false)}
                       className="flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-xl hover:bg-muted"
                     >
                       <Layers className="h-3.5 w-3.5 text-emerald-500" />
-                      Personas & Tools
+                      {t("ai_personas")}
                     </Link>
                   </div>
 
                   <Link
-                    href="/hubs"
+                    href={localizePath("/hubs")}
                     onClick={() => setMobileOpen(false)}
                     className="flex items-center px-3 py-2 text-sm font-medium rounded-xl hover:bg-muted"
                   >
-                    Hubs
+                    {t("nav_hubs")}
                   </Link>
                   <Link
-                    href="/resources"
+                    href={localizePath("/blog")}
+                    onClick={() => setMobileOpen(false)}
+                    className="flex items-center justify-between px-3 py-2 text-sm font-medium rounded-xl hover:bg-muted"
+                  >
+                    <span>Blog & Guides</span>
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">New</span>
+                  </Link>
+                  <Link
+                    href={localizePath("/resources")}
                     onClick={() => setMobileOpen(false)}
                     className="flex items-center px-3 py-2 text-sm font-medium rounded-xl hover:bg-muted"
                   >
-                    Resources
+                    {t("nav_resources")}
                   </Link>
                 </div>
 
@@ -337,11 +346,11 @@ export function Navbar() {
                     <div className="space-y-2">
                       <div className="text-xs text-muted-foreground px-3">{user.email}</div>
                       <Link
-                        href="/settings"
+                        href={localizePath("/settings")}
                         onClick={() => setMobileOpen(false)}
                         className="flex items-center px-3 py-2 text-sm rounded-xl hover:bg-muted"
                       >
-                        Settings & Profile
+                        {t("nav_settings_profile")}
                       </Link>
                     </div>
                   ) : (
@@ -352,7 +361,7 @@ export function Navbar() {
                       }}
                       className="w-full rounded-xl text-xs"
                     >
-                      Sign In
+                      {t("nav_signin")}
                     </Button>
                   )}
                 </div>

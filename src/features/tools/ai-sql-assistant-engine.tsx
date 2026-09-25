@@ -17,7 +17,6 @@ import {
   AlignLeft,
   ArrowRight,
   ShieldAlert,
-  Coins,
 } from "lucide-react";
 import { sqlAssist, type SQLAssistantOutput } from "@/lib/ai/services/sql-assistant";
 import { formatSQLOffline, SQLDialect } from "@/features/tools/sql-formatter";
@@ -148,7 +147,7 @@ export function AISQLAssistantEngine() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
-  const { remaining, refresh } = useCredits();
+  const { refresh } = useCredits();
 
   const handleAssist = useCallback(async () => {
     if (!input.trim()) return;
@@ -161,7 +160,7 @@ export function AISQLAssistantEngine() {
         dialect: dialect || undefined,
       });
       setResult(r);
-      toast.success("SQL analysis generated! (20 credits deducted)");
+      toast.success("SQL analysis generated!");
       await refresh();
     } catch {
       setResult(ruleBasedSQLAssist(input.trim(), action, dialect));
@@ -198,9 +197,6 @@ export function AISQLAssistantEngine() {
               <a.icon className="h-3.5 w-3.5" /> {a.label}
             </Button>
           ))}
-          <Badge variant="outline" className="text-xs gap-1 text-muted-foreground ml-1">
-            <Coins className="h-3 w-3 text-amber-500" /> 20 credits {remaining !== undefined && remaining > 0 ? `(${remaining} left)` : ""}
-          </Badge>
         </div>
 
         <div className="flex items-center gap-2">

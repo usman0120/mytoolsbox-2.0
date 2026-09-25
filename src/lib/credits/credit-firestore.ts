@@ -43,6 +43,17 @@ export function subscribeUserCredits(
         if (snapshot.exists()) {
           const data = snapshot.data() as UserCreditState;
 
+          // If period dates are missing, fix them without resetting usedCredits
+          let periodStart = data.periodStart;
+          let periodEnd = data.periodEnd;
+          if (!periodEnd) {
+            const p = calculate30DayPeriod();
+            periodStart = periodStart || p.start;
+            periodEnd = p.end;
+            data.periodStart = periodStart;
+            data.periodEnd = periodEnd;
+          }
+
           // Check if 30-day reset is due
           if (isPeriodExpired(data)) {
             const { start, end } = calculate30DayPeriod();
@@ -75,12 +86,45 @@ export function subscribeUserCredits(
           }
 
           const total = data.totalCredits ?? 1000;
-          const used = data.usedCredits ?? 0;
+          let used = data.usedCredits ?? 0;
+
+          // Prevent regression: if local storage already recorded higher usage from a recent operation, preserve it
+          if (typeof window !== "undefined") {
+            try {
+              const cached = localStorage.getItem(`mytoolsbox_credits_${userId}`);
+              if (cached) {
+                const parsed = JSON.parse(cached);
+                if (typeof parsed.used === "number" && parsed.used > used) {
+                  used = parsed.used;
+                  // Asynchronously sync the higher usage back to Firestore
+                  updateDoc(docRef, { usedCredits: used, lastUpdated: Date.now() }).catch(() => {});
+                }
+              }
+            } catch {}
+          }
+
           const remaining = Math.max(0, total - used);
-          const endMs = new Date(data.periodEnd).getTime();
-          const daysRemaining = isNaN(endMs)
-            ? 30
-            : Math.max(0, Math.ceil((endMs - Date.now()) / (1000 * 60 * 60 * 24)));
+          let endMs = new Date(periodEnd).getTime();
+          if (isNaN(endMs)) endMs = Date.now() + 30 * 24 * 60 * 60 * 1000;
+          const daysRemaining = Math.max(0, Math.ceil((endMs - Date.now()) / (1000 * 60 * 60 * 24)));
+
+          // Always update localStorage with the real values
+          if (typeof window !== "undefined") {
+            try {
+              localStorage.setItem(
+                `mytoolsbox_credits_${userId}`,
+                JSON.stringify({
+                  remaining,
+                  total,
+                  used,
+                  tier: data.tier || "free_account",
+                  periodEnd,
+                  daysRemaining,
+                  timestamp: Date.now(),
+                })
+              );
+            } catch {}
+          }
 
           callback({
             userId,
@@ -88,8 +132,8 @@ export function subscribeUserCredits(
             total,
             used,
             remaining,
-            periodStart: data.periodStart,
-            periodEnd: data.periodEnd,
+            periodStart,
+            periodEnd,
             daysRemaining,
           });
         } else {
@@ -199,28 +243,68 @@ export async function syncCreditsToFirestore(
   try {
     const docRef = doc(db, getDocPath(userId));
     const snap = await getDoc(docRef);
+    let finalTotal = 1000;
+    let finalUsed = 0;
+    let periodStart: string;
+    let periodEnd: string;
 
     if (snap.exists()) {
       const data = snap.data() as UserCreditState;
-      const total = data.totalCredits || 1000;
-      const computedUsed = typeof creditsUsed === "number" ? creditsUsed : Math.max(0, total - creditsRemaining);
+      finalTotal = data.totalCredits || 1000;
+      finalUsed = typeof creditsUsed === "number" ? creditsUsed : Math.max(data.usedCredits ?? 0, finalTotal - creditsRemaining);
+      periodStart = data.periodStart;
+      periodEnd = data.periodEnd;
+      if (!periodEnd) {
+        const p = calculate30DayPeriod();
+        periodStart = p.start;
+        periodEnd = p.end;
+      }
 
       await updateDoc(docRef, {
-        usedCredits: computedUsed,
+        usedCredits: finalUsed,
+        totalCredits: finalTotal,
+        periodStart,
+        periodEnd,
         lastUpdated: Date.now(),
       });
     } else {
       const { start, end } = calculate30DayPeriod();
-      const used = typeof creditsUsed === "number" ? creditsUsed : Math.max(0, 1000 - creditsRemaining);
+      periodStart = start;
+      periodEnd = end;
+      finalUsed = typeof creditsUsed === "number" ? creditsUsed : Math.max(0, 1000 - creditsRemaining);
       await setDoc(docRef, {
         userId,
         tier: "free_account",
         totalCredits: 1000,
-        usedCredits: used,
+        usedCredits: finalUsed,
         periodStart: start,
         periodEnd: end,
         lastUpdated: Date.now(),
       });
+    }
+
+    const finalRemaining = Math.max(0, finalTotal - finalUsed);
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem(
+          `mytoolsbox_credits_${userId}`,
+          JSON.stringify({
+            remaining: finalRemaining,
+            total: finalTotal,
+            used: finalUsed,
+            tier: "free_account",
+            periodStart,
+            periodEnd,
+            timestamp: Date.now(),
+          })
+        );
+      } catch {}
+
+      window.dispatchEvent(
+        new CustomEvent("credits-updated", {
+          detail: { remaining: finalRemaining, used: finalUsed },
+        })
+      );
     }
   } catch (err) {
     console.warn("Firestore sync credits note:", err);

@@ -65,33 +65,37 @@ export function AIChat({ onOpenPromptLibrary }: AIChatProps) {
     // Real-time Firestore subscription
     const unsubscribe = subscribeConversations(uid, (cloudConvs) => {
       if (useChatStore.getState().isStreaming) return;
-      if (cloudConvs.length > 0) {
-        const current = useChatStore.getState().conversations;
-        const currentMap = new Map(current.map((c) => [c.id, c]));
-        let hasChanges = false;
+      const state = useChatStore.getState();
+      const deletedSet = new Set(state.deletedConversationIds || []);
 
-        const merged = cloudConvs.map((c) => {
-          const loc = currentMap.get(c.id);
-          if (!loc || (c.updatedAt && c.updatedAt > loc.updatedAt)) {
-            hasChanges = true;
-            return c;
-          }
-          return loc;
-        });
+      // Filter out any chats the user deleted
+      const validCloudConvs = cloudConvs.filter((c) => !deletedSet.has(c.id));
+      const current = state.conversations.filter((c) => !deletedSet.has(c.id));
+      const currentMap = new Map(current.map((c) => [c.id, c]));
+      let hasChanges = false;
 
-        for (const loc of current) {
-          if (!cloudConvs.some((c) => c.id === loc.id)) {
-            merged.push(loc);
-          }
+      const merged = validCloudConvs.map((c) => {
+        const loc = currentMap.get(c.id);
+        if (!loc || (c.updatedAt && c.updatedAt > loc.updatedAt)) {
+          hasChanges = true;
+          return c;
         }
+        return loc;
+      });
 
-        if (hasChanges || current.length === 0) {
-          useChatStore.getState().setConversations(
-            merged.sort((a, b) => b.updatedAt - a.updatedAt)
-          );
-          if (!useChatStore.getState().activeConversationId && merged.length > 0) {
-            useChatStore.getState().setActiveConversation(merged[0].id);
-          }
+      // Only preserve brand-new local chats (< 5 seconds old) that haven't hit the cloud yet
+      const now = Date.now();
+      for (const loc of current) {
+        if (!validCloudConvs.some((c) => c.id === loc.id) && now - (loc.createdAt || 0) < 5000) {
+          merged.push(loc);
+        }
+      }
+
+      const sorted = merged.sort((a, b) => b.updatedAt - a.updatedAt);
+      if (hasChanges || validCloudConvs.length !== current.length) {
+        useChatStore.getState().setConversations(sorted);
+        if (!useChatStore.getState().activeConversationId && sorted.length > 0) {
+          useChatStore.getState().setActiveConversation(sorted[0].id);
         }
       }
     });

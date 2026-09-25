@@ -21,6 +21,7 @@ import {
 import { getActiveTools, getToolsByAudience } from "@/content/tools/registry";
 import { getActiveApps } from "@/content/apps/registry";
 import type { ToolAudience } from "@/types";
+import { useI18n } from "@/lib/i18n";
 
 interface HubData {
   icon: LucideIcon;
@@ -117,8 +118,21 @@ const HUBS: HubData[] = [
 ];
 
 export function HubsPageClient() {
+  const { t, localizePath, getToolName } = useI18n();
   const allTools = getActiveTools();
   const allApps = getActiveApps();
+
+  const getLocalizedHub = (hub: HubData) => {
+    switch (hub.audience) {
+      case "students": return { name: t("aud_students"), description: t("aud_students_desc") };
+      case "developers": return { name: t("aud_developers"), description: t("aud_developers_desc") };
+      case "business": return { name: t("aud_business"), description: t("aud_business_desc") };
+      case "designers": return { name: t("aud_designers"), description: t("aud_designers_desc") };
+      case "writers": return { name: t("aud_writers"), description: t("aud_writers_desc") };
+      case "researchers": return { name: t("aud_researchers"), description: t("aud_researchers_desc") };
+      default: return { name: hub.name, description: hub.description };
+    }
+  };
 
   const getHubItems = (audience: ToolAudience) => {
     const tools = getToolsByAudience(audience);
@@ -135,9 +149,9 @@ export function HubsPageClient() {
             <Compass className="h-6 w-6 text-emerald-500" />
           </div>
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Hubs</h1>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{t("hubs_title")}</h1>
             <p className="text-sm text-muted-foreground mt-0.5">
-              Curated collections organized by profession — {allTools.length} tools & {allApps.length} apps available
+              {t("hubs_subtitle")} ({t("hubs_total_count").replace("{count}", String(allTools.length + allApps.length))})
             </p>
           </div>
         </div>
@@ -146,6 +160,7 @@ export function HubsPageClient() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {HUBS.map((hub, i) => {
           const { tools, apps, total } = getHubItems(hub.audience);
+          const localized = getLocalizedHub(hub);
 
           return (
             <Card
@@ -164,35 +179,35 @@ export function HubsPageClient() {
                     </div>
                     <div>
                       <h3 className="font-semibold text-base group-hover:text-primary transition-colors">
-                        {hub.name}
+                        {localized.name}
                       </h3>
-                      <p className="text-xs text-muted-foreground">{total} items available</p>
+                      <p className="text-xs text-muted-foreground">{t("hubs_total_count").replace("{count}", String(total))}</p>
                     </div>
                   </div>
                 </div>
 
-                <p className="text-sm text-muted-foreground mb-4 leading-relaxed">{hub.description}</p>
+                <p className="text-sm text-muted-foreground mb-4 leading-relaxed">{localized.description}</p>
 
                 {/* Tools preview */}
                 {tools.length > 0 && (
                   <div className="mb-3">
                     <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wider">
-                      Tools ({tools.length})
+                      {t("hubs_tools_count").replace("{count}", String(tools.length))}
                     </p>
                     <div className="flex flex-wrap gap-1.5">
                       {tools.slice(0, 5).map((tool) => (
-                        <Link key={tool.slug} href={`/tools/${tool.slug}`}>
+                        <Link key={tool.slug} href={localizePath(`/tools/${tool.slug}`)}>
                           <Badge
                             variant="secondary"
                             className="text-[10px] cursor-pointer hover:bg-primary/20 transition-colors rounded-full"
                           >
-                            {tool.name}
+                            {getToolName(tool.slug, tool.name)}
                           </Badge>
                         </Link>
                       ))}
                       {tools.length > 5 && (
                         <Badge variant="outline" className="text-[10px] rounded-full">
-                          +{tools.length - 5} more
+                          +{tools.length - 5}
                         </Badge>
                       )}
                     </div>
@@ -203,32 +218,32 @@ export function HubsPageClient() {
                 {apps.length > 0 && (
                   <div className="mb-4">
                     <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wider">
-                      Apps ({apps.length})
+                      {t("hubs_apps_count").replace("{count}", String(apps.length))}
                     </p>
                     <div className="flex flex-wrap gap-1.5">
                       {apps.slice(0, 3).map((app) => (
-                        <Link key={app.slug} href={`/apps/${app.slug}`}>
+                        <Link key={app.slug} href={localizePath(`/apps/${app.slug}`)}>
                           <Badge
                             variant="secondary"
                             className="text-[10px] cursor-pointer hover:bg-primary/20 transition-colors rounded-full"
                           >
                             <Sparkles className="h-2.5 w-2.5 mr-1" />
-                            {app.name}
+                            {getToolName(app.slug, app.name)}
                           </Badge>
                         </Link>
                       ))}
                       {apps.length > 3 && (
                         <Badge variant="outline" className="text-[10px] rounded-full">
-                          +{apps.length - 3} more
+                          +{apps.length - 3}
                         </Badge>
                       )}
                     </div>
                   </div>
                 )}
 
-                <Link href={`/hubs/${hub.audience}`} className="block">
+                <Link href={localizePath(`/hubs/${hub.audience}`)} className="block">
                   <Button variant="ghost" size="sm" className="w-full justify-between group/btn rounded-xl">
-                    <span>Explore {hub.name} hub</span>
+                    <span>{t("hubs_explore_btn")}</span>
                     <ArrowRight className="h-3.5 w-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
                   </Button>
                 </Link>

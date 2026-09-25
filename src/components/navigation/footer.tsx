@@ -80,6 +80,10 @@ export function Footer() {
               <Link href={localizePath("/hubs")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 {t("nav_hubs")}
               </Link>
+              <Link href={localizePath("/blog")} className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5">
+                <span>Blog & Guides</span>
+                <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">New</span>
+              </Link>
               <Link href={localizePath("/resources")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 {t("nav_resources")}
               </Link>

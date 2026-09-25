@@ -20,7 +20,6 @@ import {
   XCircle,
   HelpCircle,
   Code2,
-  Coins,
 } from "lucide-react";
 import { buildRegex, type RegexBuilderOutput } from "@/lib/ai/services/regex-builder";
 import { useCredits } from "@/lib/credits/use-credits";
@@ -191,7 +190,7 @@ export function AIRegexBuilderEngine() {
   const [error, setError] = useState("");
   const [copied, setCopied] = useState("");
   const [interactiveTest, setInteractiveTest] = useState("Contact us at hello@world.com or visit my site");
-  const { remaining, refresh } = useCredits();
+  const { refresh } = useCredits();
 
   const handleBuild = useCallback(async () => {
     if (!description.trim()) return;
@@ -204,7 +203,7 @@ export function AIRegexBuilderEngine() {
         flags,
       });
       setResult(r);
-      toast.success("Regex pattern generated! (15 credits deducted)");
+      toast.success("Regex pattern generated!");
       await refresh();
     } catch {
       setResult(ruleBasedRegexBuild(description.trim(), flags, testCases));
@@ -240,9 +239,6 @@ export function AIRegexBuilderEngine() {
             <Regex className="h-4 w-4 text-primary" /> Describe Your Match Requirements
           </Label>
           <div className="flex items-center gap-1.5">
-            <Badge variant="outline" className="text-xs gap-1 text-muted-foreground">
-              <Coins className="h-3 w-3 text-amber-500" /> 15 credits {remaining !== undefined && remaining > 0 ? `(${remaining} left)` : ""}
-            </Badge>
             <Badge className="bg-primary/10 text-primary border-primary/20 text-[11px] gap-1">
               <Sparkles className="h-3 w-3" /> AI Active
             </Badge>

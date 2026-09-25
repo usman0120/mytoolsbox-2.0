@@ -25,8 +25,10 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import type { FeedbackType } from "@/types/user";
+import { useI18n } from "@/lib/i18n";
 
 export function ContactPageClient() {
+  const { t } = useI18n();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
@@ -76,10 +78,10 @@ export function ContactPageClient() {
       {/* Header */}
       <div className="text-center mb-16">
         <h1 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">
-          Contact Us
+          {t("contact_title")}
         </h1>
         <p className="text-lg text-muted-foreground leading-relaxed">
-          We&apos;d love to hear from you — questions, feedback, or feature ideas
+          {t("contact_subtitle")}
         </p>
       </div>
 
@@ -190,16 +192,16 @@ export function ContactPageClient() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Send className="h-5 w-5" />
-            Send us a message
+            {t("contact_send")}
           </CardTitle>
         </CardHeader>
         <CardContent>
           {submitted ? (
             <div className="text-center py-8 space-y-4">
               <CheckCircle2 className="h-12 w-12 mx-auto text-green-500" />
-              <h3 className="text-lg font-semibold">Message Sent!</h3>
+              <h3 className="text-lg font-semibold">{t("contact_sent")}</h3>
               <p className="text-muted-foreground">
-                Thanks for reaching out. We&apos;ll get back to you within 24-48 hours.
+                Thanks for reaching out. We&apos;ll get back to you soon.
               </p>
               <Button
                 variant="outline"
@@ -211,14 +213,14 @@ export function ContactPageClient() {
                   setType("feedback");
                 }}
               >
-                Send another message
+                {t("contact_send")}
               </Button>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="contact-name">Name</Label>
+                  <Label htmlFor="contact-name">{t("contact_name")}</Label>
                   <Input
                     id="contact-name"
                     placeholder="Your name"
@@ -228,7 +230,7 @@ export function ContactPageClient() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="contact-email">Email</Label>
+                  <Label htmlFor="contact-email">{t("contact_email")}</Label>
                   <Input
                     id="contact-email"
                     type="email"
@@ -240,7 +242,7 @@ export function ContactPageClient() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="contact-type">Type</Label>
+                <Label htmlFor="contact-type">{t("contact_type")}</Label>
                 <Select
                   value={type}
                   onValueChange={(v) => setType(v as FeedbackType)}
@@ -257,7 +259,7 @@ export function ContactPageClient() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="contact-message">Message *</Label>
+                <Label htmlFor="contact-message">{t("contact_message")} *</Label>
                 <Textarea
                   id="contact-message"
                   placeholder="Tell us what's on your mind..."
@@ -274,7 +276,7 @@ export function ContactPageClient() {
                 ) : (
                   <Send className="mr-2 h-4 w-4" />
                 )}
-                Send Message
+                {t("contact_send")}
               </Button>
             </form>
           )}

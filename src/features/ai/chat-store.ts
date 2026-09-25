@@ -27,6 +27,7 @@ function getCurrentUserId(): string | null {
 interface ChatStore {
   // Conversations
   conversations: ChatConversation[];
+  deletedConversationIds: string[];
   activeConversationId: string | null;
 
   // UI State
@@ -88,6 +89,7 @@ export const useChatStore = create<ChatStore>()(
   persist(
     (set, get) => ({
       conversations: [],
+      deletedConversationIds: [],
       activeConversationId: null,
       isSidebarOpen: true,
       isStreaming: false,
@@ -113,6 +115,7 @@ export const useChatStore = create<ChatStore>()(
 
         set({
           conversations: [newConv, ...state.conversations],
+          deletedConversationIds: (state.deletedConversationIds || []).filter((id) => id !== newConv.id),
           activeConversationId: newConv.id,
         });
 
@@ -141,12 +144,14 @@ export const useChatStore = create<ChatStore>()(
       deleteConversation: (id) => {
         set((state) => {
           const filtered = state.conversations.filter((c) => c.id !== id);
+          const nextDeleted = Array.from(new Set([...(state.deletedConversationIds || []), id]));
           const uid = getCurrentUserId();
           if (uid) {
             deleteRemoteConversation(uid, id).catch(() => {});
           }
           return {
             conversations: filtered,
+            deletedConversationIds: nextDeleted,
             activeConversationId:
               state.activeConversationId === id
                 ? filtered[0]?.id ?? null
@@ -230,12 +235,16 @@ export const useChatStore = create<ChatStore>()(
       },
 
       clearAllConversations: () => {
+        const state = get();
+        const allIds = state.conversations.map((c) => c.id);
+        const nextDeleted = Array.from(new Set([...(state.deletedConversationIds || []), ...allIds]));
         const uid = getCurrentUserId();
         if (uid) {
           deleteRemoteAllConversations(uid).catch(() => {});
         }
         set({
           conversations: [],
+          deletedConversationIds: nextDeleted,
           activeConversationId: null,
         });
       },
@@ -244,11 +253,23 @@ export const useChatStore = create<ChatStore>()(
         if (!userId) return;
         try {
           const remoteConvs = await fetchConversations(userId);
-          const localConvs = get().conversations;
+          const state = get();
+          const deletedSet = new Set(state.deletedConversationIds || []);
 
-          const remoteMap = new Map(remoteConvs.map((c) => [c.id, c]));
+          // Purge any deleted conversations from remote Firestore
+          for (const r of remoteConvs) {
+            if (deletedSet.has(r.id)) {
+              deleteRemoteConversation(userId, r.id).catch(() => {});
+            }
+          }
 
-          // If user has local conversations in localStorage that aren't on Firestore (e.g. created on localhost)
+          // Filter out deleted conversations from remote and local
+          const validRemoteConvs = remoteConvs.filter((c) => !deletedSet.has(c.id));
+          const localConvs = state.conversations.filter((c) => !deletedSet.has(c.id));
+
+          const remoteMap = new Map(validRemoteConvs.map((c) => [c.id, c]));
+
+          // Save local un-synced conversations to Firestore
           for (const local of localConvs) {
             if (!remoteMap.has(local.id)) {
               await saveConversation(userId, local).catch(() => {});
@@ -257,7 +278,7 @@ export const useChatStore = create<ChatStore>()(
 
           // Merge: remote takes precedence if newer, else local
           const mergedMap = new Map<string, ChatConversation>();
-          for (const r of remoteConvs) {
+          for (const r of validRemoteConvs) {
             mergedMap.set(r.id, r);
           }
           for (const l of localConvs) {
@@ -267,9 +288,9 @@ export const useChatStore = create<ChatStore>()(
             }
           }
 
-          const merged = Array.from(mergedMap.values()).sort(
-            (a, b) => b.updatedAt - a.updatedAt
-          );
+          const merged = Array.from(mergedMap.values())
+            .filter((c) => !deletedSet.has(c.id))
+            .sort((a, b) => b.updatedAt - a.updatedAt);
 
           set({ conversations: merged });
           if (!get().activeConversationId && merged.length > 0) {
@@ -422,6 +443,7 @@ export const useChatStore = create<ChatStore>()(
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         conversations: state.conversations,
+        deletedConversationIds: state.deletedConversationIds || [],
         activeConversationId: state.activeConversationId,
         selectedProvider: state.selectedProvider,
         selectedModel: state.selectedModel,

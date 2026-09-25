@@ -4,6 +4,7 @@ import { Wifi, WifiOff, RefreshCw } from "lucide-react";
 import { useOnlineStatus, useOfflineQueue } from "@/hooks/use-offline";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+import { useI18n } from "@/lib/i18n";
 
 // ---------------------------------------------------------------------------
 // OfflineIndicator — subtle banner shown when offline
@@ -12,6 +13,7 @@ import { useState } from "react";
 export function OfflineIndicator() {
   const { isOnline, wasOnline } = useOnlineStatus();
   const [reconnectTimer, setReconnectTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
+  const { t } = useI18n();
 
   // Compute visibility during render
   const visible = !isOnline;
@@ -48,12 +50,12 @@ export function OfflineIndicator() {
       {!isOnline ? (
         <>
           <WifiOff className="h-4 w-4" />
-          <span>You&apos;re offline. Some features may be limited.</span>
+          <span>{t("status_offline", "You're offline. Some features may be limited.")}</span>
         </>
       ) : showReconnected ? (
         <>
           <Wifi className="h-4 w-4" />
-          <span>Back online!</span>
+          <span>{t("status_back_online", "Back online!")}</span>
         </>
       ) : null}
     </div>
@@ -66,6 +68,7 @@ export function OfflineIndicator() {
 
 export function OfflineQueueIndicator() {
   const { queueSize, isOnline } = useOfflineQueue();
+  const { t } = useI18n();
 
   if (queueSize === 0) return null;
 
@@ -83,14 +86,13 @@ export function OfflineQueueIndicator() {
       {isOnline ? (
         <>
           <RefreshCw className="h-4 w-4 animate-spin" />
-          <span>Syncing {queueSize} pending action{queueSize > 1 ? "s" : ""}…</span>
+          <span>{t("status_syncing", "Syncing pending actions...")}</span>
         </>
       ) : (
         <>
           <WifiOff className="h-4 w-4" />
           <span>
-            {queueSize} action{queueSize > 1 ? "s" : ""} queued for when
-            you&apos;re back online
+            {queueSize} {queueSize > 1 ? "actions" : "action"} queued
           </span>
         </>
       )}
@@ -103,6 +105,7 @@ export function OfflineQueueIndicator() {
 // ---------------------------------------------------------------------------
 
 export function OfflineToolBadge({ className }: { className?: string }) {
+  const { t } = useI18n();
   return (
     <span
       className={cn(
@@ -112,7 +115,7 @@ export function OfflineToolBadge({ className }: { className?: string }) {
       )}
     >
       <Wifi className="h-3 w-3" />
-      Works offline
+      {t("status_works_offline", "Works offline")}
     </span>
   );
 }

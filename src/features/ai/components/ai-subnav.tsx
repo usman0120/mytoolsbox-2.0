@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { useAuth } from "@/lib/auth/auth-context";
+import { useI18n } from "@/lib/i18n";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SignInDialog } from "@/components/auth/signin-dialog";
@@ -21,40 +22,44 @@ interface AISubnavProps {
   subtitle?: string;
 }
 
-const AI_NAV_ITEMS = [
-  {
-    href: "/ai",
-    label: "Chat Workspace",
-    icon: MessageSquare,
-    badge: null,
-  },
-  {
-    href: "/ai/prompts",
-    label: "Prompt Library",
-    icon: Lightbulb,
-    badge: "160+",
-  },
-  {
-    href: "/ai/compare",
-    label: "Compare Models",
-    icon: Cpu,
-    badge: "Arena",
-  },
-  {
-    href: "/ai/personas",
-    label: "Personas & Tools",
-    icon: Sparkles,
-    badge: null,
-  },
-];
-
 export function AISubnav({
-  title = "AI Intelligence Studio",
-  subtitle = "High-performance AI chat, real-time model comparisons, and curated prompts powered by Google Gemini and Groq.",
+  title,
+  subtitle,
 }: AISubnavProps) {
   const pathname = usePathname();
   const { user } = useAuth();
+  const { t, localizePath } = useI18n();
   const [showSignIn, setShowSignIn] = useState(false);
+
+  const displayTitle = title ?? t("ai_subnav_title", "AI Intelligence Studio");
+  const displaySubtitle = subtitle ?? t("ai_subnav_subtitle", "High-performance AI chat, real-time model comparisons, and curated prompts powered by Google Gemini and Groq.");
+
+  const aiNavItems = [
+    {
+      href: "/ai",
+      label: t("ai_new_chat", "Chat Workspace"),
+      icon: MessageSquare,
+      badge: null,
+    },
+    {
+      href: "/ai/prompts",
+      label: t("ai_prompt_library", "Prompt Library"),
+      icon: Lightbulb,
+      badge: "160+",
+    },
+    {
+      href: "/ai/compare",
+      label: t("ai_compare_models", "Compare Models"),
+      icon: Cpu,
+      badge: "Arena",
+    },
+    {
+      href: "/ai/personas",
+      label: t("ai_personas", "Personas & Tools"),
+      icon: Sparkles,
+      badge: null,
+    },
+  ];
 
   return (
     <div className="space-y-5 mb-6">
@@ -67,17 +72,17 @@ export function AISubnav({
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">
-                {title}
+                {displayTitle}
               </h1>
               <Badge
                 variant="outline"
                 className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full border-primary/30 text-primary bg-primary/5"
               >
-                Production Ready
+                {t("ai_subnav_badge", "Production Ready")}
               </Badge>
             </div>
             <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 line-clamp-2">
-              {subtitle}
+              {displaySubtitle}
             </p>
           </div>
         </div>
@@ -87,7 +92,7 @@ export function AISubnav({
           <div className="flex items-center gap-2.5 bg-muted/40 border border-border/60 rounded-2xl p-2 px-3 shrink-0 self-start md:self-auto">
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <Coins className="h-3.5 w-3.5 text-amber-500" />
-              <span>Get <strong>1,000 free monthly credits</strong></span>
+              <span>{t("ai_subnav_free_credits", "Get 1,000 free monthly credits")}</span>
             </div>
             <Button
               size="sm"
@@ -95,7 +100,7 @@ export function AISubnav({
               className="rounded-xl h-7 px-3 text-xs gap-1.5 shadow-xs font-medium"
             >
               <LogIn className="h-3 w-3" />
-              Sign In
+              {t("auth_signin", "Sign In")}
             </Button>
           </div>
         )}
@@ -103,13 +108,14 @@ export function AISubnav({
 
       {/* Navigation Pills */}
       <nav aria-label="AI Navigation" className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar border-b border-border/50">
-        {AI_NAV_ITEMS.map((item) => {
-          const isActive = pathname === item.href;
+        {aiNavItems.map((item) => {
+          const localizedHref = localizePath(item.href);
+          const isActive = pathname === item.href || pathname === localizedHref;
           const Icon = item.icon;
           return (
             <Link
               key={item.href}
-              href={item.href}
+              href={localizedHref}
               className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
                 isActive
                   ? "bg-primary text-primary-foreground shadow-xs"

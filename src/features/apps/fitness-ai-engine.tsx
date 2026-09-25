@@ -23,8 +23,7 @@ import {
 } from "./fitness/fitness-engine-logic";
 
 export function FitnessAIEngine() {
-  const { remaining, refresh } = useCredits();
-  const isLow = remaining < 100;
+  const { refresh } = useCredits();
 
   // Tab State
   const [activeTab, setActiveTab] = useState<"program" | "tracker" | "onerm" | "tdee" | "coach">("program");
@@ -162,12 +161,6 @@ export function FitnessAIEngine() {
       return;
     }
 
-    const cost = 20;
-    if (remaining < cost) {
-      toast.error(`Requires ${cost} AI credits. Current balance: ${remaining}.`);
-      return;
-    }
-
     setIsCoachLoading(true);
     setCoachResponse("");
 
@@ -191,7 +184,7 @@ export function FitnessAIEngine() {
       const data = await res.json();
       setCoachResponse(data.text);
       refresh();
-      toast.success("Coaching advice generated! 20 credits used.");
+      toast.success("Coaching advice generated!");
     } catch {
       // Graceful offline fallback
       const offlineAdvice = generateOfflineFitnessAdvice(textToAsk);
@@ -219,13 +212,6 @@ export function FitnessAIEngine() {
             <h2 className="text-xl font-bold tracking-tight">AI Fitness & Gym Coach Platform</h2>
             <p className="text-xs text-muted-foreground">Science-backed training splits, 1RM calculators, TDEE macros & AI coaching</p>
           </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="gap-1.5 px-3 py-1 font-mono text-xs">
-            <Sparkles className="h-3 w-3 text-cyan-500" />
-            <span>AI Credits: <strong className={isLow ? "text-amber-500" : "text-cyan-500"}>{remaining}</strong></span>
-          </Badge>
         </div>
       </div>
 
@@ -829,9 +815,6 @@ export function FitnessAIEngine() {
                     Ask any question about programming, lifting mechanics, plateaus, or injury management.
                   </CardDescription>
                 </div>
-                <Badge variant="secondary" className="text-xs">
-                  Cost: 20 credits / query
-                </Badge>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -865,10 +848,7 @@ export function FitnessAIEngine() {
                   rows={3}
                   className="text-sm"
                 />
-                <div className="flex justify-between items-center">
-                  <span className="text-[11px] text-muted-foreground">
-                    Available balance: <strong>{remaining}</strong> credits
-                  </span>
+                <div className="flex justify-end items-center">
                   <Button
                     onClick={() => handleAskCoach()}
                     disabled={isCoachLoading}

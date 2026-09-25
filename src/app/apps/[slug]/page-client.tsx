@@ -15,20 +15,20 @@ import { Separator } from "@/components/ui/separator";
 import { AppEngine } from "@/features/app-engine";
 import { ToolDefinition } from "@/types";
 import { useAuth } from "@/lib/auth";
-import { useCredits } from "@/lib/credits/use-credits";
 import { addFavorite, getFavorites, removeFavorite, isFavorited, addHistoryEntry } from "@/lib/firebase/user-service";
 import { trackEvent } from "@/lib/analytics";
 import { toast } from "sonner";
 import * as Icons from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 interface AppPageClientProps {
   app: ToolDefinition;
 }
 
 export function AppPageClient({ app }: AppPageClientProps) {
+  const { t, localizePath, getToolName } = useI18n();
+  const displayName = getToolName(app.slug, app.name);
   const { user } = useAuth();
-  const { remaining, refresh } = useCredits();
-  const isLow = remaining < 100;
   const [favorited, setFavorited] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -136,18 +136,11 @@ export function AppPageClient({ app }: AppPageClientProps) {
       {!isFullscreen && (
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Link href="/" className="hover:text-foreground transition-colors">Home</Link>
+            <Link href={localizePath("/")} className="hover:text-foreground transition-colors">Home</Link>
             <ChevronRight className="h-3.5 w-3.5" />
-            <Link href="/apps" className="hover:text-foreground transition-colors">Apps</Link>
+            <Link href={localizePath("/apps")} className="hover:text-foreground transition-colors">{t("nav_apps")}</Link>
             <ChevronRight className="h-3.5 w-3.5" />
-            <span className="text-foreground font-medium truncate">{app.name}</span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="gap-1.5 px-3 py-1 font-mono text-xs">
-              <Sparkles className="h-3 w-3 text-cyan-500" />
-              <span>AI Credits: <strong className={isLow ? "text-amber-500" : "text-cyan-500"}>{remaining}</strong></span>
-            </Badge>
+            <span className="text-foreground font-medium truncate">{displayName}</span>
           </div>
         </div>
       )}
@@ -160,15 +153,15 @@ export function AppPageClient({ app }: AppPageClientProps) {
           </div>
           <div>
             <div className="flex flex-wrap items-center gap-2 mb-1">
-              <h1 className="text-xl md:text-2xl font-bold tracking-tight">{app.name}</h1>
+              <h1 className="text-xl md:text-2xl font-bold tracking-tight">{displayName}</h1>
               <Badge className="text-[10px] gap-1 rounded-full bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20">
                 <Sparkles className="h-3 w-3" />
-                Standalone Platform
+                {t("badge_standalone")}
               </Badge>
               {app.requiresPro && (
                 <Badge className="text-[10px] gap-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20">
                   <Star className="h-3 w-3 fill-current" />
-                  Pro
+                  {t("badge_pro")}
                 </Badge>
               )}
             </div>
@@ -185,10 +178,10 @@ export function AppPageClient({ app }: AppPageClientProps) {
             size="sm"
             className="text-xs gap-1.5 h-9"
             onClick={() => setIsFullscreen(!isFullscreen)}
-            title={isFullscreen ? "Exit Fullscreen" : "Fullscreen Studio Mode"}
+            title={isFullscreen ? t("badge_exit_studio") : t("badge_studio_mode")}
           >
             {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-            <span className="hidden sm:inline">{isFullscreen ? "Exit Studio" : "Studio Canvas"}</span>
+            <span className="hidden sm:inline">{isFullscreen ? t("badge_exit_studio") : t("badge_studio_mode")}</span>
           </Button>
 
           <Button
@@ -196,7 +189,7 @@ export function AppPageClient({ app }: AppPageClientProps) {
             size="icon"
             className="h-9 w-9 rounded-lg"
             onClick={handleFavorite}
-            aria-label={favorited ? "Remove from favorites" : "Add to favorites"}
+            aria-label={favorited ? t("fav_remove") : t("action_favorite")}
           >
             <Heart className={`h-4 w-4 ${favorited ? "fill-red-500 text-red-500" : ""}`} />
           </Button>
@@ -206,7 +199,7 @@ export function AppPageClient({ app }: AppPageClientProps) {
             size="icon"
             className="h-9 w-9 rounded-lg"
             onClick={handleShare}
-            aria-label="Share this app"
+            aria-label={t("action_share")}
           >
             {copied ? <Check className="h-4 w-4 text-green-500" /> : <Share2 className="h-4 w-4" />}
           </Button>
@@ -225,13 +218,13 @@ export function AppPageClient({ app }: AppPageClientProps) {
         <Tabs defaultValue="features" className="w-full space-y-4">
           <TabsList className="grid grid-cols-3 max-w-md h-9 bg-muted/60 p-0.5">
             <TabsTrigger value="features" className="text-xs gap-1.5">
-              <Zap className="h-3.5 w-3.5" /> Capabilities
+              <Zap className="h-3.5 w-3.5" /> {t("apps_capabilities")}
             </TabsTrigger>
             <TabsTrigger value="specs" className="text-xs gap-1.5">
-              <Shield className="h-3.5 w-3.5" /> Architecture
+              <Shield className="h-3.5 w-3.5" /> {t("apps_architecture")}
             </TabsTrigger>
             <TabsTrigger value="faq" className="text-xs gap-1.5">
-              <HelpCircle className="h-3.5 w-3.5" /> FAQs
+              <HelpCircle className="h-3.5 w-3.5" /> {t("apps_faqs")}
             </TabsTrigger>
           </TabsList>
 
@@ -241,10 +234,10 @@ export function AppPageClient({ app }: AppPageClientProps) {
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2">
                   <Sparkles className="h-4 w-4 text-cyan-500" />
-                  Included Platform Features & Tools
+                  {t("apps_features_title")}
                 </CardTitle>
                 <CardDescription>
-                  Comprehensive capabilities built into this standalone platform.
+                  {t("apps_features_desc")}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -273,11 +266,11 @@ export function AppPageClient({ app }: AppPageClientProps) {
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-500/10 text-green-600 dark:text-green-400 mb-2">
                     <Shield className="h-4 w-4" />
                   </div>
-                  <CardTitle className="text-sm">Zero-Leak Local Processing</CardTitle>
+                  <CardTitle className="text-sm">{t("apps_zero_leak_title")}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    Calculations, session tracking, algorithms, and documents are rendered directly in your client browser memory without telemetry tracking.
+                    {t("apps_zero_leak_desc")}
                   </p>
                 </CardContent>
               </Card>
@@ -287,11 +280,11 @@ export function AppPageClient({ app }: AppPageClientProps) {
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 mb-2">
                     <Sparkles className="h-4 w-4" />
                   </div>
-                  <CardTitle className="text-sm">Centralized AI Intelligence</CardTitle>
+                  <CardTitle className="text-sm">{t("apps_ai_intel_title")}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    Optional AI consultations and deep analyses draw from your 1,000 monthly credits with automatic 30-day reset cycles.
+                    {t("apps_ai_intel_desc")}
                   </p>
                 </CardContent>
               </Card>
@@ -301,7 +294,7 @@ export function AppPageClient({ app }: AppPageClientProps) {
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-500/10 text-violet-600 dark:text-violet-400 mb-2">
                     <Users className="h-4 w-4" />
                   </div>
-                  <CardTitle className="text-sm">Audience & Optimization</CardTitle>
+                  <CardTitle className="text-sm">{t("apps_audience_title")}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex flex-wrap gap-1.5">
@@ -322,7 +315,7 @@ export function AppPageClient({ app }: AppPageClientProps) {
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2">
                   <HelpCircle className="h-4 w-4 text-cyan-500" />
-                  Frequently Asked Questions
+                  {t("faq_title")}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">

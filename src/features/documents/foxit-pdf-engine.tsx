@@ -352,7 +352,7 @@ export function FoxitPDFEngine() {
                     </div>
                     <div>
                       <h4 className="font-semibold text-xs">AI Document Intelligence</h4>
-                      <p className="text-[11px] text-muted-foreground">2 credits per query</p>
+                      <p className="text-[11px] text-muted-foreground">Powered by AI</p>
                     </div>
                   </div>
 

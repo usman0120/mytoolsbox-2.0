@@ -16,13 +16,18 @@ export type AnalyticsEvent =
 export function trackEvent(event: AnalyticsEvent, data?: Record<string, unknown>) {
   if (typeof window === "undefined") return;
 
-  // Send to Google Analytics if available
-  const win = window as unknown as { gtag?: (cmd: string, event: string, data?: Record<string, unknown>) => void };
-  if (typeof win.gtag === "function") {
-    win.gtag("event", event, data);
+  // Send to Google Analytics with dataLayer queue fallback
+  if (typeof window.gtag === "function") {
+    window.gtag("event", event, data);
+  } else {
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({
+      event,
+      ...data,
+    });
   }
 
-  // Log in development
+  // Log in development for instant verification
   if (process.env.NODE_ENV === "development") {
     console.log(`[Analytics] ${event}`, data);
   }

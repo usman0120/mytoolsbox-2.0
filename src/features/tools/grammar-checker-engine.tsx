@@ -22,7 +22,6 @@ import {
   CheckCheck,
   X,
   FileCheck,
-  Coins,
 } from "lucide-react";
 import { checkGrammar, type GrammarIssue } from "@/lib/ai/services/grammar-checker";
 import { useCredits } from "@/lib/credits/use-credits";
@@ -158,7 +157,7 @@ export function GrammarCheckerEngine() {
   const [activeTab, setActiveTab] = useState("corrected");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [error, setError] = useState<string | null>(null);
-  const { remaining, refresh } = useCredits();
+  const { refresh } = useCredits();
 
   const handleCheck = useCallback(async () => {
     if (!input.trim()) return;
@@ -170,7 +169,7 @@ export function GrammarCheckerEngine() {
       setOutput(result.correctedText);
       setIssues(result.issues);
       setSummary(result.summary);
-      toast.success("Grammar analysis completed! (10 credits deducted)");
+      toast.success("Grammar analysis completed!");
       await refresh();
     } catch {
       const result = runClientGrammarCheck(input.trim());
@@ -262,9 +261,6 @@ export function GrammarCheckerEngine() {
           ))}
         </div>
         <div className="flex items-center gap-1.5">
-          <Badge variant="outline" className="text-xs gap-1 text-muted-foreground">
-            <Coins className="h-3 w-3 text-amber-500" /> 10 credits {remaining !== undefined && remaining > 0 ? `(${remaining} left)` : ""}
-          </Badge>
           <Badge className="bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20 gap-1 text-xs">
             <Sparkles className="h-3 w-3" /> AI Assistant Connected
           </Badge>

@@ -51,7 +51,7 @@ export function AppsPageClient() {
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             type="search"
-            placeholder={t("tools_search_placeholder", "Search apps...")}
+            placeholder={t("apps_search_placeholder", "Search apps...")}
             className="pl-10 h-11 rounded-xl border-border/60 focus-visible:ring-primary/30 bg-background"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -91,10 +91,10 @@ export function AppsPageClient() {
           <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-muted/50">
             <Search className="h-10 w-10" />
           </div>
-          <p className="text-lg font-medium">{t("tools_no_results", "No apps found")}</p>
+          <p className="text-lg font-medium">{t("apps_no_results", "No apps found")}</p>
           <p className="text-sm">Try a different search term</p>
           <Button variant="outline" className="rounded-xl mt-2" onClick={() => setSearchQuery("")}>
-            Clear search
+            {t("action_clear_all", "Clear search")}
           </Button>
         </div>
       ) : viewMode === "grid" ? (

@@ -437,13 +437,13 @@ export function ToolPageClient({ tool }: ToolPageClientProps) {
                     <div className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-primary shrink-0 mt-0.5">
                       <Check className="h-3 w-3" />
                     </div>
-                    <span className="text-foreground font-medium">No account or signup required</span>
+                    <span className="text-foreground font-medium">{t("feature_no_signup_extra")}</span>
                   </li>
                   <li className="flex items-start gap-3 text-sm p-2.5 rounded-lg bg-accent/25 hover:bg-accent/40 transition-colors">
                     <div className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-primary shrink-0 mt-0.5">
                       <Check className="h-3 w-3" />
                     </div>
-                    <span className="text-foreground font-medium">Unlimited free executions & zero watermarks</span>
+                    <span className="text-foreground font-medium">{t("feature_unlimited_extra")}</span>
                   </li>
                 </ul>
               </CardContent>
@@ -457,7 +457,7 @@ export function ToolPageClient({ tool }: ToolPageClientProps) {
                 <Users className="h-4 w-4" />
               </div>
               <h2 className="text-xl md:text-2xl font-bold tracking-tight">
-                Who Uses {tool.name}?
+                {t("use_cases_title")}
               </h2>
             </div>
 
@@ -465,44 +465,44 @@ export function ToolPageClient({ tool }: ToolPageClientProps) {
               <Card className="border-border/50 bg-card/40">
                 <CardHeader className="pb-2">
                   <div className="flex items-center gap-2 text-primary font-semibold text-sm">
-                    <Sparkles className="h-4 w-4" /> Students & Academics
+                    <Sparkles className="h-4 w-4" /> {t("use_case_students")}
                   </div>
                 </CardHeader>
                 <CardContent className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                  Easily format coursework, prepare submissions, and complete research assignments quickly without downloading bloated desktop apps.
+                  {t("use_case_students_desc")}
                 </CardContent>
               </Card>
 
               <Card className="border-border/50 bg-card/40">
                 <CardHeader className="pb-2">
                   <div className="flex items-center gap-2 text-primary font-semibold text-sm">
-                    <Code2 className="h-4 w-4" /> Developers & Engineers
+                    <Code2 className="h-4 w-4" /> {t("use_case_developers")}
                   </div>
                 </CardHeader>
                 <CardContent className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                  Fast syntax processing, format verification, and local execution with instant feedback right from your browser console.
+                  {t("use_case_developers_desc")}
                 </CardContent>
               </Card>
 
               <Card className="border-border/50 bg-card/40">
                 <CardHeader className="pb-2">
                   <div className="flex items-center gap-2 text-primary font-semibold text-sm">
-                    <FileCheck className="h-4 w-4" /> Business & Office Teams
+                    <FileCheck className="h-4 w-4" /> {t("use_case_business")}
                   </div>
                 </CardHeader>
                 <CardContent className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                  Process contracts, invoices, and sensitive documents securely with complete compliance and zero risk of corporate data leaks.
+                  {t("use_case_business_desc")}
                 </CardContent>
               </Card>
 
               <Card className="border-border/50 bg-card/40">
                 <CardHeader className="pb-2">
                   <div className="flex items-center gap-2 text-primary font-semibold text-sm">
-                    <Globe className="h-4 w-4" /> Daily Problem Solvers
+                    <Globe className="h-4 w-4" /> {t("use_case_daily")}
                   </div>
                 </CardHeader>
                 <CardContent className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                  Anyone who needs a dependable, ad-light utility to get tasks done immediately without subscriptions or hidden paywalls.
+                  {t("use_case_daily_desc")}
                 </CardContent>
               </Card>
             </div>
@@ -585,7 +585,7 @@ export function ToolPageClient({ tool }: ToolPageClientProps) {
           {/* About & Trust Indicators */}
           <Card className="border-border/50">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Tool Specifications</CardTitle>
+              <CardTitle className="text-base">{t("spec_specs_title")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center gap-3 text-sm">
@@ -594,11 +594,11 @@ export function ToolPageClient({ tool }: ToolPageClientProps) {
                 </div>
                 <div>
                   <p className="font-semibold text-xs">
-                    {tool.processingMode === "client" ? "100% In-Browser" : "Cloud Powered"}
+                    {tool.processingMode === "client" ? t("spec_in_browser") : "Cloud Powered"}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {tool.processingMode === "client"
-                      ? "Files never leave this computer"
+                      ? t("spec_in_browser_desc")
                       : "Encrypted server execution"}
                   </p>
                 </div>
@@ -609,8 +609,8 @@ export function ToolPageClient({ tool }: ToolPageClientProps) {
                   <Zap className="h-4 w-4" />
                 </div>
                 <div>
-                  <p className="font-semibold text-xs">No Registration</p>
-                  <p className="text-xs text-muted-foreground">Instant access without logging in</p>
+                  <p className="font-semibold text-xs">{t("spec_no_reg")}</p>
+                  <p className="text-xs text-muted-foreground">{t("spec_no_reg_desc")}</p>
                 </div>
               </div>
 
@@ -623,9 +623,9 @@ export function ToolPageClient({ tool }: ToolPageClientProps) {
                     href={localizePath(`/tools?category=${tool.category}`)}
                     className="font-semibold text-xs capitalize hover:text-primary transition-colors block"
                   >
-                    {localizedCategoryTitle} Cluster
+                    {localizedCategoryTitle} {t("spec_cluster_suffix")}
                   </Link>
-                  <p className="text-xs text-muted-foreground">View all category utilities</p>
+                  <p className="text-xs text-muted-foreground">{t("spec_cluster_desc")}</p>
                 </div>
               </div>
             </CardContent>
@@ -692,13 +692,13 @@ export function ToolPageClient({ tool }: ToolPageClientProps) {
           {/* Category Pillar Hub Link */}
           <Card className="border-primary/20 bg-linear-to-br from-primary/5 to-transparent">
             <CardContent className="p-4 space-y-2 text-center">
-              <p className="font-semibold text-sm">Looking for more {categoryTitle} solutions?</p>
+              <p className="font-semibold text-sm">{t("hub_more_prefix")} {categoryTitle} solutions?</p>
               <p className="text-xs text-muted-foreground">
-                Browse our curated directory of browser-powered tools and apps.
+                {t("hub_more_sub")}
               </p>
               <Link href={localizePath(`/tools?category=${tool.category}`)} className="block pt-1">
                 <Button size="sm" variant="default" className="w-full text-xs font-medium">
-                  Explore {categoryTitle} Hub <ArrowRight className="h-3 w-3 ml-1" />
+                  {t("hub_explore_btn_prefix")} {categoryTitle} Hub <ArrowRight className="h-3 w-3 ml-1" />
                 </Button>
               </Link>
             </CardContent>

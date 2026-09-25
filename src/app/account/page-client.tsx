@@ -3,13 +3,14 @@
 import { useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { useRouter } from "next/navigation";
+import { useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
   ArrowUpCircle, Shield, Zap, Clock, Heart, History, Cloud,
-  Sparkles, FileUp, Loader2, CheckCircle2, LogIn, Mail,
+  Sparkles, FileUp, Loader2, CheckCircle2, LogIn, Mail, Calculator
 } from "lucide-react";
 import { toast } from "sonner";
 import { SignInDialog } from "@/components/auth/signin-dialog";
@@ -17,6 +18,7 @@ import { SignInDialog } from "@/components/auth/signin-dialog";
 export function AccountPageClient() {
   const { user, loading: authLoading, isAnonymous } = useAuth();
   const router = useRouter();
+  const { t, localizePath } = useI18n();
   const [showSignIn, setShowSignIn] = useState(false);
   const [upgrading, setUpgrading] = useState(false);
 
@@ -32,21 +34,21 @@ export function AccountPageClient() {
     return (
       <div className="container max-w-4xl mx-auto py-8 px-4 space-y-8">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Account</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{t("account_title", "Account")}</h1>
           <p className="text-muted-foreground mt-1">
-            Sign in to manage your account and unlock more features.
+            {t("auth_login_desc", "Sign in to manage your account and unlock more features.")}
           </p>
         </div>
         <Card>
           <CardContent className="py-12 text-center">
             <Shield className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-            <h3 className="text-lg font-medium mb-2">Please log in first</h3>
+            <h3 className="text-lg font-medium mb-2">{t("auth_login_required", "Please log in first")}</h3>
             <p className="text-muted-foreground mb-4">
-              Create an account or sign in to save favorites, track history, and access your settings across devices.
+              {t("account_guest_notice", "Create an account or sign in to save favorites, track history, and sync your settings across devices.")}
             </p>
             <Button onClick={() => setShowSignIn(true)}>
               <LogIn className="mr-2 h-4 w-4" />
-              Sign In
+              {t("auth_signin", "Sign In")}
             </Button>
           </CardContent>
         </Card>
@@ -55,38 +57,38 @@ export function AccountPageClient() {
     );
   }
 
-  const isPro = false; // TODO: wire to subscription check
+  const isPro = false;
 
   const guestFeatures = [
-    { icon: Calculator, label: "Calculators & converters" },
-    { icon: FileUp, label: "Image & PDF tools" },
-    { icon: Sparkles, label: "Basic AI features" },
-    { icon: Cloud, label: "Browser-based processing" },
+    { icon: Calculator, label: t("cat_calculators", "Calculators & converters") },
+    { icon: FileUp, label: t("cat_images", "Image & PDF tools") },
+    { icon: Sparkles, label: t("nav_ai", "AI features") },
+    { icon: Cloud, label: t("badge_client_side", "Browser-based processing") },
   ];
 
   const accountFeatures = [
-    { icon: Heart, label: "Save favorites" },
-    { icon: History, label: "Tool usage history" },
-    { icon: Clock, label: "Saved results & templates" },
-    { icon: Shield, label: "Cross-device access" },
+    { icon: Heart, label: t("auth_favorites", "Favorites") },
+    { icon: History, label: t("auth_history", "History") },
+    { icon: Clock, label: t("resources_tab_templates", "Templates") },
+    { icon: Shield, label: t("feature_privacy_title", "Privacy First") },
   ];
 
   const proFeatures = [
-    { icon: Zap, label: "Higher AI limits" },
-    { icon: FileUp, label: "Larger file sizes" },
-    { icon: Sparkles, label: "Specialized AI models" },
-    { icon: Shield, label: "Premium apps & tools" },
+    { icon: Zap, label: t("ai_credits_badge", "Higher AI limits") },
+    { icon: FileUp, label: t("badge_pro", "Larger file sizes") },
+    { icon: Sparkles, label: t("ai_personas", "Specialized AI models") },
+    { icon: Shield, label: t("badge_standalone", "Premium apps & tools") },
   ];
 
   return (
     <div className="container max-w-4xl mx-auto py-8 px-4 space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Account</h1>
+        <h1 className="text-3xl font-bold tracking-tight">{t("account_title", "Account")}</h1>
         <p className="text-muted-foreground mt-1">
           {isAnonymous
-            ? "You're using a guest account. Upgrade to unlock more features."
-            : "Manage your account and subscription."}
+            ? t("account_guest_sub", "You're using a guest account. Upgrade to unlock more features.")
+            : t("account_user_sub", "Manage your account, profile, and subscription.")}
         </p>
       </div>
 
@@ -95,20 +97,20 @@ export function AccountPageClient() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5" />
-            Current Plan
+            {t("account_plan_title", "Current Plan")}
           </CardTitle>
           <CardDescription>
             {isAnonymous
-              ? "Guest accounts have access to basic tools and features."
+              ? t("account_plan_guest_desc", "Guest accounts have access to basic tools and features.")
               : isPro
-                ? "You're on the Pro plan with full access."
-                : "You're on the free account plan."}
+                ? t("account_plan_pro_desc", "You're on the Pro plan with full access.")
+                : t("account_plan_free_desc", "You're on the free account plan.")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center gap-2">
             <Badge variant={isPro ? "default" : "secondary"} className="text-sm px-3 py-1">
-              {isAnonymous ? "Guest" : isPro ? "Pro" : "Free"}
+              {isAnonymous ? t("auth_guest", "Guest") : isPro ? t("badge_pro", "Pro") : t("badge_free", "Free")}
             </Badge>
             {isAnonymous && (
               <Button
@@ -122,7 +124,7 @@ export function AccountPageClient() {
                 ) : (
                   <ArrowUpCircle className="mr-2 h-4 w-4" />
                 )}
-                Upgrade to full account
+                {t("account_upgrade_btn", "Upgrade to Full Account")}
               </Button>
             )}
           </div>
@@ -132,13 +134,13 @@ export function AccountPageClient() {
             {/* Guest */}
             <div className="space-y-3">
               <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider">
-                Guest
+                {t("auth_guest", "Guest")}
               </h3>
               <ul className="space-y-2">
-                {guestFeatures.map((f) => (
-                  <li key={f.label} className="flex items-center gap-2 text-sm">
-                    <f.icon className="h-4 w-4 text-muted-foreground" />
-                    {f.label}
+                {guestFeatures.map((f, i) => (
+                  <li key={i} className="flex items-center gap-2 text-sm">
+                    <f.icon className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <span>{f.label}</span>
                   </li>
                 ))}
               </ul>
@@ -147,13 +149,13 @@ export function AccountPageClient() {
             {/* Account */}
             <div className="space-y-3">
               <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider">
-                Account
+                {t("settings_tab_account", "Account")}
               </h3>
               <ul className="space-y-2">
-                {accountFeatures.map((f) => (
-                  <li key={f.label} className="flex items-center gap-2 text-sm">
-                    <CheckCircle2 className="h-4 w-4 text-green-500" />
-                    {f.label}
+                {accountFeatures.map((f, i) => (
+                  <li key={i} className="flex items-center gap-2 text-sm">
+                    <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+                    <span>{f.label}</span>
                   </li>
                 ))}
               </ul>
@@ -162,13 +164,13 @@ export function AccountPageClient() {
             {/* Pro */}
             <div className="space-y-3">
               <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider">
-                Pro
+                {t("badge_pro", "Pro")}
               </h3>
               <ul className="space-y-2">
-                {proFeatures.map((f) => (
-                  <li key={f.label} className="flex items-center gap-2 text-sm">
-                    <Zap className="h-4 w-4 text-amber-500" />
-                    {f.label}
+                {proFeatures.map((f, i) => (
+                  <li key={i} className="flex items-center gap-2 text-sm">
+                    <Zap className="h-4 w-4 text-amber-500 shrink-0" />
+                    <span>{f.label}</span>
                   </li>
                 ))}
               </ul>
@@ -182,22 +184,22 @@ export function AccountPageClient() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5" />
-            Account Details
+            {t("account_details_title", "Account Details")}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <p className="text-sm font-medium">Email</p>
+              <p className="text-sm font-medium">{t("account_email_label", "Email")}</p>
               <p className="text-sm text-muted-foreground">
                 {user.email ?? "No email (guest account)"}
               </p>
             </div>
             <div>
-              <p className="text-sm font-medium">Provider</p>
+              <p className="text-sm font-medium">{t("account_provider_label", "Provider")}</p>
               <p className="text-sm text-muted-foreground">
                 {isAnonymous
-                  ? "Anonymous"
+                  ? t("auth_guest", "Anonymous")
                   : user.providerData[0]?.providerId === "google.com"
                     ? "Google"
                     : user.providerData[0]?.providerId === "password"
@@ -206,7 +208,7 @@ export function AccountPageClient() {
               </p>
             </div>
             <div>
-              <p className="text-sm font-medium">Account created</p>
+              <p className="text-sm font-medium">{t("account_created_label", "Account Created")}</p>
               <p className="text-sm text-muted-foreground">
                 {user.metadata.creationTime
                   ? new Date(user.metadata.creationTime).toLocaleDateString()
@@ -214,7 +216,7 @@ export function AccountPageClient() {
               </p>
             </div>
             <div>
-              <p className="text-sm font-medium">Last sign in</p>
+              <p className="text-sm font-medium">{t("account_last_signin_label", "Last Sign In")}</p>
               <p className="text-sm text-muted-foreground">
                 {user.metadata.lastSignInTime
                   ? new Date(user.metadata.lastSignInTime).toLocaleDateString()
@@ -228,32 +230,32 @@ export function AccountPageClient() {
       {/* Quick Links */}
       <Card>
         <CardHeader>
-          <CardTitle>Quick Links</CardTitle>
+          <CardTitle>{t("account_quick_links_title", "Quick Links")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
           <Button
             variant="outline"
             className="w-full justify-start"
-            onClick={() => router.push("/favorites")}
+            onClick={() => router.push(localizePath("/favorites"))}
           >
             <Heart className="mr-2 h-4 w-4" />
-            View favorites
+            {t("auth_favorites", "Favorites")}
           </Button>
           <Button
             variant="outline"
             className="w-full justify-start"
-            onClick={() => router.push("/history")}
+            onClick={() => router.push(localizePath("/history"))}
           >
             <History className="mr-2 h-4 w-4" />
-            View history
+            {t("auth_history", "History")}
           </Button>
           <Button
             variant="outline"
             className="w-full justify-start"
-            onClick={() => router.push("/settings")}
+            onClick={() => router.push(localizePath("/settings"))}
           >
             <Shield className="mr-2 h-4 w-4" />
-            Account settings
+            {t("auth_settings", "Settings")}
           </Button>
         </CardContent>
       </Card>
@@ -262,6 +264,3 @@ export function AccountPageClient() {
     </div>
   );
 }
-
-// Need to import Calculator icon
-import { Calculator } from "lucide-react";

@@ -10,7 +10,6 @@ import {
   Sparkles,
   Download,
   Share2,
-  Coins,
   Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -45,7 +44,7 @@ export function SocialMediaContentGeneratorEngine() {
   const [posts, setPosts] = useState<SocialMediaPost[]>([]);
   const [copied, setCopied] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const { remaining, refresh } = useCredits();
+  const { refresh } = useCredits();
 
   const handleGenerate = async () => {
     if (!topic.trim()) {
@@ -80,7 +79,7 @@ export function SocialMediaContentGeneratorEngine() {
         };
 
         setPosts([newPost, ...posts]);
-        toast.success(`Generated ${platform} post! (10 credits deducted)`);
+        toast.success(`Generated ${platform} post!`);
         await refresh();
       } else {
         throw new Error("Empty response");
@@ -200,9 +199,6 @@ export function SocialMediaContentGeneratorEngine() {
         <Button onClick={handleGenerate} className="w-full gap-2 font-medium" disabled={!topic.trim() || isLoading}>
           {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
           Craft Social Media Post
-          <span className="ml-auto inline-flex items-center gap-1 text-xs opacity-90 font-normal">
-            <Coins className="h-3.5 w-3.5 text-amber-300" /> 10 credits {remaining !== undefined && remaining > 0 ? `(${remaining} left)` : ""}
-          </span>
         </Button>
       </div>
 

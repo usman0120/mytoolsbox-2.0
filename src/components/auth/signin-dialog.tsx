@@ -16,6 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { LogIn, Mail, Loader2, User } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 interface SignInDialogProps {
   open: boolean;
@@ -23,6 +24,7 @@ interface SignInDialogProps {
 }
 
 export function SignInDialog({ open, onOpenChange }: SignInDialogProps) {
+  const { t } = useI18n();
   const { signInWithGoogle, signInWithEmail, signUpWithEmail, signInAsGuest, resetPassword } =
     useAuth();
   const [email, setEmail] = useState("");
@@ -122,22 +124,21 @@ export function SignInDialog({ open, onOpenChange }: SignInDialogProps) {
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {mode === "signin" && "Welcome back"}
-            {mode === "signup" && "Create an account"}
-            {mode === "reset" && "Reset your password"}
+            {mode === "signin" && t("auth_signin")}
+            {mode === "signup" && t("auth_signup")}
+            {mode === "reset" && t("auth_reset_pwd")}
           </DialogTitle>
           <DialogDescription>
-            {mode === "signin" && "Sign in to access all tools and features"}
-            {mode === "signup" && "Sign up to get started with MyToolsBox"}
-            {mode === "reset" &&
-              "Enter your email to receive a password reset link"}
+            {mode === "signin" && t("auth_login_desc")}
+            {mode === "signup" && t("auth_login_desc")}
+            {mode === "reset" && t("auth_reset_pwd")}
           </DialogDescription>
         </DialogHeader>
 
         {mode === "reset" ? (
           <form onSubmit={handleResetPassword} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="reset-email">Email</Label>
+              <Label htmlFor="reset-email">{t("auth_email")}</Label>
               <Input
                 id="reset-email"
                 type="email"
@@ -149,7 +150,7 @@ export function SignInDialog({ open, onOpenChange }: SignInDialogProps) {
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Send reset link
+              {t("auth_reset_pwd")}
             </Button>
             <Button
               type="button"
@@ -157,7 +158,7 @@ export function SignInDialog({ open, onOpenChange }: SignInDialogProps) {
               className="w-full"
               onClick={() => setMode("signin")}
             >
-              Back to sign in
+              {t("auth_signin")}
             </Button>
           </form>
         ) : (
@@ -173,7 +174,7 @@ export function SignInDialog({ open, onOpenChange }: SignInDialogProps) {
               ) : (
                 <LogIn className="mr-2 h-4 w-4" />
               )}
-              Continue with Google
+              {t("auth_google")}
             </Button>
 
             <Button
@@ -187,13 +188,13 @@ export function SignInDialog({ open, onOpenChange }: SignInDialogProps) {
               ) : (
                 <User className="mr-2 h-4 w-4" />
               )}
-              Continue as guest
+              {t("auth_guest")}
             </Button>
 
             <div className="relative my-4">
               <Separator />
               <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-background px-2 text-xs text-muted-foreground">
-                or continue with email
+                {t("auth_or_email")}
               </span>
             </div>
 
@@ -203,16 +204,16 @@ export function SignInDialog({ open, onOpenChange }: SignInDialogProps) {
             >
               <TabsList className="w-full">
                 <TabsTrigger value="signin" className="flex-1">
-                  Sign in
+                  {t("auth_signin")}
                 </TabsTrigger>
                 <TabsTrigger value="signup" className="flex-1">
-                  Sign up
+                  {t("auth_signup")}
                 </TabsTrigger>
               </TabsList>
               <TabsContent value="signin">
                 <form onSubmit={handleEmailAuth} className="space-y-4 mt-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signin-email">Email</Label>
+                    <Label htmlFor="signin-email">{t("auth_email")}</Label>
                     <Input
                       id="signin-email"
                       type="email"
@@ -223,7 +224,7 @@ export function SignInDialog({ open, onOpenChange }: SignInDialogProps) {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signin-password">Password</Label>
+                    <Label htmlFor="signin-password">{t("auth_password")}</Label>
                     <Input
                       id="signin-password"
                       type="password"
@@ -238,7 +239,7 @@ export function SignInDialog({ open, onOpenChange }: SignInDialogProps) {
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     )}
                     <Mail className="mr-2 h-4 w-4" />
-                    Sign in
+                    {t("auth_signin")}
                   </Button>
                   <Button
                     type="button"
@@ -246,14 +247,14 @@ export function SignInDialog({ open, onOpenChange }: SignInDialogProps) {
                     className="w-full text-sm"
                     onClick={() => setMode("reset")}
                   >
-                    Forgot password?
+                    {t("auth_forgot_pwd")}
                   </Button>
                 </form>
               </TabsContent>
               <TabsContent value="signup">
                 <form onSubmit={handleEmailAuth} className="space-y-4 mt-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signup-email">Email</Label>
+                    <Label htmlFor="signup-email">{t("auth_email")}</Label>
                     <Input
                       id="signup-email"
                       type="email"
@@ -264,7 +265,7 @@ export function SignInDialog({ open, onOpenChange }: SignInDialogProps) {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signup-password">Password</Label>
+                    <Label htmlFor="signup-password">{t("auth_password")}</Label>
                     <Input
                       id="signup-password"
                       type="password"
@@ -279,7 +280,7 @@ export function SignInDialog({ open, onOpenChange }: SignInDialogProps) {
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     )}
                     <Mail className="mr-2 h-4 w-4" />
-                    Create account
+                    {t("auth_signup")}
                   </Button>
                 </form>
               </TabsContent>

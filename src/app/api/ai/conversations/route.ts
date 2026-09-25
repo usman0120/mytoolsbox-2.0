@@ -10,6 +10,7 @@ import {
   saveConversation,
   updateConversation,
   deleteConversation,
+  deleteAllConversations,
 } from "@/features/ai/chat-persistence";
 import { extractAuthUser } from "@/lib/auth/server-auth";
 
@@ -82,6 +83,10 @@ export async function POST(request: NextRequest) {
           );
         }
         await deleteConversation(userId, conversation.id);
+        return NextResponse.json({ success: true });
+
+      case "clear":
+        await deleteAllConversations(userId);
         return NextResponse.json({ success: true });
 
       default:

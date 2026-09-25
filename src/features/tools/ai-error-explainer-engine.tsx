@@ -18,7 +18,6 @@ import {
   ArrowRight,
   ShieldCheck,
   Code2,
-  Coins,
 } from "lucide-react";
 import { explainError, type ErrorExplainerOutput } from "@/lib/ai/services/error-explainer";
 import { useCredits } from "@/lib/credits/use-credits";
@@ -142,7 +141,7 @@ export function AIErrorExplainerEngine() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
-  const { remaining, refresh } = useCredits();
+  const { refresh } = useCredits();
 
   const handleExplain = useCallback(async () => {
     if (!errorInput.trim()) return;
@@ -155,7 +154,7 @@ export function AIErrorExplainerEngine() {
         context: context || undefined,
       });
       setResult(r);
-      toast.success("AI diagnosis generated! (20 credits deducted)");
+      toast.success("AI diagnosis generated!");
       await refresh();
     } catch {
       setResult(ruleBasedErrorExplain(errorInput.trim()));
@@ -180,9 +179,6 @@ export function AIErrorExplainerEngine() {
             <Bug className="h-4 w-4 text-primary" /> Error Message or Stack Trace
           </Label>
           <div className="flex items-center gap-1.5">
-            <Badge variant="outline" className="text-xs gap-1 text-muted-foreground">
-              <Coins className="h-3 w-3 text-amber-500" /> 20 credits {remaining !== undefined && remaining > 0 ? `(${remaining} left)` : ""}
-            </Badge>
             <Badge className="bg-primary/10 text-primary border-primary/20 text-[11px] gap-1">
               <Sparkles className="h-3 w-3" /> AI Active
             </Badge>

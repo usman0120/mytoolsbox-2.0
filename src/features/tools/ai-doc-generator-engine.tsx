@@ -14,7 +14,6 @@ import {
   FileCode,
   BookOpen,
   Code2,
-  Coins,
 } from "lucide-react";
 import { generateDocs, type DocGeneratorOutput } from "@/lib/ai/services/doc-generator";
 import { useCredits } from "@/lib/credits/use-credits";
@@ -155,7 +154,7 @@ export function AIDocumentationGeneratorEngine() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
-  const { remaining, refresh } = useCredits();
+  const { refresh } = useCredits();
 
   const handleGenerate = useCallback(async () => {
     if (!code.trim()) return;
@@ -169,7 +168,7 @@ export function AIDocumentationGeneratorEngine() {
         detail: detail as any,
       });
       setResult(r);
-      toast.success("Documentation generated! (20 credits deducted)");
+      toast.success("Documentation generated!");
       await refresh();
     } catch {
       setResult(ruleBasedDocGenerate(code.trim(), language, style));
@@ -194,9 +193,6 @@ export function AIDocumentationGeneratorEngine() {
             <Code2 className="h-4 w-4 text-primary" /> Source Code
           </Label>
           <div className="flex items-center gap-1.5">
-            <Badge variant="outline" className="text-xs gap-1 text-muted-foreground">
-              <Coins className="h-3 w-3 text-amber-500" /> 20 credits {remaining !== undefined && remaining > 0 ? `(${remaining} left)` : ""}
-            </Badge>
             <Badge className="bg-primary/10 text-primary border-primary/20 text-[11px] gap-1">
               <Sparkles className="h-3 w-3" /> AI Active
             </Badge>

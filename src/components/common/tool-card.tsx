@@ -14,7 +14,7 @@ interface ToolCardProps {
 }
 
 export function ToolCard({ tool, className }: ToolCardProps) {
-  const { getToolName, localizePath } = useI18n();
+  const { t, getToolName, localizePath } = useI18n();
   const IconComponent = (Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[tool.icon] || Icons.Wrench;
   const displayName = getToolName(tool.slug, tool.name);
   const href = localizePath(`/${tool.productType}s/${tool.slug}`);
@@ -36,12 +36,12 @@ export function ToolCard({ tool, className }: ToolCardProps) {
             <div className="flex gap-1.5">
               {tool.status === "beta" && (
                 <Badge variant="secondary" className="text-[10px] h-5 px-1.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20">
-                  Beta
+                  {t("badge_beta")}
                 </Badge>
               )}
               {tool.status === "coming-soon" && (
                 <Badge variant="outline" className="text-[10px] h-5 px-1.5">
-                  Soon
+                  {t("badge_soon")}
                 </Badge>
               )}
             </div>
@@ -56,7 +56,7 @@ export function ToolCard({ tool, className }: ToolCardProps) {
         {tool.requiresAuth && (
           <CardContent className="pt-0">
             <Badge variant="outline" className="text-[10px] h-5 px-1.5 border-border/50">
-              Account required
+              {t("badge_account_required")}
             </Badge>
           </CardContent>
         )}

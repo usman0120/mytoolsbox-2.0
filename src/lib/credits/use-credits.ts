@@ -17,17 +17,30 @@ export interface CreditInfo {
 }
 
 export function useCredits(): CreditInfo {
-  const { user, isAnonymous } = useAuth();
+  const { user, isAnonymous, loading: authLoading } = useAuth();
   const [remaining, setRemaining] = useState<number>(() => {
-    if (typeof window !== "undefined" && user?.uid) {
-      const cached = localStorage.getItem(`mytoolsbox_credits_${user.uid}`);
-      if (cached) {
-        try {
-          const parsed = JSON.parse(cached);
-          if (typeof parsed.remaining === "number") return parsed.remaining;
-        } catch {
-          // Fall through
+    if (typeof window !== "undefined") {
+      try {
+        if (user?.uid) {
+          const cached = localStorage.getItem(`mytoolsbox_credits_${user.uid}`);
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            if (typeof parsed.remaining === "number") return parsed.remaining;
+          }
         }
+        // Fallback: check any recent user credit cache in localStorage
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith("mytoolsbox_credits_")) {
+            const val = localStorage.getItem(key);
+            if (val) {
+              const parsed = JSON.parse(val);
+              if (typeof parsed.remaining === "number") return parsed.remaining;
+            }
+          }
+        }
+      } catch {
+        // Fall through
       }
     }
     return 1000;
@@ -43,12 +56,32 @@ export function useCredits(): CreditInfo {
 
   // 1. Real-time Firestore sync across environments (localhost <-> mytoolsbox.me)
   useEffect(() => {
+    // If auth is still initializing, don't prematurely reset
+    if (authLoading) return;
+
     if (!user || isAnonymous) {
       setRemaining(0);
       setTotal(1000);
       setUsed(0);
       setLoading(false);
       return;
+    }
+
+    // Immediately restore cached balance for this user
+    if (typeof window !== "undefined") {
+      try {
+        const cached = localStorage.getItem(`mytoolsbox_credits_${user.uid}`);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (typeof parsed.remaining === "number") setRemaining(parsed.remaining);
+          if (typeof parsed.total === "number") setTotal(parsed.total);
+          if (typeof parsed.used === "number") setUsed(parsed.used);
+          if (parsed.tier) setTier(parsed.tier);
+          if (parsed.periodEnd) setPeriodEnd(parsed.periodEnd);
+          if (typeof parsed.daysRemaining === "number") setDaysRemaining(parsed.daysRemaining);
+          setLoading(false);
+        }
+      } catch {}
     }
 
     const unsubscribe = subscribeUserCredits(user.uid, (summary) => {
@@ -104,31 +137,20 @@ export function useCredits(): CreditInfo {
         const days = data.daysRemaining ?? 30;
         const pEnd = data.periodEnd;
 
-        setRemaining(rem);
+        // Only accept server credits if it doesn't arbitrarily reset real usage
+        setRemaining((currentRem) => {
+          // If client already has recorded usage (less than 1000), keep the lower remaining
+          if (currentRem < 1000 && rem >= 1000) return currentRem;
+          return rem;
+        });
+        setUsed((currentUsed) => {
+          if (currentUsed > 0 && us === 0) return currentUsed;
+          return us;
+        });
         setTotal(tot);
-        setUsed(us);
         setTier(tr);
         setDaysRemaining(days);
-        setPeriodEnd(pEnd);
-
-        // Also sync to cloud Firestore
-        syncCreditsToFirestore(user.uid, rem, us).catch(() => {});
-
-        // Cache in localStorage
-        if (typeof window !== "undefined" && user.uid) {
-          localStorage.setItem(
-            `mytoolsbox_credits_${user.uid}`,
-            JSON.stringify({
-              remaining: rem,
-              total: tot,
-              used: us,
-              tier: tr,
-              daysRemaining: days,
-              periodEnd: pEnd,
-              timestamp: Date.now(),
-            })
-          );
-        }
+        if (pEnd) setPeriodEnd(pEnd);
       } else if (res.status === 401) {
         setRemaining(0);
       }

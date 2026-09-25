@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Code2, Copy, Check, Trash2, Loader2, Sparkles,
-  Lightbulb, BookOpen, GraduationCap, User, ChevronRight, Coins,
+  Lightbulb, BookOpen, GraduationCap, User, ChevronRight,
 } from "lucide-react";
 import { explainCode, type CodeExplainOutput } from "@/lib/ai/services/code-explainer";
 import { useCredits } from "@/lib/credits/use-credits";
@@ -97,7 +97,7 @@ export function CodeExplainerEngine() {
   const [language, setLanguage] = useState("auto");
   const [activeTab, setActiveTab] = useState("summary");
   const [error, setError] = useState<string | null>(null);
-  const { remaining, refresh } = useCredits();
+  const { refresh } = useCredits();
 
   const handleExplain = useCallback(async () => {
     if (!input.trim()) return;
@@ -111,7 +111,7 @@ export function CodeExplainerEngine() {
         audience,
       });
       setResult(result);
-      toast.success("Code explanation generated! (20 credits deducted)");
+      toast.success("Code explanation generated!");
       await refresh();
     } catch {
       setResult(basicCodeAnalysis(input.trim(), language === "auto" ? undefined : language));
@@ -161,9 +161,6 @@ export function CodeExplainerEngine() {
           ))}
         </select>
         <div className="flex items-center gap-1.5 ml-auto">
-          <Badge variant="outline" className="text-xs gap-1 text-muted-foreground">
-            <Coins className="h-3 w-3 text-amber-500" /> 20 credits {remaining !== undefined && remaining > 0 ? `(${remaining} left)` : ""}
-          </Badge>
           <Badge className="bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20 gap-1">
             <Sparkles className="h-3 w-3" />AI Ready
           </Badge>

@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import {
   MessageSquare, Send, Copy, Check, Trash2, Loader2,
-  Sparkles, User, Bot, Download, Zap, Coins,
+  Sparkles, User, Bot, Download, Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -95,7 +95,7 @@ export function AITextGeneratorEngine() {
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const { remaining, refresh } = useCredits();
+  const { refresh } = useCredits();
 
   useEffect(() => {
     saveMessages(messages);
@@ -198,9 +198,6 @@ export function AITextGeneratorEngine() {
         <div className="flex items-center gap-2">
           <Badge className="bg-violet-500/10 text-violet-600 dark:text-violet-400 gap-1">
             <Sparkles className="h-3 w-3" /> AI Chat
-          </Badge>
-          <Badge variant="outline" className="text-xs gap-1 text-muted-foreground">
-            <Coins className="h-3 w-3 text-amber-500" /> 10 credits {remaining !== undefined && remaining > 0 ? `(${remaining} left)` : ""}
           </Badge>
           <span className="text-xs text-muted-foreground">
             {messages.length} messages

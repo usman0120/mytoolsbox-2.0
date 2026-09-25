@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import type { HubDefinition } from "@/types";
 import type { ToolDefinition } from "@/types";
+import { useI18n } from "@/lib/i18n";
 
 interface HubDetailClientProps {
   slug: string;
@@ -32,6 +33,21 @@ interface HubDetailClientProps {
 
 export function HubDetailClient({ slug, hub, tools, apps }: HubDetailClientProps) {
   const router = useRouter();
+  const { t, localizePath, getToolName } = useI18n();
+
+  const getLocalizedHub = () => {
+    switch (slug) {
+      case "students": return { name: t("aud_students"), description: t("aud_students_desc") };
+      case "developers": return { name: t("aud_developers"), description: t("aud_developers_desc") };
+      case "business": return { name: t("aud_business"), description: t("aud_business_desc") };
+      case "designers": return { name: t("aud_designers"), description: t("aud_designers_desc") };
+      case "writers": return { name: t("aud_writers"), description: t("aud_writers_desc") };
+      case "researchers": return { name: t("aud_researchers"), description: t("aud_researchers_desc") };
+      default: return { name: hub.name, description: hub.description };
+    }
+  };
+
+  const localizedHub = getLocalizedHub();
 
   // Map icon string to Lucide icon
   const iconMap: Record<string, LucideIcon> = {
@@ -57,11 +73,11 @@ export function HubDetailClient({ slug, hub, tools, apps }: HubDetailClientProps
       {/* Breadcrumb */}
       <div className="mb-6 animate-fade-in-up">
         <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-          <Link href="/" className="hover:text-foreground transition-colors">Home</Link>
+          <Link href={localizePath("/")} className="hover:text-foreground transition-colors">Home</Link>
           <ChevronRight className="h-3.5 w-3.5" />
-          <Link href="/hubs" className="hover:text-foreground transition-colors">Hubs</Link>
+          <Link href={localizePath("/hubs")} className="hover:text-foreground transition-colors">{t("nav_hubs")}</Link>
           <ChevronRight className="h-3.5 w-3.5" />
-          <span className="text-foreground font-medium">{hub.name}</span>
+          <span className="text-foreground font-medium">{localizedHub.name}</span>
         </div>
       </div>
 
@@ -72,17 +88,17 @@ export function HubDetailClient({ slug, hub, tools, apps }: HubDetailClientProps
             <HubIcon className={`h-8 w-8 ${vis.iconColor}`} />
           </div>
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{hub.name} Hub</h1>
-            <p className="text-muted-foreground mt-1.5 leading-relaxed max-w-2xl">{hub.description}</p>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{localizedHub.name}</h1>
+            <p className="text-muted-foreground mt-1.5 leading-relaxed max-w-2xl">{localizedHub.description}</p>
             <div className="flex items-center gap-3 mt-3">
               <Badge variant="secondary" className="rounded-full text-xs">
-                {tools.length} tools
+                {t("hubs_tools_count").replace("{count}", String(tools.length))}
               </Badge>
               <Badge variant="secondary" className="rounded-full text-xs">
-                {apps.length} apps
+                {t("hubs_apps_count").replace("{count}", String(apps.length))}
               </Badge>
               <Badge variant="outline" className="rounded-full text-xs">
-                {tools.length + apps.length} total
+                {t("hubs_total_count").replace("{count}", String(tools.length + apps.length))}
               </Badge>
             </div>
           </div>
@@ -96,11 +112,11 @@ export function HubDetailClient({ slug, hub, tools, apps }: HubDetailClientProps
             <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${vis.bgLight}`}>
               <Zap className={`h-4 w-4 ${vis.iconColor}`} />
             </div>
-            <h2 className="text-lg font-semibold">Tools ({tools.length})</h2>
+            <h2 className="text-lg font-semibold">{t("hubs_tools_count").replace("{count}", String(tools.length))}</h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {tools.map((tool, i) => (
-              <Link key={tool.slug} href={`/tools/${tool.slug}`}>
+              <Link key={tool.slug} href={localizePath(`/tools/${tool.slug}`)}>
                 <Card
                   className="group card-lift border-border/50 hover:border-primary/30 overflow-hidden animate-fade-in-up"
                   style={{ animationDelay: `${i * 40}ms` }}
@@ -112,7 +128,7 @@ export function HubDetailClient({ slug, hub, tools, apps }: HubDetailClientProps
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="font-medium text-sm group-hover:text-primary transition-colors truncate">
-                          {tool.name}
+                          {getToolName(tool.slug, tool.name)}
                         </h3>
                         <p className="text-xs text-muted-foreground truncate">{tool.shortDescription}</p>
                       </div>
@@ -133,11 +149,11 @@ export function HubDetailClient({ slug, hub, tools, apps }: HubDetailClientProps
             <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${vis.bgLight}`}>
               <Sparkles className={`h-4 w-4 ${vis.iconColor}`} />
             </div>
-            <h2 className="text-lg font-semibold">Apps ({apps.length})</h2>
+            <h2 className="text-lg font-semibold">{t("hubs_apps_count").replace("{count}", String(apps.length))}</h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {apps.map((app, i) => (
-              <Link key={app.slug} href={`/apps/${app.slug}`}>
+              <Link key={app.slug} href={localizePath(`/apps/${app.slug}`)}>
                 <Card
                   className="group card-lift border-border/50 hover:border-primary/30 overflow-hidden animate-fade-in-up"
                   style={{ animationDelay: `${i * 40}ms` }}
@@ -149,7 +165,7 @@ export function HubDetailClient({ slug, hub, tools, apps }: HubDetailClientProps
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="font-medium text-sm group-hover:text-primary transition-colors truncate">
-                          {app.name}
+                          {getToolName(app.slug, app.name)}
                         </h3>
                         <p className="text-xs text-muted-foreground truncate">{app.shortDescription}</p>
                       </div>
@@ -169,13 +185,10 @@ export function HubDetailClient({ slug, hub, tools, apps }: HubDetailClientProps
           <div className={`flex h-20 w-20 items-center justify-center rounded-2xl bg-linear-to-br ${vis.gradient} ${vis.ringColor} ring-1`}>
             <HubIcon className={`h-10 w-10 ${vis.iconColor}`} />
           </div>
-          <p className="text-lg font-medium">No items yet</p>
-          <p className="text-sm max-w-sm text-center">
-            We&apos;re working on adding tools and apps for {hub.name.toLowerCase()}. Check back soon!
-          </p>
-          <Button variant="outline" className="rounded-xl" onClick={() => router.push("/hubs")}>
+          <p className="text-lg font-medium">{t("search_no_results")}</p>
+          <Button variant="outline" className="rounded-xl" onClick={() => router.push(localizePath("/hubs"))}>
             <ArrowLeft className="h-4 w-4 mr-1.5" />
-            Back to Hubs
+            {t("hubs_back")}
           </Button>
         </div>
       )}
