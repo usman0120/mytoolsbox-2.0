@@ -1,16 +1,15 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import {
   FileText, Download, Copy, Check, Trash2, Loader2,
-  Sparkles, Briefcase, User, Plus, X, Wand2,
+  User, Wand2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { escapeResumeText, generateResumeContent } from "@/features/ai/resume-generation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 
@@ -34,14 +33,21 @@ const STORAGE_KEY = "mytoolsbox-ai-resume";
 function loadData(): ResumeData | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : null;
+    if (!raw) return null;
+    const saved = JSON.parse(raw);
+    if (!saved || typeof saved !== "object" || Array.isArray(saved)) return null;
+    return Object.fromEntries(Object.entries(DEFAULT_DATA).map(([key, fallback]) => [key, typeof saved[key] === "string" ? saved[key] : fallback])) as unknown as ResumeData;
   } catch {
     return null;
   }
 }
 
 function saveData(data: ResumeData) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch {
+    toast.error("Browser storage is unavailable. Your resume is kept for this session only.");
+  }
 }
 
 const DEFAULT_DATA: ResumeData = {
@@ -59,46 +65,15 @@ const DEFAULT_DATA: ResumeData = {
   generatedResume: "",
 };
 
-// AI-powered resume enhancement using pattern matching and templates
-function enhanceResume(data: ResumeData): string {
-  const { fullName, email, phone, location, linkedin, summary, skills, experience, education, jobDescription, targetRole } = data;
+function renderResume(data: ResumeData): string {
+  const { fullName, email, phone, location, linkedin, summary, skills, experience, education } = data;
 
   const contactParts = [email, phone, location, linkedin].filter(Boolean);
   const skillsList = skills.split(/[,;\n]/).map((s) => s.trim()).filter(Boolean);
   const expLines = experience.split(/\n/).filter(Boolean);
   const eduLines = education.split(/\n/).filter(Boolean);
 
-  // Generate enhanced bullet points from experience
-  const enhancedExperience = expLines.map((line) => {
-    // Add action verbs and metrics if missing
-    if (!/^(led|managed|developed|created|implemented|designed|built|launched|increased|reduced|improved|achieved|delivered|coordinated|spearheaded|orchestrated|engineered|optimized|transformed|streamlined|automated)/i.test(line.trim())) {
-      return `• Successfully ${line.trim().replace(/^[•\-]\s*/, "").charAt(0).toLowerCase() + line.trim().replace(/^[•\-]\s*/, "").slice(1)}`;
-    }
-    return `• ${line.trim().replace(/^[•\-]\s*/, "")}`;
-  });
-
-  // Generate professional summary if not provided
-  let enhancedSummary = summary;
-  if (!summary.trim() && targetRole) {
-    enhancedSummary = `Results-driven ${targetRole} with proven expertise in ${skillsList.slice(0, 3).join(", ")}. Demonstrated track record of delivering high-impact solutions and driving measurable outcomes. Seeking to leverage technical skills and industry experience to contribute to organizational success.`;
-  }
-
-  // Tailor skills to job description
-  let tailoredSkills = skillsList;
-  if (jobDescription.trim()) {
-    const jdWords = jobDescription.toLowerCase().match(/\b\w+\b/g) || [];
-    const jdKeywords = new Set(jdWords.filter((w) => w.length > 4));
-    tailoredSkills = [
-      ...skillsList.filter((s) => {
-        const skillWords = s.toLowerCase().split(/\s+/);
-        return skillWords.some((sw) => jdKeywords.has(sw));
-      }),
-      ...skillsList.filter((s) => {
-        const skillWords = s.toLowerCase().split(/\s+/);
-        return !skillWords.some((sw) => jdKeywords.has(sw));
-      }),
-    ];
-  }
+  const experienceItems = expLines.map((line) => `• ${line.trim().replace(/^[•\-]\s*/, "")}`);
 
   const resumeHTML = `<!DOCTYPE html>
 <html>
@@ -106,15 +81,15 @@ function enhanceResume(data: ResumeData): string {
 <meta charset="UTF-8">
 <title>${fullName || "Resume"}</title>
 <style>
-  body { font-family: 'Segoe UI', system-ui, sans-serif; max-width: 800px; margin: 0 auto; padding: 40px; color: #1e293b; }
+  body { font-family: Archivo, sans-serif; max-width: 800px; margin: 0 auto; padding: 24px; color: #1e293b; overflow-wrap: anywhere; }
   .header { text-align: center; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 3px solid #6366f1; }
   .name { font-size: 32px; font-weight: 700; color: #6366f1; margin-bottom: 4px; }
   .contact { font-size: 13px; color: #64748b; }
   .section { margin-bottom: 22px; }
-  .section-title { font-size: 16px; font-weight: 600; color: #6366f1; text-transform: uppercase; letter-spacing: 1px; border-bottom: 2px solid #e2e8f0; padding-bottom: 4px; margin-bottom: 10px; }
+  .section-title { font-size: 16px; font-weight: 600; color: #6366f1; letter-spacing: 0; border-bottom: 2px solid #e2e8f0; padding-bottom: 4px; margin-bottom: 10px; }
   .summary-text { font-size: 14px; line-height: 1.7; color: #475569; }
   .skills-container { display: flex; flex-wrap: wrap; gap: 8px; }
-  .skill-tag { background: #eef2ff; color: #4338ca; padding: 4px 14px; border-radius: 20px; font-size: 13px; }
+  .skill-tag { background: #eef2ff; color: #4338ca; padding: 4px 8px; border-radius: 4px; font-size: 13px; }
   .exp-item { margin-bottom: 14px; font-size: 14px; line-height: 1.6; color: #475569; }
   .edu-item { margin-bottom: 8px; font-size: 14px; color: #475569; }
 </style>
@@ -124,9 +99,9 @@ function enhanceResume(data: ResumeData): string {
   <div class="name">${fullName || "Your Name"}</div>
   <div class="contact">${contactParts.join(" · ")}</div>
 </div>
-${enhancedSummary ? `<div class="section"><div class="section-title">Professional Summary</div><div class="summary-text">${enhancedSummary}</div></div>` : ""}
-${tailoredSkills.length > 0 ? `<div class="section"><div class="section-title">Skills</div><div class="skills-container">${tailoredSkills.map((s) => `<span class="skill-tag">${s}</span>`).join("")}</div></div>` : ""}
-${enhancedExperience.length > 0 ? `<div class="section"><div class="section-title">Experience</div>${enhancedExperience.map((e) => `<div class="exp-item">${e}</div>`).join("")}</div>` : ""}
+${summary ? `<div class="section"><div class="section-title">Professional Summary</div><div class="summary-text">${summary}</div></div>` : ""}
+${skillsList.length > 0 ? `<div class="section"><div class="section-title">Skills</div><div class="skills-container">${skillsList.map((skill) => `<span class="skill-tag">${skill}</span>`).join("")}</div></div>` : ""}
+${experienceItems.length > 0 ? `<div class="section"><div class="section-title">Experience</div>${experienceItems.map((item) => `<div class="exp-item">${item}</div>`).join("")}</div>` : ""}
 ${eduLines.length > 0 ? `<div class="section"><div class="section-title">Education</div>${eduLines.map((e) => `<div class="edu-item">• ${e.trim().replace(/^[•\-]\s*/, "")}</div>`).join("")}</div>` : ""}
 </body>
 </html>`;
@@ -135,10 +110,19 @@ ${eduLines.length > 0 ? `<div class="section"><div class="section-title">Educati
 }
 
 export function AIResumeMakerEngine() {
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
   const [data, setData] = useState<ResumeData>(() => loadData() || DEFAULT_DATA);
   const [activeTab, setActiveTab] = useState("edit");
   const [isGenerating, setIsGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [error, setError] = useState("");
+  const safeResumeDocument = data.generatedResume
+    ? `<!DOCTYPE html><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">${data.generatedResume}`
+    : "";
 
   const updateField = useCallback(
     <K extends keyof ResumeData>(field: K, value: ResumeData[K]) => {
@@ -157,47 +141,72 @@ export function AIResumeMakerEngine() {
       return;
     }
     setIsGenerating(true);
-    // Simulate AI processing
-    await new Promise((r) => setTimeout(r, 1000 + Math.random() * 1500));
-    const resume = enhanceResume(data);
+    setError("");
+    try {
+    const { generatedResume: previousResume, ...input } = data;
+    void previousResume;
+    const content = await generateResumeContent(input);
+    if (!mountedRef.current) return;
+    const safeData = Object.fromEntries(Object.entries({
+      ...input,
+      summary: content.summary,
+      skills: content.skills.join(", "),
+      experience: content.experience.join("\n"),
+      education: content.education.join("\n"),
+      jobDescription: "",
+      generatedResume: "",
+    }).map(([key, value]) => [key, escapeResumeText(value)])) as unknown as ResumeData;
+    const resume = renderResume(safeData);
     setData((prev) => {
       const updated = { ...prev, generatedResume: resume };
       saveData(updated);
       return updated;
     });
-    setIsGenerating(false);
     setActiveTab("preview");
     toast.success("AI-enhanced resume generated!");
+    } catch (failure) {
+      if (!mountedRef.current) return;
+      const message = failure instanceof Error ? failure.message : "Resume generation failed.";
+      setError(message);
+      toast.error(message);
+    } finally {
+      if (mountedRef.current) setIsGenerating(false);
+    }
   }, [data]);
 
   const handleDownload = useCallback(() => {
-    const blob = new Blob([data.generatedResume], { type: "text/html" });
+    const blob = new Blob([safeResumeDocument], { type: "text/html" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
     a.download = `resume-${data.fullName?.replace(/\s+/g, "-").toLowerCase() || "untitled"}.html`;
     a.click();
     URL.revokeObjectURL(url);
-    toast.success("Resume downloaded! Open in browser and print to PDF.");
-  }, [data.generatedResume, data.fullName]);
+  }, [safeResumeDocument, data.fullName]);
 
   const handleCopy = useCallback(async () => {
-    await navigator.clipboard.writeText(data.generatedResume);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-    toast.success("HTML copied!");
-  }, [data.generatedResume]);
+    try {
+      await navigator.clipboard.writeText(safeResumeDocument);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      toast.success("HTML copied!");
+    } catch {
+      setError("Your browser could not copy the resume.");
+      toast.error("Your browser could not copy the resume.");
+    }
+  }, [safeResumeDocument]);
 
   const handleReset = useCallback(() => {
     setData(DEFAULT_DATA);
-    localStorage.removeItem(STORAGE_KEY);
+    setError("");
+    try { localStorage.removeItem(STORAGE_KEY); } catch { toast.error("Browser storage could not be cleared."); }
     toast.success("Reset.");
   }, []);
 
   return (
     <div className="space-y-4">
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v ?? "")}>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <TabsList>
             <TabsTrigger value="edit" className="gap-1.5"><FileText className="h-3.5 w-3.5" /> Input</TabsTrigger>
             <TabsTrigger value="preview" className="gap-1.5" disabled={!data.generatedResume}>
@@ -215,65 +224,68 @@ export function AIResumeMakerEngine() {
                 </Button>
               </>
             )}
-            <Button variant="ghost" size="sm" onClick={handleReset} className="gap-1.5 text-destructive">
+            <Button variant="ghost" size="sm" onClick={handleReset} disabled={isGenerating} className="gap-1.5 text-destructive">
               <Trash2 className="h-3.5 w-3.5" /> Reset
             </Button>
           </div>
         </div>
 
-        <TabsContent value="edit" className="mt-4 space-y-4">
-          <Card><CardContent className="p-4 space-y-3">
-            <Label className="text-sm font-medium">Personal Information</Label>
+        <TabsContent value="edit" className="mt-4">
+          <fieldset disabled={isGenerating} className="space-y-4 min-w-0">
+          <section className="space-y-3">
+            <h2 className="text-sm font-medium">Personal Information</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <Input placeholder="Full Name *" value={data.fullName} onChange={(e) => updateField("fullName", e.target.value)} />
-              <Input placeholder="Target Role" value={data.targetRole} onChange={(e) => updateField("targetRole", e.target.value)} />
-              <Input placeholder="Email" type="email" value={data.email} onChange={(e) => updateField("email", e.target.value)} />
-              <Input placeholder="Phone" value={data.phone} onChange={(e) => updateField("phone", e.target.value)} />
-              <Input placeholder="Location" value={data.location} onChange={(e) => updateField("location", e.target.value)} />
-              <Input placeholder="LinkedIn URL" value={data.linkedin} onChange={(e) => updateField("linkedin", e.target.value)} />
+              {([
+                ["fullName", "Full name", "text"], ["targetRole", "Target role", "text"],
+                ["email", "Email", "email"], ["phone", "Phone", "tel"],
+                ["location", "Location", "text"], ["linkedin", "LinkedIn URL", "url"],
+              ] as const).map(([field, label, type]) => <div key={field} className="space-y-1.5">
+                <Label htmlFor={`resume-${field}`}>{label}{field === "fullName" ? " *" : ""}</Label>
+                <Input id={`resume-${field}`} type={type} required={field === "fullName"} value={data[field]} onChange={(event) => updateField(field, event.target.value)} />
+              </div>)}
             </div>
-          </CardContent></Card>
+          </section>
 
-          <Card><CardContent className="p-4 space-y-3">
-            <Label className="text-sm font-medium">Professional Summary (leave blank for AI-generated)</Label>
-            <Textarea placeholder="Brief professional summary..." className="min-h-20" value={data.summary} onChange={(e) => updateField("summary", e.target.value)} />
-          </CardContent></Card>
+          <section className="space-y-2">
+            <Label htmlFor="resume-summary">Professional summary (optional)</Label>
+            <Textarea id="resume-summary" placeholder="Brief professional summary..." className="min-h-20" value={data.summary} onChange={(e) => updateField("summary", e.target.value)} />
+          </section>
 
-          <Card><CardContent className="p-4 space-y-3">
-            <Label className="text-sm font-medium">Skills (comma-separated)</Label>
-            <Textarea placeholder="e.g. JavaScript, React, Node.js, Python, Project Management..." className="min-h-15" value={data.skills} onChange={(e) => updateField("skills", e.target.value)} />
-          </CardContent></Card>
+          <section className="space-y-2">
+            <Label htmlFor="resume-skills">Skills (comma-separated)</Label>
+            <Textarea id="resume-skills" placeholder="e.g. JavaScript, React, Node.js, Python, Project Management..." className="min-h-15" value={data.skills} onChange={(e) => updateField("skills", e.target.value)} />
+          </section>
 
-          <Card><CardContent className="p-4 space-y-3">
-            <Label className="text-sm font-medium">Experience (one per line)</Label>
-            <Textarea placeholder="Led team of 5 developers to deliver...&#10;Increased revenue by 30% through...&#10;Developed and launched..." className="min-h-30" value={data.experience} onChange={(e) => updateField("experience", e.target.value)} />
-          </CardContent></Card>
+          <section className="space-y-2">
+            <Label htmlFor="resume-experience">Experience (one per line)</Label>
+            <Textarea id="resume-experience" placeholder="Your roles, dates and achievements" className="min-h-30" value={data.experience} onChange={(e) => updateField("experience", e.target.value)} />
+          </section>
 
-          <Card><CardContent className="p-4 space-y-3">
-            <Label className="text-sm font-medium">Education (one per line)</Label>
-            <Textarea placeholder="Bachelor of Science in Computer Science, University of...&#10;Master of Business Administration, ..." className="min-h-20" value={data.education} onChange={(e) => updateField("education", e.target.value)} />
-          </CardContent></Card>
+          <section className="space-y-2">
+            <Label htmlFor="resume-education">Education (one per line)</Label>
+            <Textarea id="resume-education" placeholder="Your qualifications, institutions and dates" className="min-h-20" value={data.education} onChange={(e) => updateField("education", e.target.value)} />
+          </section>
 
-          <Card><CardContent className="p-4 space-y-3">
-            <Label className="text-sm font-medium">Job Description (for AI tailoring, optional)</Label>
-            <Textarea placeholder="Paste the job description here to tailor your resume..." className="min-h-25" value={data.jobDescription} onChange={(e) => updateField("jobDescription", e.target.value)} />
-          </CardContent></Card>
+          <section className="space-y-2">
+            <Label htmlFor="resume-job">Job description (optional)</Label>
+            <Textarea id="resume-job" placeholder="Paste the job description here to tailor your resume..." className="min-h-25" value={data.jobDescription} onChange={(e) => updateField("jobDescription", e.target.value)} />
+          </section>
 
+          <p className="text-sm text-muted-foreground">Resume details are sent to the configured AI provider. Sign-in and document-generation credits are required.</p>
+          {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
           <Button onClick={handleGenerate} disabled={isGenerating || !data.fullName.trim()} className="w-full gap-2" size="lg">
             {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
-            {isGenerating ? "Generating..." : "Generate AI-Enhanced Resume"}
+            {isGenerating ? "Generating..." : "Generate resume"}
           </Button>
+          </fieldset>
         </TabsContent>
 
         <TabsContent value="preview" className="mt-4">
           {data.generatedResume ? (
-            <Card><CardContent className="p-0">
-              <iframe srcDoc={data.generatedResume} className="w-full min-h-[600px] border-0" title="Resume Preview" />
-            </CardContent></Card>
+            <iframe sandbox="" srcDoc={safeResumeDocument} className="w-full min-h-150 border border-border rounded-md bg-background" title="Resume Preview" />
           ) : (
             <div className="text-center py-12 text-muted-foreground">
-              <Sparkles className="h-12 w-12 mx-auto mb-3 opacity-30" />
-              <p>Fill in your details and click &quot;Generate&quot; to create your AI-enhanced resume.</p>
+              <FileText className="h-8 w-8 mx-auto opacity-30" />
             </div>
           )}
         </TabsContent>

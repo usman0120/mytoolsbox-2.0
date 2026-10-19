@@ -12,7 +12,7 @@ import { completeViaServer } from "@/lib/ai";
 import { AI_PERSONAS } from "./prompt-library-data";
 import { toast } from "sonner";
 import { subscribeConversations } from "./chat-persistence";
-import type { ChatMessage, ChatConversation } from "./types";
+import type { ChatMessage } from "./types";
 import type { AIProvider } from "@/lib/ai";
 
 interface AIChatProps {
@@ -34,6 +34,7 @@ export function AIChat({ onOpenPromptLibrary }: AIChatProps) {
     selectedProvider,
     setProvider,
     selectedModel,
+    setModel,
     activePersonaId,
     setActivePersonaId,
     updateConversation,
@@ -43,16 +44,27 @@ export function AIChat({ onOpenPromptLibrary }: AIChatProps) {
     setStreaming,
   } = useChatStore();
 
-  const [input, setInput] = useState("");
-  const [creditsRemaining, setCreditsRemaining] = useState<number | null>(null);
+  const [draftInput, setDraftInput] = useState("");
+  const input = pendingPrompt ?? draftInput;
+  const setInput = (value: string) => {
+    setPendingPrompt(null);
+    setDraftInput(value);
+  };
+  const [creditBalance, setCreditBalance] = useState<{ uid: string; remaining: number } | null>(null);
+  const creditsRemaining = creditBalance?.uid === user?.uid ? creditBalance?.remaining ?? null : null;
   const [availableProviders, setAvailableProviders] = useState<string[]>([]);
   const [showSignInDialog, setShowSignInDialog] = useState(false);
-  const [mounted, setMounted] = useState(false);
-  const abortControllerRef = useRef<AbortController | null>(null);
+  const requestRef = useRef<{ cancelled: boolean; conversationId: string; messageId: string } | null>(null);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  useEffect(() => () => {
+    const request = requestRef.current;
+    if (request) {
+      request.cancelled = true;
+      updateMessage(request.conversationId, request.messageId, { content: "Stopped waiting for the response. The server request may still complete and use credits.", isStreaming: false });
+      setStreaming(false);
+    }
+  }, [setStreaming, updateMessage]);
+
 
   // Sync conversations with Firestore for authenticated users across domains & devices
   useEffect(() => {
@@ -110,11 +122,13 @@ export function AIChat({ onOpenPromptLibrary }: AIChatProps) {
     // Check credits
     const fetchCredits = async () => {
       try {
-        const res = await fetch("/api/ai/credits");
+        if (!user) return;
+        const token = await user.getIdToken();
+        const res = await fetch("/api/ai/credits", { headers: { Authorization: `Bearer ${token}` } });
         if (res.ok) {
           const data = await res.json();
-          if (!cancelled && data.remaining !== undefined) {
-            setCreditsRemaining(data.remaining);
+          if (!cancelled && typeof data.remaining === "number") {
+            setCreditBalance({ uid: user.uid, remaining: data.remaining });
           }
         }
       } catch {
@@ -139,19 +153,15 @@ export function AIChat({ onOpenPromptLibrary }: AIChatProps) {
 
     fetchCredits();
     fetchProviders();
+    const refreshCredits = () => { void fetchCredits(); };
+    window.addEventListener("credits-updated", refreshCredits);
 
     return () => {
       cancelled = true;
+      window.removeEventListener("credits-updated", refreshCredits);
     };
   }, [user]);
 
-  // Handle pending prompt from prompt library or quick cards
-  useEffect(() => {
-    if (pendingPrompt) {
-      setInput(pendingPrompt);
-      setPendingPrompt(null);
-    }
-  }, [pendingPrompt, setPendingPrompt]);
 
   // Ensure active conversation exists or initialize one if empty
   useEffect(() => {
@@ -178,9 +188,10 @@ export function AIChat({ onOpenPromptLibrary }: AIChatProps) {
   // Start a new chat
   const handleNewChat = useCallback(() => {
     const newId = addConversation();
-    setInput("");
+    setPendingPrompt(null);
+    setDraftInput("");
     return newId;
-  }, [addConversation]);
+  }, [addConversation, setPendingPrompt]);
 
   // Send message
   const handleSend = async () => {
@@ -189,7 +200,7 @@ export function AIChat({ onOpenPromptLibrary }: AIChatProps) {
 
     if (!user) {
       setShowSignInDialog(true);
-      toast.info("Please sign in to chat with AI. You will receive 1,000 free credits every month!", {
+      toast.info("Please sign in to chat with AI.", {
         duration: 5000,
       });
       return;
@@ -235,18 +246,22 @@ export function AIChat({ onOpenPromptLibrary }: AIChatProps) {
       { role: "user", content: trimmed },
     ];
 
-    abortControllerRef.current = new AbortController();
+    const request = { cancelled: false, conversationId: convId, messageId: assistantMsgId };
+    requestRef.current = request;
 
     try {
       const providerArg =
         selectedProvider === "auto" ? undefined : (selectedProvider as AIProvider);
 
       const response = await completeViaServer({
-        prompt: trimmed,
+        prompt: JSON.stringify(contextMessages),
         systemPrompt,
         provider: providerArg,
+        model: selectedModel === "auto" ? undefined : selectedModel || undefined,
         tier: "cheap",
       });
+      if (request.cancelled) return;
+      if (typeof response.text !== "string" || !response.text.trim()) throw new Error("The provider returned an empty response.");
 
       updateMessage(convId, assistantMsgId, {
         content: response.text,
@@ -257,9 +272,10 @@ export function AIChat({ onOpenPromptLibrary }: AIChatProps) {
       });
 
       if (response.creditsRemaining !== undefined) {
-        setCreditsRemaining(response.creditsRemaining);
+        setCreditBalance({ uid: user.uid, remaining: response.creditsRemaining });
       }
     } catch (error) {
+      if (request.cancelled) return;
       const errMsg =
         error instanceof Error ? error.message : "Failed to get AI response";
 
@@ -276,18 +292,21 @@ export function AIChat({ onOpenPromptLibrary }: AIChatProps) {
       }
 
       updateMessage(convId, assistantMsgId, {
-        content: `⚠️ **Unable to complete response:** ${errMsg}\n\n*Please ensure your API key or account credits are valid.*`,
+        content: `Unable to complete response: ${errMsg}`,
         isStreaming: false,
       });
     } finally {
-      setStreaming(false);
-      abortControllerRef.current = null;
+      if (requestRef.current === request) {
+        setStreaming(false);
+        requestRef.current = null;
+      }
     }
   };
 
   // Regenerate last assistant response
   const handleRegenerate = async () => {
     if (!activeConv || messages.length === 0 || isStreaming) return;
+    if (!user) { setShowSignInDialog(true); return; }
 
     // Find last user message
     const lastUserIndex = [...messages]
@@ -297,7 +316,6 @@ export function AIChat({ onOpenPromptLibrary }: AIChatProps) {
     if (lastUserIndex === -1) return;
 
     const actualIndex = messages.length - 1 - lastUserIndex;
-    const userPrompt = messages[actualIndex].content;
 
     setStreaming(true);
 
@@ -317,16 +335,22 @@ export function AIChat({ onOpenPromptLibrary }: AIChatProps) {
     const persona =
       AI_PERSONAS.find((p) => p.id === activePersonaId) || AI_PERSONAS[0];
 
+    const request = { cancelled: false, conversationId: activeConv.id, messageId: assistantMsgId };
+    requestRef.current = request;
+
     try {
       const providerArg =
         selectedProvider === "auto" ? undefined : (selectedProvider as AIProvider);
 
       const response = await completeViaServer({
-        prompt: userPrompt,
-        systemPrompt: persona.systemPrompt,
+        prompt: JSON.stringify(messages.slice(0, actualIndex + 1).map(({ role, content }) => ({ role, content }))),
+        systemPrompt: activeConv.systemPrompt || persona.systemPrompt,
         provider: providerArg,
+        model: selectedModel === "auto" ? undefined : selectedModel || undefined,
         tier: "cheap",
       });
+      if (request.cancelled) return;
+      if (typeof response.text !== "string" || !response.text.trim()) throw new Error("The provider returned an empty response.");
 
       updateMessage(activeConv.id, assistantMsgId, {
         content: response.text,
@@ -337,28 +361,34 @@ export function AIChat({ onOpenPromptLibrary }: AIChatProps) {
       });
 
       if (response.creditsRemaining !== undefined) {
-        setCreditsRemaining(response.creditsRemaining);
+        setCreditBalance({ uid: user.uid, remaining: response.creditsRemaining });
       }
       toast.success("Response regenerated");
     } catch (error) {
+      if (request.cancelled) return;
       const errMsg =
         error instanceof Error ? error.message : "Failed to regenerate";
       toast.error(errMsg);
       updateMessage(activeConv.id, assistantMsgId, {
-        content: `⚠️ ${errMsg}`,
+        content: `Unable to regenerate: ${errMsg}`,
         isStreaming: false,
       });
     } finally {
-      setStreaming(false);
+      if (requestRef.current === request) {
+        setStreaming(false);
+        requestRef.current = null;
+      }
     }
   };
 
   const handleStop = () => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
+    const request = requestRef.current;
+    if (!request) return;
+    request.cancelled = true;
+    updateMessage(request.conversationId, request.messageId, { content: "Stopped waiting for the response. The server request may still complete and use credits.", isStreaming: false });
+    requestRef.current = null;
     setStreaming(false);
-    toast.info("Generation stopped");
+    toast.info("Stopped waiting. The server request may still use credits.");
   };
 
   const handleFeedback = (messageId: string, feedback: "like" | "dislike") => {
@@ -371,19 +401,8 @@ export function AIChat({ onOpenPromptLibrary }: AIChatProps) {
     );
   };
 
-  if (!mounted) {
-    return (
-      <div className="flex h-full w-full items-center justify-center rounded-none sm:rounded-2xl md:rounded-3xl border-0 sm:border border-border/60 bg-card/40">
-        <div className="flex flex-col items-center gap-3 text-muted-foreground">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-          <p className="text-xs font-medium">Loading Chat Workspace...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex h-full w-full border-0 sm:border sm:border-border/60 rounded-none sm:rounded-2xl md:rounded-3xl overflow-hidden bg-card/40 shadow-xl backdrop-blur-xs">
+    <div className="relative flex h-full min-h-0 w-full overflow-hidden">
       {/* Left Collapsible History Sidebar */}
       <ChatSidebar
         creditsRemaining={creditsRemaining}
@@ -391,7 +410,7 @@ export function AIChat({ onOpenPromptLibrary }: AIChatProps) {
       />
 
       {/* Main Conversation Canvas */}
-      <div className="flex-1 flex flex-col min-w-0 bg-background/50">
+      <div className="flex-1 flex flex-col min-w-0 min-h-0">
         {/* Top Header */}
         <ChatHeader
           creditsRemaining={creditsRemaining}
@@ -423,6 +442,7 @@ export function AIChat({ onOpenPromptLibrary }: AIChatProps) {
           availableProviders={availableProviders}
           onProviderChange={(p) => {
             setProvider(p);
+            setModel("auto");
             if (activeConv) {
               updateConversation(activeConv.id, { provider: p });
             }
@@ -432,6 +452,8 @@ export function AIChat({ onOpenPromptLibrary }: AIChatProps) {
             setActivePersonaId(pId);
             if (activeConv) {
               updateConversation(activeConv.id, { personaId: pId });
+              const persona = AI_PERSONAS.find((item) => item.id === pId);
+              if (persona) updateConversation(activeConv.id, { systemPrompt: persona.systemPrompt });
             }
           }}
           onOpenPromptLibrary={onOpenPromptLibrary}

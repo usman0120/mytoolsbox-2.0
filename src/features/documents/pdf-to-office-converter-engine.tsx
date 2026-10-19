@@ -15,7 +15,7 @@ import {
   Presentation,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { extractPdfPages, PDFPageContent } from "@/lib/documents/pdf-text-extractor";
@@ -23,8 +23,8 @@ import {
   createDocxBlob,
   createXlsxBlob,
   createPptxBlob,
+  createTextSlides,
   DocxParagraph,
-  PptxSlide,
 } from "@/lib/documents/openxml-builder";
 
 type ConversionFormat = "docx" | "xlsx" | "pptx";
@@ -51,7 +51,7 @@ const FORMAT_CONFIG: Record<
     label: "PowerPoint Presentation",
     ext: "pptx",
     icon: Presentation,
-    desc: "Slide deck .pptx format with one slide per PDF page",
+    desc: "Text-only .pptx slides with overflow paginated; no source layout or images",
     color: "text-orange-500",
   },
 };
@@ -60,8 +60,7 @@ export function PDFToOfficeConverterEngine() {
   const [file, setFile] = useState<File | null>(null);
   const [targetFormat, setTargetFormat] = useState<ConversionFormat>("docx");
   const [isConverting, setIsConverting] = useState(false);
-  const [convertedBlob, setConvertedBlob] = useState<Blob | null>(null);
-  const [convertedUrl, setConvertedUrl] = useState<string | null>(null);
+  const [result, setResult] = useState<{ blob: Blob; url: string; format: ConversionFormat; filename: string } | null>(null);
   const [extractedPages, setExtractedPages] = useState<PDFPageContent[]>([]);
   const [showPreview, setShowPreview] = useState(false);
 
@@ -77,14 +76,14 @@ export function PDFToOfficeConverterEngine() {
     }
 
     setFile(selected);
-    setConvertedBlob(null);
-    setConvertedUrl(null);
+    setResult(null);
     setExtractedPages([]);
   };
 
   const handleConvert = async () => {
-    if (!file) return;
+    if (!file || isConverting) return;
     setIsConverting(true);
+    setResult(null);
 
     try {
       const pages = await extractPdfPages(file);
@@ -142,22 +141,11 @@ export function PDFToOfficeConverterEngine() {
 
         blob = await createXlsxBlob(rows, "Extracted Data");
       } else {
-        // Build PowerPoint Slides
-        const slides: PptxSlide[] = pages.map((p) => {
-          const title = p.lines[0]?.slice(0, 70) || `Slide ${p.pageNumber}`;
-          const bullets = p.lines.slice(1, 8).map((l) => l.slice(0, 120));
-          return {
-            title,
-            bullets: bullets.length > 0 ? bullets : ["Content extracted from PDF document."],
-          };
-        });
-
-        blob = await createPptxBlob(slides);
+        blob = await createPptxBlob(createTextSlides(pages));
       }
 
-      setConvertedBlob(blob);
       const url = URL.createObjectURL(blob);
-      setConvertedUrl(url);
+      setResult({ blob, url, format: targetFormat, filename: `${file.name.replace(/\.pdf$/i, "")}.${targetFormat}` });
       toast.success(`Converted to ${FORMAT_CONFIG[targetFormat].label}!`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Conversion failed.");
@@ -167,31 +155,27 @@ export function PDFToOfficeConverterEngine() {
   };
 
   const handleDownload = () => {
-    if (!convertedUrl || !file) return;
-    const cfg = FORMAT_CONFIG[targetFormat];
-    const base = file.name.replace(/\.pdf$/i, "");
+    if (!result) return;
     const a = document.createElement("a");
-    a.href = convertedUrl;
-    a.download = `${base}.${cfg.ext}`;
+    a.href = result.url;
+    a.download = result.filename;
     a.click();
   };
 
   const handleReset = () => {
-    if (convertedUrl) URL.revokeObjectURL(convertedUrl);
     setFile(null);
-    setConvertedBlob(null);
-    setConvertedUrl(null);
+    setResult(null);
     setExtractedPages([]);
   };
 
   useEffect(() => {
     return () => {
-      if (convertedUrl) URL.revokeObjectURL(convertedUrl);
+      if (result) URL.revokeObjectURL(result.url);
     };
-  }, [convertedUrl]);
+  }, [result]);
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
+    <div className="w-full min-w-0 space-y-4">
       {/* Upload Drop Zone */}
       {!file && (
         <div
@@ -205,7 +189,7 @@ export function PDFToOfficeConverterEngine() {
           <p className="text-sm text-muted-foreground mb-4 max-w-md mx-auto">
             Convert your PDF document into an editable Microsoft Word (.docx), Excel spreadsheet (.xlsx), or PowerPoint (.pptx).
           </p>
-          <Button variant="outline" size="sm" className="rounded-xl pointer-events-none">
+          <Button variant="outline" onClick={(event) => { event.stopPropagation(); fileInputRef.current?.click(); }} className="rounded-lg">
             <Plus className="h-4 w-4 mr-1.5" /> Select PDF Document
           </Button>
           <input
@@ -220,7 +204,7 @@ export function PDFToOfficeConverterEngine() {
 
       {/* Conversion Workspace */}
       {file && (
-        <Card className="rounded-2xl border-border/60 shadow-sm overflow-hidden">
+        <section aria-label="Office conversion settings" className="min-w-0">
           <div className="p-4 bg-muted/40 border-b border-border/60 flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-500/10 text-red-500 shrink-0">
@@ -236,13 +220,14 @@ export function PDFToOfficeConverterEngine() {
               variant="ghost"
               size="sm"
               onClick={handleReset}
+              disabled={isConverting}
               className="text-xs h-8 text-destructive hover:text-destructive rounded-lg"
             >
               <Trash2 className="h-3.5 w-3.5 mr-1" /> Change PDF
             </Button>
           </div>
 
-          <CardContent className="p-5 space-y-6">
+          <div className="py-4 space-y-4">
             {/* Target Format Selector */}
             <div className="space-y-2">
               <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -254,14 +239,14 @@ export function PDFToOfficeConverterEngine() {
                   const Icon = cfg.icon;
                   const isSelected = targetFormat === fmt;
                   return (
-                    <div
+                    <button type="button" aria-pressed={isSelected}
                       key={fmt}
+                      disabled={isConverting}
                       onClick={() => {
                         setTargetFormat(fmt);
-                        setConvertedBlob(null);
-                        setConvertedUrl(null);
+                        setResult(null);
                       }}
-                      className={`p-4 rounded-xl border cursor-pointer transition-all ${
+                      className={`p-3 rounded-lg border text-left transition-colors ${
                         isSelected
                           ? "border-primary bg-primary/5 ring-1 ring-primary"
                           : "border-border hover:border-border/80 bg-card"
@@ -272,7 +257,7 @@ export function PDFToOfficeConverterEngine() {
                         <span className="text-sm font-semibold">{cfg.label}</span>
                       </div>
                       <p className="text-xs text-muted-foreground leading-relaxed">{cfg.desc}</p>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
@@ -296,12 +281,12 @@ export function PDFToOfficeConverterEngine() {
                 )}
               </Button>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </section>
       )}
 
       {/* Result Card */}
-      {convertedBlob && convertedUrl && (
+      {result && (
         <Card className="rounded-2xl border-emerald-500/30 bg-emerald-500/5 p-6 animate-fade-in">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3 text-center sm:text-left">
@@ -310,10 +295,10 @@ export function PDFToOfficeConverterEngine() {
               </div>
               <div>
                 <h4 className="font-semibold text-foreground">
-                  Ready to Download {FORMAT_CONFIG[targetFormat].label}!
+                  Ready to Download {FORMAT_CONFIG[result.format].label}!
                 </h4>
                 <p className="text-xs text-muted-foreground">
-                  Size: {(convertedBlob.size / 1024).toFixed(1)} KB • Genuine OpenXML formatted document
+                  Size: {(result.blob.size / 1024).toFixed(1)} KB • Genuine OpenXML formatted document
                 </p>
               </div>
             </div>
@@ -334,7 +319,7 @@ export function PDFToOfficeConverterEngine() {
                 className="rounded-xl h-10 gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
                 onClick={handleDownload}
               >
-                <Download className="h-4 w-4" /> Download .{FORMAT_CONFIG[targetFormat].ext}
+                <Download className="h-4 w-4" /> Download .{FORMAT_CONFIG[result.format].ext}
               </Button>
             </div>
           </div>

@@ -3,22 +3,29 @@
 import Link from "next/link";
 import { SITE_CONFIG } from "@/lib/constants";
 import { useI18n } from "@/lib/i18n";
-import { CheckCircle2, Shield, Sparkles, Scale, AlertCircle, Mail } from "lucide-react";
+import { CheckCircle2, Shield, Scale, Mail } from "lucide-react";
+import { PageShell, ToolHeader } from "@/components/common/workload-layouts";
+import type { LocaleCode } from "@/lib/i18n/config";
+
+const SERVICE_COPY: Record<LocaleCode, { description: string; limits: string; ownership: string }> = {
+  en: { description: "Browser utilities, apps, resources, and AI features are available through this service.", limits: "Pricing, credits, sign-in requirements, processing mode, and offline availability depend on the feature. Review the feature and account details before use.", ownership: "Your content remains yours. Files, text, and data you submit belong to you. Processing and transmission depend on the feature; see the Privacy Policy before submitting sensitive content." },
+  es: { description: "Este servicio ofrece utilidades de navegador, aplicaciones, recursos y funciones de IA.", limits: "Los precios, créditos, requisitos de acceso, procesamiento y disponibilidad sin conexión dependen de la función. Revisa sus detalles y los de tu cuenta antes de usarla.", ownership: "Tu contenido sigue siendo tuyo. Los archivos, textos y datos enviados te pertenecen. La transmisión depende de la función; consulta la Política de privacidad antes de enviar contenido sensible." },
+  fr: { description: "Ce service propose des utilitaires de navigateur, des applications, des ressources et des fonctions IA.", limits: "Les tarifs, crédits, conditions de connexion, traitements et accès hors ligne dépendent de la fonctionnalité. Consultez ses détails et ceux du compte avant utilisation.", ownership: "Votre contenu reste le vôtre. Les fichiers, textes et données soumis vous appartiennent. Leur transmission dépend de la fonctionnalité ; consultez la politique de confidentialité avant de soumettre du contenu sensible." },
+  de: { description: "Dieser Dienst bietet Browserwerkzeuge, Apps, Ressourcen und KI-Funktionen.", limits: "Preise, Credits, Anmeldepflicht, Verarbeitung und Offline-Verfügbarkeit hängen von der Funktion ab. Prüfen Sie die Funktions- und Kontodetails vor der Nutzung.", ownership: "Ihre Inhalte bleiben Ihre Inhalte. Eingereichte Dateien, Texte und Daten gehören Ihnen. Die Übertragung hängt von der Funktion ab; lesen Sie vor sensiblen Eingaben die Datenschutzerklärung." },
+  pt: { description: "Este serviço oferece utilitários de navegador, aplicativos, recursos e funções de IA.", limits: "Preços, créditos, requisitos de login, processamento e disponibilidade offline dependem do recurso. Consulte os detalhes do recurso e da conta antes de usar.", ownership: "Seu conteúdo continua sendo seu. Os arquivos, textos e dados enviados pertencem a você. A transmissão depende do recurso; consulte a Política de Privacidade antes de enviar conteúdo sensível." },
+  hi: { description: "यह सेवा ब्राउज़र टूल, ऐप, संसाधन और AI फ़ीचर प्रदान करती है।", limits: "कीमत, क्रेडिट, साइन-इन, प्रोसेसिंग और ऑफलाइन उपलब्धता फ़ीचर पर निर्भर करती है। उपयोग से पहले फ़ीचर और खाते की जानकारी पढ़ें।", ownership: "आपकी सामग्री आपकी है। भेजी गई फ़ाइलें, टेक्स्ट और डेटा आपके हैं। डेटा भेजना फ़ीचर पर निर्भर करता है; संवेदनशील सामग्री भेजने से पहले गोपनीयता नीति पढ़ें।" },
+  ur: { description: "یہ خدمت براؤزر ٹول، ایپس، وسائل اور AI فیچر فراہم کرتی ہے۔", limits: "قیمت، کریڈٹ، سائن ان، پروسیسنگ اور آف لائن دستیابی فیچر پر منحصر ہے۔ استعمال سے پہلے فیچر اور اکاؤنٹ کی معلومات پڑھیں۔", ownership: "آپ کا مواد آپ کا ہے۔ جمع کردہ فائلیں، متن اور ڈیٹا آپ کی ملکیت ہیں۔ ڈیٹا بھیجنا فیچر پر منحصر ہے؛ حساس مواد بھیجنے سے پہلے رازداری کی پالیسی پڑھیں۔" },
+  ar: { description: "توفر هذه الخدمة أدوات المتصفح والتطبيقات والموارد وميزات الذكاء الاصطناعي.", limits: "تعتمد الأسعار والأرصدة وتسجيل الدخول والمعالجة والتوفر دون اتصال على الميزة. راجع تفاصيل الميزة والحساب قبل الاستخدام.", ownership: "يبقى محتواك ملكاً لك. الملفات والنصوص والبيانات المقدمة تخصك. يعتمد نقل البيانات على الميزة؛ راجع سياسة الخصوصية قبل إرسال محتوى حساس." },
+};
 
 export function TermsPageClient() {
-  const { t, localizePath } = useI18n();
+  const { t, localizePath, locale } = useI18n();
+  const copy = SERVICE_COPY[locale];
 
   return (
-    <div className="container mx-auto px-4 py-16 md:py-24 max-w-3xl">
+    <PageShell className="max-w-3xl">
       {/* Header */}
-      <div className="text-center mb-16 animate-fade-in-up">
-        <h1 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">
-          {t("terms_page_title", "Terms of Service")}
-        </h1>
-        <p className="text-lg text-muted-foreground leading-relaxed">
-          {t("terms_page_subtitle", "Simple, fair, and transparent terms for using MyToolsBox.")}
-        </p>
-      </div>
+      <ToolHeader title={t("terms_page_title", "Terms of Service")} description={t("terms_page_subtitle", "Terms for using MyToolsBox.")} />
 
       <div className="prose prose-neutral dark:prose-invert max-w-none text-muted-foreground space-y-8">
         <p className="text-sm text-muted-foreground animate-fade-in-up">
@@ -43,13 +50,9 @@ export function TermsPageClient() {
             2. Description of Service
           </h2>
           <p>
-            {SITE_CONFIG.name} {t("about_mission_desc", "provides browser-based utilities and AI tools. All processing happens client-side.")}
+            {copy.description}
           </p>
-          <ul className="list-disc pl-5 space-y-1">
-            <li>{t("about_free_desc", "Core tools are 100% free with no hidden fees or forced subscriptions.")}</li>
-            <li>{t("spec_in_browser_desc", "Zero server uploads. Client-side privacy and memory efficiency.")}</li>
-            <li>{t("about_offline_desc", "Calculators, converters, text tools, and utilities are available anywhere, anytime without an internet connection.")}</li>
-          </ul>
+          <p>{copy.limits}</p>
         </section>
 
         {/* 3. Your Content */}
@@ -59,8 +62,9 @@ export function TermsPageClient() {
             3. Intellectual Property & Your Content
           </h2>
           <p>
-            <strong>Your content remains strictly yours.</strong> Any files, text, or data you process through our tools belong to you. Since processing happens entirely in your browser, we never see, store, or copy your data.
+            {copy.ownership}
           </p>
+          <Link href={localizePath("/privacy")} className="text-primary hover:underline">{t("privacy_page_title", "Privacy Policy")}</Link>
         </section>
 
         {/* 4. Contact */}
@@ -79,6 +83,6 @@ export function TermsPageClient() {
           </p>
         </section>
       </div>
-    </div>
+    </PageShell>
   );
 }

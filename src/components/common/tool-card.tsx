@@ -1,8 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { ToolDefinition } from "@/types";
 import * as Icons from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -20,47 +18,46 @@ export function ToolCard({ tool, className }: ToolCardProps) {
   const href = localizePath(`/${tool.productType}s/${tool.slug}`);
 
   return (
-    <Link href={href} className="block group">
-      <Card
+    <Link href={href} className="block group h-full">
+      <div
         className={cn(
-          "card-lift cursor-pointer h-full border-border/60 hover:border-brand/25 transition-all duration-200",
+          "h-full p-4 sm:p-5 rounded-xl border border-border/70 bg-card hover:border-primary/40 hover:bg-card/90 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xs flex flex-col justify-between",
           className
         )}
       >
-        <CardHeader className="pb-3">
-          <div className="flex items-start justify-between">
-            {/* Icon */}
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted text-muted-foreground group-hover:bg-brand-muted group-hover:text-brand transition-colors duration-200">
-              <IconComponent className="size-4.5" />
+        <div>
+          <div className="flex items-start justify-between gap-2 mb-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-200 shrink-0">
+              <IconComponent className="h-4.5 w-4.5" />
             </div>
-            <div className="flex gap-1.5">
+            <div className="flex gap-1.5 shrink-0">
               {tool.status === "beta" && (
-                <Badge variant="secondary" className="text-[10px] h-5 px-1.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20">
+                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-muted text-muted-foreground border border-border/60">
                   {t("badge_beta")}
-                </Badge>
+                </span>
               )}
               {tool.status === "coming-soon" && (
-                <Badge variant="outline" className="text-[10px] h-5 px-1.5">
+                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-muted/50 text-muted-foreground border border-border/60">
                   {t("badge_soon")}
-                </Badge>
+                </span>
               )}
             </div>
           </div>
-          <CardTitle className="text-sm font-medium mt-2.5 group-hover:text-brand transition-colors duration-200">
+          <h3 className="text-sm font-semibold tracking-tight text-foreground group-hover:text-primary transition-colors wrap-break-word">
             {displayName}
-          </CardTitle>
-          <CardDescription className="text-xs line-clamp-2 leading-relaxed">
+          </h3>
+          <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed mt-1">
             {tool.shortDescription}
-          </CardDescription>
-        </CardHeader>
+          </p>
+        </div>
         {tool.requiresAuth && (
-          <CardContent className="pt-0">
-            <Badge variant="outline" className="text-[10px] h-5 px-1.5 border-border/50">
+          <div className="mt-3 pt-2.5 border-t border-border/50">
+            <span className="text-[10px] text-muted-foreground font-medium">
               {t("badge_account_required")}
-            </Badge>
-          </CardContent>
+            </span>
+          </div>
         )}
-      </Card>
+      </div>
     </Link>
   );
 }

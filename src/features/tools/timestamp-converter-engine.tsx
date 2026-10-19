@@ -32,21 +32,37 @@ export function TimestampConverterEngine() {
   const [activeTab, setActiveTab] = useState<"epoch-to-date" | "date-to-epoch">("epoch-to-date");
 
   // Live ticking clock state
-  const [currentEpoch, setCurrentEpoch] = useState(() => Math.floor(Date.now() / 1000));
+  const [currentEpoch, setCurrentEpoch] = useState<number | null>(null);
   const [isLiveRunning, setIsLiveRunning] = useState(true);
 
   // Tab 1 state
-  const [inputVal, setInputVal] = useState(() => String(Math.floor(Date.now() / 1000)));
+  const [inputVal, setInputVal] = useState("");
 
   // Tab 2 date-time picker state
-  const [humanYear, setHumanYear] = useState(() => new Date().getUTCFullYear());
-  const [humanMonth, setHumanMonth] = useState(() => new Date().getUTCMonth() + 1);
-  const [humanDay, setHumanDay] = useState(() => new Date().getUTCDate());
-  const [humanHour, setHumanHour] = useState(() => new Date().getUTCHours());
-  const [humanMin, setHumanMin] = useState(() => new Date().getUTCMinutes());
-  const [humanSec, setHumanSec] = useState(() => new Date().getUTCSeconds());
+  const [humanYear, setHumanYear] = useState(1970);
+  const [humanMonth, setHumanMonth] = useState(1);
+  const [humanDay, setHumanDay] = useState(1);
+  const [humanHour, setHumanHour] = useState(0);
+  const [humanMin, setHumanMin] = useState(0);
+  const [humanSec, setHumanSec] = useState(0);
 
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+
+  useEffect(() => {
+    const initialTick = setTimeout(() => {
+      const now = new Date();
+      const nowSec = Math.floor(now.getTime() / 1000);
+      setCurrentEpoch(nowSec);
+      setInputVal(String(nowSec));
+      setHumanYear(now.getUTCFullYear());
+      setHumanMonth(now.getUTCMonth() + 1);
+      setHumanDay(now.getUTCDate());
+      setHumanHour(now.getUTCHours());
+      setHumanMin(now.getUTCMinutes());
+      setHumanSec(now.getUTCSeconds());
+    }, 0);
+    return () => clearTimeout(initialTick);
+  }, []);
 
   // Live timer interval
   useEffect(() => {
@@ -116,7 +132,7 @@ export function TimestampConverterEngine() {
               Current Unix Epoch
             </span>
             <Badge variant="outline" className="font-mono text-xs">
-              {currentEpoch}
+              {currentEpoch ?? "..."}
             </Badge>
           </div>
 
@@ -125,6 +141,7 @@ export function TimestampConverterEngine() {
               variant="outline"
               size="sm"
               className="h-7 text-xs gap-1"
+              disabled={currentEpoch === null}
               onClick={() => handleCopy(String(currentEpoch), "epoch-now")}
             >
               {copiedKey === "epoch-now" ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3" />}

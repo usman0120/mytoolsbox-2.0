@@ -6,26 +6,19 @@ import {
   Calendar,
   Clock,
   ChevronRight,
-  Share2,
   Copy,
   Check,
   ArrowRight,
   ShieldCheck,
   Wrench,
-  Sparkles,
   HelpCircle,
-  ExternalLink,
   ChevronDown,
-  Bookmark,
-  CheckCircle2,
   FileText,
-  Layers,
   Image as ImageIcon,
   Scissors,
   FilePlus,
   Code,
   Palette,
-  Lock,
   QrCode,
   Timer,
 } from "lucide-react";
@@ -35,12 +28,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import {
   type BlogPost,
-  type BlogToolCallout,
   getRelatedBlogPosts,
 } from "@/content/blog/blogs-data";
 import { useI18n } from "@/lib/i18n";
 import { SITE_CONFIG } from "@/lib/constants";
 import { cn } from "@/lib/utils";
+import { PageShell, ToolHeader } from "@/components/common/workload-layouts";
 
 function XIcon({ className = "h-3.5 w-3.5" }: { className?: string }) {
   return (
@@ -177,13 +170,13 @@ export function BlogPostClient({ post }: Props) {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <PageShell className="max-w-5xl">
       {/* Article Header & Breadcrumbs */}
-      <div className="border-b border-border/40 bg-muted/20 py-8">
-        <div className="container mx-auto px-4 max-w-5xl">
+      <div className="border-b border-border/40 pb-5">
+        <div>
           {/* Breadcrumbs */}
           <nav className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground mb-6 overflow-x-auto">
-            <Link href="/" className="hover:text-foreground transition-colors shrink-0">
+            <Link href={localizePath("/")} className="hover:text-foreground transition-colors shrink-0">
               Home
             </Link>
             <ChevronRight className="h-3.5 w-3.5 shrink-0" />
@@ -210,17 +203,10 @@ export function BlogPostClient({ post }: Props) {
               <Clock className="h-3.5 w-3.5" />
               <span>{post.readTime}</span>
             </div>
-            <span className="text-muted-foreground text-xs">•</span>
-            <div className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
-              <ShieldCheck className="h-3.5 w-3.5" />
-              <span>100% Client-Side Privacy</span>
-            </div>
           </div>
 
           {/* Title */}
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-foreground leading-[1.15] mb-6">
-            {post.title}
-          </h1>
+          <ToolHeader title={post.title} />
 
           {/* Author Row */}
           <div className="flex items-center justify-between gap-4 pt-2 border-t border-border/40">
@@ -271,9 +257,9 @@ export function BlogPostClient({ post }: Props) {
       </div>
 
       {/* Main Content Layout */}
-      <div className="container mx-auto px-4 max-w-5xl py-10">
+      <div className="py-6">
         {/* Cover Image */}
-        <div className="relative aspect-[21/9] sm:aspect-[2/1] overflow-hidden rounded-2xl border border-border/60 shadow-lg mb-12 bg-muted">
+        <div className="relative aspect-[21/9] sm:aspect-[2/1] overflow-hidden rounded-lg border border-border/60 mb-6 bg-muted">
           <img
             src={post.coverImage}
             alt={post.title}
@@ -282,21 +268,21 @@ export function BlogPostClient({ post }: Props) {
           />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Main Article Body */}
-          <main className="lg:col-span-8 space-y-12">
+          <article className="lg:col-span-8 space-y-12">
             {/* Excerpt Lead */}
-            <div className="rounded-xl border border-border/80 bg-muted/30 p-6 sm:p-7">
-              <p className="text-lg sm:text-xl font-medium text-foreground leading-relaxed italic">
+            <div className="border-b border-border pb-5">
+              <p className="text-base font-medium text-foreground leading-relaxed">
                 &ldquo;{post.excerpt}&rdquo;
               </p>
             </div>
 
             {/* In-Content Sections */}
             <div className="space-y-10">
-              {post.sections.map((section, sIdx) => (
+              {post.sections.map((section) => (
                 <section key={section.id} id={section.id} className="space-y-5 scroll-mt-24">
-                  <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground border-b border-border/40 pb-3">
+                  <h2 className="text-xl font-semibold text-foreground border-b border-border/40 pb-3">
                     {section.title}
                   </h2>
 
@@ -348,7 +334,7 @@ export function BlogPostClient({ post }: Props) {
 
             {/* Frequently Asked Questions Section */}
             {post.faqs.length > 0 && (
-              <section className="space-y-6 pt-6 border-t border-border/40">
+              <section id="faq" className="space-y-6 pt-6 border-t border-border/40 scroll-mt-24">
                 <div className="flex items-center gap-2">
                   <HelpCircle className="h-5 w-5 text-primary" />
                   <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
@@ -365,6 +351,7 @@ export function BlogPostClient({ post }: Props) {
                         className="rounded-xl border border-border/60 bg-card overflow-hidden transition-all"
                       >
                         <button
+                          aria-expanded={isOpen}
                           onClick={() => setOpenFaqIndex(isOpen ? null : idx)}
                           className="w-full p-4 sm:p-5 flex items-center justify-between text-left font-semibold text-sm sm:text-base text-foreground hover:bg-muted/40 transition-colors"
                         >
@@ -388,7 +375,7 @@ export function BlogPostClient({ post }: Props) {
             )}
 
             {/* Bottom Social Share Bar */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-2xl border border-border/60 bg-muted/20">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-5 border-t border-border/60">
               <div className="space-y-1">
                 <div className="font-semibold text-sm text-foreground">Did you find this guide useful?</div>
                 <div className="text-xs text-muted-foreground">Share it with your teammates and network.</div>
@@ -409,7 +396,7 @@ export function BlogPostClient({ post }: Props) {
                 </Button>
               </div>
             </div>
-          </main>
+          </article>
 
           {/* Sticky Sidebar */}
           <aside className="lg:col-span-4 space-y-8">
@@ -428,7 +415,7 @@ export function BlogPostClient({ post }: Props) {
                         className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-2 text-xs sm:text-sm"
                       >
                         <ChevronRight className="h-3 w-3 text-muted-foreground/60" />
-                        <span className="truncate">{section.title}</span>
+                        <span>{section.title}</span>
                       </a>
                     </li>
                   ))}
@@ -455,7 +442,7 @@ export function BlogPostClient({ post }: Props) {
                       <span>Tools Mentioned</span>
                     </h4>
                     <p className="text-xs text-muted-foreground">
-                      Free browser utilities featured in this guide.
+                      Tools featured in this guide.
                     </p>
                   </div>
 
@@ -482,21 +469,15 @@ export function BlogPostClient({ post }: Props) {
               )}
 
               {/* Client-Side Privacy Guarantee Badge Card */}
-              <Card className="border border-emerald-500/30 bg-emerald-500/5 dark:bg-emerald-950/20 p-5 space-y-3">
-                <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
-                  <ShieldCheck className="h-5 w-5" />
-                  <span className="font-bold text-sm">Client-Side Privacy Guarantee</span>
-                </div>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  Your files, text, and data never leave your device. All computations are handled directly inside your browser’s local runtime.
-                </p>
-              </Card>
+              <Link href={localizePath("/privacy")} className="inline-flex items-center gap-2 text-sm text-primary hover:underline">
+                <ShieldCheck className="h-4 w-4" /> Privacy Policy
+              </Link>
             </div>
           </aside>
         </div>
 
         {/* Related Guides Grid */}
-        <section className="pt-16 border-t border-border/40 space-y-6">
+        <section className="pt-6 border-t border-border/40 space-y-6">
           <div className="flex items-center justify-between">
             <h3 className="text-2xl font-bold tracking-tight text-foreground">
               Related Guides & Articles
@@ -514,7 +495,7 @@ export function BlogPostClient({ post }: Props) {
             {relatedPosts.map((rPost) => (
               <Card
                 key={rPost.slug}
-                className="group flex flex-col overflow-hidden rounded-xl border border-border/60 bg-card hover:border-primary/40 hover:shadow-md transition-all duration-300"
+                className="group flex flex-col overflow-hidden rounded-lg border border-border/60 bg-card hover:border-primary/40 transition-colors"
               >
                 <Link
                   href={localizePath(`/blog/${rPost.slug}`)}
@@ -562,28 +543,16 @@ export function BlogPostClient({ post }: Props) {
         </section>
 
         {/* Deep Emerald Green Bottom CTA Banner matching Screenshot 1 & 2 */}
-        <section className="mt-16 relative overflow-hidden rounded-3xl bg-gradient-to-r from-emerald-950 via-teal-950 to-slate-950 border border-emerald-500/30 p-8 sm:p-12 text-white shadow-xl">
-          <div className="absolute right-0 top-0 -mt-10 -mr-10 h-64 w-64 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
-          <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8">
-            <div className="space-y-3 max-w-2xl">
-              <div className="inline-flex items-center gap-2 rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-semibold tracking-wide text-emerald-300">
-                <Wrench className="h-3.5 w-3.5" />
-                <span>BROWSE TOOLS</span>
-              </div>
-              <h3 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-white">
-                Your Free Online Toolbox
-              </h3>
-              <p className="text-emerald-100/80 text-sm sm:text-base leading-relaxed">
-                192 free tools, no sign-up required, 100% private in-browser processing. Merge PDFs, resize images, format code, and automate daily tasks in seconds.
-              </p>
-            </div>
+        <section className="mt-8 border-t border-border pt-5">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <h3 className="text-base font-semibold">Tools & Guides</h3>
 
             <div className="flex flex-wrap items-center gap-3 shrink-0">
               <Link
                 href={localizePath("/tools")}
                 className={cn(
                   buttonVariants({ size: "lg" }),
-                  "bg-white text-emerald-950 hover:bg-emerald-50 font-bold shadow-md gap-2"
+                  "gap-2"
                 )}
               >
                 <span>Browse Tools</span>
@@ -593,7 +562,7 @@ export function BlogPostClient({ post }: Props) {
                 href={localizePath("/blog")}
                 className={cn(
                   buttonVariants({ variant: "outline", size: "lg" }),
-                  "border-emerald-500/40 text-white hover:bg-emerald-900/40 backdrop-blur-xs font-medium"
+                  "font-medium"
                 )}
               >
                 <span>Blog & Guides</span>
@@ -602,6 +571,6 @@ export function BlogPostClient({ post }: Props) {
           </div>
         </section>
       </div>
-    </div>
+    </PageShell>
   );
 }

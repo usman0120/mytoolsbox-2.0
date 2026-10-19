@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useSyncExternalStore, useEffect } from "react";
 import { useChatStore } from "../chat-store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { useI18n } from "@/lib/i18n";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,11 +38,22 @@ interface ChatSidebarProps {
   className?: string;
 }
 
+function subscribeMobile(callback: () => void) {
+  const query = window.matchMedia("(max-width: 767px)");
+  query.addEventListener("change", callback);
+  return () => query.removeEventListener("change", callback);
+}
+
+const getMobileSnapshot = () => window.matchMedia("(max-width: 767px)").matches;
+const getServerSnapshot = () => false;
+
 export function ChatSidebar({
   creditsRemaining,
   onNewChat,
   className = "",
 }: ChatSidebarProps) {
+  const { t } = useI18n();
+  const isMobile = useSyncExternalStore(subscribeMobile, getMobileSnapshot, getServerSnapshot);
   const {
     conversations,
     activeConversationId,
@@ -59,6 +71,10 @@ export function ChatSidebar({
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
+
+  useEffect(() => {
+    if (isMobile) setSidebarOpen(false);
+  }, [isMobile, setSidebarOpen]);
 
   // Group conversations by time period
   const { pinned, today, yesterday, last7Days, last30Days, older } =
@@ -159,7 +175,7 @@ export function ChatSidebar({
     if (list.length === 0) return null;
     return (
       <div className="mb-4">
-        <div className="flex items-center gap-1.5 px-3 mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+        <div className="flex items-center gap-1.5 px-2 mb-1.5 text-xs font-semibold text-muted-foreground">
           {icon}
           <span>{title}</span>
           <span className="ml-auto text-[10px] font-normal opacity-60">
@@ -174,14 +190,11 @@ export function ChatSidebar({
             return (
               <div
                 key={conv.id}
-                className={`group relative flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium cursor-pointer transition-all ${
+                className={`group relative flex items-center gap-2 px-2 rounded-md text-sm font-medium ${
                   isActive
                     ? "bg-primary/10 text-primary font-semibold shadow-xs"
                     : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
                 }`}
-                onClick={() => {
-                  if (!isEditing) setActiveConversation(conv.id);
-                }}
               >
                 {conv.isPinned ? (
                   <Pin className="h-3.5 w-3.5 text-amber-500 shrink-0" />
@@ -192,6 +205,7 @@ export function ChatSidebar({
                 {isEditing ? (
                   <input
                     type="text"
+                    aria-label="Conversation title"
                     value={editTitle}
                     onChange={(e) => setEditTitle(e.target.value)}
                     onKeyDown={(e) => {
@@ -204,21 +218,19 @@ export function ChatSidebar({
                     onClick={(e) => e.stopPropagation()}
                   />
                 ) : (
-                  <span className="flex-1 truncate">{conv.title || "Untitled Chat"}</span>
+                  <button type="button" aria-current={isActive ? "true" : undefined} onClick={() => { setActiveConversation(conv.id); if (isMobile) setSidebarOpen(false); }} className="flex-1 min-w-0 min-h-11 truncate text-left">{conv.title || "Untitled Chat"}</button>
                 )}
 
                 {/* Dropdown Menu */}
                 <div
-                  className={`opacity-0 group-hover:opacity-100 transition-opacity flex items-center ${
-                    isActive ? "opacity-100" : ""
-                  }`}
+                  className="flex items-center"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <DropdownMenu>
-                    <DropdownMenuTrigger className="inline-flex items-center justify-center h-6 w-6 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground outline-none transition-colors">
+                    <DropdownMenuTrigger aria-label={`Actions for ${conv.title || "Untitled Chat"}`} title="Conversation actions" className="inline-flex items-center justify-center h-11 w-11 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground">
                       <MoreVertical className="h-3.5 w-3.5" />
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-40 rounded-xl text-xs">
+                    <DropdownMenuContent align="end" className="w-40 rounded-lg text-sm">
                       <DropdownMenuItem
                         onClick={() => pinConversation(conv.id)}
                         className="gap-2 cursor-pointer"
@@ -275,32 +287,28 @@ export function ChatSidebar({
     );
   };
 
-  return (
-    <aside
-      className={`flex flex-col h-full bg-muted/20 border-r border-border/50 transition-all duration-300 ${
-        isSidebarOpen ? "w-64 md:w-72" : "w-0 overflow-hidden border-none"
-      } ${className}`}
-    >
+  const content = <>
       {/* Top Bar: New Chat & Search */}
       <div className="p-3 space-y-2 border-b border-border/50">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 font-semibold text-xs text-muted-foreground px-1">
-            <Sparkles className="h-3.5 w-3.5 text-violet-500" />
-            <span>Chat History</span>
+            <Sparkles className="h-3.5 w-3.5 text-primary" />
+            <span>{t("auth_history", "Chat history")}</span>
           </div>
           <Button
             variant="ghost"
             size="icon"
             onClick={() => setSidebarOpen(false)}
-            className="h-6 w-6 rounded-md md:hidden"
+            aria-label="Close chat history"
+            className="h-11 w-11 rounded-md md:hidden"
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
         </div>
 
         <Button
-          onClick={onNewChat}
-          className="w-full justify-start rounded-xl gap-2 font-medium shadow-xs h-9 text-xs"
+          onClick={() => { onNewChat(); if (isMobile) setSidebarOpen(false); }}
+          className="w-full justify-start rounded-md gap-2 font-medium h-11 text-sm"
         >
           <Plus className="h-4 w-4" />
           New Chat
@@ -311,14 +319,16 @@ export function ChatSidebar({
           <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
           <Input
             value={searchQuery}
+            aria-label="Search chats"
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search chats..."
-            className="h-8 pl-8 pr-7 text-xs rounded-lg bg-background/60 border-border/60"
+            className="h-10 pl-8 pr-10 text-base rounded-md bg-background border-input"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery("")}
-              className="absolute right-2 top-2.5 text-muted-foreground hover:text-foreground"
+              aria-label="Clear chat search"
+              className="absolute right-0 top-0 h-10 w-10 flex items-center justify-center text-muted-foreground hover:text-foreground"
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -332,7 +342,6 @@ export function ChatSidebar({
           <div className="text-center py-12 px-4 text-xs text-muted-foreground">
             <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-30" />
             <p>No chats yet.</p>
-            <p className="mt-1 opacity-70">Start a new conversation to save it here.</p>
           </div>
         ) : (
           <>
@@ -348,6 +357,7 @@ export function ChatSidebar({
 
       {/* Footer / Account & Storage Status */}
       <div className="p-3 border-t border-border/50 bg-background/50 space-y-2">
+        {creditsRemaining !== null && <p className="text-xs text-muted-foreground">{creditsRemaining.toLocaleString()} credits</p>}
         
 
         {conversations.length > 0 && (
@@ -364,13 +374,20 @@ export function ChatSidebar({
                   toast.success("All chats cleared");
                 }
               }}
-              className="h-6 px-2 text-[11px] text-muted-foreground hover:text-destructive"
+              className="h-11 px-2 text-xs text-muted-foreground hover:text-destructive"
             >
               Clear all
             </Button>
           </div>
         )}
       </div>
-    </aside>
-  );
+    </>;
+
+  if (isMobile) return <Sheet open={isSidebarOpen} onOpenChange={setSidebarOpen}>
+    {isSidebarOpen && <SheetContent side="left" showCloseButton={false} className="w-[min(18rem,90vw)] gap-0 p-0">
+      <SheetTitle className="sr-only">{t("auth_history", "Chat history")}</SheetTitle>
+      {content}
+    </SheetContent>}
+  </Sheet>;
+  return isSidebarOpen ? <aside aria-label="Chat history" className={`hidden md:flex flex-col h-full w-64 shrink-0 bg-muted/20 border-r border-border/50 ${className}`}>{content}</aside> : null;
 }

@@ -3,10 +3,9 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import {
-  BookOpen, FileText, HelpCircle, Download, ArrowRight, Shield, Zap,
-  Clock, Globe, Lock, Smartphone, FileJson, FileImage, FileCode,
-  Calculator, Type, ExternalLink, ChevronDown, ChevronUp, Search,
-  Copy, Check, Eye, Sparkles, Filter, Code2, Terminal, Layers,
+  BookOpen, FileText, HelpCircle, Download, ArrowRight,
+  Clock, ExternalLink, ChevronDown, ChevronUp, Search,
+  Copy, Check, Eye, Sparkles, Code2,
   CheckCircle2, X
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,21 +13,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import {
-  RESOURCE_GUIDES,
-  RESOURCE_TEMPLATES,
   CHEAT_SHEETS,
   RESOURCE_FAQS,
   searchResources,
   type ResourceGuide,
   type ResourceTemplate,
-  type CheatSheetItem,
-  type ResourceFaq,
 } from "@/features/resources/resources-data";
 import { createDocxBlob } from "@/lib/documents/openxml-builder";
 import { useI18n } from "@/lib/i18n";
+import { PageShell, ToolHeader } from "@/components/common/workload-layouts";
 
 export function ResourcesPageClient() {
   const { t, localizePath } = useI18n();
@@ -113,29 +108,18 @@ export function ResourcesPageClient() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl">
+    <PageShell>
       {/* Page Header */}
-      <div className="mb-8">
+      <div className="mb-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-linear-to-br from-rose-500/10 to-pink-500/10 ring-1 ring-rose-500/20 shadow-xs shrink-0">
-              <BookOpen className="h-6 w-6 text-rose-600 dark:text-rose-400" />
-            </div>
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-                {t("resources_title", "Resources & Knowledge Hub")}
-              </h1>
-              <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-                {t("resources_subtitle", "In-depth guides, downloadable production templates, developer cheat sheets, and FAQs")}
-              </p>
-            </div>
-          </div>
+          <ToolHeader icon={<BookOpen className="h-5 w-5 text-rose-600 dark:text-rose-400" />} title={t("resources_title", "Resources & Knowledge Hub")} description={t("resources_subtitle", "Guides, templates, cheat sheets, and FAQs")} />
 
           {/* Search bar */}
           <div className="relative w-full sm:w-72">
             <Search className="h-3.5 w-3.5 absolute left-3 top-3 text-muted-foreground" />
             <Input
               value={searchQuery}
+              aria-label={t("resources_search_placeholder", "Search resources")}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={t("resources_search_placeholder", "Search guides, templates, syntax...")}
               className="h-9 text-xs pl-8 pr-8"
@@ -143,6 +127,8 @@ export function ResourcesPageClient() {
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery("")}
+                aria-label="Clear resource search"
+                title="Clear resource search"
                 className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground"
               >
                 <X className="h-3.5 w-3.5" />
@@ -217,7 +203,7 @@ export function ResourcesPageClient() {
               >
                 <CardContent className="p-5 space-y-4">
                   <div className="flex items-start gap-4">
-                    <div className={`flex h-12 w-12 items-center justify-center rounded-xl bg-linear-to-br ${guide.gradient} ring-1 ring-border/50 shrink-0`}>
+                    <div className="flex h-9 w-9 items-center justify-center rounded-md bg-muted shrink-0">
                       <BookOpen className={`h-6 w-6 ${guide.iconColor}`} />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -292,7 +278,7 @@ export function ResourcesPageClient() {
               >
                 <CardContent className="p-5 space-y-4">
                   <div className="flex items-start gap-4">
-                    <div className={`flex h-12 w-12 items-center justify-center rounded-xl bg-linear-to-br ${template.gradient} ring-1 ring-border/50 shrink-0`}>
+                    <div className="flex h-9 w-9 items-center justify-center rounded-md bg-muted shrink-0">
                       <FileText className={`h-6 w-6 ${template.iconColor}`} />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -400,6 +386,8 @@ export function ResourcesPageClient() {
                       size="icon"
                       className="h-6 w-6"
                       onClick={() => handleCopyText(item.syntax, item.id)}
+                      aria-label={`Copy ${item.title}`}
+                      title={`Copy ${item.title}`}
                     >
                       {copiedKey === item.id ? (
                         <Check className="h-3 w-3 text-green-500" />
@@ -439,6 +427,7 @@ export function ResourcesPageClient() {
                 <Card key={faq.id} className="border shadow-xs overflow-hidden transition-all">
                   <button
                     onClick={() => setOpenFaqId(isOpen ? null : faq.id)}
+                    aria-expanded={isOpen}
                     className="w-full p-4 flex items-start gap-3.5 text-left hover:bg-muted/20 transition-colors"
                   >
                     <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0 mt-0.5">
@@ -494,6 +483,8 @@ export function ResourcesPageClient() {
                 size="icon"
                 className="h-8 w-8"
                 onClick={() => setPreviewTemplate(null)}
+                aria-label="Close template preview"
+                title="Close template preview"
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -545,6 +536,8 @@ export function ResourcesPageClient() {
                 size="icon"
                 className="h-8 w-8"
                 onClick={() => setPreviewGuide(null)}
+                aria-label="Close guide preview"
+                title="Close guide preview"
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -595,6 +588,6 @@ export function ResourcesPageClient() {
           </Card>
         </div>
       )}
-    </div>
+    </PageShell>
   );
 }

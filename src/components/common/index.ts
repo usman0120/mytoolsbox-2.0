@@ -9,6 +9,8 @@ export {
   DevToolLayout,
   PageShell,
   ToolHeader,
+  WorkspaceShell,
+  HelpDisclosure,
 } from "./workload-layouts";
 export {
   SkipLink,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useMemo } from "react";
+import { useState, useTransition, useMemo, useSyncExternalStore } from "react";
 import {
   Regex,
   Copy,
@@ -36,7 +36,10 @@ const PRESET_PATTERNS = [
   { name: "Phone Number", pattern: "\\+?\\d{1,4}?[-.\\s]?\\(?\\d{1,3}?\\)?[-.\\s]?\\d{1,4}[-.\\s]?\\d{1,4}[-.\\s]?\\d{1,9}", flags: "g" },
 ];
 
+const subscribeToHydration = () => () => {};
+
 export function RegexTesterEngine() {
+  const isClient = useSyncExternalStore(subscribeToHydration, () => true, () => false);
   const [pattern, setPattern] = useState("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}");
   const [flags, setFlags] = useState("g");
   const [text, setText] = useState(
@@ -173,7 +176,7 @@ export function RegexTesterEngine() {
                 {result.data.matchCount} {result.data.matchCount === 1 ? "match" : "matches"}
               </Badge>
             )}
-            {result?.data?.executionTimeMs !== undefined && (
+            {isClient && result?.data?.executionTimeMs !== undefined && (
               <span className="text-xs text-muted-foreground flex items-center gap-1">
                 <Clock className="h-3 w-3" /> {result.data.executionTimeMs} ms
               </span>

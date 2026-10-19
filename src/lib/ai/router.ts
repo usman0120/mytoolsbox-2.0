@@ -89,26 +89,8 @@ export function getRequestCreditCost(request: AIRequest): number {
 }
 
 export async function complete(request: AIRequest): Promise<AIResponse> {
-  // Centralized Credit Routing: In browser environments, route through /api/ai
-  // to ensure credits are tracked and deducted accurately across all AI tools.
-  if (typeof window !== "undefined") {
-    try {
-      return await completeViaServer(request);
-    } catch (serverErr) {
-      const errMsg = serverErr instanceof Error ? serverErr.message : String(serverErr);
-      // Propagate critical business rule errors (credits, rate limits) directly to UI
-      if (
-        errMsg.toLowerCase().includes("credit") ||
-        errMsg.toLowerCase().includes("insufficient") ||
-        errMsg.toLowerCase().includes("blocked") ||
-        errMsg.toLowerCase().includes("rate limit")
-      ) {
-        throw serverErr;
-      }
-      // Non-critical network/server error: allow local adapter fallback if available
-      console.warn("Server AI route failed, attempting local adapter:", serverErr);
-    }
-  }
+  // Browser requests stay on the server's authenticated, credit-accounted path.
+  if (typeof window !== "undefined") return completeViaServer(request);
 
   // If a specific provider is requested, use it
   if (request.provider) {
@@ -153,19 +135,9 @@ export async function streamComplete(
   request: AIRequest,
   onChunk: (chunk: string) => void
 ): Promise<AIResponse> {
-  // For now, fall back to non-streaming and simulate chunks
+  // The current provider contract returns complete JSON, not a token stream.
   const response = await complete(request);
-
-  // Simulate streaming by sending chunks of the response
-  const words = response.text.split(" ");
-  const chunkSize = 3;
-
-  for (let i = 0; i < words.length; i += chunkSize) {
-    const chunk = words.slice(i, i + chunkSize).join(" ") + " ";
-    onChunk(chunk);
-    await new Promise((resolve) => setTimeout(resolve, 30));
-  }
-
+  onChunk(response.text);
   return response;
 }
 

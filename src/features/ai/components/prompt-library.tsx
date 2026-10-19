@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { useChatStore } from "../chat-store";
 import { PROMPTS_DATASET, PROMPT_CATEGORIES } from "../prompt-library-data";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -108,21 +108,12 @@ export function PromptLibrary({ onUsePrompt }: PromptLibraryProps) {
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       {/* Top Banner */}
-      <div className="p-6 rounded-3xl bg-linear-to-r from-violet-500/10 via-background to-amber-500/10 border border-border/60">
+      <div className="space-y-3">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-linear-to-br from-amber-500/20 to-orange-500/20 text-amber-600 dark:text-amber-400">
-                <Sparkles className="h-4 w-4" />
-              </div>
-              <h2 className="text-xl font-bold tracking-tight">Curated Prompt Library</h2>
-              <Badge variant="secondary" className="rounded-full text-xs font-mono">
-                {PROMPTS_DATASET.length}+ Prompts
-              </Badge>
+              <span aria-live="polite" className="text-sm text-muted-foreground">{filteredPrompts.length} prompts</span>
             </div>
-            <p className="text-xs text-muted-foreground max-w-xl leading-relaxed">
-              Battle-tested, professional prompt templates across software engineering, content, startups, product management, and mathematics. Click any prompt to use it instantly in chat.
-            </p>
           </div>
 
           {/* Quick Search */}
@@ -130,13 +121,15 @@ export function PromptLibrary({ onUsePrompt }: PromptLibraryProps) {
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input
               value={searchQuery}
+              aria-label="Search prompts"
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search 160+ prompts or tags..."
-              className="h-10 pl-9 pr-8 text-xs rounded-xl bg-background/80 border-border/70 shadow-xs"
+              placeholder="Search prompts or tags..."
+              className="h-10 pl-9 pr-8 text-sm rounded-md"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery("")}
+                aria-label="Clear search"
                 className="absolute right-2.5 top-3 text-muted-foreground hover:text-foreground"
               >
                 <X className="h-4 w-4" />
@@ -154,7 +147,8 @@ export function PromptLibrary({ onUsePrompt }: PromptLibraryProps) {
               setSelectedCategory("all");
               setOnlyFavorites(false);
             }}
-            className="h-8 px-3 rounded-full text-xs shrink-0 gap-1.5"
+            aria-pressed={selectedCategory === "all" && !onlyFavorites}
+            className="h-9 px-3 rounded-md text-xs shrink-0 gap-1.5"
           >
             <Filter className="h-3 w-3" />
             All ({PROMPTS_DATASET.length})
@@ -165,7 +159,8 @@ export function PromptLibrary({ onUsePrompt }: PromptLibraryProps) {
             variant={onlyFavorites ? "default" : "outline"}
             size="sm"
             onClick={() => setOnlyFavorites(!onlyFavorites)}
-            className="h-8 px-3 rounded-full text-xs shrink-0 gap-1.5 text-amber-600 dark:text-amber-400"
+            aria-pressed={onlyFavorites}
+            className="h-9 px-3 rounded-md text-xs shrink-0 gap-1.5 text-amber-600 dark:text-amber-400"
           >
             <Star className={`h-3 w-3 ${onlyFavorites ? "fill-current" : ""}`} />
             Starred ({favoritePromptIds.length})
@@ -185,7 +180,8 @@ export function PromptLibrary({ onUsePrompt }: PromptLibraryProps) {
                   setSelectedCategory(cat.id);
                   setOnlyFavorites(false);
                 }}
-                className="h-8 px-3 rounded-full text-xs shrink-0 gap-1.5"
+                aria-pressed={isSelected}
+                className="h-9 px-3 rounded-md text-xs shrink-0 gap-1.5"
               >
                 <Icon className="h-3.5 w-3.5 opacity-80" />
                 {cat.name} ({count})
@@ -214,8 +210,7 @@ export function PromptLibrary({ onUsePrompt }: PromptLibraryProps) {
             return (
               <Card
                 key={p.id}
-                onClick={() => setSelectedPrompt(p)}
-                className="group relative flex flex-col justify-between border-border/50 hover:border-primary/40 bg-card/70 hover:bg-card/95 transition-all card-lift cursor-pointer rounded-2xl overflow-hidden p-5 shadow-xs"
+                className="group relative flex flex-col justify-between border-border/50 rounded-lg overflow-hidden p-3 gap-3"
               >
                 <div>
                   {/* Top card bar: Category icon, Star, Copy */}
@@ -239,6 +234,8 @@ export function PromptLibrary({ onUsePrompt }: PromptLibraryProps) {
                           isFav ? "text-amber-500 fill-amber-500" : "text-muted-foreground hover:text-foreground"
                         }`}
                         title={isFav ? "Remove star" : "Star prompt"}
+                        aria-label={isFav ? "Remove star" : "Star prompt"}
+                        aria-pressed={isFav}
                       >
                         <Star className={`h-3.5 w-3.5 ${isFav ? "fill-amber-500" : ""}`} />
                       </Button>
@@ -250,6 +247,7 @@ export function PromptLibrary({ onUsePrompt }: PromptLibraryProps) {
                         onClick={(e) => handleCopy(p.id, p.prompt, e)}
                         className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground"
                         title="Copy prompt"
+                        aria-label="Copy prompt"
                       >
                         {isCopied ? (
                           <Check className="h-3.5 w-3.5 text-emerald-500" />
@@ -262,7 +260,7 @@ export function PromptLibrary({ onUsePrompt }: PromptLibraryProps) {
 
                   {/* Title & Description */}
                   <h3 className="font-semibold text-sm group-hover:text-primary transition-colors mb-1.5 leading-snug">
-                    {p.title}
+                    <button type="button" onClick={() => setSelectedPrompt(p)} className="text-start hover:underline">{p.title}</button>
                   </h3>
                   <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed mb-3">
                     {p.description}
@@ -287,7 +285,7 @@ export function PromptLibrary({ onUsePrompt }: PromptLibraryProps) {
                   <Button
                     onClick={(e) => handleUse(p.prompt, e)}
                     size="sm"
-                    className="w-full rounded-xl text-xs gap-1.5 h-8 font-medium shadow-xs group-hover:shadow-sm"
+                    className="w-full rounded-md text-xs gap-1.5 h-9"
                   >
                     <span>Use in Chat</span>
                     <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
@@ -301,7 +299,7 @@ export function PromptLibrary({ onUsePrompt }: PromptLibraryProps) {
 
       {/* Prompt Preview Modal */}
       <Dialog open={!!selectedPrompt} onOpenChange={(open) => !open && setSelectedPrompt(null)}>
-        <DialogContent className="max-w-2xl rounded-2xl p-6">
+        <DialogContent className="max-w-2xl rounded-lg p-4 max-h-[90dvh] overflow-y-auto">
           {selectedPrompt && (
             <div className="space-y-4">
               <DialogHeader>
@@ -324,7 +322,7 @@ export function PromptLibrary({ onUsePrompt }: PromptLibraryProps) {
               </DialogHeader>
 
               {/* Full Prompt Content */}
-              <div className="p-4 rounded-xl bg-muted/40 border border-border/60 text-xs font-mono leading-relaxed max-h-72 overflow-y-auto whitespace-pre-wrap select-all">
+              <div className="py-3 text-sm font-mono leading-relaxed max-h-72 overflow-y-auto whitespace-pre-wrap wrap-break-word select-all">
                 {selectedPrompt.prompt}
               </div>
 

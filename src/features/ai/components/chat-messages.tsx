@@ -2,7 +2,6 @@
 
 import { useEffect, useRef } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MarkdownRenderer } from "./markdown-renderer";
@@ -159,29 +158,17 @@ export function ChatMessages({
 
   if (messages.length === 0) {
     return (
-      <div className="flex-1 overflow-y-auto px-4 py-8 md:py-14 max-w-4xl mx-auto w-full flex flex-col justify-center animate-fade-in-up">
+      <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 max-w-4xl mx-auto w-full">
         {/* Gemini Greeting Header */}
-        <div className="mb-10 text-center sm:text-left">
-          <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-linear-to-br from-blue-500/20 via-purple-500/20 to-teal-400/20 ring-1 ring-blue-500/30 shadow-xs mb-3">
-            <Sparkles className="h-6 w-6 text-blue-500" />
-          </div>
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-medium tracking-tight">
-            <span className="bg-linear-to-r from-blue-500 via-indigo-400 to-rose-400 bg-clip-text text-transparent">
-              Hello there
-            </span>
-          </h2>
-          <p className="text-2xl sm:text-3xl md:text-4xl font-medium text-muted-foreground/60 mt-1 tracking-tight">
-            How can I help you today?
-          </p>
-        </div>
 
         {/* Gemini Quick Suggestion Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
           {STARTER_CARDS.slice(0, 4).map((card, i) => (
-            <Card
+            <button
+              type="button"
               key={i}
               onClick={() => onSelectPrompt(card.prompt)}
-              className="p-4 border-border/50 hover:border-primary/40 bg-card/60 hover:bg-card/95 cursor-pointer transition-all card-lift group rounded-2xl flex flex-col justify-between h-36"
+              className="p-3 text-start hover:bg-muted/50 group border-b border-border/50 flex flex-col justify-between min-h-24"
             >
               <div className="space-y-2">
                 <h3 className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-1">
@@ -198,7 +185,7 @@ export function ChatMessages({
                 </div>
                 <ArrowRight className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
-            </Card>
+            </button>
           ))}
         </div>
 
@@ -209,10 +196,10 @@ export function ChatMessages({
               variant="outline"
               size="sm"
               onClick={onOpenPromptLibrary}
-              className="rounded-full text-xs gap-2 border-border/70 hover:border-primary/50 text-muted-foreground hover:text-foreground px-4 shadow-xs"
+              className="rounded-md text-xs gap-2"
             >
               <Sparkles className="h-3.5 w-3.5 text-amber-500" />
-              <span>Explore 160+ Curated Prompts</span>
+              <span>Prompt Library</span>
               <ArrowRight className="h-3 w-3 opacity-70" />
             </Button>
           </div>
@@ -254,7 +241,7 @@ export function ChatMessages({
               <div
                 className={`text-sm leading-relaxed ${
                   isUser
-                    ? "bg-[#282a2c] text-white dark:bg-[#282a2c] dark:text-neutral-100 rounded-[22px] px-5 py-3 shadow-xs whitespace-pre-wrap selection:bg-white/20"
+                    ? "bg-muted text-foreground rounded-lg px-3 py-2 whitespace-pre-wrap wrap-break-word"
                     : "w-full text-foreground px-1 py-0.5 space-y-3"
                 }`}
               >

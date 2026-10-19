@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { SITE_CONFIG } from "@/lib/constants";
 import { useI18n } from "@/lib/i18n";
-import { Shield, Zap, Sparkles, Globe, Heart, Lock, CheckCircle2, ArrowRight } from "lucide-react";
+import { Shield, Zap, Globe, Heart, ArrowRight } from "lucide-react";
+import { PageShell, ToolHeader } from "@/components/common/workload-layouts";
 
 export function AboutPageClient() {
   const { t, localizePath } = useI18n();
@@ -11,74 +12,72 @@ export function AboutPageClient() {
   const principles = [
     {
       title: t("about_privacy_title"),
-      description: t("about_privacy_desc"),
+      description: t("privacy_page_title", "Privacy Policy"),
+      href: "/privacy",
       icon: Shield,
     },
     {
-      title: t("about_free_title"),
-      description: t("about_free_desc"),
+      title: t("nav_tools"),
+      description: t("nav_tools"),
+      href: "/tools",
       icon: Heart,
     },
     {
       title: t("feature_fast_title"),
-      description: t("feature_fast_desc"),
+      description: t("nav_apps"),
+      href: "/apps",
       icon: Zap,
     },
     {
-      title: t("about_offline_title"),
-      description: t("about_offline_desc"),
+      title: t("nav_resources"),
+      description: t("nav_resources"),
+      href: "/resources",
       icon: Globe,
     },
   ];
 
   return (
-    <div className="container mx-auto px-4 py-16 md:py-24 max-w-3xl">
+    <PageShell className="max-w-3xl">
       {/* Header */}
-      <div className="text-center mb-16 animate-fade-in-up">
-        <h1 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">
-          {t("about_title")}
-        </h1>
-        <p className="text-lg text-muted-foreground leading-relaxed">
-          {t("footer_tagline")}
-        </p>
-      </div>
+      <ToolHeader title={t("about_title")} />
 
       {/* Mission */}
-      <section className="mb-16 animate-fade-in-up" style={{ animationDelay: "60ms" }}>
+      <section className="mb-8">
         <h2 className="text-xl font-semibold mb-4">{t("about_mission_title")}</h2>
         <div className="prose prose-neutral dark:prose-invert max-w-none text-muted-foreground space-y-4">
           <p className="leading-relaxed">
-            {t("about_mission_desc")}
+            {SITE_CONFIG.name}: {t("nav_tools")}, {t("nav_apps")}, {t("nav_ai")}, {t("nav_resources")}.
           </p>
         </div>
       </section>
 
       {/* Principles */}
-      <section className="mb-16 animate-fade-in-up" style={{ animationDelay: "120ms" }}>
+      <section className="mb-8">
         <h2 className="text-xl font-semibold mb-6">{t("features_title")}</h2>
         <div className="grid sm:grid-cols-2 gap-4">
           {principles.map((principle) => {
             const Icon = principle.icon;
             return (
-              <div
+              <Link
                 key={principle.title}
-                className="p-5 rounded-2xl border border-border/50 bg-card/50 hover:border-primary/30 transition-colors"
+                href={localizePath(principle.href)}
+                className="flex items-center gap-3 py-3 border-b border-border/50 hover:text-primary transition-colors"
               >
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary mb-3">
+                <div className="text-primary shrink-0">
                   <Icon className="h-4.5 w-4.5" />
                 </div>
-                <h3 className="font-semibold text-sm mb-1.5">{principle.title}</h3>
-                <p className="text-xs text-muted-foreground leading-relaxed">
+                <span className="text-sm">
                   {principle.description}
-                </p>
-              </div>
+                </span>
+                <ArrowRight className="ml-auto h-4 w-4 shrink-0" />
+              </Link>
             );
           })}
         </div>
       </section>
 
       {/* CTA */}
-      <div className="text-center pt-8 border-t border-border/50 animate-fade-in-up" style={{ animationDelay: "180ms" }}>
+      <div className="pt-5 border-t border-border/50">
         <p className="text-muted-foreground mb-4">{t("contact_subtitle")}</p>
         <Link
           href={localizePath("/contact")}
@@ -87,6 +86,6 @@ export function AboutPageClient() {
           {t("contact_title")} <ArrowRight className="h-4 w-4" />
         </Link>
       </div>
-    </div>
+    </PageShell>
   );
 }

@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
-import Script from "next/script";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Archivo, Geist_Mono, Newsreader } from "next/font/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { Navbar } from "@/components/navigation";
@@ -15,9 +14,10 @@ import "./globals.css";
 
 const GA_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const archivo = Archivo({
+  variable: "--font-archivo",
   subsets: ["latin"],
+  display: "swap",
 });
 
 const geistMono = Geist_Mono({
@@ -25,12 +25,19 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const newsreader = Newsreader({
+  variable: "--font-serif",
+  subsets: ["latin"],
+  style: ["normal", "italic"],
+  display: "swap",
+});
+
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#fafbff" },
-    { media: "(prefers-color-scheme: dark)", color: "#1a1d2e" },
+    { media: "(prefers-color-scheme: light)", color: "#fcfcf9" },
+    { media: "(prefers-color-scheme: dark)", color: "#0e1513" },
   ],
 };
 
@@ -40,7 +47,7 @@ export const metadata: Metadata = {
     default: `${SITE_CONFIG.name} - Free Online Tools & Utilities`,
     template: `%s | ${SITE_CONFIG.name}`,
   },
-  description: "Free online tools for documents, images, development, calculations, and more. All processing happens in your browser - no uploads required.",
+  description: "Online tools for documents, images, development, calculations, and more. Processing and access requirements vary by tool.",
   keywords: ["online tools", "free tools", "pdf tools", "image tools", "developer tools", "calculators", "utilities"],
   authors: [{ name: SITE_CONFIG.name }],
   alternates: {
@@ -111,7 +118,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${archivo.variable} ${geistMono.variable} ${newsreader.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col" suppressHydrationWarning>

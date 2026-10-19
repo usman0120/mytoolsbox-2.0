@@ -16,7 +16,6 @@ import {
   Image as ImageIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
@@ -57,23 +56,21 @@ export function PDFToImagesEngine() {
       setPdfUrl(data.pdfUrl);
       setTotalPages(data.totalPages);
       toast.success(`PDF loaded: ${data.totalPages} pages.`);
+      if (data.totalPages > 0) {
+        setIsRendering(true);
+        try {
+          const img = await renderPageToImage(data.pdfUrl, 1, format, scale);
+          if (img) {
+            setPageImages((prev) => new Map(prev).set(1, img));
+          }
+        } finally {
+          setIsRendering(false);
+        }
+      }
     } else {
       toast.error(res.error || "Failed to load PDF.");
     }
-  }, [format]);
-
-  // Automatically render the first page on load
-  useEffect(() => {
-    if (pdfUrl && totalPages > 0 && !pageImages.has(1)) {
-      setIsRendering(true);
-      renderPageToImage(pdfUrl, 1, format, scale).then((img) => {
-        if (img) {
-          setPageImages((prev) => new Map(prev).set(1, img));
-        }
-        setIsRendering(false);
-      });
-    }
-  }, [pdfUrl, totalPages, format, scale]);
+  }, [format, scale]);
 
   // Render on page change if not yet rendered
   const handlePageChange = async (newPage: number) => {
@@ -152,7 +149,7 @@ export function PDFToImagesEngine() {
   }, [pdfUrl]);
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
+    <div className="w-full min-w-0 space-y-4">
       {/* Upload Zone */}
       {!file && (
         <div
@@ -180,7 +177,7 @@ export function PDFToImagesEngine() {
           <p className="text-sm text-muted-foreground mb-4 max-w-md mx-auto">
             Render PDF pages to high-resolution PNG or JPG images. Download single pages or the entire document as a ZIP archive.
           </p>
-          <Button variant="outline" size="sm" className="rounded-xl pointer-events-none">
+          <Button variant="outline" onClick={(event) => { event.stopPropagation(); fileInputRef.current?.click(); }} className="rounded-lg">
             <Plus className="h-4 w-4 mr-1.5" /> Select PDF Document
           </Button>
           <input
@@ -198,7 +195,7 @@ export function PDFToImagesEngine() {
 
       {/* Viewer & Export Controls */}
       {file && (
-        <Card className="rounded-2xl border-border/60 shadow-sm overflow-hidden">
+        <section aria-label="PDF page rendering and export" className="min-w-0">
           {/* Header Bar */}
           <div className="p-4 bg-muted/40 border-b border-border/60 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
@@ -229,10 +226,10 @@ export function PDFToImagesEngine() {
             </div>
           </div>
 
-          <CardContent className="p-5 space-y-6">
+          <div className="py-4 space-y-4">
             {/* Options Bar */}
-            <div className="flex flex-wrap items-center justify-between gap-4 p-3 rounded-xl bg-muted/20 border border-border/50 text-xs">
-              <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center justify-between gap-4 text-xs">
+              <div className="flex flex-wrap items-center gap-4">
                 <div className="flex items-center gap-2">
                   <span className="font-medium text-foreground">Format:</span>
                   <div className="flex rounded-lg bg-background p-0.5 border border-border/60">
@@ -303,7 +300,7 @@ export function PDFToImagesEngine() {
 
             {/* Page Preview Container */}
             <div className="flex flex-col items-center space-y-4">
-              <div className="w-full max-w-xl aspect-[3/4] bg-muted/10 border border-border/60 rounded-xl overflow-hidden shadow-inner flex items-center justify-center p-3 relative">
+              <div className="w-full min-h-64 sm:min-h-96 bg-muted/10 border border-border/60 rounded-lg overflow-hidden flex items-center justify-center p-3 relative">
                 {isRendering ? (
                   <div className="flex flex-col items-center gap-2 text-muted-foreground">
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -314,7 +311,7 @@ export function PDFToImagesEngine() {
                   <img
                     src={pageImages.get(currentPage)}
                     alt={`PDF Page ${currentPage}`}
-                    className="max-h-full max-w-full object-contain rounded-sm shadow-md"
+                    className="max-h-[70dvh] max-w-full object-contain rounded-sm"
                   />
                 ) : (
                   <div className="text-center text-muted-foreground text-xs">
@@ -325,7 +322,7 @@ export function PDFToImagesEngine() {
               </div>
 
               {/* Navigation & Single Download Bar */}
-              <div className="flex items-center justify-between w-full max-w-xl">
+              <div className="flex flex-wrap items-center justify-between gap-3 w-full">
                 <Button
                   variant="outline"
                   size="sm"
@@ -362,8 +359,8 @@ export function PDFToImagesEngine() {
                 </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </section>
       )}
     </div>
   );

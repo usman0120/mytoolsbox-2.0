@@ -8,12 +8,12 @@ import { complete, getAvailableProviders, getRecommendedProvider } from "@/lib/a
 import { checkCredits, deductCredits } from "@/lib/credits";
 import type { AIProvider } from "@/lib/ai";
 
-import { extractAuthUserFromCookies } from "@/lib/auth/server-auth";
+import { AuthVerificationUnavailableError, extractAuthUserFromCookies } from "@/lib/auth/server-auth";
 
 export async function POST(request: NextRequest) {
   try {
     const cookieStore = await cookies();
-    const authUser = extractAuthUserFromCookies(cookieStore);
+    const authUser = await extractAuthUserFromCookies(cookieStore);
     const userId = authUser?.userId ?? null;
 
     if (!userId || authUser?.isAnonymous) {
@@ -107,6 +107,11 @@ export async function POST(request: NextRequest) {
       { status: 200, headers: { "Content-Type": "application/json" } }
     );
   } catch (error) {
+    if (error instanceof AuthVerificationUnavailableError) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 503, headers: { "Content-Type": "application/json" },
+      });
+    }
     console.error("AI chat error:", error);
     return new Response(
       JSON.stringify({

@@ -6,16 +6,13 @@ import {
   Copy,
   Check,
   RotateCcw,
-  Sparkles,
   TrendingUp,
   TrendingDown,
-  ArrowRight,
-  BookOpen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
+import { CalculatorLayout } from "@/components/common/workload-layouts";
 import {
   calculatePercentageComprehensive,
   PercentageMode,
@@ -101,182 +98,124 @@ export function PercentageCalculatorEngine() {
   );
 
   const calculation = useMemo(() => {
-    const num1 = parseFloat(val1);
-    const num2 = parseFloat(val2);
-    if (isNaN(num1) || isNaN(num2)) return null;
+    if (!val1.trim() || !val2.trim()) return null;
+    const num1 = Number(val1);
+    const num2 = Number(val2);
+    if (!Number.isFinite(num1) || !Number.isFinite(num2)) return null;
+    if (activeMode === "percentChange" && num1 === 0) return null;
+    if (["isWhatPercent", "fractionToPercent"].includes(activeMode) && num2 === 0) return null;
     return calculatePercentageComprehensive(activeMode, num1, num2);
   }, [activeMode, val1, val2]);
 
+  const error = !val1.trim() || !val2.trim() ? null
+    : !Number.isFinite(Number(val1)) || !Number.isFinite(Number(val2)) ? "Enter finite numbers."
+    : activeMode === "percentChange" && Number(val1) === 0 ? "Percentage change needs a nonzero initial value."
+    : ["isWhatPercent", "fractionToPercent"].includes(activeMode) && Number(val2) === 0 ? "The whole or denominator must not be zero."
+    : calculation && !Number.isFinite(calculation.value) ? "The result is too large. Use smaller values." : null;
+
   const handleCopy = async () => {
-    if (!calculation) return;
-    await navigator.clipboard.writeText(
-      `${calculation.formatted} (${calculation.formula})`
-    );
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-    toast.success("Result copied to clipboard!");
+    if (!calculation || error) return;
+    try {
+      await navigator.clipboard.writeText(`${calculation.formatted} (${calculation.formula})`);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      toast.success("Result copied to clipboard!");
+    } catch {
+      toast.error("Could not copy the result.");
+    }
   };
 
   const handleReset = () => {
     setVal1("");
     setVal2("");
+    setCopied(false);
   };
 
   return (
-    <div className="space-y-6">
-      {/* Mode Navigation Buttons */}
-      <div className="rounded-xl border bg-card p-3 shadow-xs">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1.5">
-          {MODES.map((m) => (
-            <Button
-              key={m.id}
-              variant={activeMode === m.id ? "default" : "outline"}
-              size="sm"
-              onClick={() => {
-                setActiveMode(m.id);
+    <CalculatorLayout
+      inputSection={
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="percentage-mode">Calculation</Label>
+            <div className="flex items-center gap-2">
+              <select id="percentage-mode" value={activeMode}
+                onChange={(event) => { setActiveMode(event.target.value as PercentageMode); setCopied(false); }}
+                className="h-11 min-w-0 flex-1 rounded-md border bg-background px-2 text-sm">
+                {MODES.map((mode) => <option key={mode.id} value={mode.id}>{mode.label}</option>)}
+              </select>
+              <Button variant="ghost" size="icon" className="h-11 w-11 shrink-0" onClick={handleReset}
+                aria-label="Clear calculation inputs" title="Clear calculation inputs">
+                <RotateCcw className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="percentage-first">{activeConfig.label1}</Label>
+            <Input id="percentage-first" type="number" step="any" inputMode="decimal"
+              placeholder={activeConfig.placeholder1} value={val1} className="h-11 text-base"
+              aria-invalid={!!error} aria-describedby={error ? "percentage-error" : undefined}
+              onChange={(event) => { setVal1(event.target.value); setCopied(false); }} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="percentage-second">{activeConfig.label2}</Label>
+            <Input id="percentage-second" type="number" step="any" inputMode="decimal"
+              placeholder={activeConfig.placeholder2} value={val2} className="h-11 text-base"
+              aria-invalid={!!error} aria-describedby={error ? "percentage-error" : undefined}
+              onChange={(event) => { setVal2(event.target.value); setCopied(false); }} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="percentage-preset">Preset</Label>
+            <select id="percentage-preset" value="" className="h-11 w-full min-w-0 rounded-md border bg-background px-2 text-sm"
+              onChange={(event) => {
+                const presets: Record<string, { first: string; second: string; mode: PercentageMode }> = {
+                  tip10: { first: "10", second: "65", mode: "addPercent" },
+                  tip15: { first: "15", second: "65", mode: "addPercent" },
+                  discount20: { first: "20", second: "120", mode: "subtractPercent" },
+                  discount50: { first: "50", second: "90", mode: "subtractPercent" },
+                };
+                const preset = presets[event.target.value];
+                if (!preset) return;
+                setActiveMode(preset.mode);
+                setVal1(preset.first);
+                setVal2(preset.second);
                 setCopied(false);
-              }}
-              className="text-xs h-auto py-2.5 px-2 flex flex-col text-center justify-center"
-            >
-              <span className="font-semibold">{m.label.split("(")[0]}</span>
-            </Button>
-          ))}
+              }}>
+              <option value="">Select a preset</option>
+              <option value="tip10">10% tip on 65</option>
+              <option value="tip15">15% tip on 65</option>
+              <option value="discount20">20% off 120</option>
+              <option value="discount50">50% off 90</option>
+            </select>
+          </div>
         </div>
-      </div>
-
-      {/* Inputs & Calculation Box */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Input Panel */}
-        <div className="rounded-xl border bg-card p-5 shadow-xs space-y-4">
-          <div className="flex items-center justify-between pb-2 border-b">
-            <div>
-              <h3 className="font-semibold text-sm">{activeConfig.label}</h3>
-              <p className="text-xs text-muted-foreground">{activeConfig.subtitle}</p>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleReset}
-              className="h-7 text-xs text-muted-foreground hover:text-foreground"
-            >
-              <RotateCcw className="h-3 w-3 mr-1" /> Clear
+      }
+      resultSection={
+        <div className="space-y-4">
+          <div className="flex min-h-11 items-center justify-between gap-2 border-b pb-2">
+            <h2 className="flex items-center gap-2 text-sm font-medium">
+              <Percent className="h-4 w-4 text-primary" /> Result
+            </h2>
+            <Button variant="ghost" size="icon" className="h-11 w-11" onClick={handleCopy} disabled={!calculation || !!error}
+              aria-label={copied ? "Result copied" : "Copy result"} title={copied ? "Result copied" : "Copy result"}>
+              {copied ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
             </Button>
           </div>
-
-          <div className="space-y-3">
-            <div>
-              <Label className="text-xs font-semibold mb-1.5 block">
-                {activeConfig.label1}
-              </Label>
-              <Input
-                type="number"
-                step="any"
-                placeholder={activeConfig.placeholder1}
-                value={val1}
-                onChange={(e) => setVal1(e.target.value)}
-                className="h-10 text-sm font-mono"
-              />
-            </div>
-
-            <div>
-              <Label className="text-xs font-semibold mb-1.5 block">
-                {activeConfig.label2}
-              </Label>
-              <Input
-                type="number"
-                step="any"
-                placeholder={activeConfig.placeholder2}
-                value={val2}
-                onChange={(e) => setVal2(e.target.value)}
-                className="h-10 text-sm font-mono"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Output Panel */}
-        <div className="rounded-xl border bg-card p-5 shadow-xs flex flex-col justify-between space-y-4">
-          <div className="flex items-center justify-between pb-2 border-b">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-              <Percent className="h-3.5 w-3.5 text-primary" /> Computed Result
-            </span>
-            {calculation && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleCopy}
-                className="h-7 text-xs gap-1"
-              >
-                {copied ? (
-                  <>
-                    <Check className="h-3 w-3 text-emerald-500" /> Copied
-                  </>
-                ) : (
-                  <>
-                    <Copy className="h-3 w-3" /> Copy
-                  </>
-                )}
-              </Button>
-            )}
-          </div>
-
-          {calculation ? (
-            <div className="my-auto space-y-3 text-center py-2">
-              <div className="flex items-center justify-center gap-2">
-                {activeMode === "percentChange" && (
-                  calculation.value >= 0 ? (
-                    <TrendingUp className="h-6 w-6 text-emerald-500 shrink-0" />
-                  ) : (
-                    <TrendingDown className="h-6 w-6 text-rose-500 shrink-0" />
-                  )
-                )}
-                <span className="text-4xl font-extrabold tracking-tight text-foreground font-mono">
-                  {calculation.formatted}
-                </span>
+          {error ? <p id="percentage-error" role="alert" className="text-sm text-destructive">{error}</p>
+            : calculation ? (
+              <div className="space-y-3">
+                <div className="flex min-w-0 items-start gap-2">
+                  {activeMode === "percentChange" && (calculation.value >= 0
+                    ? <TrendingUp className="mt-1 h-6 w-6 shrink-0 text-emerald-500" />
+                    : <TrendingDown className="mt-1 h-6 w-6 shrink-0 text-rose-500" />)}
+                  <output htmlFor="percentage-first percentage-second percentage-mode" aria-label="Calculated result"
+                    className="min-w-0 break-all text-2xl font-semibold tracking-normal">{calculation.formatted}</output>
+                </div>
+                <p className="wrap-break-word text-sm text-muted-foreground">{calculation.explanation}</p>
               </div>
-
-              <div className="p-3 bg-muted/40 rounded-xl border text-left space-y-1.5">
-                <p className="text-xs font-medium text-foreground">
-                  {calculation.explanation}
-                </p>
-                <p className="text-[11px] font-mono text-muted-foreground border-t pt-1.5">
-                  Formula: {calculation.formula}
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="text-center py-8 text-muted-foreground my-auto">
-              <Percent className="h-8 w-8 mx-auto mb-2 opacity-30" />
-              <p className="text-xs">Enter numbers above to view the calculation.</p>
-            </div>
-          )}
-
-          {/* Quick Common Presets */}
-          <div className="pt-2 border-t flex flex-wrap gap-1.5 items-center">
-            <span className="text-[11px] text-muted-foreground mr-1">Quick Presets:</span>
-            {[
-              { l: "10% Tip", v1: "10", v2: "65", m: "addPercent" },
-              { l: "15% Tip", v1: "15", v2: "65", m: "addPercent" },
-              { l: "20% Off", v1: "20", v2: "120", m: "subtractPercent" },
-              { l: "50% Off", v1: "50", v2: "90", m: "subtractPercent" },
-            ].map((p, idx) => (
-              <Button
-                key={idx}
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setActiveMode(p.m as PercentageMode);
-                  setVal1(p.v1);
-                  setVal2(p.v2);
-                }}
-                className="h-6 text-[10px] px-2"
-              >
-                {p.l}
-              </Button>
-            ))}
-          </div>
+            ) : <p className="text-sm text-muted-foreground">No result yet</p>}
         </div>
-      </div>
-    </div>
+      }
+      explanationSection={calculation && !error ? <p className="break-all font-mono text-sm">Formula: {calculation.formula}</p> : undefined}
+    />
   );
 }

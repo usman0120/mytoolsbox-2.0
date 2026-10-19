@@ -51,6 +51,7 @@ import { toast } from "sonner";
 import { SignInDialog } from "@/components/auth/signin-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useI18n } from "@/lib/i18n";
+import { PageShell, ToolHeader } from "@/components/common/workload-layouts";
 
 export function SettingsPageClient() {
   const { user, loading: authLoading, logOut } = useAuth();
@@ -58,6 +59,7 @@ export function SettingsPageClient() {
   const { t, localizePath } = useI18n();
 
   const [profile, setProfile] = useState<UserProfile>(DEFAULT_PROFILE);
+  const [currentTime, setCurrentTime] = useState(() => Date.now());
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [showSignIn, setShowSignIn] = useState(false);
@@ -72,6 +74,7 @@ export function SettingsPageClient() {
     if (!user) return;
     const load = async () => {
       const prof = await getUserProfile(user.uid);
+      setCurrentTime(Date.now());
       if (prof) {
         setProfile(prof);
       } else {
@@ -104,10 +107,12 @@ export function SettingsPageClient() {
     setActionLoading(true);
     try {
       const { deletionScheduledAt } = await scheduleAccountDeletion(user.uid);
+      const deletionRequestedAt = Date.now();
+      setCurrentTime(deletionRequestedAt);
       setProfile((prev) => ({
         ...prev,
         status: "pending_deletion",
-        deletionRequestedAt: Date.now(),
+        deletionRequestedAt,
         deletionScheduledAt,
       }));
       setShowDeleteDialog(false);
@@ -191,8 +196,9 @@ export function SettingsPageClient() {
 
   if (!user) {
     return (
-      <div className="container mx-auto px-4 py-16 max-w-2xl text-center">
-        <Card className="rounded-3xl border-border/60 p-8 shadow-xs">
+      <PageShell className="max-w-2xl">
+        <ToolHeader title={t("settings_title")} />
+        <section className="border-t py-6">
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary mx-auto mb-4">
             <User className="h-7 w-7" />
           </div>
@@ -204,9 +210,9 @@ export function SettingsPageClient() {
             <LogIn className="mr-2 h-4 w-4" />
             {t("auth_signin")}
           </Button>
-        </Card>
+        </section>
         <SignInDialog open={showSignIn} onOpenChange={setShowSignIn} />
-      </div>
+      </PageShell>
     );
   }
 
@@ -215,7 +221,7 @@ export function SettingsPageClient() {
 
   // Calculate days remaining in 30-day grace period
   const daysRemaining = profile.deletionScheduledAt
-    ? Math.max(0, Math.ceil((profile.deletionScheduledAt - Date.now()) / (1000 * 60 * 60 * 24)))
+    ? Math.max(0, Math.ceil((profile.deletionScheduledAt - currentTime) / (1000 * 60 * 60 * 24)))
     : 30;
 
   const initials = (profile.displayName || user.displayName || user.email || "U")
@@ -223,7 +229,7 @@ export function SettingsPageClient() {
     .toUpperCase();
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl space-y-6 animate-fade-in-up">
+    <PageShell className="max-w-4xl space-y-5">
       {/* Top Banner Alert if Pending Deletion */}
       {isPendingDeletion && (
         <div className="p-4 md:p-5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -276,16 +282,11 @@ export function SettingsPageClient() {
       )}
 
       {/* Page Header */}
-      <div>
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{t("settings_title")}</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          {t("settings_subtitle")}
-        </p>
-      </div>
+      <ToolHeader title={t("settings_title")} />
 
       {/* Clean Tabs: Only Profile and Account */}
       <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="rounded-2xl p-1 bg-muted/40 border border-border/50">
+        <TabsList className="rounded-lg p-1 bg-muted/40 border border-border/50">
           <TabsTrigger value="profile" className="rounded-xl gap-2 text-xs font-medium py-1.5 px-4">
             <User className="h-3.5 w-3.5" />
             {t("settings_tab_profile")}
@@ -300,17 +301,14 @@ export function SettingsPageClient() {
             TAB 1: PROFILE
            ========================================== */}
         <TabsContent value="profile" className="space-y-6 focus-visible:outline-hidden">
-          <Card className="rounded-3xl border-border/60 shadow-xs">
+          <Card className="rounded-lg border-border/60">
             <CardHeader className="pb-4">
               <CardTitle className="text-lg">Public Profile</CardTitle>
-              <CardDescription className="text-xs">
-                Customize how your profile information appears across MyToolsBox.
-              </CardDescription>
             </CardHeader>
 
             <CardContent className="space-y-6">
               {/* User Avatar Card */}
-              <div className="flex items-center gap-4 p-4 rounded-2xl bg-muted/30 border border-border/40">
+              <div className="flex flex-wrap items-center gap-3 pb-4 border-b">
                 <Avatar className="h-16 w-16 ring-2 ring-primary/20">
                   <AvatarImage src={user.photoURL ?? undefined} />
                   <AvatarFallback className="text-lg font-bold bg-primary/10 text-primary">
@@ -337,7 +335,7 @@ export function SettingsPageClient() {
                     value={profile.displayName}
                     onChange={(e) => setProfile({ ...profile, displayName: e.target.value })}
                     placeholder="Enter your name"
-                    className="h-10 rounded-xl text-xs bg-background/60"
+                    className="h-11 rounded-md text-base bg-background/60"
                   />
                 </div>
 
@@ -352,7 +350,7 @@ export function SettingsPageClient() {
                     value={profile.location ?? ""}
                     onChange={(e) => setProfile({ ...profile, location: e.target.value })}
                     placeholder="e.g. New York, USA or Remote"
-                    className="h-10 rounded-xl text-xs bg-background/60"
+                    className="h-11 rounded-md text-base bg-background/60"
                   />
                 </div>
               </div>
@@ -366,7 +364,7 @@ export function SettingsPageClient() {
                   onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
                   placeholder="A short description about yourself, your profession, or interests..."
                   rows={3}
-                  className="rounded-xl text-xs bg-background/60 leading-relaxed resize-none"
+                  className="rounded-md text-base bg-background/60 leading-relaxed resize-y"
                 />
               </div>
 
@@ -381,7 +379,7 @@ export function SettingsPageClient() {
                   value={profile.website}
                   onChange={(e) => setProfile({ ...profile, website: e.target.value })}
                   placeholder="https://yourwebsite.com or https://github.com/..."
-                  className="h-10 rounded-xl text-xs bg-background/60"
+                  className="h-11 rounded-md text-base bg-background/60"
                 />
               </div>
 
@@ -390,7 +388,7 @@ export function SettingsPageClient() {
                 <Button
                   onClick={handleSaveProfile}
                   disabled={saving}
-                  className="rounded-xl h-9 px-5 text-xs font-medium gap-1.5 shadow-sm"
+                  className="rounded-md h-11 px-4 text-sm font-medium gap-2"
                 >
                   {saving ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -409,7 +407,7 @@ export function SettingsPageClient() {
            ========================================== */}
         <TabsContent value="account" className="space-y-6 focus-visible:outline-hidden">
           {/* Account Details Card */}
-          <Card className="rounded-3xl border-border/60 shadow-xs">
+          <Card className="rounded-lg border-border/60">
             <CardHeader className="pb-4">
               <CardTitle className="text-lg">Account Information</CardTitle>
               <CardDescription className="text-xs">
@@ -420,7 +418,7 @@ export function SettingsPageClient() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Email */}
-                <div className="p-3.5 rounded-2xl bg-muted/30 border border-border/40">
+                <div className="py-2">
                   <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
                     <Mail className="h-3.5 w-3.5 text-primary" />
                     <span>Email Address</span>
@@ -429,7 +427,7 @@ export function SettingsPageClient() {
                 </div>
 
                 {/* User ID */}
-                <div className="p-3.5 rounded-2xl bg-muted/30 border border-border/40">
+                <div className="py-2">
                   <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
                     <Fingerprint className="h-3.5 w-3.5 text-primary" />
                     <span>User ID (UID)</span>
@@ -439,7 +437,7 @@ export function SettingsPageClient() {
               </div>
 
               {/* Status */}
-              <div className="flex items-center justify-between p-4 rounded-2xl bg-muted/20 border border-border/40 text-xs">
+              <div className="flex flex-wrap items-center justify-between gap-3 py-3 border-t text-sm">
                 <div>
                   <span className="font-medium text-foreground block">Account Status</span>
                   <span className="text-muted-foreground">
@@ -461,7 +459,7 @@ export function SettingsPageClient() {
           </Card>
 
           {/* Account Lifecycle Actions: Disable & 30-Day Deletion */}
-          <Card className="rounded-3xl border-destructive/30 bg-destructive/5 shadow-xs overflow-hidden">
+          <Card className="rounded-lg border-destructive/30 bg-destructive/5 overflow-hidden">
             <CardHeader className="pb-3 border-b border-destructive/20">
               <CardTitle className="text-base text-destructive flex items-center gap-2">
                 <AlertTriangle className="h-4 w-4" />
@@ -624,6 +622,6 @@ export function SettingsPageClient() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageShell>
   );
 }

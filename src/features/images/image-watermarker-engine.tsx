@@ -345,10 +345,10 @@ export function ImageWatermarkerEngine() {
 
       {/* Editor & Controls */}
       {file && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_20rem]">
           {/* Controls Panel */}
-          <div className="lg:col-span-5 space-y-5">
-            <div className="p-5 rounded-2xl border bg-card/60 backdrop-blur-sm space-y-4">
+          <div className="min-w-0 space-y-4 xl:col-start-2 xl:row-start-1">
+            <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
                   <h4 className="font-semibold text-sm">Watermark Type</h4>
@@ -640,7 +640,7 @@ export function ImageWatermarkerEngine() {
           </div>
 
           {/* Canvas Live Preview Panel */}
-          <div className="lg:col-span-7 flex flex-col space-y-3">
+          <div className="order-first min-w-0 flex flex-col space-y-3 xl:col-start-1 xl:row-start-1">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-muted-foreground">
                 Live Interactive Canvas Preview
@@ -655,7 +655,7 @@ export function ImageWatermarkerEngine() {
               </div>
             </div>
 
-            <div className="relative border rounded-2xl overflow-hidden bg-dot-pattern flex items-center justify-center p-4 min-h-[460px] max-h-[640px] shadow-xs">
+            <div className="relative border rounded-lg overflow-hidden bg-dot-pattern flex items-center justify-center p-3 min-h-64 sm:min-h-[460px] max-h-[640px]">
               <canvas
                 ref={canvasRef}
                 className="max-h-[580px] w-auto max-w-full object-contain rounded-lg shadow-md"

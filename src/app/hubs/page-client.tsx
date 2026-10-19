@@ -22,6 +22,7 @@ import { getActiveTools, getToolsByAudience } from "@/content/tools/registry";
 import { getActiveApps } from "@/content/apps/registry";
 import type { ToolAudience } from "@/types";
 import { useI18n } from "@/lib/i18n";
+import { PageShell, ToolHeader } from "@/components/common/workload-layouts";
 
 interface HubData {
   icon: LucideIcon;
@@ -141,74 +142,63 @@ export function HubsPageClient() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-10">
-      {/* Header */}
-      <div className="mb-10 animate-fade-in-up">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-linear-to-br from-emerald-500/10 to-teal-500/10 ring-1 ring-emerald-500/20 shadow-sm">
-            <Compass className="h-6 w-6 text-emerald-500" />
-          </div>
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{t("hubs_title")}</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              {t("hubs_subtitle")} ({t("hubs_total_count").replace("{count}", String(allTools.length + allApps.length))})
-            </p>
-          </div>
-        </div>
+    <PageShell>
+      <div className="mb-6 pb-4 border-b border-border/50">
+        <span className="text-xs font-bold tracking-widest text-primary uppercase">
+          WORKFLOW HUBS
+        </span>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground mt-1">
+          Workflows & <span className="font-editorial italic font-normal text-primary">Role Hubs.</span>
+        </h1>
+        <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+          {t("hubs_total_count").replace("{count}", String(allTools.length + allApps.length))}
+        </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {HUBS.map((hub, i) => {
+        {HUBS.map((hub) => {
           const { tools, apps, total } = getHubItems(hub.audience);
           const localized = getLocalizedHub(hub);
 
           return (
-            <Card
+            <div
               key={hub.name}
-              className="group card-lift border-border/50 hover:border-primary/30 overflow-hidden animate-fade-in-up"
-              style={{ animationDelay: `${i * 60}ms` }}
+              className="group rounded-2xl border border-border/70 bg-card hover:border-primary/40 hover:bg-card/90 transition-all duration-200 hover:-translate-y-0.5 p-5 flex flex-col justify-between"
             >
-              <CardContent className="p-5">
+              <div>
                 {/* Hub header */}
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`flex h-12 w-12 items-center justify-center rounded-xl bg-linear-to-br ${hub.gradient} ${hub.ringColor} ring-1 group-hover:scale-110 transition-transform`}
-                    >
-                      <hub.icon className={`h-6 w-6 ${hub.iconColor}`} />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-base group-hover:text-primary transition-colors">
-                        {localized.name}
-                      </h3>
-                      <p className="text-xs text-muted-foreground">{t("hubs_total_count").replace("{count}", String(total))}</p>
-                    </div>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-200 shrink-0">
+                    <hub.icon className="h-4.5 w-4.5" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-base text-foreground group-hover:text-primary transition-colors">
+                      {localized.name}
+                    </h3>
+                    <p className="text-[11px] text-muted-foreground">{t("hubs_total_count").replace("{count}", String(total))}</p>
                   </div>
                 </div>
 
-                <p className="text-sm text-muted-foreground mb-4 leading-relaxed">{localized.description}</p>
+                <p className="text-xs text-muted-foreground mb-4 leading-relaxed line-clamp-2">{localized.description}</p>
 
                 {/* Tools preview */}
                 {tools.length > 0 && (
                   <div className="mb-3">
-                    <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wider">
+                    <p className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider mb-1.5">
                       {t("hubs_tools_count").replace("{count}", String(tools.length))}
                     </p>
                     <div className="flex flex-wrap gap-1.5">
                       {tools.slice(0, 5).map((tool) => (
                         <Link key={tool.slug} href={localizePath(`/tools/${tool.slug}`)}>
-                          <Badge
-                            variant="secondary"
-                            className="text-[10px] cursor-pointer hover:bg-primary/20 transition-colors rounded-full"
-                          >
+                          <span className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors border border-border/60">
                             {getToolName(tool.slug, tool.name)}
-                          </Badge>
+                          </span>
                         </Link>
                       ))}
                       {tools.length > 5 && (
-                        <Badge variant="outline" className="text-[10px] rounded-full">
+                        <span className="text-[10px] text-muted-foreground px-1.5 py-0.5">
                           +{tools.length - 5}
-                        </Badge>
+                        </span>
                       )}
                     </div>
                   </div>
@@ -217,41 +207,39 @@ export function HubsPageClient() {
                 {/* Apps preview */}
                 {apps.length > 0 && (
                   <div className="mb-4">
-                    <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wider">
+                    <p className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider mb-1.5">
                       {t("hubs_apps_count").replace("{count}", String(apps.length))}
                     </p>
                     <div className="flex flex-wrap gap-1.5">
                       {apps.slice(0, 3).map((app) => (
                         <Link key={app.slug} href={localizePath(`/apps/${app.slug}`)}>
-                          <Badge
-                            variant="secondary"
-                            className="text-[10px] cursor-pointer hover:bg-primary/20 transition-colors rounded-full"
-                          >
-                            <Sparkles className="h-2.5 w-2.5 mr-1" />
+                          <span className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors border border-border/60">
                             {getToolName(app.slug, app.name)}
-                          </Badge>
+                          </span>
                         </Link>
                       ))}
                       {apps.length > 3 && (
-                        <Badge variant="outline" className="text-[10px] rounded-full">
+                        <span className="text-[10px] text-muted-foreground px-1.5 py-0.5">
                           +{apps.length - 3}
-                        </Badge>
+                        </span>
                       )}
                     </div>
                   </div>
                 )}
+              </div>
 
+              <div className="pt-3 border-t border-border/40">
                 <Link href={localizePath(`/hubs/${hub.audience}`)} className="block">
-                  <Button variant="ghost" size="sm" className="w-full justify-between group/btn rounded-xl">
+                  <Button variant="ghost" size="sm" className="w-full justify-between group/btn rounded-xl text-xs font-medium text-primary hover:text-primary">
                     <span>{t("hubs_explore_btn")}</span>
-                    <ArrowRight className="h-3.5 w-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
+                    <ArrowRight className="h-3.5 w-3.5 group-hover/btn:translate-x-1 transition-transform" />
                   </Button>
                 </Link>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           );
         })}
       </div>
-    </div>
+    </PageShell>
   );
 }

@@ -13,7 +13,7 @@ import {
   FileDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
@@ -195,21 +195,18 @@ export function WordToPDFConverterEngine() {
   }, [convertedUrl]);
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
+    <div className="w-full min-w-0 space-y-4">
       {/* Upload Zone */}
       {!file && (
         <div
-          className="border-2 border-dashed rounded-2xl p-8 sm:p-10 text-center transition-all cursor-pointer border-border hover:border-primary/50 hover:bg-muted/30"
+          className="border-2 border-dashed rounded-lg p-4 sm:p-6 text-center transition-colors cursor-pointer border-border hover:border-primary/50 hover:bg-muted/30"
           onClick={() => fileInputRef.current?.click()}
         >
           <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-500 mx-auto mb-4">
             <Upload className="h-8 w-8" />
           </div>
           <h3 className="text-lg font-semibold mb-1">Upload Word Document to Convert</h3>
-          <p className="text-sm text-muted-foreground mb-4 max-w-md mx-auto">
-            Convert Microsoft Word (.docx) files into clean, beautifully-typeset PDF documents with automatic pagination.
-          </p>
-          <Button variant="outline" size="sm" className="rounded-xl pointer-events-none">
+          <Button variant="outline" onClick={(event) => { event.stopPropagation(); fileInputRef.current?.click(); }} className="rounded-lg">
             <Plus className="h-4 w-4 mr-1.5" /> Select .DOCX Document
           </Button>
           <input
@@ -224,7 +221,7 @@ export function WordToPDFConverterEngine() {
 
       {/* File Loaded & Settings */}
       {file && (
-        <Card className="rounded-2xl border-border/60 shadow-sm overflow-hidden">
+        <section aria-label="Word to PDF settings" className="min-w-0 overflow-hidden">
           <div className="p-4 bg-muted/40 border-b border-border/60 flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10 text-blue-500 shrink-0">
@@ -246,8 +243,8 @@ export function WordToPDFConverterEngine() {
             </Button>
           </div>
 
-          <CardContent className="p-5 space-y-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-xl bg-muted/20 border border-border/50">
+          <div className="py-4 space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label className="text-xs font-semibold mb-1.5 block">Font Size</Label>
                 <div className="flex rounded-lg bg-background p-0.5 border border-border/60">
@@ -291,8 +288,8 @@ export function WordToPDFConverterEngine() {
                 )}
               </Button>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </section>
       )}
 
       {/* Result Banner */}

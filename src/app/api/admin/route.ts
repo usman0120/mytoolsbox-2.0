@@ -9,28 +9,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { getAbuseStats, getBlockedIPs, unblockIP } from "@/lib/payments/abuse";
+import { checkAdminAccess } from "@/lib/auth/admin-auth";
 
 // ---------------------------------------------------------------------------
 // Admin check (simple — replace with proper role-based auth in production)
 // ---------------------------------------------------------------------------
-
-const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? "").split(",").map((e) => e.trim()).filter(Boolean);
-
-async function isAdmin(): Promise<boolean> {
-  // In production: verify Firebase Auth token + check admin claim
-  // For now: check session cookie exists (basic auth gate)
-  const cookieStore = await cookies();
-  const sessionCookie = cookieStore.get("__session");
-  return !!sessionCookie;
-}
 
 // ---------------------------------------------------------------------------
 // GET /api/admin/stats
 // ---------------------------------------------------------------------------
 
 export async function GET(request: NextRequest) {
-  if (!(await isAdmin())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const accessError = await checkAdminAccess(request, await cookies());
+  if (accessError) {
+    return NextResponse.json({ error: accessError === 503 ? "Authentication unavailable" : "Unauthorized" }, { status: accessError });
   }
 
   const { searchParams } = new URL(request.url);
@@ -58,8 +50,9 @@ export async function GET(request: NextRequest) {
 // ---------------------------------------------------------------------------
 
 export async function POST(request: NextRequest) {
-  if (!(await isAdmin())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const accessError = await checkAdminAccess(request, await cookies());
+  if (accessError) {
+    return NextResponse.json({ error: accessError === 503 ? "Authentication unavailable" : "Unauthorized" }, { status: accessError });
   }
 
   try {

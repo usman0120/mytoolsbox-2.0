@@ -197,7 +197,7 @@ export function ImageResizerEngine() {
           }`}
           onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
           onDragLeave={() => setDragOver(false)}
-          onDrop={(e) => { e.preventDefault(); setDragOver(false); e.dataTransfer.files[0] && loadFile(e.dataTransfer.files[0]); }}
+          onDrop={(e) => { e.preventDefault(); setDragOver(false); if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); }}
           onClick={() => fileInputRef.current?.click()}
         >
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-500/10 ring-1 ring-blue-500/20 text-blue-600">
@@ -267,11 +267,11 @@ export function ImageResizerEngine() {
             )}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_20rem]">
             {/* Left Controls */}
-            <div className="lg:col-span-5 space-y-4">
-              <Card className="border-border/50">
-                <CardContent className="p-5 space-y-4">
+            <div className="min-w-0 space-y-4 xl:col-start-2 xl:row-start-1">
+              <section aria-label="Resize settings">
+                <div className="space-y-4">
                   <div className="flex gap-2 p-1 bg-muted/40 rounded-xl border border-border/50">
                     <Button
                       size="sm"
@@ -338,6 +338,7 @@ export function ImageResizerEngine() {
                       <div className="space-y-1.5 pt-2 border-t border-border/40">
                         <Label className="text-xs">Scaling Behavior</Label>
                         <select
+                          aria-label="Scaling behavior"
                           value={fitMode}
                           onChange={(e) => setFitMode(e.target.value as typeof fitMode)}
                           className="w-full rounded-xl border border-border/50 bg-background p-2 text-xs h-9"
@@ -353,7 +354,7 @@ export function ImageResizerEngine() {
                   {mode === "percentage" && (
                     <div className="space-y-4">
                       <Label className="text-xs">Scale Image Proportionally:</Label>
-                      <div className="grid grid-cols-5 gap-2">
+                      <div className="grid grid-cols-3 sm:grid-cols-5 xl:grid-cols-3 gap-2">
                         {[25, 50, 75, 150, 200].map((pct) => (
                           <Button
                             key={pct}
@@ -393,14 +394,14 @@ export function ImageResizerEngine() {
                       </div>
                     </div>
                   )}
-                </CardContent>
-              </Card>
+                </div>
+              </section>
             </div>
 
             {/* Right Preview */}
-            <div className="lg:col-span-7 space-y-4">
-              <Card className="border-border/50 overflow-hidden">
-                <CardContent className="p-4 space-y-3">
+            <div className="order-first min-w-0 space-y-4 xl:col-start-1 xl:row-start-1">
+              <section aria-label="Resolution preview" className="overflow-hidden">
+                <div className="space-y-3">
                   <div className="flex items-center justify-between text-xs">
                     <span className="font-semibold flex items-center gap-1.5">
                       <Eye className="h-4 w-4 text-blue-600" /> Resolution Preview
@@ -419,8 +420,8 @@ export function ImageResizerEngine() {
                       className="max-h-[460px] w-auto max-w-full object-contain rounded-lg shadow-sm"
                     />
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </section>
             </div>
           </div>
         </div>

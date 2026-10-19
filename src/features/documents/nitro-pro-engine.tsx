@@ -278,7 +278,7 @@ export function NitroProEngine() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="w-full min-w-0 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-border/50">
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20">
@@ -297,12 +297,12 @@ export function NitroProEngine() {
 
       {!file && (
         <div
-          className={`border-2 border-dashed rounded-2xl p-10 text-center transition-all cursor-pointer ${
+          className={`border-2 border-dashed rounded-lg p-4 sm:p-6 text-center transition-colors cursor-pointer ${
             dragOver ? "border-amber-500 bg-amber-500/5 scale-[0.99]" : "border-border/60 hover:border-amber-500/40 bg-card/50"
           }`}
           onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
           onDragLeave={() => setDragOver(false)}
-          onDrop={(e) => { e.preventDefault(); setDragOver(false); e.dataTransfer.files[0] && loadFile(e.dataTransfer.files[0]); }}
+          onDrop={(e) => { e.preventDefault(); setDragOver(false); if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); }}
           onClick={() => fileInputRef.current?.click()}
         >
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/10 ring-1 ring-amber-500/20 text-amber-600">
@@ -319,7 +319,7 @@ export function NitroProEngine() {
             className="hidden"
             onChange={(e) => e.target.files?.[0] && loadFile(e.target.files[0])}
           />
-          <Button size="sm" className="rounded-xl gap-2 pointer-events-none bg-amber-600 hover:bg-amber-700 text-white">
+          <Button onClick={(event) => { event.stopPropagation(); fileInputRef.current?.click(); }} className="rounded-lg gap-2 bg-amber-600 hover:bg-amber-700 text-white">
             <Upload className="h-4 w-4" /> Select Enterprise PDF
           </Button>
         </div>
@@ -405,7 +405,7 @@ export function NitroProEngine() {
 
           {/* Tabs for Nitro Pro Operations */}
           <Tabs defaultValue="bates" className="space-y-4">
-            <TabsList className="grid grid-cols-3 rounded-xl p-1 bg-muted/50 border border-border/50">
+            <TabsList className="grid h-auto grid-cols-1 lg:grid-cols-3 rounded-lg p-1 bg-muted/50 border border-border/50">
               <TabsTrigger value="bates" className="rounded-lg gap-2 text-xs sm:text-sm">
                 <Hash className="h-4 w-4" /> Bates Numbering
               </TabsTrigger>
@@ -419,9 +419,9 @@ export function NitroProEngine() {
 
             {/* Bates Numbering Tab */}
             <TabsContent value="bates" className="space-y-4">
-              <Card className="border-border/50">
-                <CardContent className="p-5 space-y-4">
-                  <div className="flex items-center justify-between">
+              <section aria-label="Bates numbering">
+                <div className="py-3 space-y-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                       <h4 className="font-semibold text-sm mb-0.5">Automated Bates Numbering</h4>
                       <p className="text-xs text-muted-foreground">Index legal discovery & corporate documents with continuous Bates codes.</p>
@@ -509,15 +509,15 @@ export function NitroProEngine() {
                       </div>
                     </div>
                   )}
-                </CardContent>
-              </Card>
+                </div>
+              </section>
             </TabsContent>
 
             {/* Official Seal & Stamps Tab */}
             <TabsContent value="seal" className="space-y-4">
-              <Card className="border-border/50">
-                <CardContent className="p-5 space-y-4">
-                  <div className="flex items-center justify-between">
+              <section aria-label="Compliance seal">
+                <div className="py-3 space-y-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                       <h4 className="font-semibold text-sm mb-0.5">Corporate Compliance Seal</h4>
                       <p className="text-xs text-muted-foreground">Stamp certified verification seals onto top right of all pages.</p>
@@ -574,7 +574,7 @@ export function NitroProEngine() {
                         </div>
                         <div className="space-y-1.5">
                           <Label className="text-xs">Seal Color Theme</Label>
-                          <div className="flex gap-2">
+                          <div className="flex flex-wrap gap-2">
                             {[
                               { id: "navy", label: "Navy", bg: "bg-blue-900" },
                               { id: "emerald", label: "Emerald", bg: "bg-emerald-700" },
@@ -598,14 +598,14 @@ export function NitroProEngine() {
                       </div>
                     </div>
                   )}
-                </CardContent>
-              </Card>
+                </div>
+              </section>
             </TabsContent>
 
             {/* Classification & Headers Tab */}
             <TabsContent value="classification" className="space-y-4">
-              <Card className="border-border/50">
-                <CardContent className="p-5 space-y-4">
+              <section aria-label="Classification and headers">
+                <div className="py-3 space-y-4">
                   <div>
                     <h4 className="font-semibold text-sm mb-0.5">Document Classification & Headers</h4>
                     <p className="text-xs text-muted-foreground">Add top/bottom security classification markings and project identifiers.</p>
@@ -652,8 +652,8 @@ export function NitroProEngine() {
                       />
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </section>
             </TabsContent>
           </Tabs>
 

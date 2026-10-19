@@ -2,23 +2,19 @@
 
 import { useState, useRef, useEffect } from "react";
 import {
-  FileText,
   Upload,
   Download,
   Loader2,
   CheckCircle2,
-  ExternalLink,
   Plus,
   Trash2,
   Presentation,
-  Sliders,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
-import { extractPdfPages, PDFPageContent } from "@/lib/documents/pdf-text-extractor";
-import { createPptxBlob, PptxSlide } from "@/lib/documents/openxml-builder";
+import { extractPdfPages } from "@/lib/documents/pdf-text-extractor";
+import { createPptxBlob, createTextSlides, PptxSlide } from "@/lib/documents/openxml-builder";
 
 export function PDFToPPTConverterEngine() {
   const [file, setFile] = useState<File | null>(null);
@@ -45,33 +41,23 @@ export function PDFToPPTConverterEngine() {
   };
 
   const handleConvert = async () => {
-    if (!file) return;
+    if (!file || isConverting) return;
     setIsConverting(true);
+    setConvertedBlob(null);
+    setConvertedUrl(null);
+    setSlides([]);
 
     try {
       const pages = await extractPdfPages(file);
 
-      // Transform pages to structured PPTX slides
-      const generatedSlides: PptxSlide[] = pages.map((page) => {
-        const lines = page.lines.map((l) => l.trim()).filter(Boolean);
-        const title = lines[0] ? lines[0].slice(0, 80) : `Slide ${page.pageNumber}`;
-        const bullets = lines.slice(1, 9).map((l) => l.slice(0, 140));
-
-        return {
-          title,
-          bullets: bullets.length > 0 ? bullets : ["Content extracted from PDF document."],
-        };
-      });
-
-      setSlides(generatedSlides);
-
-      // Generate authentic .pptx file
+      const generatedSlides = createTextSlides(pages);
       const blob = await createPptxBlob(generatedSlides);
       const url = URL.createObjectURL(blob);
 
+      setSlides(generatedSlides);
       setConvertedBlob(blob);
       setConvertedUrl(url);
-      toast.success(`Converted ${generatedSlides.length} pages to PowerPoint (.pptx)!`);
+      toast.success(`Generated ${generatedSlides.length} text slides as PowerPoint (.pptx)!`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Conversion failed.");
     } finally {
@@ -89,7 +75,6 @@ export function PDFToPPTConverterEngine() {
   };
 
   const handleReset = () => {
-    if (convertedUrl) URL.revokeObjectURL(convertedUrl);
     setFile(null);
     setConvertedBlob(null);
     setConvertedUrl(null);
@@ -103,7 +88,7 @@ export function PDFToPPTConverterEngine() {
   }, [convertedUrl]);
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
+    <div className="w-full min-w-0 space-y-4">
       {/* Upload Drop Zone */}
       {!file && (
         <div
@@ -115,9 +100,9 @@ export function PDFToPPTConverterEngine() {
           </div>
           <h3 className="text-lg font-semibold mb-1">Upload PDF to Convert to PowerPoint (.pptx)</h3>
           <p className="text-sm text-muted-foreground mb-4 max-w-md mx-auto">
-            Transform your PDF document into an editable Microsoft PowerPoint (.pptx) presentation deck.
+            Export extracted PDF text as editable slides. Original layouts and images are not preserved.
           </p>
-          <Button variant="outline" size="sm" className="rounded-xl pointer-events-none">
+          <Button variant="outline" onClick={(event) => { event.stopPropagation(); fileInputRef.current?.click(); }} className="rounded-lg">
             <Plus className="h-4 w-4 mr-1.5" /> Select PDF Document
           </Button>
           <input
@@ -132,7 +117,7 @@ export function PDFToPPTConverterEngine() {
 
       {/* Workspace */}
       {file && (
-        <Card className="rounded-2xl border-border/60 shadow-sm overflow-hidden">
+        <section aria-label="PowerPoint export" className="min-w-0">
           <div className="p-4 bg-muted/40 border-b border-border/60 flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/10 text-orange-500 shrink-0">
@@ -148,19 +133,20 @@ export function PDFToPPTConverterEngine() {
               variant="ghost"
               size="sm"
               onClick={handleReset}
+              disabled={isConverting}
               className="text-xs h-8 text-destructive hover:text-destructive rounded-lg"
             >
               <Trash2 className="h-3.5 w-3.5 mr-1" /> Change Document
             </Button>
           </div>
 
-          <CardContent className="p-5 space-y-6">
-            <div className="p-4 rounded-xl bg-muted/20 border border-border/50 text-xs text-muted-foreground">
-              <p className="font-semibold text-foreground mb-1">Genuine PowerPoint Format (.pptx)</p>
+          <div className="py-4 space-y-4">
+            <details className="border-b border-border/50 pb-3 text-xs text-muted-foreground">
+              <summary className="cursor-pointer font-semibold text-foreground">PowerPoint conversion details</summary>
               <p>
-                Each page from your PDF will be extracted and converted into an individual widescreen (16:9) slide with title and formatted content bullets. Opens natively in Microsoft PowerPoint, Google Slides, and Apple Keynote.
+                Extractable text is paginated across widescreen (16:9) slides. A PDF page may produce multiple slides. Original layouts, images, and formatting are not preserved; scanned pages require OCR.
               </p>
-            </div>
+            </details>
 
             <div className="flex justify-end pt-2">
               <Button
@@ -179,8 +165,8 @@ export function PDFToPPTConverterEngine() {
                 )}
               </Button>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </section>
       )}
 
       {/* Results */}

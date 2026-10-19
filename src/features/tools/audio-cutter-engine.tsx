@@ -2,14 +2,12 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
 import { toast } from "sonner";
 import {
   Music, Upload, Download, Play, Pause, Scissors,
-  Loader2, CheckCircle2, XCircle, SkipBack, SkipForward,
-  Repeat, Sliders, Volume2, Sparkles,
+  Loader2, CheckCircle2, XCircle, SkipBack, Repeat,
 } from "lucide-react";
 import { audioBufferToWav, extractWaveformPeaks } from "@/lib/processing/client/audio-processor";
 
@@ -29,12 +27,28 @@ export function AudioCutterEngine() {
   const [error, setError] = useState<string | null>(null);
   const [fadeIn, setFadeIn] = useState(false);
   const [fadeOut, setFadeOut] = useState(false);
-  const [format, setFormat] = useState<"wav" | "mp3">("wav");
+  const [format, setFormat] = useState<"wav" | "webm">("wav");
+  const [isLoading, setIsLoading] = useState(false);
+  const [outputDuration, setOutputDuration] = useState(0);
+  const [outputMime, setOutputMime] = useState("");
 
   const audioRef = useRef<HTMLAudioElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const audioBufferRef = useRef<AudioBuffer | null>(null);
+  const requestRef = useRef(0);
+  const contextRef = useRef<AudioContext | null>(null);
+
+  useEffect(() => () => { if (audioUrl) URL.revokeObjectURL(audioUrl); }, [audioUrl]);
+  useEffect(() => () => { if (outputUrl) URL.revokeObjectURL(outputUrl); }, [outputUrl]);
+  useEffect(() => () => {
+    requestRef.current += 1;
+    void contextRef.current?.close();
+  }, []);
+
+  const webmMime = typeof MediaRecorder !== "undefined"
+    ? ["audio/webm;codecs=opus", "audio/webm"].find((mime) => MediaRecorder.isTypeSupported(mime))
+    : undefined;
 
   // Draw interactive waveform
   useEffect(() => {
@@ -76,6 +90,7 @@ export function AudioCutterEngine() {
 
   const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0];
+    e.target.value = "";
     if (!selected) return;
     setError(null);
     setOutputUrl(null);
@@ -94,14 +109,26 @@ export function AudioCutterEngine() {
       return;
     }
 
+    const request = ++requestRef.current;
+    audioRef.current?.pause();
+    setIsPlaying(false);
+    audioBufferRef.current = null;
+    setDuration(0);
+    setStartTime(0);
+    setEndTime(0);
+    setCurrentTime(0);
+    setWaveformPeaks([]);
+    setIsLoading(true);
     const url = URL.createObjectURL(selected);
     setFile(selected);
     setAudioUrl(url);
 
+    let audioCtx: AudioContext | undefined;
     try {
       const arrayBuffer = await selected.arrayBuffer();
-      const audioCtx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+      audioCtx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
       const decoded = await audioCtx.decodeAudioData(arrayBuffer);
+      if (request !== requestRef.current) return;
       audioBufferRef.current = decoded;
 
       setDuration(decoded.duration);
@@ -109,11 +136,13 @@ export function AudioCutterEngine() {
       setEndTime(decoded.duration);
       setCurrentTime(0);
 
-      const peaks = extractWaveformPeaks(decoded, 120);
+      const peaks = extractWaveformPeaks(decoded, Math.min(120, decoded.length));
       setWaveformPeaks(peaks);
-      audioCtx.close();
     } catch {
-      setError("Failed to decode audio file.");
+      if (request === requestRef.current) setError("This browser cannot decode this audio file. Try a supported file such as WAV.");
+    } finally {
+      await audioCtx?.close();
+      if (request === requestRef.current) setIsLoading(false);
     }
   }, []);
 
@@ -137,15 +166,21 @@ export function AudioCutterEngine() {
       if (currentTime < startTime || currentTime >= endTime) {
         audioRef.current.currentTime = startTime;
       }
-      audioRef.current.play();
-      setIsPlaying(true);
+      void audioRef.current.play().then(() => setIsPlaying(true)).catch(() => setError("Audio preview could not start."));
     }
   }, [isPlaying, startTime, endTime, currentTime]);
 
   const handleCut = useCallback(async () => {
-    if (!file || !audioBufferRef.current || startTime >= endTime) return;
+    if (!file || !audioBufferRef.current || !Number.isFinite(startTime) || !Number.isFinite(endTime) || startTime < 0 || endTime > duration || startTime >= endTime) {
+      setError("Please set a valid start and end interval.");
+      return;
+    }
     setIsCutting(true);
     setError(null);
+    setOutputUrl(null);
+    const request = requestRef.current;
+    let audioCtx: AudioContext | undefined;
+    let stream: MediaStream | undefined;
 
     try {
       const originalBuffer = audioBufferRef.current;
@@ -155,13 +190,15 @@ export function AudioCutterEngine() {
       const startSample = Math.floor(startTime * sampleRate);
       const endSample = Math.floor(endTime * sampleRate);
       const newLength = endSample - startSample;
+      if (newLength < 1) throw new Error("Select at least one audio sample.");
 
-      const audioCtx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)({
+      audioCtx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)({
         sampleRate,
       });
+      contextRef.current = audioCtx;
 
       const newBuffer = audioCtx.createBuffer(numChannels, newLength, sampleRate);
-      const fadeDuration = sampleRate * 0.05; // 50ms fade
+      const fadeDuration = Math.max(1, Math.min(sampleRate * 0.05, newLength / 2));
 
       for (let ch = 0; ch < numChannels; ch++) {
         const oldData = originalBuffer.getChannelData(ch);
@@ -171,71 +208,83 @@ export function AudioCutterEngine() {
           if (fadeIn && i < fadeDuration) {
             s *= i / fadeDuration;
           }
-          if (fadeOut && i > newLength - fadeDuration) {
-            s *= (newLength - i) / fadeDuration;
+          if (fadeOut && i >= newLength - fadeDuration) {
+            s *= (newLength - 1 - i) / fadeDuration;
           }
           newData[i] = s;
         }
       }
 
-      const wavBlob = audioBufferToWav(newBuffer);
-
+      let result: Blob;
       if (format === "wav") {
-        const url = URL.createObjectURL(wavBlob);
-        setOutputUrl(url);
-        setOutputSize(wavBlob.size);
-        setOutputName(file.name.replace(/\.[^.]+$/, "_cut.wav"));
-        audioCtx.close();
-        toast.success("Audio cut successfully!");
+        result = audioBufferToWav(newBuffer);
       } else {
-        // Encode via MediaRecorder
+        if (!webmMime) throw new Error("WebM recording is unavailable in this browser. Choose WAV.");
+        await audioCtx.resume();
         const srcNode = audioCtx.createBufferSource();
         srcNode.buffer = newBuffer;
         const destNode = audioCtx.createMediaStreamDestination();
+        stream = destNode.stream;
         srcNode.connect(destNode);
 
-        const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-          ? "audio/webm;codecs=opus"
-          : "audio/webm";
-
         const recorder = new MediaRecorder(destNode.stream, {
-          mimeType,
+          mimeType: webmMime,
           audioBitsPerSecond: 192000,
         });
+        if (!/^audio\/webm(?:;|$)/i.test(recorder.mimeType)) throw new Error("The browser did not provide a WebM audio encoder. Choose WAV.");
 
         const chunks: Blob[] = [];
         recorder.ondataavailable = (e) => {
           if (e.data && e.data.size > 0) chunks.push(e.data);
         };
 
-        const recPromise = new Promise<Blob>((resolve) => {
-          recorder.onstop = () => resolve(new Blob(chunks, { type: mimeType }));
+        result = await new Promise<Blob>((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            if (recorder.state !== "inactive") recorder.stop();
+            srcNode.stop();
+            reject(new Error("WebM recording timed out. Keep this tab active or choose WAV."));
+          }, newBuffer.duration * 1000 + 10000);
+          recorder.onerror = () => {
+            clearTimeout(timeout);
+            if (recorder.state !== "inactive") recorder.stop();
+            srcNode.stop();
+            reject(new Error("WebM recording failed. Choose WAV or retry."));
+          };
+          recorder.onstop = () => {
+            clearTimeout(timeout);
+            const blob = new Blob(chunks, { type: recorder.mimeType });
+            if (!blob.size) reject(new Error("The browser produced no WebM audio. Choose WAV."));
+            else resolve(blob);
+          };
+          srcNode.onended = () => { if (recorder.state !== "inactive") recorder.stop(); };
+          try {
+            recorder.start();
+            srcNode.start();
+          } catch (error) {
+            clearTimeout(timeout);
+            if (recorder.state !== "inactive") recorder.stop();
+            reject(error);
+          }
         });
-
-        recorder.start();
-        srcNode.start(0);
-
-        setTimeout(() => {
-          recorder.stop();
-          srcNode.stop();
-          audioCtx.close();
-        }, newBuffer.duration * 1000 + 100);
-
-        const compressed = await recPromise;
-        const url = URL.createObjectURL(compressed);
-        setOutputUrl(url);
-        setOutputSize(compressed.size);
-        setOutputName(file.name.replace(/\.[^.]+$/, "_cut.mp3"));
-        toast.success("Audio cut successfully!");
       }
+      if (request !== requestRef.current) return;
+      setOutputUrl(URL.createObjectURL(result));
+      setOutputSize(result.size);
+      setOutputMime(result.type);
+      setOutputDuration(newBuffer.duration);
+      setOutputName(`${file.name.replace(/\.[^.]+$/, "")}_cut.${format}`);
+      toast.success(`${format === "wav" ? "WAV" : "WebM"} audio ready for download.`);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Cutting failed";
       setError(message);
       toast.error(message);
     } finally {
+      stream?.getTracks().forEach((track) => track.stop());
+      if (audioCtx && audioCtx.state !== "closed") await audioCtx.close();
+      contextRef.current = null;
       setIsCutting(false);
     }
-  }, [file, startTime, endTime, fadeIn, fadeOut, format]);
+  }, [file, startTime, endTime, fadeIn, fadeOut, format, duration, webmMime]);
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -244,70 +293,67 @@ export function AudioCutterEngine() {
     return `${m}:${s.toString().padStart(2, "0")}.${ms.toString().padStart(2, "0")}`;
   };
 
+  const changeStart = (value: number) => {
+    setStartTime(Math.max(0, Math.min(value, endTime - 1 / (audioBufferRef.current?.sampleRate || 44100))));
+    setOutputUrl(null);
+  };
+  const changeEnd = (value: number) => {
+    setEndTime(Math.min(duration, Math.max(value, startTime + 1 / (audioBufferRef.current?.sampleRate || 44100))));
+    setOutputUrl(null);
+  };
+
   return (
-    <div className="space-y-6">
-      <Badge variant="outline" className="gap-1.5">
-        <Scissors className="h-3.5 w-3.5" /> Audio Cutter & Trimmer
-      </Badge>
+    <div className="min-w-0 space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b pb-3">
+        <span className="flex items-center gap-2 text-sm font-medium"><Scissors className="h-4 w-4" /> Audio Cutter</span>
+        <input ref={fileInputRef} type="file" aria-label="Audio file" accept="audio/*,.mp3,.wav,.webm,.ogg,.m4a,.aac,.flac" onChange={handleFileSelect} disabled={isLoading || isCutting} className="sr-only" tabIndex={-1} />
+        <Button size="sm" variant="outline" disabled={isLoading || isCutting} onClick={() => fileInputRef.current?.click()}><Upload className="h-4 w-4" /> {file ? "Replace audio" : "Choose audio"}</Button>
+      </div>
+      <p className="text-xs text-muted-foreground">WAV (PCM) .wav | WebM .webm. Native MP3 export is unavailable.</p>
 
       {!file ? (
-        <Card className="border-2 border-dashed">
-          <CardContent className="p-8 text-center">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="audio/*,.mp3,.wav,.ogg,.m4a,.aac,.flac"
-              onChange={handleFileSelect}
-              className="hidden"
-            />
-            <div
-              onClick={() => fileInputRef.current?.click()}
-              className="cursor-pointer space-y-3"
-            >
-              <Music className="h-12 w-12 text-primary opacity-80 mx-auto" />
-              <h3 className="font-semibold text-lg">Upload Audio to Cut</h3>
-              <p className="text-sm text-muted-foreground max-w-sm mx-auto">
-                Trim audio files with live waveform visualization, stereo sample accuracy, and fade envelopes.
-              </p>
-              <Button className="gap-2">
-                <Upload className="h-4 w-4" /> Browse Audio File
-              </Button>
-              <p className="text-xs text-muted-foreground mt-2">MP3, WAV, OGG, M4A, AAC, FLAC up to 200MB</p>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="flex min-h-28 items-center gap-3 border-b py-6 text-sm text-muted-foreground"><Music className="h-6 w-6 shrink-0" /><span>MP3, WAV, WebM, OGG, M4A, AAC, FLAC | Up to 200MB | Browser decoding required</span></div>
       ) : (
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium flex items-center gap-2 truncate max-w-[300px]">
+        <section className="min-w-0 space-y-3" aria-label="Audio workspace">
+          <div>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="text-sm font-medium flex min-w-0 flex-1 items-center gap-2">
                 <Music className="h-4 w-4 text-primary shrink-0" />
                 <span className="truncate">{file.name}</span>
-              </CardTitle>
+              </div>
               <Badge variant="secondary">{formatTime(duration)}</Badge>
             </div>
-          </CardHeader>
-          <CardContent className="space-y-5">
+          </div>
+          {isLoading && <p role="status" className="flex items-center gap-2 text-sm"><Loader2 className="h-4 w-4 animate-spin" /> Decoding audio...</p>}
+          <fieldset disabled={isLoading || isCutting || duration <= 0} className="min-w-0 space-y-4">
             {audioUrl && (
               <audio
                 ref={audioRef}
                 src={audioUrl}
                 onTimeUpdate={handleTimeUpdate}
                 onEnded={() => setIsPlaying(false)}
+                onError={() => { setIsPlaying(false); setError("This browser cannot play this audio preview."); }}
                 className="hidden"
               />
             )}
 
             {/* Waveform Canvas */}
             <div className="space-y-1">
-              <div className="rounded-lg border bg-slate-950 p-2 overflow-hidden shadow-inner">
+              <div className="rounded-md border bg-muted p-2 overflow-hidden">
                 <canvas
                   ref={canvasRef}
                   width={600}
                   height={90}
                   className="w-full h-[90px] block"
+                  role="img"
+                  aria-label="Audio waveform and selected interval"
                 />
               </div>
+              <input type="range" aria-label="Seek audio" min={0} max={duration} step={0.01} value={currentTime} className="w-full accent-primary" onChange={(event) => {
+                const time = Number(event.target.value);
+                if (audioRef.current) audioRef.current.currentTime = time;
+                setCurrentTime(time);
+              }} />
               <div className="flex justify-between text-[11px] text-muted-foreground font-mono">
                 <span>{formatTime(currentTime)}</span>
                 <span className="text-emerald-500 font-semibold">
@@ -318,17 +364,19 @@ export function AudioCutterEngine() {
             </div>
 
             {/* Playback Controls */}
-            <div className="flex items-center justify-center gap-2">
+            <div className="flex flex-wrap items-center justify-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
+                aria-label="Rewind to start"
+                title="Rewind to start"
                 onClick={() => {
                   if (audioRef.current) audioRef.current.currentTime = startTime;
                 }}
               >
                 <SkipBack className="h-4 w-4" />
               </Button>
-              <Button size="icon" onClick={togglePlay} className="h-10 w-10 rounded-full">
+              <Button size="icon" onClick={togglePlay} aria-label={isPlaying ? "Pause" : "Play"} title={isPlaying ? "Pause" : "Play"} className="h-10 w-10 rounded-full">
                 {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
               </Button>
               <Button
@@ -338,12 +386,11 @@ export function AudioCutterEngine() {
                 onClick={() => {
                   if (audioRef.current) {
                     audioRef.current.currentTime = startTime;
-                    audioRef.current.play();
-                    setIsPlaying(true);
+                    void audioRef.current.play().then(() => setIsPlaying(true)).catch(() => setError("Audio preview could not start."));
                   }
                 }}
               >
-                <Repeat className="h-3.5 w-3.5" /> Loop Cut
+                <Repeat className="h-3.5 w-3.5" /> Preview selection
               </Button>
             </div>
 
@@ -356,21 +403,23 @@ export function AudioCutterEngine() {
                     variant="ghost"
                     size="sm"
                     className="h-6 text-[10px] px-2"
-                    onClick={() => setStartTime(currentTime)}
+                    onClick={() => changeStart(currentTime)}
                   >
                     Set to Current
                   </Button>
                 </div>
                 <Slider
+                  aria-label="Start time"
                   value={[startTime]}
                   min={0}
-                  max={Math.max(0, endTime - 0.1)}
+                  max={Math.max(0.01, endTime - 0.01)}
                   step={0.01}
                   onValueChange={(v) => {
                     const arr = v as number[];
-                    if (arr.length > 0) setStartTime(arr[0]);
+                    if (arr.length > 0) changeStart(arr[0]);
                   }}
                 />
+                <label className="flex items-center gap-2 text-xs">Start (seconds)<input aria-label="Start seconds" type="number" min={0} max={endTime} step={0.01} value={startTime} onChange={(event) => changeStart(Number(event.target.value))} className="h-9 w-28 rounded-md border bg-background px-2 text-sm" /></label>
               </div>
 
               <div className="space-y-1.5">
@@ -380,21 +429,23 @@ export function AudioCutterEngine() {
                     variant="ghost"
                     size="sm"
                     className="h-6 text-[10px] px-2"
-                    onClick={() => setEndTime(currentTime)}
+                    onClick={() => changeEnd(currentTime)}
                   >
                     Set to Current
                   </Button>
                 </div>
                 <Slider
+                  aria-label="End time"
                   value={[endTime]}
-                  min={Math.min(duration, startTime + 0.1)}
-                  max={duration}
+                  min={Math.min(Math.max(0, duration - 0.01), startTime + 0.01)}
+                  max={Math.max(0.01, duration)}
                   step={0.01}
                   onValueChange={(v) => {
                     const arr = v as number[];
-                    if (arr.length > 0) setEndTime(arr[0]);
+                    if (arr.length > 0) changeEnd(arr[0]);
                   }}
                 />
+                <label className="flex items-center gap-2 text-xs">End (seconds)<input aria-label="End seconds" type="number" min={startTime} max={duration} step={0.01} value={endTime} onChange={(event) => changeEnd(Number(event.target.value))} className="h-9 w-28 rounded-md border bg-background px-2 text-sm" /></label>
               </div>
             </div>
 
@@ -405,51 +456,55 @@ export function AudioCutterEngine() {
                   <input
                     type="checkbox"
                     checked={fadeIn}
-                    onChange={(e) => setFadeIn(e.target.checked)}
+                    onChange={(e) => { setFadeIn(e.target.checked); setOutputUrl(null); }}
                     className="rounded text-primary"
                   />
-                  Fade In
+                  Fade in (50ms)
                 </label>
                 <label className="flex items-center gap-1.5 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={fadeOut}
-                    onChange={(e) => setFadeOut(e.target.checked)}
+                    onChange={(e) => { setFadeOut(e.target.checked); setOutputUrl(null); }}
                     className="rounded text-primary"
                   />
-                  Fade Out
+                  Fade out (50ms)
                 </label>
               </div>
 
-              <div className="flex items-center gap-2 justify-end">
+              <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs text-muted-foreground">Format:</span>
-                {(["wav", "mp3"] as const).map((fmt) => (
+                {(["wav", "webm"] as const).map((fmt) => (
                   <Button
                     key={fmt}
                     size="sm"
                     variant={format === fmt ? "default" : "outline"}
-                    className="h-7 text-xs uppercase"
-                    onClick={() => setFormat(fmt)}
+                    className="text-xs"
+                    aria-pressed={format === fmt}
+                    disabled={isCutting || (fmt === "webm" && !webmMime)}
+                    onClick={() => { setFormat(fmt); setOutputUrl(null); }}
                   >
-                    {fmt}
+                    {fmt === "wav" ? "WAV (PCM)" : "WebM"}
                   </Button>
                 ))}
               </div>
             </div>
+            {!webmMime && <p className="text-xs text-muted-foreground">WebM recording is unavailable in this browser. WAV export remains available.</p>}
+            {format === "webm" && <p role="status" className="text-xs text-muted-foreground">WebM records in real time at a target 192 kbps; container timing may include encoder padding.</p>}
 
             <Button
               onClick={handleCut}
-              disabled={isCutting || startTime >= endTime}
+              disabled={isCutting || isLoading || duration <= 0 || startTime >= endTime}
               className="w-full gap-2 font-semibold"
               size="lg"
             >
               {isCutting ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" /> Slicing Audio...
+                  <Loader2 className="h-4 w-4 animate-spin" /> Exporting {format === "wav" ? "WAV" : "WebM"}...
                 </>
               ) : (
                 <>
-                  <Scissors className="h-4 w-4" /> Cut & Save Audio
+                  <Scissors className="h-4 w-4" /> Export {format === "wav" ? "WAV" : "WebM"}
                 </>
               )}
             </Button>
@@ -459,39 +514,41 @@ export function AudioCutterEngine() {
               size="sm"
               className="w-full gap-2"
               onClick={() => {
-                setFile(null);
-                setAudioUrl(null);
+                audioRef.current?.pause();
+                setIsPlaying(false);
+                if (audioRef.current) audioRef.current.currentTime = 0;
+                setCurrentTime(0);
+                setStartTime(0);
+                setEndTime(duration);
+                setFadeIn(false);
+                setFadeOut(false);
                 setOutputUrl(null);
-                audioBufferRef.current = null;
               }}
             >
-              <Upload className="h-4 w-4" /> Choose Different File
+              <Repeat className="h-4 w-4" /> Reset selection
             </Button>
-          </CardContent>
-        </Card>
+          </fieldset>
+        </section>
       )}
 
       {error && (
-        <Card className="border-destructive/50 bg-destructive/5">
-          <CardContent className="py-3">
+        <div role="alert" className="border-t border-destructive/50 py-3">
             <div className="flex items-center gap-2 text-destructive">
               <XCircle className="h-4 w-4" />
               <p className="text-sm">{error}</p>
             </div>
-          </CardContent>
-        </Card>
+        </div>
       )}
 
       {outputUrl && (
-        <Card className="border-green-500/40 bg-green-500/5">
-          <CardContent className="p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
+        <section aria-label="Exported audio" className="min-w-0 border-t pt-3 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-2">
                 <CheckCircle2 className="h-5 w-5 text-green-500" />
-                <div>
-                  <h4 className="font-semibold text-sm">{outputName}</h4>
+                <div className="min-w-0">
+                  <h4 className="font-semibold text-sm break-all">{outputName}</h4>
                   <p className="text-xs text-muted-foreground">
-                    {formatTime(endTime - startTime)} •{" "}
+                    {outputMime} | {formatTime(outputDuration)} |{" "}
                     {outputSize ? `${(outputSize / 1024).toFixed(1)} KB` : ""}
                   </p>
                 </div>
@@ -510,8 +567,7 @@ export function AudioCutterEngine() {
             </div>
 
             <audio src={outputUrl} controls className="w-full" />
-          </CardContent>
-        </Card>
+        </section>
       )}
     </div>
   );

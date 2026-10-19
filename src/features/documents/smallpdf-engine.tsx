@@ -203,7 +203,7 @@ export function SmallPDFEngine() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="w-full min-w-0 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-border/50">
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20">
@@ -222,12 +222,12 @@ export function SmallPDFEngine() {
 
       {!file && (
         <div
-          className={`border-2 border-dashed rounded-2xl p-10 text-center transition-all cursor-pointer ${
+          className={`border-2 border-dashed rounded-lg p-4 sm:p-6 text-center transition-colors cursor-pointer ${
             dragOver ? "border-emerald-500 bg-emerald-500/5 scale-[0.99]" : "border-border/60 hover:border-emerald-500/40 bg-card/50"
           }`}
           onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
           onDragLeave={() => setDragOver(false)}
-          onDrop={(e) => { e.preventDefault(); setDragOver(false); e.dataTransfer.files[0] && loadFile(e.dataTransfer.files[0]); }}
+          onDrop={(e) => { e.preventDefault(); setDragOver(false); if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); }}
           onClick={() => fileInputRef.current?.click()}
         >
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/10 ring-1 ring-emerald-500/20 text-emerald-600">
@@ -244,7 +244,7 @@ export function SmallPDFEngine() {
             className="hidden"
             onChange={(e) => e.target.files?.[0] && loadFile(e.target.files[0])}
           />
-          <Button size="sm" className="rounded-xl gap-2 pointer-events-none bg-emerald-600 hover:bg-emerald-700 text-white">
+          <Button onClick={(event) => { event.stopPropagation(); fileInputRef.current?.click(); }} className="rounded-lg gap-2 bg-emerald-600 hover:bg-emerald-700 text-white">
             <Upload className="h-4 w-4" /> Select PDF
           </Button>
         </div>
@@ -340,39 +340,38 @@ export function SmallPDFEngine() {
                 { id: "word", label: "To Word (.docx)", icon: FileOutput, desc: "Extract to Word" },
                 { id: "text", label: "Extract Text", icon: FileText, desc: "Extract to .txt" },
               ].map((tool) => (
-                <Card
+                <button type="button" aria-pressed={activeTool === tool.id}
                   key={tool.id}
                   onClick={() => {
                     setActiveTool(tool.id as QuickTool);
                     setOutputUrl(null);
                     setSuccessMessage(null);
                   }}
-                  className={`cursor-pointer transition-all border ${
+                  className={`rounded-lg text-left transition-colors border ${
                     activeTool === tool.id
                       ? "border-emerald-600 bg-emerald-500/10 shadow-xs"
                       : "border-border/50 hover:border-emerald-500/30"
                   }`}
                 >
-                  <CardContent className="p-3 text-center">
+                  <div className="p-3 text-center">
                     <tool.icon className={`h-5 w-5 mx-auto mb-1.5 ${activeTool === tool.id ? "text-emerald-600" : "text-muted-foreground"}`} />
                     <p className="text-xs font-semibold">{tool.label}</p>
-                    <p className="text-[10px] text-muted-foreground">{tool.desc}</p>
-                  </CardContent>
-                </Card>
+                  </div>
+                </button>
               ))}
             </div>
           </div>
 
           {/* Active Tool Options Card */}
-          <Card className="border-border/50">
-            <CardContent className="p-5">
+          <section aria-label="Operation settings">
+            <div className="py-3">
               {activeTool === "compress" && (
                 <div className="space-y-4">
                   <div>
                     <h4 className="font-semibold text-sm mb-1">PDF Compression Settings</h4>
                     <p className="text-xs text-muted-foreground">Select how aggressively to optimize PDF data streams.</p>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <Button
                       type="button"
                       variant={compressLevel === "recommended" ? "default" : "outline"}
@@ -436,7 +435,7 @@ export function SmallPDFEngine() {
                     <h4 className="font-semibold text-sm mb-1">Page Rotation</h4>
                     <p className="text-xs text-muted-foreground">Rotate every page by the specified degrees.</p>
                   </div>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     {[
                       { deg: 90, label: "90° Clockwise" },
                       { deg: 180, label: "180° Invert" },
@@ -473,8 +472,8 @@ export function SmallPDFEngine() {
                   </p>
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </section>
 
           <Button
             onClick={handleExecuteTool}

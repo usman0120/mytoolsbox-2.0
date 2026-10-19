@@ -1,43 +1,36 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
-  Sparkles,
-  Shield,
-  Globe,
   ChevronRight,
-  Star,
-  TrendingUp,
+  FileText,
+  FilePlus,
+  ImageDown,
+  Braces,
+  QrCode,
+  TextQuote,
+  Percent,
+  CaseSensitive,
+  Maximize,
+  Check,
+  Plus,
+  Minus,
+  Sparkles,
   Layout,
-  GraduationCap,
   Code2,
+  GraduationCap,
   Briefcase,
   Palette,
   PenTool,
   Microscope,
-  Users,
-  FileText,
-  Braces,
-  QrCode,
-  Percent,
-  TextQuote,
-  FilePlus,
-  ImageDown,
-  Maximize,
-  CaseSensitive,
-  Zap,
-  MessageSquare,
-  Lightbulb,
-  Cpu,
-  Coins,
+  ShieldCheck,
+  Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import { SearchCommand } from "@/components/common/search-command";
 import { ToolCard } from "@/components/common/tool-card";
-import { CATEGORIES } from "@/lib/constants";
 import { useI18n } from "@/lib/i18n";
 import type { ToolDefinition } from "@/types";
 
@@ -47,460 +40,530 @@ interface HomeClientProps {
 }
 
 export function HomeClient({ popularTools, featuredApps }: HomeClientProps) {
-  const { t, localizePath, getCategoryName } = useI18n();
+  const { t, localizePath } = useI18n();
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   const quickJobs = [
-    { key: "job_merge_pdf" as const, label: "Merge PDFs", href: "/tools/pdf-merger", icon: FilePlus, color: "text-rose-500", bgColor: "bg-rose-500/10" },
-    { key: "job_compress_image" as const, label: "Compress Image", href: "/tools/image-compressor", icon: ImageDown, color: "text-emerald-500", bgColor: "bg-emerald-500/10" },
-    { key: "job_format_json" as const, label: "Format JSON", href: "/tools/json-formatter", icon: Braces, color: "text-amber-500", bgColor: "bg-amber-500/10" },
-    { key: "job_generate_qr" as const, label: "Generate QR", href: "/tools/qr-generator", icon: QrCode, color: "text-violet-500", bgColor: "bg-violet-500/10" },
-    { key: "job_count_words" as const, label: "Count Words", href: "/tools/word-counter", icon: TextQuote, color: "text-sky-500", bgColor: "bg-sky-500/10" },
-    { key: "job_calculate_percent" as const, label: "Calculate %", href: "/tools/percentage-calculator", icon: Percent, color: "text-pink-500", bgColor: "bg-pink-500/10" },
-    { key: "job_convert_case" as const, label: "Convert Case", href: "/tools/case-converter", icon: CaseSensitive, color: "text-indigo-500", bgColor: "bg-indigo-500/10" },
-    { key: "job_resize_image" as const, label: "Resize Image", href: "/tools/image-resizer", icon: Maximize, color: "text-teal-500", bgColor: "bg-teal-500/10" },
+    { key: "job_merge_pdf" as const, label: "Merge PDFs", href: "/tools/pdf-merger", icon: FilePlus },
+    { key: "job_compress_image" as const, label: "Compress Image", href: "/tools/image-compressor", icon: ImageDown },
+    { key: "job_format_json" as const, label: "Format JSON", href: "/tools/json-formatter", icon: Braces },
+    { key: "job_generate_qr" as const, label: "Generate QR", href: "/tools/qr-generator", icon: QrCode },
+    { key: "job_count_words" as const, label: "Count Words", href: "/tools/word-counter", icon: TextQuote },
+    { key: "job_calculate_percent" as const, label: "Calculate %", href: "/tools/percentage-calculator", icon: Percent },
+    { key: "job_convert_case" as const, label: "Convert Case", href: "/tools/case-converter", icon: CaseSensitive },
+    { key: "job_resize_image" as const, label: "Resize Image", href: "/tools/image-resizer", icon: Maximize },
   ];
 
-  const audienceCards = [
-    { id: "students", nameKey: "aud_students" as const, descKey: "aud_students_desc" as const, icon: GraduationCap, color: "from-violet-500 to-purple-600", bgLight: "bg-violet-500/10", textColor: "text-violet-600 dark:text-violet-400" },
-    { id: "developers", nameKey: "aud_developers" as const, descKey: "aud_developers_desc" as const, icon: Code2, color: "from-blue-500 to-cyan-600", bgLight: "bg-blue-500/10", textColor: "text-blue-600 dark:text-blue-400" },
-    { id: "business", nameKey: "aud_business" as const, descKey: "aud_business_desc" as const, icon: Briefcase, color: "from-amber-500 to-orange-600", bgLight: "bg-amber-500/10", textColor: "text-amber-600 dark:text-amber-400" },
-    { id: "designers", nameKey: "aud_designers" as const, descKey: "aud_designers_desc" as const, icon: Palette, color: "from-pink-500 to-rose-600", bgLight: "bg-pink-500/10", textColor: "text-pink-600 dark:text-pink-400" },
-    { id: "writers", nameKey: "aud_writers" as const, descKey: "aud_writers_desc" as const, icon: PenTool, color: "from-emerald-500 to-teal-600", bgLight: "bg-emerald-500/10", textColor: "text-emerald-600 dark:text-emerald-400" },
-    { id: "researchers", nameKey: "aud_researchers" as const, descKey: "aud_researchers_desc" as const, icon: Microscope, color: "from-indigo-500 to-blue-600", bgLight: "bg-indigo-500/10", textColor: "text-indigo-600 dark:text-indigo-400" },
+  const valuePillars = [
+    {
+      num: "01",
+      title: "No account needed",
+      desc: "Start immediately without registration or logins. Jump straight into the utility you need.",
+    },
+    {
+      num: "02",
+      title: "Your data stays with you",
+      desc: "All files, documents, and calculations are processed directly inside your browser memory.",
+    },
+    {
+      num: "03",
+      title: "Pure productivity",
+      desc: "Zero paywalls, zero watermarks, and zero artificial delays. Built for instant, clean output.",
+    },
   ];
 
-  const features = [
+  const workflowHubs = [
+    { id: "developers", title: "Developers", desc: "JSON formatters, regex testers, Base64, hashing, diff tools", icon: Code2 },
+    { id: "students", title: "Students", desc: "GPA solvers, citation formatters, PDF annotators, math tools", icon: GraduationCap },
+    { id: "writers", title: "Writers", desc: "Word counters, text case converters, markdown previewers", icon: PenTool },
+    { id: "designers", title: "Designers", desc: "Color palette studios, image resizers, converters, SVG tools", icon: Palette },
+    { id: "business", title: "Business", desc: "Invoice creators, loan calculators, PDF signatures, splitters", icon: Briefcase },
+    { id: "researchers", title: "Researchers", desc: "Data parsers, unit converters, scientific calculators", icon: Microscope },
+  ];
+
+  const capabilities = [
     {
-      icon: Shield,
-      title: t("feature_privacy_title", "Privacy First"),
-      description: t("feature_privacy_desc", "Everything runs in your browser. Files never leave your device."),
-      gradient: "from-blue-500/10 to-cyan-500/10",
-      iconColor: "text-blue-600 dark:text-blue-400",
+      title: "Documents & PDF",
+      desc: "Merge, compress, split, and edit PDFs without server uploads.",
+      tag: "100% Private",
+      link: "/tools?category=documents",
     },
     {
-      icon: Zap,
-      title: t("feature_fast_title", "Lightning Fast"),
-      description: t("feature_fast_desc", "No uploads, no waiting. Instant results with client-side processing."),
-      gradient: "from-amber-500/10 to-orange-500/10",
-      iconColor: "text-amber-600 dark:text-amber-400",
+      title: "Images & Graphics",
+      desc: "Lossless compression, resizing, and format conversions in WebAssembly.",
+      tag: "Instant Canvas",
+      link: "/tools?category=images",
     },
     {
-      icon: Globe,
-      title: t("feature_offline_title", "Works Offline"),
-      description: t("feature_offline_desc", "Most tools work without internet. Use them anywhere, anytime."),
-      gradient: "from-emerald-500/10 to-teal-500/10",
-      iconColor: "text-emerald-600 dark:text-emerald-400",
+      title: "Developer & Code",
+      desc: "Format JSON, test regular expressions, and inspect structured payloads.",
+      tag: "High Precision",
+      link: "/tools?category=developer",
     },
     {
-      icon: Sparkles,
-      title: t("feature_free_title", "Always Free"),
-      description: t("feature_free_desc", "Core tools free forever. No hidden fees, no premium tricks."),
-      gradient: "from-violet-500/10 to-purple-500/10",
-      iconColor: "text-violet-600 dark:text-violet-400",
+      title: "Smart Calculators",
+      desc: "Amortization schedules, financial projections, and math solvers.",
+      tag: "Real-time Math",
+      link: "/tools?category=calculators",
+    },
+  ];
+
+  const faqs = [
+    {
+      q: "Is MyToolsBox really free to use?",
+      a: "Yes. All core utilities, document converters, and calculators are completely free to use without subscriptions, watermarks, or credit card requirements.",
+    },
+    {
+      q: "Are my documents or files ever uploaded to a server?",
+      a: "No. Whenever you drop a PDF, image, or text file into a client-side tool, it is parsed and processed right inside your browser session using WebAssembly and local JavaScript. Your content never leaves your computer.",
+    },
+    {
+      q: "Can I use these tools offline or on mobile devices?",
+      a: "Yes. The platform is responsive and works smoothly on modern desktop, tablet, and mobile browsers. Once loaded, client-side tools run even if your connection drops.",
+    },
+    {
+      q: "Do I need to create an account or sign in?",
+      a: "No account is required to use any of the tools. Signing in is strictly optional if you want to sync favorites or custom preferences across devices.",
+    },
+    {
+      q: "Where can I report a bug or request a new tool?",
+      a: "You can submit suggestions or report issues anytime through our Feedback & Contact page. We actively review and ship community requests.",
     },
   ];
 
   return (
     <div className="flex flex-col">
-      {/* ===== HERO — Utility OS Style ===== */}
-      <section className="relative overflow-hidden">
-        {/* Animated background */}
-        <div className="absolute inset-0 bg-linear-to-b from-primary/5 via-background to-background dark:from-primary/10 dark:via-background dark:to-background" />
-        <div className="hero-glow size-31.25 bg-primary -top-32 -left-32" />
-        <div className="hero-glow size-25 bg-violet-500 top-20 -right-20" />
-        <div className="hero-glow size-18.75 bg-cyan-500 bottom-0 left-1/4" />
-
-        <div className="container mx-auto px-4 pt-20 pb-16 md:pt-28 md:pb-24 relative">
-          <div className="text-center max-w-3xl mx-auto animate-fade-in-up">
-            {/* OS-style badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium mb-8 backdrop-blur-sm">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+      {/* ===== 1. HERO SECTION (Mirroring Reference Image 3) ===== */}
+      <section className="border-b border-border/60 bg-gradient-to-b from-background via-background to-muted/20">
+        <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:py-16">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+            {/* Left Column: Editorial Headline & Actions */}
+            <div className="lg:col-span-7 flex flex-col items-start">
+              <span className="text-xs font-bold tracking-widest text-primary uppercase mb-3 px-2 py-0.5 rounded bg-primary/10 border border-primary/20">
+                {t("hero_tag", "YOUR WORKFLOW STARTS HERE")}
               </span>
-              {t("hero_tag")}
+
+              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-foreground leading-[1.1] mb-5">
+                Every tool you need. <br />
+                A <span className="font-editorial italic font-normal text-primary">fresh standard.</span>
+              </h1>
+
+              <p className="text-sm sm:text-base text-muted-foreground leading-relaxed max-w-2xl mb-8">
+                Over 50+ high-performance tools for documents, images, code, and everyday math.
+                Runs securely inside your browser — zero subscriptions, paywalls, or noise.
+              </p>
+
+              {/* Central Search Box */}
+              <div className="w-full max-w-xl mb-6">
+                <SearchCommand />
+              </div>
+
+              {/* Quick Actions / Jobs Pills */}
+              <div className="w-full">
+                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2.5">
+                  Popular Quick Actions
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {quickJobs.map((job) => (
+                    <Link key={job.href} href={localizePath(job.href)}>
+                      <button className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/80 bg-card hover:border-primary/40 hover:bg-muted/40 transition-colors text-xs font-medium text-foreground">
+                        <job.icon className="h-3.5 w-3.5 text-primary" />
+                        <span>{t(job.key, job.label)}</span>
+                      </button>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+
+              {/* Trust Subtext */}
+              <div className="mt-8 pt-5 border-t border-border/50 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1.5">
+                  <Check className="h-3.5 w-3.5 text-primary" /> No registration required
+                </span>
+                <span>•</span>
+                <span className="flex items-center gap-1.5">
+                  <Check className="h-3.5 w-3.5 text-primary" /> 100% In-browser privacy
+                </span>
+                <span>•</span>
+                <span className="flex items-center gap-1.5">
+                  <Check className="h-3.5 w-3.5 text-primary" /> Free forever
+                </span>
+              </div>
             </div>
 
-            {/* Main heading */}
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6 leading-tight">
-              {t("hero_title")}
-            </h1>
-
-            <p className="text-lg md:text-xl text-muted-foreground mb-10 max-w-2xl mx-auto leading-relaxed">
-              {t("hero_subtitle")}
-            </p>
-
-            {/* Search — the centerpiece */}
-            <div className="max-w-xl mx-auto mb-10">
-              <SearchCommand />
-            </div>
-
-            {/* Quick Jobs — pill-style */}
-            <div className="flex flex-wrap justify-center gap-2.5">
-              {quickJobs.map((job) => (
-                <Link key={job.href} href={localizePath(job.href)}>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="rounded-full gap-2 border-border/60 hover:border-primary/30 hover:bg-primary/5 transition-all duration-200 group"
-                  >
-                    <span className={`flex h-5 w-5 items-center justify-center rounded-full ${job.bgColor}`}>
-                      <job.icon className={`h-3 w-3 ${job.color}`} />
+            {/* Right Column: Live Mockup Card (Inspired by Image 1 & 3) */}
+            <div className="lg:col-span-5 flex justify-center">
+              <div className="w-full max-w-md rounded-3xl bg-primary/5 dark:bg-primary/10 border border-primary/20 p-6 sm:p-7 relative shadow-sm">
+                <div className="preview-sheet rounded-2xl p-6 bg-card text-card-foreground">
+                  {/* Mockup Header */}
+                  <div className="flex items-center justify-between pb-4 mb-4 border-b border-border/60">
+                    <div className="flex items-center gap-2">
+                      <div className="h-6 w-6 rounded-md bg-primary text-primary-foreground flex items-center justify-center font-bold text-[10px]">
+                        tb.
+                      </div>
+                      <span className="text-xs font-semibold tracking-tight text-foreground">
+                        Live Preview Workbench
+                      </span>
+                    </div>
+                    <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">
+                      Client-Side
                     </span>
-                    {t(job.key, job.label)}
-                  </Button>
-                </Link>
-              ))}
+                  </div>
+
+                  {/* Mockup Body Content */}
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="text-lg font-bold tracking-tight text-foreground">
+                        Document Processing, <span className="font-editorial italic font-normal text-primary">refined.</span>
+                      </h4>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Clean layouts, zero server queues, instant export.
+                      </p>
+                    </div>
+
+                    <div className="rounded-xl border border-border/70 p-3.5 bg-muted/20 space-y-2">
+                      <div className="flex items-center justify-between text-xs font-medium">
+                        <span className="text-foreground">Contract_Draft_v2.pdf</span>
+                        <span className="text-muted-foreground font-mono text-[11px]">1.4 MB</span>
+                      </div>
+                      <div className="h-1.5 w-full bg-border rounded-full overflow-hidden">
+                        <div className="h-full bg-primary rounded-full w-full" />
+                      </div>
+                      <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-1">
+                        <span>Status: Ready to merge</span>
+                        <span className="text-primary font-medium">Processed</span>
+                      </div>
+                    </div>
+
+                    <div className="pt-2">
+                      <Link href={localizePath("/tools/pdf-merger")}>
+                        <Button className="w-full rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground gap-2 font-medium h-10 text-xs">
+                          <Download className="h-3.5 w-3.5" />
+                          <span>Try Live Document Studio</span>
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Handcrafted note below preview */}
+                <p className="text-center text-xs font-editorial italic text-muted-foreground mt-4">
+                  Runs client-side in WebAssembly. Zero data uploaded.
+                </p>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ===== FEATURES — Compact strip ===== */}
-      <section className="border-y bg-muted/30 dark:bg-muted/10">
-        <div className="container mx-auto px-4 py-12">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {features.map((feature) => (
-              <div
-                key={feature.title}
-                className="group relative text-center p-5 rounded-2xl bg-linear-to-br from-card to-card/50 border border-border/50 hover:border-primary/20 transition-all duration-300 card-lift"
-              >
-                <div
-                  className={`flex h-11 w-11 items-center justify-center rounded-xl bg-linear-to-br ${feature.gradient} mx-auto mb-3 ring-1 ring-border/50 group-hover:scale-110 transition-transform duration-300`}
-                >
-                  <feature.icon className={`h-5 w-5 ${feature.iconColor}`} />
+      {/* ===== 2. THREE PILLARS (Inspired by Image 3) ===== */}
+      <section className="border-b border-border/60 bg-card/40">
+        <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {valuePillars.map((pillar) => (
+              <div key={pillar.num} className="flex items-start gap-4">
+                <span className="text-xs font-bold text-primary px-2 py-1 rounded-md bg-primary/10 border border-primary/20 shrink-0">
+                  {pillar.num}
+                </span>
+                <div>
+                  <h3 className="text-sm font-semibold tracking-tight text-foreground mb-1">
+                    {pillar.title}
+                  </h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    {pillar.desc}
+                  </p>
                 </div>
-                <h3 className="font-semibold text-sm mb-1">{feature.title}</h3>
-                <p className="text-xs text-muted-foreground leading-relaxed">{feature.description}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ===== WHAT ARE YOU WORKING ON? — Audience cards ===== */}
-      <section className="container mx-auto px-4 py-20">
-        <div className="text-center mb-12">
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <Users className="h-5 w-5 text-primary" />
-            <span className="text-sm font-medium text-primary uppercase tracking-wider">{t("audience_tag")}</span>
+      {/* ===== 3. PLATFORM CAPABILITY SHOWCASE ===== */}
+      <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+          <div>
+            <span className="text-xs font-bold tracking-widest text-primary uppercase">
+              DESIGNED FOR CLARITY
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground mt-1">
+              One platform. <span className="font-editorial italic font-normal text-primary">Every workflow.</span>
+            </h2>
           </div>
-          <h2 className="text-2xl md:text-3xl font-bold mb-3">{t("audience_title")}</h2>
-          <p className="text-muted-foreground max-w-lg mx-auto">
-            {t("audience_subtitle")}
-          </p>
+          <Link href={localizePath("/tools")}>
+            <Button variant="ghost" className="gap-1.5 text-xs font-medium group">
+              <span>View all 50+ tools</span>
+              <ChevronRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
+            </Button>
+          </Link>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          {audienceCards.map((aud, i) => (
-            <Link key={aud.id} href={localizePath(`/hubs/${aud.id}`)}>
-              <Card
-                className="group card-lift cursor-pointer h-full border-border/50 hover:border-primary/30 overflow-hidden animate-fade-in-up"
-                style={{ animationDelay: `${i * 60}ms` }}
-              >
-                <CardContent className="p-5 text-center">
-                  <div className={`flex h-14 w-14 items-center justify-center rounded-2xl ${aud.bgLight} mx-auto mb-4 group-hover:scale-110 transition-transform duration-300`}>
-                    <aud.icon className={`h-7 w-7 ${aud.textColor}`} />
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {capabilities.map((cap) => (
+            <Link key={cap.title} href={localizePath(cap.link)} className="group">
+              <div className="h-full p-5 rounded-2xl border border-border/70 bg-card hover:border-primary/40 hover:bg-card/90 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xs flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-[10px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded bg-muted text-muted-foreground border border-border/60">
+                      {cap.tag}
+                    </span>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
                   </div>
-                  <h3 className="font-semibold text-sm mb-1">{t(aud.nameKey)}</h3>
-                  <p className="text-xs text-muted-foreground leading-relaxed">{t(aud.descKey)}</p>
-                </CardContent>
-              </Card>
+                  <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors mb-1.5">
+                    {cap.title}
+                  </h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    {cap.desc}
+                  </p>
+                </div>
+                <div className="mt-4 pt-3 border-t border-border/40 text-xs font-medium text-primary">
+                  Open category →
+                </div>
+              </div>
             </Link>
           ))}
         </div>
       </section>
 
-      {/* ===== AI SUITE PROMOTION ===== */}
-      <section className="relative overflow-hidden border-t bg-linear-to-b from-violet-500/5 via-primary/5 to-background py-16 md:py-24">
-        <div className="container mx-auto px-4 max-w-7xl">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <Badge variant="outline" className="text-xs px-2.5 py-0.5 rounded-full border-violet-500/30 text-violet-600 dark:text-violet-400 bg-violet-500/10 font-semibold gap-1.5">
-                  <Sparkles className="h-3.5 w-3.5" />
-                  {t("nav_ai")}
-                </Badge>
-                <Badge variant="secondary" className="text-xs px-2.5 py-0.5 rounded-full gap-1 font-mono">
-                  <Coins className="h-3 w-3 text-amber-500" />
-                  {t("ai_credits_badge")}
-                </Badge>
-              </div>
-              <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">
-                {t("ai_suite_title")}
-              </h2>
-              <p className="text-sm md:text-base text-muted-foreground mt-2 max-w-2xl leading-relaxed">
-                {t("ai_suite_desc")}
-              </p>
-            </div>
-            <Link href={localizePath("/ai")} className="shrink-0">
-              <Button size="lg" className="rounded-2xl gap-2 font-medium shadow-md">
-                <span>{t("ai_workspace_btn")}</span>
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
+      {/* ===== 4. WORKFLOW HUBS BY ROLE ===== */}
+      <section className="border-t border-border/60 bg-muted/20 dark:bg-muted/10 py-12">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+          <div className="mb-8">
+            <span className="text-xs font-bold tracking-widest text-primary uppercase">
+              WORKFLOW HUBS
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground mt-1">
+              Curated for how you work.
+            </h2>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+              Find dedicated tools and shortcuts arranged specifically for your daily tasks.
+            </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {/* Card 1: Chat Workspace */}
-            <Link href={localizePath("/ai")} className="group">
-              <Card className="h-full border-border/60 hover:border-violet-500/50 bg-card/70 hover:bg-card/95 transition-all duration-300 card-lift rounded-2xl overflow-hidden p-6 flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between gap-2 mb-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-500/10 text-violet-600 dark:text-violet-400 ring-1 ring-violet-500/20 group-hover:scale-105 transition-transform">
-                      <MessageSquare className="h-6 w-6" />
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            {workflowHubs.map((hub) => (
+              <Link key={hub.id} href={localizePath(`/hubs/${hub.id}`)} className="group">
+                <div className="h-full p-4 rounded-xl border border-border/70 bg-card hover:border-primary/40 hover:bg-card/90 transition-all duration-200 hover:-translate-y-0.5 flex flex-col justify-between">
+                  <div>
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary mb-3 group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-200">
+                      <hub.icon className="h-4.5 w-4.5" />
                     </div>
-                    <Badge variant="outline" className="text-[10px] font-mono rounded-full border-violet-500/30 text-violet-600 dark:text-violet-400">
-                      Auto-Router
-                    </Badge>
+                    <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
+                      {hub.title}
+                    </h3>
+                    <p className="text-[11px] text-muted-foreground leading-relaxed mt-1 line-clamp-2">
+                      {hub.desc}
+                    </p>
                   </div>
-                  <h3 className="text-base font-semibold mb-1.5 group-hover:text-primary transition-colors">
-                    {t("ai_new_chat")}
-                  </h3>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    {t("ai_chat_desc")}
-                  </p>
                 </div>
-                <div className="mt-5 flex items-center text-xs font-semibold text-primary gap-1 group-hover:translate-x-0.5 transition-transform">
-                  <span>{t("action_start_chat")}</span>
-                  <ChevronRight className="h-3.5 w-3.5" />
-                </div>
-              </Card>
-            </Link>
-
-            {/* Card 2: Prompt Library */}
-            <Link href={localizePath("/ai/prompts")} className="group">
-              <Card className="h-full border-border/60 hover:border-amber-500/50 bg-card/70 hover:bg-card/95 transition-all duration-300 card-lift rounded-2xl overflow-hidden p-6 flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between gap-2 mb-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 ring-1 ring-amber-500/20 group-hover:scale-105 transition-transform">
-                      <Lightbulb className="h-6 w-6" />
-                    </div>
-                    <Badge variant="outline" className="text-[10px] font-mono rounded-full border-amber-500/30 text-amber-600 dark:text-amber-400">
-                      160+ Prompts
-                    </Badge>
-                  </div>
-                  <h3 className="text-base font-semibold mb-1.5 group-hover:text-primary transition-colors">
-                    {t("ai_prompt_library")}
-                  </h3>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    {t("ai_prompts_desc")}
-                  </p>
-                </div>
-                <div className="mt-5 flex items-center text-xs font-semibold text-primary gap-1 group-hover:translate-x-0.5 transition-transform">
-                  <span>{t("action_browse_prompts")}</span>
-                  <ChevronRight className="h-3.5 w-3.5" />
-                </div>
-              </Card>
-            </Link>
-
-            {/* Card 3: Model Arena */}
-            <Link href={localizePath("/ai/compare")} className="group">
-              <Card className="h-full border-border/60 hover:border-blue-500/50 bg-card/70 hover:bg-card/95 transition-all duration-300 card-lift rounded-2xl overflow-hidden p-6 flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between gap-2 mb-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400 ring-1 ring-blue-500/20 group-hover:scale-105 transition-transform">
-                      <Cpu className="h-6 w-6" />
-                    </div>
-                    <Badge variant="outline" className="text-[10px] font-mono rounded-full border-blue-500/30 text-blue-600 dark:text-blue-400">
-                      Arena
-                    </Badge>
-                  </div>
-                  <h3 className="text-base font-semibold mb-1.5 group-hover:text-primary transition-colors">
-                    {t("ai_compare_models")}
-                  </h3>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    {t("ai_compare_desc")}
-                  </p>
-                </div>
-                <div className="mt-5 flex items-center text-xs font-semibold text-primary gap-1 group-hover:translate-x-0.5 transition-transform">
-                  <span>{t("action_compare_models")}</span>
-                  <ChevronRight className="h-3.5 w-3.5" />
-                </div>
-              </Card>
-            </Link>
-
-            {/* Card 4: Personas & Tools */}
-            <Link href={localizePath("/ai/personas")} className="group">
-              <Card className="h-full border-border/60 hover:border-emerald-500/50 bg-card/70 hover:bg-card/95 transition-all duration-300 card-lift rounded-2xl overflow-hidden p-6 flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between gap-2 mb-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 ring-1 ring-emerald-500/20 group-hover:scale-105 transition-transform">
-                      <Sparkles className="h-6 w-6" />
-                    </div>
-                    <Badge variant="outline" className="text-[10px] font-mono rounded-full border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
-                      Expert Roles
-                    </Badge>
-                  </div>
-                  <h3 className="text-base font-semibold mb-1.5 group-hover:text-primary transition-colors">
-                    {t("ai_personas")}
-                  </h3>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    {t("ai_personas_desc")}
-                  </p>
-                </div>
-                <div className="mt-5 flex items-center text-xs font-semibold text-primary gap-1 group-hover:translate-x-0.5 transition-transform">
-                  <span>{t("action_view_personas")}</span>
-                  <ChevronRight className="h-3.5 w-3.5" />
-                </div>
-              </Card>
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* ===== POPULAR TOOLS ===== */}
-      <section className="bg-muted/30 dark:bg-muted/10 border-y">
-        <div className="container mx-auto px-4 py-20">
-          <div className="flex items-end justify-between mb-10">
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <TrendingUp className="h-5 w-5 text-primary" />
-                <span className="text-sm font-medium text-primary uppercase tracking-wider">{t("popular_tag")}</span>
-              </div>
-              <h2 className="text-2xl md:text-3xl font-bold">{t("popular_title")}</h2>
-              <p className="text-muted-foreground mt-1.5">{t("popular_desc")}</p>
-            </div>
-            <Link href={localizePath("/tools")}>
-              <Button variant="ghost" className="gap-1.5 group">
-                {t("action_all_tools", "View all tools")}
-                <ChevronRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
-              </Button>
-            </Link>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {popularTools.map((tool, i) => (
-              <div key={tool.id} className="animate-fade-in-up" style={{ animationDelay: `${i * 50}ms` }}>
-                <ToolCard tool={tool} />
-              </div>
+              </Link>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ===== EXPLORE APPS ===== */}
-      <section className="container mx-auto px-4 py-20">
-        <div className="flex items-end justify-between mb-10">
+      {/* ===== 5. ESSENTIAL POPULAR TOOLS ===== */}
+      <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
           <div>
-            <div className="flex items-center gap-2 mb-2">
-              <Layout className="h-5 w-5 text-cyan-500" />
-              <span className="text-sm font-medium text-cyan-600 dark:text-cyan-400 uppercase tracking-wider">{t("apps_tag")}</span>
-            </div>
-            <h2 className="text-2xl md:text-3xl font-bold">{t("apps_page_title", "Explore Apps")}</h2>
-            <p className="text-muted-foreground mt-1.5">{t("apps_desc")}</p>
+            <span className="text-xs font-bold tracking-widest text-primary uppercase">
+              CURATED ESSENTIALS
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground mt-1">
+              Popular daily tools
+            </h2>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+              Reliable, battle-tested utilities used thousands of times every day.
+            </p>
           </div>
-          <Link href={localizePath("/apps")}>
-            <Button variant="ghost" className="gap-1.5 group">
-              {t("action_view_all")}
-              <ChevronRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
+          <Link href={localizePath("/tools")}>
+            <Button variant="outline" className="rounded-xl border-border/80 text-xs font-medium h-9 gap-1.5">
+              <span>{t("action_all_tools", "All Tools")}</span>
+              <ArrowRight className="h-3.5 w-3.5" />
             </Button>
           </Link>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {featuredApps.map((app, i) => {
-            const IconComponent = Layout;
-            return (
-              <Link key={app.id} href={localizePath(`/apps/${app.slug}`)}>
-                <Card
-                  className="group card-lift cursor-pointer h-full border-border/50 hover:border-primary/30 overflow-hidden animate-fade-in-up"
-                  style={{ animationDelay: `${i * 60}ms` }}
-                >
-                  <CardContent className="p-5">
-                    <div className="flex items-start gap-4">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-linear-to-br from-cyan-500/10 to-blue-500/10 ring-1 ring-cyan-500/20 group-hover:scale-110 transition-transform shrink-0">
-                        <IconComponent className="h-6 w-6 text-cyan-500" />
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {popularTools.slice(0, 8).map((tool) => (
+            <ToolCard key={tool.id} tool={tool} />
+          ))}
+        </div>
+      </section>
+
+      {/* ===== 6. DEDICATED APPS ECOSYSTEM ===== */}
+      <section className="border-t border-border/60 bg-card/40 py-12">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+            <div>
+              <span className="text-xs font-bold tracking-widest text-primary uppercase">
+                WEB APPS
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground mt-1">
+                Full-featured standalone apps
+              </h2>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                Beyond single-purpose utilities: full workspaces for documents, formatting, and design.
+              </p>
+            </div>
+            <Link href={localizePath("/apps")}>
+              <Button variant="outline" className="rounded-xl border-border/80 text-xs font-medium h-9 gap-1.5">
+                <span>Browse all apps</span>
+                <ChevronRight className="h-3.5 w-3.5" />
+              </Button>
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {featuredApps.slice(0, 3).map((app) => (
+              <Link key={app.id} href={localizePath(`/apps/${app.slug}`)} className="group">
+                <div className="h-full p-5 rounded-2xl border border-border/70 bg-card hover:border-primary/40 hover:bg-card/90 transition-all duration-200 hover:-translate-y-0.5 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                        <Layout className="h-4.5 w-4.5" />
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-semibold text-sm group-hover:text-primary transition-colors">{app.name}</h3>
-                          {app.status === "beta" && (
-                            <Badge className="text-[10px] h-4 px-1.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 rounded-full">{t("badge_beta", "Beta")}</Badge>
-                          )}
-                        </div>
-                        <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">{app.shortDescription}</p>
-                        <div className="flex flex-wrap gap-1 mt-2">
-                          {app.features.slice(0, 3).map((f: string) => (
-                            <Badge key={f} variant="secondary" className="text-[10px] h-4 px-1.5 rounded-full">{f}</Badge>
-                          ))}
-                        </div>
-                      </div>
+                      {app.status === "beta" && (
+                        <span className="text-[10px] font-medium px-2 py-0.5 rounded bg-muted text-muted-foreground border border-border/60">
+                          Beta
+                        </span>
+                      )}
                     </div>
-                  </CardContent>
-                </Card>
+                    <h3 className="text-base font-semibold text-foreground group-hover:text-primary transition-colors mb-1.5">
+                      {app.name}
+                    </h3>
+                    <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3">
+                      {app.shortDescription}
+                    </p>
+                  </div>
+                  <div className="mt-4 pt-3 border-t border-border/40 flex items-center justify-between text-xs font-medium text-primary">
+                    <span>Launch app</span>
+                    <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </div>
               </Link>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* ===== BROWSE BY CATEGORY ===== */}
-      <section className="bg-muted/30 dark:bg-muted/10 border-y">
-        <div className="container mx-auto px-4 py-20">
-          <div className="text-center mb-12">
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <Star className="h-5 w-5 text-primary" />
-              <span className="text-sm font-medium text-primary uppercase tracking-wider">{t("categories_tag")}</span>
-            </div>
-            <h2 className="text-2xl md:text-3xl font-bold mb-3">{t("categories_title", "Browse by Category")}</h2>
-            <p className="text-muted-foreground max-w-md mx-auto">
-              {t("categories_subtext")}
-            </p>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            {CATEGORIES.map((cat, i) => {
-              const IconComponent = FileText;
-              const localizedCatName = getCategoryName(cat.id, cat.name);
-              return (
-                <Link key={cat.id} href={localizePath(`/tools?category=${cat.id}`)}>
-                  <Card
-                    className="group card-lift cursor-pointer h-full border-border/50 hover:border-primary/30 overflow-hidden animate-fade-in-up"
-                    style={{ animationDelay: `${i * 60}ms` }}
-                  >
-                    <CardContent className="p-5 text-center">
-                      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-linear-to-br from-primary/10 to-primary/5 text-primary mx-auto mb-4 group-hover:scale-110 transition-transform duration-300 ring-1 ring-primary/10">
-                        <IconComponent className="h-7 w-7" />
-                      </div>
-                      <h3 className="font-semibold text-sm mb-1">{localizedCatName}</h3>
-                      <p className="text-xs text-muted-foreground">
-                        {t("action_explore", "Explore")}
-                      </p>
-                    </CardContent>
-                  </Card>
-                </Link>
-              );
-            })}
+            ))}
           </div>
         </div>
       </section>
 
-      {/* ===== CTA ===== */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-linear-to-r from-primary/5 via-primary/10 to-violet-500/5" />
-        <div className="hero-glow size-64 bg-primary -bottom-20 -right-20" />
-        <div className="container mx-auto px-4 py-20 text-center relative">
-          <div className="max-w-lg mx-auto animate-fade-in-up">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium mb-6">
-              <Sparkles className="h-3.5 w-3.5" />
-              {t("badge_no_signup")}
-            </div>
-            <h2 className="text-2xl md:text-3xl font-bold mb-4">{t("cta_title", "Ready to get things done?")}</h2>
-            <p className="text-muted-foreground mb-8 leading-relaxed">
-              {t("cta_desc", "Start using any tool instantly. Everything runs in your browser — private, fast, and free.")}
-            </p>
-            <div className="flex gap-3 justify-center">
+      {/* ===== 7. PRIVACY BY DESIGN (Mirroring Reference Image 3 Sage Block) ===== */}
+      <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
+        <div className="rounded-3xl bg-primary/5 dark:bg-primary/10 border border-primary/20 p-8 sm:p-12">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            <div className="lg:col-span-5">
+              <span className="text-xs font-bold tracking-widest text-primary uppercase">
+                PRIVACY BY DESIGN
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground mt-2 mb-3">
+                Your files. <br />
+                Your information.
+              </h2>
+              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed mb-6">
+                A useful little tool shouldn't need your personal data to work. No account, no trackers, no surprises.
+              </p>
               <Link href={localizePath("/tools")}>
-                <Button size="lg" className="gap-2 rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all">
-                  {t("hero_cta_tools", "Explore All Tools")}
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </Link>
-              <Link href={localizePath("/ai")}>
-                <Button variant="outline" size="lg" className="rounded-xl gap-2">
-                  <Sparkles className="h-4 w-4" />
-                  {t("hero_cta_ai", "Try AI Assistant")}
+                <Button className="rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-medium h-10 px-5 gap-2">
+                  <span>Use tools without an account</span>
+                  <ArrowRight className="h-3.5 w-3.5" />
                 </Button>
               </Link>
             </div>
+
+            <div className="lg:col-span-7 space-y-6">
+              <div className="space-y-1.5">
+                <h4 className="text-sm font-semibold text-foreground">
+                  Local processing, no tracking
+                </h4>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Your files are handled on your device in browser memory. We do not inspect, upload, or retain your documents, images, or audio clips.
+                </p>
+              </div>
+
+              <div className="space-y-1.5">
+                <h4 className="text-sm font-semibold text-foreground">
+                  You decide what is saved
+                </h4>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Everything stays in your active browser session. If you choose to remember preferences, they remain strictly on your local device storage.
+                </p>
+              </div>
+
+              <div className="space-y-1.5">
+                <h4 className="text-sm font-semibold text-foreground">
+                  Honest about the limits
+                </h4>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  These tools are built for productivity, not encrypted long-term cloud vaults. Export your work, keep your originals, and enjoy total control.
+                </p>
+              </div>
+            </div>
           </div>
+        </div>
+      </section>
+
+      {/* ===== 8. FAQ ACCORDION (Mirroring Reference Image 3) ===== */}
+      <section className="border-t border-border/60 bg-muted/20 dark:bg-muted/10 py-12">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            <div className="lg:col-span-4">
+              <span className="text-xs font-bold tracking-widest text-primary uppercase">
+                A FEW GOOD QUESTIONS
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground mt-2 mb-2">
+                Before you start.
+              </h2>
+              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                Simple answers. Clear policies, no hidden catches.
+              </p>
+            </div>
+
+            <div className="lg:col-span-8 divide-y divide-border/60">
+              {faqs.map((faq, index) => {
+                const isOpen = openFaq === index;
+                return (
+                  <div key={faq.q} className="py-4 first:pt-0 last:pb-0">
+                    <button
+                      onClick={() => setOpenFaq(isOpen ? null : index)}
+                      className="w-full flex items-center justify-between text-left text-sm font-semibold text-foreground hover:text-primary transition-colors py-1"
+                    >
+                      <span>{faq.q}</span>
+                      <span className="ml-4 shrink-0 text-muted-foreground">
+                        {isOpen ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                      </span>
+                    </button>
+                    {isOpen && (
+                      <p className="mt-2 text-xs sm:text-sm text-muted-foreground leading-relaxed pr-6 animate-fade-in">
+                        {faq.a}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ===== 9. BOTTOM CALL TO ACTION (Mirroring Image 3) ===== */}
+      <section className="border-t border-border/60 bg-background py-16 text-center">
+        <div className="mx-auto max-w-2xl px-4">
+          <span className="text-xs font-bold tracking-widest text-primary uppercase">
+            BUILT FOR YOUR NEXT MOVE
+          </span>
+          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground mt-2 mb-3">
+            Let your productivity <br />
+            <span className="font-editorial italic font-normal text-primary">do the talking.</span>
+          </h2>
+          <p className="text-xs sm:text-sm text-muted-foreground mb-6">
+            Jump into any tool right now. Zero sign-up, zero waiting.
+          </p>
+          <Link href={localizePath("/tools")}>
+            <Button className="rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 text-sm font-medium h-11 px-6 gap-2">
+              <span>Explore All Tools</span>
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </Link>
         </div>
       </section>
     </div>

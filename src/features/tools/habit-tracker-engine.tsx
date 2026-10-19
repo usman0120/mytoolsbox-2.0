@@ -29,27 +29,9 @@ const HABIT_COLORS = [
 const HABIT_EMOJIS = ["💪", "📚", "🏃", "💧", "🧘", "🎯", "✍️", "💤", "🥗", "💻"];
 
 export function HabitTrackerEngine() {
-  const [habits, setHabits] = useState<Habit[]>(() => {
-    try {
-      const raw = localStorage.getItem(HABITS_KEY);
-      return raw ? JSON.parse(raw) : [
-        { id: "h1", name: "Drink 2L Water", emoji: "💧", color: "#06b6d4", createdAt: Date.now() },
-        { id: "h2", name: "Read 20 Pages", emoji: "📚", color: "#3b82f6", createdAt: Date.now() },
-        { id: "h3", name: "Exercise 30 Mins", emoji: "🏃", color: "#22c55e", createdAt: Date.now() },
-      ];
-    } catch {
-      return [];
-    }
-  });
-
-  const [entries, setEntries] = useState<HabitEntry[]>(() => {
-    try {
-      const raw = localStorage.getItem(ENTRIES_KEY);
-      return raw ? JSON.parse(raw) : [];
-    } catch {
-      return [];
-    }
-  });
+  const [habits, setHabits] = useState<Habit[]>([]);
+  const [entries, setEntries] = useState<HabitEntry[]>([]);
+  const [loadedAt, setLoadedAt] = useState<Date | null>(null);
 
   const [currentWeekOffset, setCurrentWeekOffset] = useState(0);
   const [newHabitName, setNewHabitName] = useState("");
@@ -58,14 +40,48 @@ export function HabitTrackerEngine() {
   const [showAddForm, setShowAddForm] = useState(false);
 
   useEffect(() => {
-    localStorage.setItem(HABITS_KEY, JSON.stringify(habits));
-  }, [habits]);
+    const load = setTimeout(() => {
+      const now = new Date();
+      try {
+        const raw = localStorage.getItem(HABITS_KEY);
+        setHabits(raw ? JSON.parse(raw) : [
+          { id: "h1", name: "Drink 2L Water", emoji: "💧", color: "#06b6d4", createdAt: now.getTime() },
+          { id: "h2", name: "Read 20 Pages", emoji: "📚", color: "#3b82f6", createdAt: now.getTime() },
+          { id: "h3", name: "Exercise 30 Mins", emoji: "🏃", color: "#22c55e", createdAt: now.getTime() },
+        ]);
+      } catch {
+        setHabits([]);
+      }
+      try {
+        const raw = localStorage.getItem(ENTRIES_KEY);
+        setEntries(raw ? JSON.parse(raw) : []);
+      } catch {
+        setEntries([]);
+      }
+      setLoadedAt(now);
+    }, 0);
+    return () => clearTimeout(load);
+  }, []);
 
   useEffect(() => {
-    localStorage.setItem(ENTRIES_KEY, JSON.stringify(entries));
-  }, [entries]);
+    if (!loadedAt) return;
+    try {
+      localStorage.setItem(HABITS_KEY, JSON.stringify(habits));
+    } catch {
+      toast.error("Habit changes could not be saved in this browser.");
+    }
+  }, [habits, loadedAt]);
 
-  const referenceDate = new Date();
+  useEffect(() => {
+    if (!loadedAt) return;
+    try {
+      localStorage.setItem(ENTRIES_KEY, JSON.stringify(entries));
+    } catch {
+      toast.error("Habit history could not be saved in this browser.");
+    }
+  }, [entries, loadedAt]);
+
+  const referenceDate = new Date(loadedAt?.getTime() ?? 0);
   referenceDate.setDate(referenceDate.getDate() + currentWeekOffset * 7);
   const weekDays = getDaysOfWeek(referenceDate);
 
@@ -120,6 +136,8 @@ export function HabitTrackerEngine() {
     URL.revokeObjectURL(url);
     toast.success("Habits backup exported!");
   };
+
+  if (!loadedAt) return <div role="status">Loading habits...</div>;
 
   return (
     <div className="space-y-4">
@@ -256,6 +274,9 @@ export function HabitTrackerEngine() {
                       return (
                         <td key={day.dateStr} className={`py-3 px-2 text-center ${day.isToday ? "bg-primary/5" : ""}`}>
                           <button
+                            type="button"
+                            aria-label={`${habit.name} on ${day.dateStr}`}
+                            aria-pressed={done}
                             onClick={() => toggleHabit(habit.id, day.dateStr)}
                             className={`h-7 w-7 rounded-lg inline-flex items-center justify-center transition-all ${
                               done

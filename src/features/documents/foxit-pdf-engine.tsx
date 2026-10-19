@@ -159,7 +159,7 @@ export function FoxitPDFEngine() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="w-full min-w-0 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-border/50">
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20">
@@ -178,12 +178,12 @@ export function FoxitPDFEngine() {
 
       {!file && (
         <div
-          className={`border-2 border-dashed rounded-2xl p-10 text-center transition-all cursor-pointer ${
+          className={`border-2 border-dashed rounded-lg p-4 sm:p-6 text-center transition-colors cursor-pointer ${
             dragOver ? "border-red-500 bg-red-500/5 scale-[0.99]" : "border-border/60 hover:border-red-500/40 bg-card/50"
           }`}
           onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
           onDragLeave={() => setDragOver(false)}
-          onDrop={(e) => { e.preventDefault(); setDragOver(false); e.dataTransfer.files[0] && loadFile(e.dataTransfer.files[0]); }}
+          onDrop={(e) => { e.preventDefault(); setDragOver(false); if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); }}
           onClick={() => fileInputRef.current?.click()}
         >
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-red-500/10 ring-1 ring-red-500/20 text-red-600">
@@ -200,7 +200,7 @@ export function FoxitPDFEngine() {
             className="hidden"
             onChange={(e) => e.target.files?.[0] && loadFile(e.target.files[0])}
           />
-          <Button size="sm" className="rounded-xl gap-2 pointer-events-none bg-red-600 hover:bg-red-700 text-white">
+          <Button onClick={(event) => { event.stopPropagation(); fileInputRef.current?.click(); }} className="rounded-lg gap-2 bg-red-600 hover:bg-red-700 text-white">
             <Upload className="h-4 w-4" /> Open PDF
           </Button>
         </div>
@@ -250,11 +250,11 @@ export function FoxitPDFEngine() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_20rem]">
             {/* Left 7 Cols: Document Reader & Search */}
-            <div className="lg:col-span-7 space-y-4">
-              <Card className="border-border/50">
-                <CardContent className="p-4 space-y-3">
+            <section aria-label="Document reader" className="min-w-0 space-y-4">
+              <div>
+                <div className="space-y-3">
                   {/* Search Bar */}
                   <div className="relative">
                     <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -292,7 +292,7 @@ export function FoxitPDFEngine() {
                   )}
 
                   {/* Page Navigation & Copy */}
-                  <div className="flex items-center justify-between pt-2 border-t border-border/40 text-xs">
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-border/40 text-xs">
                     <div className="flex items-center gap-2">
                       <Button
                         size="sm"
@@ -338,12 +338,12 @@ export function FoxitPDFEngine() {
                       </span>
                     )}
                   </div>
-                </CardContent>
-              </Card>
-            </div>
+                </div>
+              </div>
+            </section>
 
             {/* Right 5 Cols: AI Document Intelligence */}
-            <div className="lg:col-span-5 space-y-4">
+            <div className="min-w-0 space-y-4">
               <Card className="border-border/50 bg-linear-to-b from-red-500/5 to-transparent">
                 <CardContent className="p-4 space-y-4">
                   <div className="flex items-center gap-2">
@@ -356,7 +356,7 @@ export function FoxitPDFEngine() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 gap-2">
                     <Button
                       size="sm"
                       variant="outline"

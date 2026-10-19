@@ -77,25 +77,25 @@ export function PDFCompareEngine() {
         <span className="text-xs text-muted-foreground">Find differences between two PDF documents</span>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid min-w-0 grid-cols-1 sm:grid-cols-2 gap-3">
         <Card className="border-border/50">
           <CardContent className="p-3">
             <input ref={file1Ref} type="file" accept="application/pdf" onChange={(e) => { const f = e.target.files?.[0]; if (f) { setFile1(f); setError(null); setDifferences([]); } }} className="hidden" />
-            <div onClick={() => file1Ref.current?.click()} className="border-2 border-dashed border-border/50 rounded-xl p-4 text-center cursor-pointer hover:border-primary/30 transition-colors">
+            <button type="button" onClick={() => file1Ref.current?.click()} className="w-full min-w-0 border-2 border-dashed border-border/50 rounded-lg p-4 text-center hover:border-primary/30 transition-colors">
               <Upload className="h-6 w-6 mx-auto mb-1 text-muted-foreground" />
-              <p className="text-xs font-medium">{file1 ? file1.name : "Original PDF"}</p>
+              <p className="text-xs font-medium break-all">{file1 ? file1.name : "Original PDF"}</p>
               <p className="text-[10px] text-muted-foreground">{file1 ? `${(file1.size / 1024).toFixed(1)} KB` : "Click to select"}</p>
-            </div>
+            </button>
           </CardContent>
         </Card>
         <Card className="border-border/50">
           <CardContent className="p-3">
             <input ref={file2Ref} type="file" accept="application/pdf" onChange={(e) => { const f = e.target.files?.[0]; if (f) { setFile2(f); setError(null); setDifferences([]); } }} className="hidden" />
-            <div onClick={() => file2Ref.current?.click()} className="border-2 border-dashed border-border/50 rounded-xl p-4 text-center cursor-pointer hover:border-primary/30 transition-colors">
+            <button type="button" onClick={() => file2Ref.current?.click()} className="w-full min-w-0 border-2 border-dashed border-border/50 rounded-lg p-4 text-center hover:border-primary/30 transition-colors">
               <Upload className="h-6 w-6 mx-auto mb-1 text-muted-foreground" />
-              <p className="text-xs font-medium">{file2 ? file2.name : "Modified PDF"}</p>
+              <p className="text-xs font-medium break-all">{file2 ? file2.name : "Modified PDF"}</p>
               <p className="text-[10px] text-muted-foreground">{file2 ? `${(file2.size / 1024).toFixed(1)} KB` : "Click to select"}</p>
-            </div>
+            </button>
           </CardContent>
         </Card>
       </div>

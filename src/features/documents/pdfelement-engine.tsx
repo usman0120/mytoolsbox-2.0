@@ -320,7 +320,7 @@ export function PDFElementEngine() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="w-full min-w-0 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-border/50">
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
@@ -339,12 +339,12 @@ export function PDFElementEngine() {
 
       {!file && (
         <div
-          className={`border-2 border-dashed rounded-2xl p-10 text-center transition-all cursor-pointer ${
+          className={`border-2 border-dashed rounded-lg p-4 sm:p-6 text-center transition-colors cursor-pointer ${
             dragOver ? "border-primary bg-primary/5 scale-[0.99]" : "border-border/60 hover:border-primary/40 bg-card/50"
           }`}
           onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
           onDragLeave={() => setDragOver(false)}
-          onDrop={(e) => { e.preventDefault(); setDragOver(false); e.dataTransfer.files[0] && loadFile(e.dataTransfer.files[0]); }}
+          onDrop={(e) => { e.preventDefault(); setDragOver(false); if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); }}
           onClick={() => fileInputRef.current?.click()}
         >
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 ring-1 ring-primary/20 text-primary">
@@ -361,7 +361,7 @@ export function PDFElementEngine() {
             className="hidden"
             onChange={(e) => e.target.files?.[0] && loadFile(e.target.files[0])}
           />
-          <Button size="sm" className="rounded-xl gap-2 pointer-events-none">
+          <Button onClick={(event) => { event.stopPropagation(); fileInputRef.current?.click(); }} className="rounded-lg gap-2">
             <Upload className="h-4 w-4" /> Select PDF
           </Button>
         </div>
@@ -447,7 +447,7 @@ export function PDFElementEngine() {
 
           {/* Tabs for Editing Operations */}
           <Tabs defaultValue="stamp" className="space-y-4">
-            <TabsList className="grid grid-cols-4 rounded-xl p-1 bg-muted/50 border border-border/50">
+            <TabsList className="grid h-auto grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 rounded-lg p-1 bg-muted/50 border border-border/50">
               <TabsTrigger value="stamp" className="rounded-lg gap-2 text-xs sm:text-sm">
                 <Stamp className="h-4 w-4" /> Stamp & Watermark
               </TabsTrigger>
@@ -464,8 +464,8 @@ export function PDFElementEngine() {
 
             {/* Stamp & Watermark Tab */}
             <TabsContent value="stamp" className="space-y-4">
-              <Card className="border-border/50">
-                <CardContent className="p-5 space-y-4">
+              <section aria-label="Stamp and watermark">
+                <div className="py-3 space-y-4">
                   <div>
                     <h4 className="font-semibold text-sm mb-1">Quick Stamp Presets</h4>
                     <p className="text-xs text-muted-foreground mb-3">Choose a professional business stamp or customize your own watermark overlay.</p>
@@ -515,7 +515,7 @@ export function PDFElementEngine() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
                     <div className="space-y-2">
                       <Label className="text-xs">Stamp Color</Label>
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-2">
                         {[
                           { id: "red", label: "Red", bg: "bg-red-500" },
                           { id: "blue", label: "Blue", bg: "bg-blue-500" },
@@ -567,14 +567,14 @@ export function PDFElementEngine() {
                       Enable watermark / stamp on all pages
                     </label>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </section>
             </TabsContent>
 
             {/* Document Info / Metadata Tab */}
             <TabsContent value="metadata" className="space-y-4">
-              <Card className="border-border/50">
-                <CardContent className="p-5 space-y-4">
+              <section aria-label="Document metadata">
+                <div className="py-3 space-y-4">
                   <div>
                     <h4 className="font-semibold text-sm mb-1">PDF Properties & Metadata</h4>
                     <p className="text-xs text-muted-foreground">View and modify internal document information read by PDF viewers and search engines.</p>
@@ -636,14 +636,14 @@ export function PDFElementEngine() {
                       />
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </section>
             </TabsContent>
 
             {/* Header & Numbering Tab */}
             <TabsContent value="headers" className="space-y-4">
-              <Card className="border-border/50">
-                <CardContent className="p-5 space-y-4">
+              <section aria-label="Headers and numbering">
+                <div className="py-3 space-y-4">
                   <div>
                     <h4 className="font-semibold text-sm mb-1">Header, Footer & Numbering</h4>
                     <p className="text-xs text-muted-foreground">Add running headers, legal disclaimers, and continuous page numbering.</p>
@@ -673,7 +673,7 @@ export function PDFElementEngine() {
                   <div className="p-4 rounded-xl bg-muted/30 border border-border/40 flex items-center justify-between">
                     <div>
                       <p className="text-xs font-semibold">Automatic Page Numbering</p>
-                      <p className="text-xs text-muted-foreground">Stamps "Page X of Y" in the bottom right corner of every page.</p>
+                      <p className="text-xs text-muted-foreground">Stamps Page X of Y in the bottom right corner of every page.</p>
                     </div>
                     <input
                       type="checkbox"
@@ -683,14 +683,14 @@ export function PDFElementEngine() {
                       className="rounded border-border text-primary focus:ring-primary h-5 w-5"
                     />
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </section>
             </TabsContent>
 
             {/* Page Layout & Rotation Tab */}
             <TabsContent value="pages" className="space-y-4">
-              <Card className="border-border/50">
-                <CardContent className="p-5 space-y-4">
+              <section aria-label="Page layout">
+                <div className="py-3 space-y-4">
                   <div>
                     <h4 className="font-semibold text-sm mb-1">Page Orientation & Deletion</h4>
                     <p className="text-xs text-muted-foreground">Rotate sideways pages or strip unwanted sheets before finalizing.</p>
@@ -731,8 +731,8 @@ export function PDFElementEngine() {
                       <p className="text-[11px] text-muted-foreground">Comma-separated page numbers or ranges to remove.</p>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </section>
             </TabsContent>
           </Tabs>
 

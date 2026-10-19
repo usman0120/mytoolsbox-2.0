@@ -16,7 +16,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
@@ -106,11 +106,11 @@ export function PDFCompressorEngine() {
   }, [result]);
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
+    <div className="w-full min-w-0 space-y-4">
       {/* Upload Zone */}
       {!file && (
         <div
-          className={`border-2 border-dashed rounded-2xl p-8 sm:p-10 text-center transition-all cursor-pointer ${
+          className={`border-2 border-dashed rounded-lg p-4 sm:p-6 text-center transition-colors cursor-pointer ${
             dragOver
               ? "border-primary bg-primary/5 scale-[0.99]"
               : "border-border hover:border-primary/50 hover:bg-muted/30"
@@ -134,7 +134,7 @@ export function PDFCompressorEngine() {
           <p className="text-sm text-muted-foreground mb-4 max-w-md mx-auto">
             Reduce PDF file size while retaining quality. Choose between Balanced, Lossless, or Maximum compression presets.
           </p>
-          <Button variant="outline" size="sm" className="rounded-xl pointer-events-none">
+          <Button variant="outline" onClick={(event) => { event.stopPropagation(); fileInputRef.current?.click(); }} className="rounded-lg">
             <Plus className="h-4 w-4 mr-1.5" /> Select PDF Document
           </Button>
           <input
@@ -152,7 +152,7 @@ export function PDFCompressorEngine() {
 
       {/* File Loaded & Compression Settings */}
       {file && (
-        <Card className="rounded-2xl border-border/60 shadow-sm overflow-hidden">
+        <section aria-label="PDF compression settings" className="min-w-0">
           {/* Header */}
           <div className="p-4 bg-muted/40 border-b border-border/60 flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
@@ -181,16 +181,16 @@ export function PDFCompressorEngine() {
             </Button>
           </div>
 
-          <CardContent className="p-5 space-y-6">
+          <div className="py-4 space-y-4">
             {/* Compression Presets */}
             <div className="space-y-2">
               <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Compression Level
               </Label>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div
+                <button type="button" aria-pressed={level === "basic"}
                   onClick={() => setLevel("basic")}
-                  className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
+                  className={`p-3 rounded-lg border text-left transition-colors ${
                     level === "basic"
                       ? "border-primary bg-primary/5 ring-1 ring-primary"
                       : "border-border hover:border-border/80 bg-card"
@@ -203,11 +203,11 @@ export function PDFCompressorEngine() {
                   <p className="text-xs text-muted-foreground">
                     Lossless optimization. Highest visual quality. Best for printing.
                   </p>
-                </div>
+                </button>
 
-                <div
+                <button type="button" aria-pressed={level === "recommended"}
                   onClick={() => setLevel("recommended")}
-                  className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
+                  className={`p-3 rounded-lg border text-left transition-colors ${
                     level === "recommended"
                       ? "border-primary bg-primary/5 ring-1 ring-primary"
                       : "border-border hover:border-border/80 bg-card"
@@ -225,11 +225,11 @@ export function PDFCompressorEngine() {
                   <p className="text-xs text-muted-foreground">
                     Balanced file size reduction with sharp text & clean images.
                   </p>
-                </div>
+                </button>
 
-                <div
+                <button type="button" aria-pressed={level === "extreme"}
                   onClick={() => setLevel("extreme")}
-                  className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
+                  className={`p-3 rounded-lg border text-left transition-colors ${
                     level === "extreme"
                       ? "border-primary bg-primary/5 ring-1 ring-primary"
                       : "border-border hover:border-border/80 bg-card"
@@ -242,7 +242,7 @@ export function PDFCompressorEngine() {
                   <p className="text-xs text-muted-foreground">
                     Maximum size reduction. Ideal for email limits and web uploads.
                   </p>
-                </div>
+                </button>
               </div>
             </div>
 
@@ -278,8 +278,8 @@ export function PDFCompressorEngine() {
                 )}
               </Button>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </section>
       )}
 
       {/* Compression Result Banner */}

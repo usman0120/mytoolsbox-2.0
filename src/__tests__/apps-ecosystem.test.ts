@@ -1,4 +1,9 @@
 import { describe, it, expect } from "vitest";
+import { createRequire } from "node:module";
+import { toolRegistry, getToolBySlug, getActiveTools, searchTools } from "@/content/tools/registry";
+import { hubRegistry } from "@/content/hubs/registry";
+import { BLOG_POSTS } from "@/content/blog/blogs-data";
+import { RESOURCE_GUIDES } from "@/features/resources/resources-data";
 import {
   calculateOneRepMax,
   calculateTDEE,
@@ -11,8 +16,195 @@ import {
   analyzeRecipeIngredients,
   generateOfflineNutritionAdvice,
 } from "@/features/apps/nutrition/nutrition-engine-logic";
-import { appRegistry, getAppBySlug } from "@/content/apps/registry";
+import { appRegistry, getAppBySlug, getActiveApps } from "@/content/apps/registry";
 import { CREDIT_COSTS } from "@/lib/ai/credits";
+
+const auditRequire = createRequire(import.meta.url);
+const { buildInventory } = auditRequire("../../compare_slugs.js") as {
+  buildInventory: () => {
+    features: { namespace: string; id: string; slug: string; preRendered: boolean; persistence: { directStorageReferences: { key: string | null }[] } }[];
+    toolLoaders: { slug: string; target: string }[];
+    appLoaders: { slug: string; target: string }[];
+    canonicalPages: { route: string }[];
+    editorialRoutes: { namespace: string; slug: string; route: string }[];
+    routingPolicies: { protectedPaths: string[]; localePrefixes: string[] };
+    integrity: {
+      tools: Record<string, string[]>;
+      apps: Record<string, string[]>;
+      missingTargets: unknown[];
+      legacyTargetDrift: unknown[];
+      invalidHubReferences: unknown[];
+      hubSlugLookupMismatches: unknown[];
+      duplicateHubIds: unknown[];
+      invalidRelatedReferences: { owner: string; slug: string }[];
+      invalidRelatedAppReferences: unknown[];
+      invalidEditorialReferences: { owner: string; route: string }[];
+      duplicateCanonicalRoutes: unknown[];
+    };
+  };
+};
+const { summarize } = auditRequire("../../count_errors.js") as {
+  summarize: (results: { filePath: string; errorCount: number; warningCount: number; messages: { severity: number; ruleId: string | null }[] }[]) => {
+    errors: number; warnings: number; rules: { rule: string; errors: number; files: number }[]; files: { file: string; errors: number }[];
+  };
+};
+
+describe("PDF Office/PPT catalog truthfulness", () => {
+  it.each([
+    ["pdf-to-office-converter", 5, [
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    ]],
+    ["pdf-to-ppt-converter", 4, ["application/vnd.openxmlformats-officedocument.presentationml.presentation"]],
+  ] as const)("describes text-only exports for %s without changing its contract", (slug, featureCount, outputTypes) => {
+    const tool = getToolBySlug(slug)!;
+    expect(tool.id).toBe(slug);
+    expect(tool.slug).toBe(slug);
+    expect(tool.features).toHaveLength(featureCount);
+    expect(tool.inputTypes).toEqual(["application/pdf"]);
+    expect(tool.outputTypes).toEqual(outputTypes);
+    expect(tool.processingMode).toBe("client");
+    expect(tool.shortDescription).toMatch(/PDF text/);
+    expect(tool.seoTitle).toMatch(/PDF Text/);
+    expect(tool.description).toMatch(/text-only|text slides/);
+    expect(tool.description).toContain("not preserved");
+    expect(tool.description).toContain("OCR is not included");
+    expect(tool.seoDescription).toMatch(/no source/i);
+    expect(tool.seoDescription).toContain("OCR");
+    expect(tool.features.join(" ")).not.toMatch(/preserve layouts|download instantly/i);
+    expect(tool.faq?.some(({ answer }) => answer.includes("OCR is not included") && /not preserved|does not preserve/.test(answer))).toBe(true);
+    expect(tool.faq?.some(({ answer }) => answer.includes("a PDF page may produce multiple slides"))).toBe(true);
+  });
+
+  it("identifies line-based XLSX rows rather than source table reconstruction", () => {
+    const tool = getToolBySlug("pdf-to-office-converter")!;
+    expect(tool.features).toContain("PDF text to page/line/content rows (XLSX)");
+    expect(tool.description).toContain("Word (DOCX) paragraphs");
+    expect(tool.seoDescription).toContain("XLSX rows");
+    expect(tool.faq?.some(({ answer }) => answer.includes("Excel output does not reconstruct source tables"))).toBe(true);
+  });
+});
+
+describe("Route/catalog integrity audit", () => {
+  const inventory = buildInventory();
+
+  it("matches evaluated audit catalogs to real imported catalog authorities", () => {
+    expect(inventory.features.filter((entry) => entry.namespace === "tools").map((entry) => [entry.id, entry.slug]))
+      .toEqual(toolRegistry.map((entry) => [entry.id, entry.slug]));
+    expect(inventory.features.filter((entry) => entry.namespace === "apps").map((entry) => [entry.id, entry.slug]))
+      .toEqual(appRegistry.map((entry) => [entry.id, entry.slug]));
+  });
+
+  it("keeps stable IDs and slugs unique within each public namespace", () => {
+    for (const catalog of [toolRegistry, appRegistry]) {
+      expect(new Set(catalog.map((entry) => entry.id)).size).toBe(catalog.length);
+      expect(new Set(catalog.map((entry) => entry.slug)).size).toBe(catalog.length);
+    }
+    expect(getToolBySlug("resume-builder")).not.toBe(getAppBySlug("resume-builder"));
+  });
+
+  it("has exact live loader/catalog parity and existing literal import targets", () => {
+    for (const result of [inventory.integrity.tools, inventory.integrity.apps]) {
+      for (const values of Object.values(result)) expect(values).toEqual([]);
+    }
+    expect(inventory.integrity.missingTargets).toEqual([]);
+    expect(inventory.integrity.legacyTargetDrift).toEqual([]);
+  });
+
+  it("preserves tool active-only and app active-or-beta prerender policies", () => {
+    expect(getActiveTools()).toEqual(toolRegistry.filter((entry) => entry.status === "active"));
+    expect(getActiveApps()).toEqual(appRegistry.filter((entry) => entry.status === "active" || entry.status === "beta"));
+    expect(inventory.features.filter((entry) => entry.namespace === "tools" && entry.preRendered).map((entry) => entry.slug))
+      .toEqual(getActiveTools().map((entry) => entry.slug));
+    expect(inventory.features.filter((entry) => entry.namespace === "apps" && entry.preRendered).map((entry) => entry.slug))
+      .toEqual(getActiveApps().map((entry) => entry.slug));
+    expect(getToolBySlug("__audit_unknown__")).toBeUndefined();
+    expect(getAppBySlug("__audit_unknown__")).toBeUndefined();
+    for (const entry of toolRegistry) expect(searchTools(entry.name).some((result) => result.id === entry.id)).toBe(true);
+  });
+
+  it("resolves hub IDs in their intended namespace rather than conflating apps and tools", () => {
+    for (const hub of hubRegistry) {
+      for (const id of hub.toolIds) expect(toolRegistry.some((entry) => entry.id === id)).toBe(true);
+      for (const id of hub.appIds) expect(appRegistry.some((entry) => entry.id === id)).toBe(true);
+    }
+    expect(inventory.integrity.invalidHubReferences).toEqual([]);
+    expect(inventory.integrity.hubSlugLookupMismatches).toEqual([]);
+    expect(inventory.integrity.duplicateHubIds).toEqual([]);
+    for (const hub of hubRegistry) {
+      for (const id of hub.toolIds) expect(getToolBySlug(id)?.id).toBe(id);
+      for (const id of hub.appIds) expect(getAppBySlug(id)?.id).toBe(id);
+    }
+  });
+
+  it("records declared protected/localized routes and legacy chat storage without calling providers", () => {
+    expect(inventory.routingPolicies.protectedPaths).toEqual(["/dashboard", "/settings", "/favorites", "/history", "/account"]);
+    expect(inventory.routingPolicies.localePrefixes).toEqual(["es", "ur", "fr", "de", "pt", "hi", "ar"]);
+    const legacyChat = inventory.features.find((entry) => entry.namespace === "tools" && entry.slug === "ai-text-generator");
+    expect(legacyChat?.persistence.directStorageReferences.some((entry) => entry.key === "mytoolsbox-ai-chat")).toBe(true);
+  });
+
+  it("summarizes ESLint errors even when lint would exit nonzero", () => {
+    const report = summarize([{
+      filePath: `${process.cwd()}/src/__tests__/apps-ecosystem.test.ts`,
+      errorCount: 2, warningCount: 1,
+      messages: [{ severity: 2, ruleId: "audit-rule" }, { severity: 2, ruleId: null }, { severity: 1, ruleId: "warning-rule" }],
+    }]);
+    expect(report.errors).toBe(2);
+    expect(report.warnings).toBe(1);
+    expect(report.rules).toEqual([{ rule: "audit-rule", errors: 1, files: 1 }, { rule: "syntax", errors: 1, files: 1 }]);
+    expect(report.files).toEqual([{ file: "src/__tests__/apps-ecosystem.test.ts", errors: 2 }]);
+  });
+
+  it("expands every editorial catalog slug into its actual route namespace", () => {
+    for (const [namespace, catalog] of [["hubs", hubRegistry], ["blog", BLOG_POSTS], ["resources", RESOURCE_GUIDES]] as const) {
+      expect(inventory.editorialRoutes.filter((entry) => entry.namespace === namespace).map((entry) => entry.route))
+        .toEqual(catalog.map((entry) => `/${namespace}/${entry.slug}`));
+    }
+    expect(inventory.canonicalPages.some((entry) => entry.route === "/ai/compare")).toBe(true);
+    expect(inventory.canonicalPages.some((entry) => entry.route === "/ai/prompts")).toBe(true);
+    expect(inventory.canonicalPages.some((entry) => entry.route === "/ai/personas")).toBe(true);
+    expect(inventory.integrity.duplicateCanonicalRoutes).toEqual([]);
+    expect(inventory.integrity.invalidRelatedAppReferences).toEqual([]);
+  });
+
+  it("records the exact existing editorial link defects without suppressing new failures", () => {
+    const baseline: [string, string[]][] = [
+      ["how-to-resize-images-without-losing-quality", ["svg-optimizer"]],
+      ["mastering-remote-team-timezones-scheduling", ["world-clock", "flow-pomodoro", "world-clock"]],
+      ["visual-css-building-complex-layouts", ["css-gradient", "css-gradient"]],
+      ["clean-html-email-templates-common-pitfalls", ["markdown-editor", "meta-tag-generator", "markdown-editor"]],
+      ["qr-codes-in-modern-marketing-complete-handbook", ["svg-optimizer"]],
+      ["effective-color-contrast-wcag-accessibility", ["css-gradient"]],
+      ["mastering-markdown-technical-writers-guide", ["markdown-editor", "markdown-editor"]],
+      ["demystifying-cron-syntax-automation-guide", ["cron-generator", "world-clock", "cron-generator"]],
+      ["optimizing-svg-files-for-fast-web-loads", ["svg-optimizer", "svg-optimizer"]],
+      ["seo-meta-tags-mastery-open-graph-twitter-cards", ["meta-tag-generator", "meta-tag-generator"]],
+      ["the-math-of-compound-interest-wealth-guide", ["compound-interest", "compound-interest"]],
+      ["productivity-workflows-pomodoro-time-blocking", ["flow-pomodoro", "world-clock", "flow-pomodoro"]],
+    ];
+    expect(inventory.integrity.invalidEditorialReferences.map((entry) => `${entry.owner} -> ${entry.route}`).sort())
+      .toEqual(baseline.flatMap(([owner, slugs]) => slugs.map((slug) => `/blog/${owner} -> /tools/${slug}`)).sort());
+  });
+
+  it("records exactly the known unresolved related links and rejects new ones", () => {
+    expect(inventory.integrity.invalidRelatedReferences.map((entry) => `${entry.owner} -> ${entry.slug}`).sort()).toEqual([
+      "/apps/ai-project-ideas -> code-explainer",
+      "/tools/age-calculator -> date-calculator",
+      "/tools/ai-doc-generator -> ai-code-explainer",
+      "/tools/ai-error-explainer -> ai-code-explainer",
+      "/tools/ai-regex-builder -> ai-code-explainer",
+      "/tools/ai-sql-assistant -> ai-code-explainer",
+      "/tools/image-converter -> jpg-to-png",
+      "/tools/json-formatter -> csv-to-json",
+      "/tools/json-formatter -> json-to-csv",
+      "/tools/json-validator -> json-to-csv",
+      "/tools/loan-calculator -> emi-calculator",
+      "/tools/word-counter -> character-counter",
+    ].sort());
+  });
+});
 
 describe("Apps Ecosystem & Logic Engine", () => {
   describe("Fitness AI Platform Logic", () => {

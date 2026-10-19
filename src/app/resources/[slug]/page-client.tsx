@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft, Clock, Share2, Check, Copy, BookOpen, Sparkles,
-  ExternalLink, ThumbsUp, ThumbsDown, CheckCircle2, ChevronRight
+  ThumbsUp, ThumbsDown, CheckCircle2, ChevronRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +12,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import { useI18n } from "@/lib/i18n";
 import type { ResourceGuide } from "@/features/resources/resources-data";
+import { PageShell, ToolHeader } from "@/components/common/workload-layouts";
 
 interface Props {
   guide: ResourceGuide;
@@ -43,7 +44,7 @@ export function ResourceGuidePageClient({ guide }: Props) {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
+    <PageShell className="max-w-4xl">
       {/* Breadcrumb & Navigation */}
       <div className="flex items-center justify-between mb-6">
         <Link
@@ -70,18 +71,12 @@ export function ResourceGuidePageClient({ guide }: Props) {
           </span>
         </div>
 
-        <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground">
-          {guide.title}
-        </h1>
-
-        <p className="text-base text-muted-foreground leading-relaxed">
-          {guide.description}
-        </p>
+        <ToolHeader title={guide.title} description={guide.description} />
       </div>
 
       {/* Key Takeaways Callout Box */}
-      <Card className="border-primary/30 bg-primary/5 mb-10 shadow-xs">
-        <CardContent className="p-5 space-y-3">
+      <section className="border-b border-border mb-6 pb-5">
+        <div className="space-y-3">
           <h2 className="text-sm font-semibold flex items-center gap-2 text-primary">
             <Sparkles className="h-4 w-4" /> {t("resources_takeaways", "Key Takeaways")}
           </h2>
@@ -93,8 +88,8 @@ export function ResourceGuidePageClient({ guide }: Props) {
               </li>
             ))}
           </ul>
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
       {/* Main Guide Content Sections */}
       <div className="space-y-8 mb-12">
@@ -114,6 +109,8 @@ export function ResourceGuidePageClient({ guide }: Props) {
                   size="icon"
                   className="absolute right-2.5 top-2.5 h-7 w-7 opacity-75 group-hover:opacity-100 transition-opacity"
                   onClick={() => handleCopyCode(section.codeSnippet!, idx)}
+                  aria-label={t("resources_copy", "Copy")}
+                  title={t("resources_copy", "Copy")}
                 >
                   {copiedCodeIdx === idx ? (
                     <Check className="h-3.5 w-3.5 text-green-500" />
@@ -121,7 +118,7 @@ export function ResourceGuidePageClient({ guide }: Props) {
                     <Copy className="h-3.5 w-3.5" />
                   )}
                 </Button>
-                <pre className="text-foreground">{section.codeSnippet}</pre>
+                <pre className="text-foreground pr-10">{section.codeSnippet}</pre>
               </div>
             )}
           </section>
@@ -130,7 +127,7 @@ export function ResourceGuidePageClient({ guide }: Props) {
 
       {/* Recommended Interactive Tools */}
       {guide.recommendedTools.length > 0 && (
-        <div className="space-y-4 mb-12 p-6 rounded-2xl border bg-muted/20">
+        <div className="space-y-4 mb-6 pt-5 border-t border-border">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
               <BookOpen className="h-4 w-4 text-primary" /> {t("related_tools_title", "Recommended Tools")}
@@ -150,9 +147,6 @@ export function ResourceGuidePageClient({ guide }: Props) {
                         {tool.description}
                       </p>
                     </div>
-                    <Badge variant="outline" className="text-[9px] w-fit mt-2">
-                      {t("action_explore", "Try Tool")}
-                    </Badge>
                   </CardContent>
                 </Card>
               </Link>
@@ -162,7 +156,7 @@ export function ResourceGuidePageClient({ guide }: Props) {
       )}
 
       {/* Helpful Feedback Box */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl border bg-card text-center sm:text-left">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-4 border-t border-border text-center sm:text-left">
         <span className="text-xs font-medium text-muted-foreground">
           {t("resources_feedback_prompt", "Was this resource helpful?")}
         </span>
@@ -172,6 +166,7 @@ export function ResourceGuidePageClient({ guide }: Props) {
             size="sm"
             className="h-8 text-xs gap-1.5"
             onClick={() => handleFeedback("yes")}
+            aria-pressed={feedback === "yes"}
           >
             <ThumbsUp className="h-3.5 w-3.5" /> Helpful
           </Button>
@@ -180,11 +175,12 @@ export function ResourceGuidePageClient({ guide }: Props) {
             size="sm"
             className="h-8 text-xs gap-1.5"
             onClick={() => handleFeedback("no")}
+            aria-pressed={feedback === "no"}
           >
             <ThumbsDown className="h-3.5 w-3.5" /> Needs More
           </Button>
         </div>
       </div>
-    </div>
+    </PageShell>
   );
 }

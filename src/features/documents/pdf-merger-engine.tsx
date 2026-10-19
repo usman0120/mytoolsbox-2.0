@@ -16,7 +16,6 @@ import {
   FileCheck2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -63,10 +62,11 @@ export function PDFMergerEngine() {
       let pageCount = null;
       try {
         const buf = await f.arrayBuffer();
-        const doc = await PDFDocument.load(buf, { ignoreEncryption: true });
+        const doc = await PDFDocument.load(buf);
         pageCount = doc.getPageCount();
       } catch {
-        pageCount = 1;
+        toast.error(`Cannot read "${f.name}". Check that it is a valid, unlocked PDF.`);
+        continue;
       }
       items.push({
         file: f,
@@ -78,7 +78,7 @@ export function PDFMergerEngine() {
     }
 
     setFiles((prev) => [...prev, ...items]);
-    toast.success(`Added ${items.length} PDF file(s).`);
+    if (items.length > 0) toast.success(`Added ${items.length} PDF file(s).`);
   }, []);
 
   const removeFile = (id: string) => {
@@ -155,12 +155,22 @@ export function PDFMergerEngine() {
   }, [mergedResult]);
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
+    <div className="w-full min-w-0 space-y-3" aria-busy={isMerging}>
       {/* Upload Zone */}
       <div
-        className={`border-2 border-dashed rounded-2xl p-8 sm:p-10 text-center transition-all cursor-pointer ${
+        role="button"
+        tabIndex={isMerging ? -1 : 0}
+        aria-label="Select PDF files"
+        aria-disabled={isMerging}
+        onKeyDown={(e) => {
+          if (!isMerging && (e.key === "Enter" || e.key === " ")) {
+            e.preventDefault();
+            fileInputRef.current?.click();
+          }
+        }}
+        className={`border border-dashed rounded-lg p-4 sm:p-5 text-center transition-colors cursor-pointer ${
           dragOver
-            ? "border-primary bg-primary/5 scale-[0.99]"
+            ? "border-primary bg-primary/5"
             : "border-border hover:border-primary/50 hover:bg-muted/30"
         }`}
         onDragOver={(e) => {
@@ -171,25 +181,19 @@ export function PDFMergerEngine() {
         onDrop={(e) => {
           e.preventDefault();
           setDragOver(false);
-          if (e.dataTransfer.files) inspectAndAddFiles(e.dataTransfer.files);
+          if (!isMerging && e.dataTransfer.files) inspectAndAddFiles(e.dataTransfer.files);
         }}
-        onClick={() => fileInputRef.current?.click()}
+        onClick={() => !isMerging && fileInputRef.current?.click()}
       >
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary mx-auto mb-4">
-          <Upload className="h-8 w-8" />
-        </div>
-        <h3 className="text-lg font-semibold mb-1">Upload PDF Files to Combine</h3>
-        <p className="text-sm text-muted-foreground mb-4 max-w-md mx-auto">
-          Drag & drop your PDF documents here, or click to browse. Reorder pages and files before merging.
-        </p>
-        <Button variant="outline" size="sm" className="rounded-xl pointer-events-none">
-          <Plus className="h-4 w-4 mr-1.5" /> Select PDF Files
-        </Button>
+        <span className="flex items-center justify-center gap-2 text-sm font-medium">
+          <Upload className="h-5 w-5 text-primary" /> Select PDF files
+        </span>
         <input
           ref={fileInputRef}
           type="file"
           accept="application/pdf"
           multiple
+          disabled={isMerging}
           className="hidden"
           onChange={(e) => {
             if (e.target.files) inspectAndAddFiles(e.target.files);
@@ -200,8 +204,8 @@ export function PDFMergerEngine() {
 
       {/* File List & Reorder Queue */}
       {files.length > 0 && (
-        <Card className="rounded-2xl border-border/60 shadow-sm overflow-hidden">
-          <div className="p-4 bg-muted/40 border-b border-border/60 flex flex-wrap items-center justify-between gap-3">
+        <section aria-label="Merge queue" className="min-w-0">
+          <div className="py-2 border-b border-border/60 flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <span className="font-semibold text-sm">Merge Queue</span>
               <Badge variant="secondary" className="rounded-full text-xs">
@@ -218,7 +222,8 @@ export function PDFMergerEngine() {
                 variant="ghost"
                 size="sm"
                 onClick={() => fileInputRef.current?.click()}
-                className="text-xs h-8 rounded-lg"
+                disabled={isMerging}
+                className="text-sm min-h-11 rounded-lg"
               >
                 <Plus className="h-3.5 w-3.5 mr-1" /> Add More
               </Button>
@@ -226,25 +231,26 @@ export function PDFMergerEngine() {
                 variant="ghost"
                 size="sm"
                 onClick={handleReset}
-                className="text-xs h-8 text-destructive hover:text-destructive rounded-lg"
+                disabled={isMerging}
+                className="text-sm min-h-11 text-destructive hover:text-destructive rounded-lg"
               >
                 <Trash2 className="h-3.5 w-3.5 mr-1" /> Clear All
               </Button>
             </div>
           </div>
 
-          <CardContent className="p-3 space-y-2">
+          <div className="divide-y divide-border/60">
             {files.map((item, idx) => (
               <div
                 key={item.id}
-                className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border/50 hover:border-border transition-all shadow-2xs"
+                className="flex flex-wrap items-center gap-2 py-3"
               >
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500/10 text-red-500 shrink-0 font-bold text-xs">
                   {idx + 1}
                 </div>
                 <FileText className="h-5 w-5 text-red-500 shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">{item.name}</p>
+                <div className="flex-1 min-w-24">
+                  <p className="text-sm font-medium text-foreground break-all">{item.name}</p>
                   <p className="text-xs text-muted-foreground">
                     {(item.size / 1024).toFixed(1)} KB
                     {item.pageCount && ` • ${item.pageCount} ${item.pageCount === 1 ? "page" : "pages"}`}
@@ -256,39 +262,43 @@ export function PDFMergerEngine() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 rounded-lg"
-                    disabled={idx === 0}
+                    className="h-11 w-11 rounded-lg"
+                    disabled={idx === 0 || isMerging}
                     onClick={() => moveFile(idx, -1)}
                     title="Move up"
+                    aria-label={`Move ${item.name} up`}
                   >
                     <ArrowUp className="h-4 w-4" />
                   </Button>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 rounded-lg"
-                    disabled={idx === files.length - 1}
+                    className="h-11 w-11 rounded-lg"
+                    disabled={idx === files.length - 1 || isMerging}
                     onClick={() => moveFile(idx, 1)}
                     title="Move down"
+                    aria-label={`Move ${item.name} down`}
                   >
                     <ArrowDown className="h-4 w-4" />
                   </Button>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 rounded-lg text-muted-foreground hover:text-destructive"
+                    className="h-11 w-11 rounded-lg text-muted-foreground hover:text-destructive"
+                    disabled={isMerging}
                     onClick={() => removeFile(item.id)}
                     title="Remove from queue"
+                    aria-label={`Remove ${item.name}`}
                   >
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
             ))}
-          </CardContent>
+          </div>
 
           {/* Merge Settings & Actions Bar */}
-          <div className="p-4 bg-muted/20 border-t border-border/60 space-y-4">
+          <fieldset disabled={isMerging} className="py-3 border-t border-border/60 space-y-3 min-w-0">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="outputName" className="text-xs font-medium">
@@ -299,10 +309,10 @@ export function PDFMergerEngine() {
                   value={customFileName}
                   onChange={(e) => setCustomFileName(e.target.value)}
                   placeholder="merged-document.pdf"
-                  className="mt-1 h-9 rounded-xl text-xs"
+                  className="mt-1 h-11 rounded-lg text-sm"
                 />
               </div>
-              <div className="flex items-center space-x-2 pt-5">
+              <div className="flex items-center space-x-2 min-h-11 sm:pt-5">
                 <input
                   type="checkbox"
                   id="pageNumbers"
@@ -316,14 +326,14 @@ export function PDFMergerEngine() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between pt-2">
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
               <span className="text-xs text-muted-foreground">
                 Total size: {(totalInputSize / (1024 * 1024)).toFixed(2)} MB
               </span>
               <Button
                 onClick={handleMerge}
                 disabled={files.length < 2 || isMerging}
-                className="rounded-xl px-6 font-semibold"
+                className="rounded-lg min-h-11 px-4 font-semibold"
               >
                 {isMerging ? (
                   <>
@@ -336,20 +346,20 @@ export function PDFMergerEngine() {
                 )}
               </Button>
             </div>
-          </div>
-        </Card>
+          </fieldset>
+        </section>
       )}
 
       {/* Merged Success Result Banner */}
       {mergedResult && (
-        <Card className="rounded-2xl border-emerald-500/30 bg-emerald-500/5 p-6 animate-fade-in">
+        <section aria-label="Merged PDF" className="border-t border-emerald-500/30 bg-emerald-500/5 p-3">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3 text-center sm:text-left">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 shrink-0">
+              <div className="text-emerald-600 dark:text-emerald-400 shrink-0">
                 <CheckCircle2 className="h-6 w-6" />
               </div>
               <div>
-                <h4 className="font-semibold text-foreground">Merge Completed Successfully!</h4>
+                <h4 role="status" className="font-semibold text-foreground">Merged PDF ready</h4>
                 <p className="text-xs text-muted-foreground">
                   {mergedResult.pageCount} pages combined • {(mergedResult.size / 1024).toFixed(1)} KB
                 </p>
@@ -360,21 +370,21 @@ export function PDFMergerEngine() {
               <Button
                 variant="outline"
                 size="sm"
-                className="rounded-xl h-10 gap-1.5"
-                onClick={() => window.open(mergedResult.url, "_blank")}
+                className="rounded-lg min-h-11 gap-1.5"
+                onClick={() => window.open(mergedResult.url, "_blank", "noopener,noreferrer")}
               >
                 <ExternalLink className="h-4 w-4" /> Preview
               </Button>
               <Button
                 size="sm"
-                className="rounded-xl h-10 gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
+                className="rounded-lg min-h-11 gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
                 onClick={handleDownload}
               >
                 <Download className="h-4 w-4" /> Download PDF
               </Button>
             </div>
           </div>
-        </Card>
+        </section>
       )}
     </div>
   );

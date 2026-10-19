@@ -17,7 +17,7 @@ import {
   FileCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -193,7 +193,7 @@ export function SodaPDFEngine() {
   }, [modifiedUrl]);
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
+    <div className="w-full min-w-0 space-y-4">
       {/* Upload Drop Zone */}
       {!file && (
         <div
@@ -207,7 +207,7 @@ export function SodaPDFEngine() {
           <p className="text-sm text-muted-foreground mb-4 max-w-md mx-auto">
             AI-powered PDF suite. Summarize dense reports, translate languages, apply custom watermarks, and edit pages in real time.
           </p>
-          <Button variant="outline" size="sm" className="rounded-xl pointer-events-none">
+          <Button variant="outline" onClick={(event) => { event.stopPropagation(); fileInputRef.current?.click(); }} className="rounded-lg">
             <Upload className="h-4 w-4 mr-1.5" /> Select PDF Document
           </Button>
           <input
@@ -222,7 +222,7 @@ export function SodaPDFEngine() {
 
       {/* Main Suite Workspace */}
       {file && (
-        <Card className="rounded-2xl border-border/60 shadow-sm overflow-hidden">
+        <section aria-label="Soda PDF workspace" className="min-w-0">
           {/* Header */}
           <div className="p-4 bg-muted/40 border-b border-border/60 flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
@@ -253,7 +253,7 @@ export function SodaPDFEngine() {
 
           {/* Mode Switcher Tabs */}
           <div className="px-5 pt-4">
-            <div className="flex rounded-xl bg-muted/50 p-1 w-fit border border-border/60">
+            <div className="flex flex-wrap rounded-lg bg-muted/50 p-1 border border-border/60">
               <button
                 type="button"
                 onClick={() => setActiveTab("ai")}
@@ -279,7 +279,7 @@ export function SodaPDFEngine() {
             </div>
           </div>
 
-          <CardContent className="p-5 space-y-6">
+          <div className="py-4 space-y-4">
             {activeTab === "ai" && (
               <div className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -397,7 +397,7 @@ export function SodaPDFEngine() {
 
             {activeTab === "edit" && (
               <div className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 rounded-xl bg-muted/20 border border-border/50 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
                   <div>
                     <Label className="text-xs font-medium mb-1 block">Stamp Watermark</Label>
                     <Input
@@ -459,8 +459,8 @@ export function SodaPDFEngine() {
                 </div>
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </section>
       )}
 
       {/* Modified Result Download */}

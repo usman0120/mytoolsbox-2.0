@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Lightbulb,
   RefreshCw,
@@ -35,11 +35,16 @@ export function BusinessNameGeneratorEngine() {
   const [industry, setIndustry] = useState<string>("Tech & AI");
   const [keyword, setKeyword] = useState("");
   const [style, setStyle] = useState<NamingStyle>("all");
-  const [names, setNames] = useState<string[]>(() =>
-    generateBusinessName("Tech & AI", 16, "", "all")
-  );
+  const [names, setNames] = useState<string[]>([]);
   const [favorites, setFavorites] = useState<string[]>([]);
   const [copied, setCopied] = useState<string | null>(null);
+
+  useEffect(() => {
+    const initialization = setTimeout(() => {
+      setNames(generateBusinessName("Tech & AI", 16, "", "all"));
+    }, 0);
+    return () => clearTimeout(initialization);
+  }, []);
 
   const handleGenerate = () => {
     const generated = generateBusinessName(

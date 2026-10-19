@@ -161,6 +161,28 @@ export interface PptxSlide {
 
 export type ParsedPptxSlide = PptxSlide;
 
+export function createTextSlides(pages: readonly { pageNumber: number; lines: readonly string[] }[]): PptxSlide[] {
+  const slides: PptxSlide[] = [];
+  for (const page of pages) {
+    const chunks = page.lines.filter((line) => line.trim()).flatMap((line) => {
+      const characters = Array.from(line);
+      const parts: string[] = [];
+      for (let offset = 0; offset < characters.length; offset += 60) {
+        parts.push(characters.slice(offset, offset + 60).join(""));
+      }
+      return parts;
+    });
+    for (let offset = 0; offset < chunks.length; offset += 6) {
+      slides.push({
+        title: `Page ${page.pageNumber}${offset ? ` (continued ${offset / 6 + 1})` : ""}`,
+        bullets: chunks.slice(offset, offset + 6),
+      });
+    }
+  }
+  if (!slides.length) throw new Error("No extractable text found. Scanned PDFs require OCR before conversion.");
+  return slides;
+}
+
 export async function createPptxBlob(slides: PptxSlide[]): Promise<Blob> {
   const zip = new JSZip();
 
@@ -327,30 +349,61 @@ export async function parsePptxSlides(file: File): Promise<PptxSlide[]> {
   const zip = await JSZip.loadAsync(arrayBuffer);
   const slides: PptxSlide[] = [];
 
-  const slideFiles = Object.keys(zip.files)
-    .filter((name) => /^ppt\/slides\/slide\d+\.xml$/.test(name))
-    .sort((a, b) => {
-      const numA = parseInt(a.replace(/\D/g, ""), 10);
-      const numB = parseInt(b.replace(/\D/g, ""), 10);
-      return numA - numB;
-    });
-
   const parser = new DOMParser();
+  const parseXml = (text: string) => {
+    const document = parser.parseFromString(text, "application/xml");
+    if (document.getElementsByTagName("parsererror").length) {
+      throw new Error("Invalid PPTX file: malformed XML.");
+    }
+    return document;
+  };
+  const presentationFile = zip.file("ppt/presentation.xml");
+  const relationshipsFile = zip.file("ppt/_rels/presentation.xml.rels");
+  if (!presentationFile || !relationshipsFile) {
+    throw new Error("Invalid PPTX file: presentation or relationships missing.");
+  }
+  const presentation = parseXml(await presentationFile.async("text"));
+  const relationships = parseXml(await relationshipsFile.async("text"));
+  const slideList = presentation.getElementsByTagNameNS("*", "sldIdLst")[0];
+  const slideIds = slideList ? Array.from(slideList.getElementsByTagNameNS("*", "sldId")) : [];
+  const relationshipsById = new Map(
+    Array.from(relationships.getElementsByTagNameNS("*", "Relationship"))
+      .map((relationship) => [relationship.getAttribute("Id"), relationship] as const)
+  );
+  const slideFiles = slideIds.map((slideId) => {
+    const relationshipId = slideId.getAttributeNS("http://schemas.openxmlformats.org/officeDocument/2006/relationships", "id")
+      ?? slideId.getAttributeNS("http://purl.oclc.org/ooxml/officeDocument/relationships", "id");
+    const relationship = relationshipsById.get(relationshipId);
+    const target = relationship?.getAttribute("Target");
+    if (!target || relationship?.getAttribute("TargetMode") === "External"
+      || !relationship?.getAttribute("Type")?.endsWith("/slide")) {
+      throw new Error("Invalid PPTX file: slide relationship missing or invalid.");
+    }
+    const base = new URL("https://openxml.invalid/ppt/presentation.xml");
+    const resolved = new URL(target, base);
+    if (resolved.origin !== base.origin || resolved.search || resolved.hash) {
+      throw new Error("Invalid PPTX file: slide target must be an internal part.");
+    }
+    const partName = decodeURIComponent(resolved.pathname.slice(1));
+    const part = zip.file(partName);
+    if (!part) throw new Error(`Invalid PPTX file: slide part ${partName} missing.`);
+    return part;
+  });
 
   for (let i = 0; i < slideFiles.length; i++) {
-    const xmlContent = await zip.files[slideFiles[i]].async("text");
-    const xmlDoc = parser.parseFromString(xmlContent, "application/xml");
-    const paragraphs = xmlDoc.getElementsByTagName("a:p");
+    const xmlContent = await slideFiles[i].async("text");
+    const xmlDoc = parseXml(xmlContent);
+    const paragraphs = xmlDoc.getElementsByTagNameNS("*", "p");
 
     const lines: string[] = [];
     for (let pIdx = 0; pIdx < paragraphs.length; pIdx++) {
-      const texts = paragraphs[pIdx].getElementsByTagName("a:t");
+      const texts = paragraphs[pIdx].getElementsByTagNameNS("*", "t");
       let line = "";
       for (let tIdx = 0; tIdx < texts.length; tIdx++) {
         line += texts[tIdx].textContent || "";
       }
       if (line.trim().length > 0) {
-        lines.push(line.trim());
+        lines.push(line);
       }
     }
 

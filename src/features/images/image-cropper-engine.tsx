@@ -183,7 +183,7 @@ export function ImageCropperEngine() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="w-full min-w-0 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-border/50">
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20">
@@ -277,11 +277,11 @@ export function ImageCropperEngine() {
             )}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_20rem]">
             {/* Left Options */}
-            <div className="lg:col-span-4 space-y-4">
-              <Card className="border-border/50">
-                <CardContent className="p-5 space-y-4">
+            <section aria-label="Crop settings" className="min-w-0 xl:col-start-2 xl:row-start-1">
+              <div>
+                <div className="space-y-4">
                   <div>
                     <h4 className="font-semibold text-sm mb-1">Aspect Ratio Presets</h4>
                     <p className="text-xs text-muted-foreground">Lock proportions or crop freeform.</p>
@@ -333,17 +333,17 @@ export function ImageCropperEngine() {
                       <p className="font-mono text-[11px]">{croppedStats.width}×{croppedStats.height} px ({(croppedStats.size / 1024).toFixed(1)} KB)</p>
                     </div>
                   )}
-                </CardContent>
-              </Card>
-            </div>
+                </div>
+              </div>
+            </section>
 
             {/* Right Interactive Crop Canvas */}
-            <div className="lg:col-span-8 space-y-4">
-              <Card className="border-border/50 overflow-hidden">
-                <CardContent className="p-4 space-y-3">
-                  <div className="flex items-center justify-between text-xs">
+            <section aria-label="Crop workspace" className="order-first min-w-0 xl:col-start-1 xl:row-start-1">
+              <div>
+                <div className="space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
                     <span className="font-semibold flex items-center gap-1.5">
-                      <Eye className="h-4 w-4 text-amber-600" /> Interactive Crop Box (Drag box to move, bottom-right to resize)
+                      <Eye className="h-4 w-4 text-amber-600" /> Crop preview
                     </span>
                     <span className="text-muted-foreground text-[11px] font-mono">
                       Crop: {Math.round((cropBox.width / 100) * naturalSize.width)}×{Math.round((cropBox.height / 100) * naturalSize.height)} px
@@ -384,9 +384,9 @@ export function ImageCropperEngine() {
                       </div>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
+                </div>
+              </div>
+            </section>
           </div>
         </div>
       )}

@@ -3,8 +3,6 @@
 import { useState, useRef } from "react";
 import { FileText, Upload, Download, Loader2, AlertCircle, Paintbrush, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
@@ -92,31 +90,27 @@ export function PDFWatermarkEngine() {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2 mb-2">
-        <Badge variant="secondary" className="rounded-full">PDF Watermark</Badge>
-        <span className="text-xs text-muted-foreground">Add text watermarks to PDF documents</span>
-      </div>
+    <div className="w-full min-w-0 space-y-4">
+      <h3 className="text-base font-semibold">PDF Watermark</h3>
 
-      <Card className="border-border/50">
-        <CardContent className="p-4">
+      <section aria-label="PDF selection">
           <input ref={fileInputRef} type="file" accept="application/pdf" onChange={handleFileSelect} className="hidden" />
-          <div
+          <button type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="border-2 border-dashed border-border/50 rounded-xl p-6 text-center cursor-pointer hover:border-primary/30 hover:bg-muted/30 transition-colors"
+            className="w-full border-2 border-dashed border-border/50 rounded-lg p-4 text-center hover:border-primary/30 hover:bg-muted/30 transition-colors"
           >
             <Upload className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
-            <p className="font-medium text-sm mb-1">{file ? file.name : "Drop PDF here or click to browse"}</p>
+            <p className="font-medium text-sm mb-1 break-all">{file ? file.name : "Select PDF"}</p>
             <p className="text-xs text-muted-foreground">{file ? `${(file.size / 1024).toFixed(1)} KB` : "Max 30MB"}</p>
-          </div>
-        </CardContent>
-      </Card>
+          </button>
+      </section>
 
-      <div className="space-y-3 p-4 bg-muted/30 rounded-xl">
+      <div className="space-y-3">
         <div className="space-y-1.5">
           <Label className="text-xs">Watermark Text</Label>
           <input
             type="text"
+            aria-label="Watermark text"
             value={watermarkText}
             onChange={(e) => setWatermarkText(e.target.value)}
             placeholder="e.g. CONFIDENTIAL, DRAFT, SAMPLE"
@@ -127,6 +121,7 @@ export function PDFWatermarkEngine() {
           <Label className="text-xs">Opacity: {opacity}%</Label>
           <input
             type="range"
+            aria-label="Watermark opacity"
             min={5}
             max={80}
             value={opacity}
@@ -142,7 +137,7 @@ export function PDFWatermarkEngine() {
         </div>
       )}
 
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <Button onClick={handleApplyWatermark} disabled={!file || !watermarkText.trim() || isProcessing} className="gap-2 rounded-xl">
           {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paintbrush className="h-4 w-4" />}
           {isProcessing ? "Applying..." : "Apply Watermark"}

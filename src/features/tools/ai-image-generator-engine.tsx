@@ -1,16 +1,12 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import {
-  ImageIcon, Download, Copy, Check, Trash2, Loader2,
-  Sparkles, Palette, Wand2, RefreshCw,
+  ImageIcon, Download, Copy, Link, Loader2, Wand2, RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 
 const STYLES = [
@@ -30,7 +26,17 @@ export function AIImageGeneratorEngine() {
   const [imageUrl, setImageUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [history, setHistory] = useState<{ prompt: string; url: string; style: string }[]>([]);
+  const [history, setHistory] = useState<{ prompt: string; url: string; sourceUrl: string; mime: string; style: string }[]>([]);
+  const [sourceUrl, setSourceUrl] = useState("");
+  const [resultMime, setResultMime] = useState("image/png");
+  const requestRef = useRef<AbortController | null>(null);
+  const urlsRef = useRef<string[]>([]);
+  const [resultPrompt, setResultPrompt] = useState("");
+
+  useEffect(() => () => {
+    requestRef.current?.abort();
+    urlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+  }, []);
 
   const handleGenerate = useCallback(async () => {
     if (!prompt.trim()) {
@@ -39,69 +45,42 @@ export function AIImageGeneratorEngine() {
     }
     setIsLoading(true);
     setError("");
+    setImageUrl("");
+    setSourceUrl("");
+    requestRef.current?.abort();
+    const controller = new AbortController();
+    requestRef.current = controller;
+    const timeout = setTimeout(() => controller.abort(), 60000);
+    const submittedPrompt = prompt.trim();
 
     try {
-      // Use a free placeholder image generation service
-      // In production, this would call an AI image API
-      const seed = encodeURIComponent(prompt.trim());
-      const styleParam = style.replace("-", "+");
-      // Using picsum with text overlay as a visual placeholder
-      // Real implementation would use DALL-E, Stable Diffusion, etc.
-      const width = 512;
-      const height = 512;
-      const url = `https://image.pollinations.ai/prompt/${seed}?width=${width}&height=${height}&nologo=true&seed=${Date.now()}`;
-
-      // Verify the image loads
-      const img = new Image();
-      await new Promise<void>((resolve, reject) => {
-        img.onload = () => resolve();
-        img.onerror = () => reject(new Error("Failed to generate image"));
-        img.src = url;
-        // Timeout after 15 seconds
-        setTimeout(() => reject(new Error("Generation timed out")), 15000);
-      });
-
+      const selectedStyle = STYLES.find((item) => item.id === style)?.label || style;
+      const seed = encodeURIComponent(`${submittedPrompt}. Visual style: ${selectedStyle}.`);
+      const providerUrl = `https://image.pollinations.ai/prompt/${seed}?width=512&height=512&nologo=true&seed=${Date.now()}`;
+      const response = await fetch(providerUrl, { signal: controller.signal });
+      if (!response.ok) throw new Error(`Image provider failed (${response.status}). The existing service may require credentials or be unavailable.`);
+      const blob = await response.blob();
+      if (!blob.type.startsWith("image/") || blob.size === 0) throw new Error("The image provider did not return an image.");
+      const bitmap = await createImageBitmap(blob);
+      bitmap.close();
+      if (controller.signal.aborted) throw new Error("Image generation stopped or timed out.");
+      const url = URL.createObjectURL(blob);
+      urlsRef.current.push(url);
+      if (urlsRef.current.length > 20) URL.revokeObjectURL(urlsRef.current.shift()!);
       setImageUrl(url);
-      setHistory((prev) => [{ prompt: prompt.trim(), url, style }, ...prev].slice(0, 20));
+      setSourceUrl(providerUrl);
+      setResultMime(blob.type);
+      setResultPrompt(submittedPrompt);
+      setHistory((prev) => [{ prompt: submittedPrompt, url, sourceUrl: providerUrl, mime: blob.type, style }, ...prev].slice(0, 20));
       toast.success("Image generated!");
     } catch (err) {
-      // Fallback: generate a canvas-based placeholder
-      const canvas = document.createElement("canvas");
-      canvas.width = 512;
-      canvas.height = 512;
-      const ctx = canvas.getContext("2d");
-      if (ctx) {
-        // Create a gradient background
-        const gradient = ctx.createLinearGradient(0, 0, 512, 512);
-        const hue = Math.floor(Math.random() * 360);
-        gradient.addColorStop(0, `hsl(${hue}, 70%, 60%)`);
-        gradient.addColorStop(1, `hsl(${(hue + 60) % 360}, 70%, 40%)`);
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, 512, 512);
-
-        // Add text
-        ctx.fillStyle = "white";
-        ctx.font = "bold 24px system-ui";
-        ctx.textAlign = "center";
-        const words = prompt.trim().split(" ");
-        for (let i = 0; i < Math.min(words.length, 6); i++) {
-          ctx.fillText(words[i], 256, 200 + i * 35);
-        }
-
-        ctx.font = "14px system-ui";
-        ctx.fillStyle = "rgba(255,255,255,0.7)";
-        ctx.fillText(`Style: ${style}`, 256, 440);
-        ctx.fillText("AI Image Generator", 256, 465);
-
-        const url = canvas.toDataURL("image/png");
-        setImageUrl(url);
-        setHistory((prev) => [{ prompt: prompt.trim(), url, style }, ...prev].slice(0, 20));
-        toast.success("Image generated (local render)!");
-      } else {
-        setError("Failed to generate image. Please try again.");
-      }
+      if (requestRef.current === controller) setError(controller.signal.aborted ? "Image generation stopped or timed out. No image was generated." : err instanceof Error ? err.message : "Image generation failed.");
     } finally {
-      setIsLoading(false);
+      clearTimeout(timeout);
+      if (requestRef.current === controller) {
+        requestRef.current = null;
+        setIsLoading(false);
+      }
     }
   }, [prompt, style]);
 
@@ -109,31 +88,50 @@ export function AIImageGeneratorEngine() {
     if (!imageUrl) return;
     const a = document.createElement("a");
     a.href = imageUrl;
-    a.download = `ai-image-${Date.now()}.png`;
+    const extension = ({ "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif", "image/avif": "avif", "image/svg+xml": "svg" } as Record<string, string>)[resultMime] || "img";
+    a.download = `ai-image-${Date.now()}.${extension}`;
     a.click();
-    toast.success("Downloaded!");
-  }, [imageUrl]);
+  }, [imageUrl, resultMime]);
 
   const handleCopyUrl = useCallback(async () => {
+    if (!sourceUrl) return;
+    try {
+      await navigator.clipboard.writeText(sourceUrl);
+      toast.success("Provider image URL copied. Opening it contacts Pollinations again.");
+    } catch {
+      setError("Your browser could not copy this URL.");
+    }
+  }, [sourceUrl]);
+
+  const handleCopyImage = useCallback(async () => {
     if (!imageUrl) return;
-    await navigator.clipboard.writeText(imageUrl);
-    toast.success("URL copied!");
+    try {
+      const image = await fetch(imageUrl).then((response) => response.blob());
+      await navigator.clipboard.write([new ClipboardItem({ [image.type]: image })]);
+      toast.success("Image copied!");
+    } catch {
+      setError("Your browser could not copy this image. Use Download instead.");
+    }
   }, [imageUrl]);
 
   const handleClear = useCallback(() => {
+    requestRef.current?.abort();
+    requestRef.current = null;
+    setIsLoading(false);
     setPrompt("");
     setImageUrl("");
+    setSourceUrl("");
     setError("");
   }, []);
 
   return (
-    <div className="space-y-6">
+    <div className="grid gap-4 lg:grid-cols-[minmax(260px,1fr)_minmax(0,2fr)]">
       {/* Input */}
-      <Card>
-        <CardContent className="p-4 space-y-4">
+      <section className="space-y-4">
           <div>
-            <Label className="text-sm mb-1.5 block">Describe the image you want</Label>
+            <Label htmlFor="image-prompt" className="text-sm mb-1.5 block">Describe the image you want</Label>
             <Textarea
+              id="image-prompt"
               placeholder="A serene mountain lake at sunset with pine trees..."
               className="min-h-20"
               value={prompt}
@@ -143,22 +141,15 @@ export function AIImageGeneratorEngine() {
 
           <div>
             <Label className="text-sm mb-1.5 block">Style</Label>
-            <div className="flex gap-2 flex-wrap">
+            <select aria-label="Style" value={style} onChange={(event) => setStyle(event.target.value)} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
               {STYLES.map((s) => (
-                <Button
-                  key={s.id}
-                  variant={style === s.id ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setStyle(s.id)}
-                  className="gap-1"
-                >
-                  <span>{s.emoji}</span> {s.label}
-                </Button>
+                <option key={s.id} value={s.id}>{s.label}</option>
               ))}
-            </div>
+            </select>
           </div>
 
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          <p className="text-xs text-muted-foreground">Your prompt is sent to Pollinations. Availability and access requirements are controlled by that provider.</p>
+          {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
 
           <Button
             onClick={handleGenerate}
@@ -175,33 +166,36 @@ export function AIImageGeneratorEngine() {
               </>
             )}
           </Button>
-        </CardContent>
-      </Card>
+          <Button variant="ghost" onClick={handleClear}>Clear</Button>
+      </section>
+
+      <section className="min-w-0 space-y-3">
 
       {/* Result */}
       {imageUrl && (
-        <Card>
-          <CardContent className="p-4 space-y-3">
+        <div className="space-y-3">
             <div className="relative rounded-lg overflow-hidden bg-muted">
               <img
                 src={imageUrl}
-                alt={prompt}
+                alt={resultPrompt}
                 className="w-full h-auto max-h-100 object-contain mx-auto"
               />
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button variant="outline" size="sm" onClick={handleDownload} className="gap-1.5 flex-1">
                 <Download className="h-3.5 w-3.5" /> Download
               </Button>
               <Button variant="outline" size="sm" onClick={handleCopyUrl} className="gap-1.5">
-                <Copy className="h-3.5 w-3.5" /> Copy URL
+                <Link className="h-3.5 w-3.5" /> Copy URL
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleCopyImage} className="gap-1.5">
+                <Copy className="h-3.5 w-3.5" /> Copy Image
               </Button>
               <Button variant="outline" size="sm" onClick={handleGenerate} className="gap-1.5" disabled={isLoading}>
                 <RefreshCw className="h-3.5 w-3.5" /> Retry
               </Button>
             </div>
-          </CardContent>
-        </Card>
+        </div>
       )}
 
       {/* History */}
@@ -216,7 +210,12 @@ export function AIImageGeneratorEngine() {
                   setPrompt(item.prompt);
                   setStyle(item.style);
                   setImageUrl(item.url);
+                  setSourceUrl(item.sourceUrl);
+                  setResultMime(item.mime);
+                  setResultPrompt(item.prompt);
+                  setError("");
                 }}
+                disabled={isLoading}
                 className="relative rounded-lg overflow-hidden border border-border/50 hover:border-primary/50 transition-colors aspect-square"
               >
                 <img
@@ -233,12 +232,13 @@ export function AIImageGeneratorEngine() {
         </div>
       )}
 
-      {!imageUrl && !isLoading && (
+      {!imageUrl && (
         <div className="text-center py-8 text-muted-foreground">
           <ImageIcon className="h-12 w-12 mx-auto mb-3 opacity-30" />
-          <p className="text-sm">Describe an image and click Generate to create AI artwork</p>
+          {isLoading && <Loader2 aria-label="Generating image" className="h-6 w-6 mx-auto animate-spin" />}
         </div>
       )}
+      </section>
     </div>
   );
 }

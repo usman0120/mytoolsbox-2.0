@@ -4,7 +4,6 @@ import { getAppBySlug, getActiveApps } from "@/content/apps/registry";
 import {
   generateToolMetadata,
   generateSoftwareAppJsonLd,
-  generateHowToJsonLd,
   generateFAQJsonLd,
   generateBreadcrumbJsonLd,
 } from "@/lib/seo";
@@ -46,9 +45,6 @@ export default async function AppPage({ params }: AppPageProps) {
   // 1. Software / WebApplication Schema
   const softwareAppLd = generateSoftwareAppJsonLd(app);
 
-  // 2. HowTo Step Schema
-  const howToLd = generateHowToJsonLd(app);
-
   // 3. FAQ Schema
   const faqLd = app.faq && app.faq.length > 0 ? generateFAQJsonLd(app.faq) : null;
 
@@ -64,21 +60,17 @@ export default async function AppPage({ params }: AppPageProps) {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareAppLd) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(howToLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareAppLd).replace(/</g, "\\u003c") }}
       />
       {faqLd && (
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd).replace(/</g, "\\u003c") }}
         />
       )}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd).replace(/</g, "\\u003c") }}
       />
       <AppPageClient app={app} />
     </>

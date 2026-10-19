@@ -137,7 +137,7 @@ export function CSVToExcelEngine() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="w-full min-w-0 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-border/50">
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20">
@@ -156,21 +156,18 @@ export function CSVToExcelEngine() {
 
       {!file && (
         <div
-          className={`border-2 border-dashed rounded-2xl p-10 text-center transition-all cursor-pointer ${
+          className={`border-2 border-dashed rounded-lg p-4 sm:p-6 text-center transition-colors cursor-pointer ${
             dragOver ? "border-emerald-500 bg-emerald-500/5 scale-[0.99]" : "border-border/60 hover:border-emerald-500/40 bg-card/50"
           }`}
           onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
           onDragLeave={() => setDragOver(false)}
-          onDrop={(e) => { e.preventDefault(); setDragOver(false); e.dataTransfer.files[0] && loadFile(e.dataTransfer.files[0]); }}
+          onDrop={(e) => { e.preventDefault(); setDragOver(false); if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); }}
           onClick={() => fileInputRef.current?.click()}
         >
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/10 ring-1 ring-emerald-500/20 text-emerald-600">
             <FileSpreadsheet className="h-7 w-7" />
           </div>
           <h3 className="font-semibold text-base mb-1">Drop your CSV or TSV file here</h3>
-          <p className="text-sm text-muted-foreground max-w-md mx-auto mb-4">
-            Converts comma, tab, and semicolon-separated files into real Microsoft Excel (.xlsx) workbooks instantly in your browser.
-          </p>
           <input
             ref={fileInputRef}
             type="file"
@@ -178,7 +175,7 @@ export function CSVToExcelEngine() {
             className="hidden"
             onChange={(e) => e.target.files?.[0] && loadFile(e.target.files[0])}
           />
-          <Button size="sm" className="rounded-xl gap-2 pointer-events-none bg-emerald-600 hover:bg-emerald-700 text-white">
+          <Button onClick={(event) => { event.stopPropagation(); fileInputRef.current?.click(); }} className="rounded-lg gap-2 bg-emerald-600 hover:bg-emerald-700 text-white">
             <Upload className="h-4 w-4" /> Select CSV File
           </Button>
         </div>
@@ -246,7 +243,7 @@ export function CSVToExcelEngine() {
                   <div>
                     <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">Excel Spreadsheet Ready!</p>
                     <p className="text-xs text-muted-foreground">
-                      Valid OpenXML workbook generated with sheet name "{sheetName}". Ready for Excel, Google Sheets, or Numbers.
+                      Valid OpenXML workbook generated with sheet name &quot;{sheetName}&quot;. Ready for Excel, Google Sheets, or Numbers.
                     </p>
                   </div>
                 </div>
@@ -258,8 +255,8 @@ export function CSVToExcelEngine() {
           )}
 
           {/* Configuration Card */}
-          <Card className="border-border/50">
-            <CardContent className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <section aria-label="Spreadsheet settings">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label className="text-xs">Excel Worksheet Name</Label>
                 <Input
@@ -273,6 +270,7 @@ export function CSVToExcelEngine() {
               <div className="space-y-1.5">
                 <Label className="text-xs">Delimiter Detection</Label>
                 <select
+                  aria-label="Delimiter detection"
                   value={delimiter}
                   onChange={(e) => handleDelimiterChange(e.target.value)}
                   className="w-full rounded-xl border border-border/50 bg-background p-2 text-xs h-9"
@@ -284,12 +282,12 @@ export function CSVToExcelEngine() {
                   <option value="|">Pipe (|)</option>
                 </select>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </section>
 
           {/* Interactive Data Table Preview */}
-          <Card className="border-border/50">
-            <CardContent className="p-4 space-y-3">
+          <section aria-label="Spreadsheet preview" className="min-w-0">
+            <div className="space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <TableIcon className="h-4 w-4 text-emerald-600" />
@@ -334,8 +332,8 @@ export function CSVToExcelEngine() {
                   </tbody>
                 </table>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </section>
         </div>
       )}
     </div>

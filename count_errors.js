@@ -1,40 +1,37 @@
-const { execSync } = require('child_process');
-const fs = require('fs');
+const path = require('node:path');
+const { ESLint } = require('eslint');
 
-try {
-  const output = execSync('npx eslint src/ --ext .ts,.tsx --format json', {
-    cwd: 'e:/working_projects/mytoolsbox-me_new',
-    maxBuffer: 50 * 1024 * 1024,
-    stdio: ['pipe', 'pipe', 'ignore']
-  }).toString();
-
-  const data = JSON.parse(output);
-  const counts = {};
-  const filesWithErrors = {};
-
-  data.forEach(f => {
-    f.messages.filter(m => m.severity === 2).forEach(m => {
-      const rule = m.ruleId || 'syntax';
-      counts[rule] = (counts[rule] || 0) + 1;
-      if (!filesWithErrors[rule]) filesWithErrors[rule] = new Set();
-      filesWithErrors[rule].add(f.filePath);
-    });
-  });
-
-  console.log('=== Errors by rule ===');
-  Object.entries(counts).sort((a, b) => b[1] - a[1]).forEach(([k, v]) => {
-    console.log(v + '\t' + k + ' (' + filesWithErrors[k].size + ' files)');
-  });
-
-  console.log('\n=== Files with most errors ===');
-  const fileCounts = {};
-  data.forEach(f => {
-    const errCount = f.messages.filter(m => m.severity === 2).length;
-    if (errCount > 0) fileCounts[f.filePath] = errCount;
-  });
-  Object.entries(fileCounts).sort((a, b) => b[1] - a[1]).slice(0, 15).forEach(([k, v]) => {
-    console.log(v + '\t' + k.replace('E:/working_projects/mytoolsbox-me_new/', ''));
-  });
-} catch (e) {
-  console.error('Error:', e.message);
+function summarize(results) {
+  const rules = new Map();
+  const files = [];
+  let warnings = 0;
+  for (const result of results) {
+    warnings += result.warningCount;
+    if (result.errorCount > 0) files.push({ file: path.relative(__dirname, result.filePath).split(path.sep).join('/'), errors: result.errorCount });
+    for (const message of result.messages.filter((entry) => entry.severity === 2)) {
+      const rule = message.ruleId || 'syntax';
+      const record = rules.get(rule) || { rule, errors: 0, files: new Set() };
+      record.errors += 1;
+      record.files.add(result.filePath);
+      rules.set(rule, record);
+    }
+  }
+  return {
+    errors: results.reduce((total, result) => total + result.errorCount, 0), warnings,
+    rules: [...rules.values()].map((record) => ({ rule: record.rule, errors: record.errors, files: record.files.size })).sort((first, second) => second.errors - first.errors),
+    files: files.sort((first, second) => second.errors - first.errors),
+  };
 }
+
+async function main(patterns = process.argv.slice(2)) {
+  const eslint = new ESLint({ cwd: __dirname });
+  const report = summarize(await eslint.lintFiles(patterns.length ? patterns : ['src/**/*.{ts,tsx}']));
+  console.log(JSON.stringify(report, null, 2));
+  process.exitCode = report.errors > 0 ? 1 : 0;
+}
+
+module.exports = { summarize };
+if (require.main === module) main().catch((error) => {
+  console.error(error.message);
+  process.exitCode = 2;
+});

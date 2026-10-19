@@ -3,8 +3,6 @@
 import { useState, useRef } from "react";
 import { FileText, Upload, Download, Loader2, AlertCircle, FileOutput } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
 export function PDFRepairEngine() {
@@ -134,22 +132,17 @@ export function PDFRepairEngine() {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2 mb-2">
-        <Badge variant="secondary" className="rounded-full">PDF Repair</Badge>
-        <span className="text-xs text-muted-foreground">Repair corrupted or damaged PDF files</span>
-      </div>
+    <div className="w-full min-w-0 space-y-4">
+      <h3 className="text-base font-semibold">PDF Repair</h3>
 
-      <Card className="border-border/50">
-        <CardContent className="p-4">
+      <section aria-label="PDF selection">
           <input ref={fileInputRef} type="file" accept="application/pdf,.pdf" onChange={handleFileSelect} className="hidden" />
-          <div onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed border-border/50 rounded-xl p-6 text-center cursor-pointer hover:border-primary/30 hover:bg-muted/30 transition-colors">
+          <button type="button" onClick={() => fileInputRef.current?.click()} className="w-full border-2 border-dashed border-border/50 rounded-lg p-4 text-center hover:border-primary/30 hover:bg-muted/30 transition-colors">
             <Upload className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
-            <p className="font-medium text-sm mb-1">{file ? file.name : "Drop corrupted PDF here"}</p>
+            <p className="font-medium text-sm mb-1 break-all">{file ? file.name : "Select corrupted PDF"}</p>
             <p className="text-xs text-muted-foreground">{file ? `${(file.size / 1024).toFixed(1)} KB` : "Max 50MB"}</p>
-          </div>
-        </CardContent>
-      </Card>
+          </button>
+      </section>
 
       {error && (
         <div className="flex items-center gap-2 p-3 rounded-xl bg-destructive/10 text-destructive text-sm">
@@ -165,7 +158,7 @@ export function PDFRepairEngine() {
         </div>
       )}
 
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <Button onClick={handleRepair} disabled={!file || isProcessing} className="gap-2 rounded-xl">
           {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
           {isProcessing ? "Repairing..." : "Repair PDF"}

@@ -1,14 +1,11 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useSyncExternalStore } from "react";
 import {
-  MessageSquare, Send, Copy, Check, Trash2, Loader2,
-  Sparkles, User, Bot, Download, Zap,
+  Send, Copy, Trash2, Loader2, Download, RotateCcw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import { useCredits } from "@/lib/credits/use-credits";
 import { completeViaServer } from "@/lib/ai";
@@ -21,93 +18,62 @@ interface Message {
 }
 
 const STORAGE_KEY = "mytoolsbox-ai-chat";
+const subscribeToHydration = () => () => {};
+const clientSnapshot = () => true;
+const serverSnapshot = () => false;
 
-function loadMessages(): Message[] {
+function loadMessages(): { messages: Message[]; storageError: string | null } {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
+    if (!raw) return { messages: [], storageError: null };
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed) || !parsed.every((message) =>
+      message && typeof message.id === "string" &&
+      (message.role === "user" || message.role === "assistant") &&
+      typeof message.content === "string" &&
+      typeof message.timestamp === "number" && Number.isFinite(new Date(message.timestamp).getTime())
+    )) throw new Error("Invalid saved chat");
+    return { messages: parsed, storageError: null };
   } catch {
-    return [];
+    return { messages: [], storageError: "Saved chat could not be read. Existing data is unchanged; this conversation will stay in memory." };
   }
 }
 
 function saveMessages(messages: Message[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(messages.slice(-50)));
-}
-
-// Client-side AI response generator using pattern matching and templates
-function generateResponse(userMessage: string): string {
-  const msg = userMessage.toLowerCase();
-
-  // Greetings
-  if (/^(hi|hello|hey|greetings|good morning|good evening)/.test(msg)) {
-    const greetings = [
-      "Hello! 👋 How can I help you today?",
-      "Hi there! What can I assist you with?",
-      "Hey! I'm here to help. What do you need?",
-    ];
-    return greetings[Math.floor(Math.random() * greetings.length)];
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+  } catch {
+    toast.error("Chat cannot be saved on this device. Your conversation remains available here.");
   }
-
-  // Help
-  if (/help|what can you do|capabilities/i.test(msg)) {
-    return "I can help you with:\n\n• **Writing** - essays, emails, stories, summaries\n• **Coding** - explain code, debug, write functions\n• **Learning** - explain concepts, answer questions\n• **Creative** - brainstorm ideas, generate content\n• **Analysis** - review text, provide feedback\n\nJust ask me anything!";
-  }
-
-  // Code related
-  if (/code|programming|function|bug|error|debug|javascript|python|react|typescript/i.test(msg)) {
-    return "I'd be happy to help with coding! Here are some things I can do:\n\n• Explain how code works\n• Help debug issues\n• Suggest improvements\n• Write code snippets\n\nCould you share the specific code or describe the problem you're working on?";
-  }
-
-  // Writing
-  if (/write|essay|article|blog|story|poem|email|letter/i.test(msg)) {
-    return "I can help you write that! To give you the best result, could you tell me:\n\n• What's the topic?\n• What's the tone? (formal, casual, persuasive)\n• How long should it be?\n• Any specific points to include?";
-  }
-
-  // Math
-  if (/math|calculate|equation|solve|formula/i.test(msg)) {
-    return "I can help with math problems! Try our **Math Solver** or **Scientific Calculator** tools for step-by-step solutions. Or describe the problem and I'll walk you through it.";
-  }
-
-  // Summary
-  if (/summarize|summary|tldr|sum up/i.test(msg)) {
-    return "I can summarize text for you! Try our **Text Summarizer** tool for quick summaries, or paste the text here and I'll give you the key points.";
-  }
-
-  // Thank you
-  if (/thank|thanks|thx|appreciate/i.test(msg)) {
-    return "You're welcome! 😊 Is there anything else I can help with?";
-  }
-
-  // Default responses
-  const defaults = [
-    "That's an interesting question! Let me think about it... Could you provide a bit more context so I can give you a better answer?",
-    "I understand you're asking about that. Here's what I know: this is a great topic to explore. What specific aspect are you most interested in?",
-    "Great question! While I can help with many topics, could you be more specific about what you're looking for? That way I can give you the most helpful response.",
-    "I'd love to help with that! To give you the best answer, could you share a few more details about what you need?",
-  ];
-  return defaults[Math.floor(Math.random() * defaults.length)];
 }
 
 export function AITextGeneratorEngine() {
-  const [messages, setMessages] = useState<Message[]>(() => loadMessages());
+  const hydrated = useSyncExternalStore(subscribeToHydration, clientSnapshot, serverSnapshot);
+  const [savedChat] = useState(loadMessages);
+  const [messages, setMessages] = useState<Message[]>(savedChat.messages);
+  const visibleMessages = hydrated ? messages : [];
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [failedMessage, setFailedMessage] = useState<Message | null>(null);
+  const historyChangedRef = useRef(false);
+  const sendingRef = useRef(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const { refresh } = useCredits();
 
   useEffect(() => {
-    saveMessages(messages);
-  }, [messages]);
+    if (historyChangedRef.current && !savedChat.storageError) saveMessages(messages);
+  }, [messages, savedChat.storageError]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const handleSend = useCallback(async () => {
-    const text = input.trim();
-    if (!text || isLoading) return;
+  const handleSend = useCallback(async (retryMessage?: Message) => {
+    const text = retryMessage?.content ?? input.trim();
+    if (!text || sendingRef.current) return;
+    sendingRef.current = true;
 
     const userMsg: Message = {
       id: Date.now().toString(36),
@@ -116,13 +82,14 @@ export function AITextGeneratorEngine() {
       timestamp: Date.now(),
     };
 
-    setMessages((prev) => [...prev, userMsg]);
-    setInput("");
+    historyChangedRef.current = true;
+    if (!retryMessage) setMessages((prev) => [...prev, userMsg]);
+    setError(null);
     setIsLoading(true);
 
     try {
-      // Build conversation history prompt
-      const contextHistory = messages.slice(-4).map((m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.content}`).join("\n");
+      const history = retryMessage ? messages.filter((message) => message.id !== retryMessage.id) : messages;
+      const contextHistory = history.slice(-4).map((m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.content}`).join("\n");
       const fullPrompt = contextHistory ? `${contextHistory}\nUser: ${text}\nAssistant:` : text;
 
       const aiRes = await completeViaServer({
@@ -133,7 +100,8 @@ export function AITextGeneratorEngine() {
         temperature: 0.7,
       });
 
-      const responseText = aiRes?.text?.trim() || generateResponse(text);
+      const responseText = aiRes?.text?.trim();
+      if (!responseText) throw new Error("The AI provider returned an empty response. No reply was generated.");
 
       const assistantMsg: Message = {
         id: (Date.now() + 1).toString(36),
@@ -143,25 +111,34 @@ export function AITextGeneratorEngine() {
       };
 
       setMessages((prev) => [...prev, assistantMsg]);
-      await refresh();
-    } catch {
-      // Fallback
-      const response = generateResponse(text);
-      const assistantMsg: Message = {
-        id: (Date.now() + 1).toString(36),
-        role: "assistant",
-        content: response,
-        timestamp: Date.now(),
-      };
-      setMessages((prev) => [...prev, assistantMsg]);
+      setInput("");
+      setFailedMessage(null);
+      try {
+        await refresh();
+      } catch {
+        toast.error("Reply received, but the credit balance could not be refreshed.");
+      }
+    } catch (failure) {
+      const detail = failure instanceof Error ? failure.message : "The AI request failed. Please try again.";
+      const status = typeof failure === "object" && failure !== null && "status" in failure ? Number(failure.status) : undefined;
+      if (status === 401 || /\b401\b|authentication required/i.test(detail)) setError("Sign in to send AI messages (401).");
+      else if (status === 402 || /\b402\b|insufficient credits/i.test(detail)) setError("Insufficient credits for this request (402).");
+      else if (status === 429 || /\b429\b|too many|rate limit/i.test(detail)) setError("Too many requests (429). Please wait before retrying.");
+      else if (status === 503 || /\b503\b|no ai providers?|no ai provider available/i.test(detail)) setError("AI service unavailable (503). Please try again later.");
+      else setError(detail);
+      setFailedMessage(retryMessage ?? userMsg);
     } finally {
+      sendingRef.current = false;
       setIsLoading(false);
     }
-  }, [input, isLoading, messages, refresh]);
+  }, [input, messages, refresh]);
 
   const handleClear = useCallback(() => {
+    if (sendingRef.current) return;
+    historyChangedRef.current = true;
     setMessages([]);
-    localStorage.removeItem(STORAGE_KEY);
+    setError(null);
+    setFailedMessage(null);
     toast.success("Chat cleared.");
   }, []);
 
@@ -185,138 +162,89 @@ export function AITextGeneratorEngine() {
   }, []);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault();
-      handleSend();
+      handleSend(failedMessage?.content === input.trim() ? failedMessage : undefined);
     }
   };
 
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Badge className="bg-violet-500/10 text-violet-600 dark:text-violet-400 gap-1">
-            <Sparkles className="h-3 w-3" /> AI Chat
-          </Badge>
-          <span className="text-xs text-muted-foreground">
-            {messages.length} messages
-          </span>
+    <div className="min-w-0 space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b pb-2">
+        <div className="flex items-baseline gap-2">
+          <h2 className="text-sm font-medium">AI Chat</h2>
+          <span className="text-xs text-muted-foreground">{visibleMessages.length} messages</span>
         </div>
         <div className="flex gap-1">
-          <Button variant="ghost" size="sm" onClick={handleExport} className="gap-1 h-7" disabled={messages.length === 0}>
-            <Download className="h-3.5 w-3.5" /> Export
+          <Button variant="ghost" size="icon" aria-label="Export chat" title="Export chat" onClick={handleExport} className="size-11" disabled={visibleMessages.length === 0}>
+            <Download className="size-4" aria-hidden="true" />
           </Button>
-          <Button variant="ghost" size="sm" onClick={handleClear} className="gap-1 h-7 text-destructive" disabled={messages.length === 0}>
-            <Trash2 className="h-3.5 w-3.5" /> Clear
+          <Button variant="ghost" size="icon" aria-label="Clear chat" title="Clear chat" onClick={handleClear} className="size-11 text-destructive" disabled={visibleMessages.length === 0 || isLoading}>
+            <Trash2 className="size-4" aria-hidden="true" />
           </Button>
         </div>
       </div>
 
-      {/* Messages */}
-      <Card className="min-h-100 max-h-125 flex flex-col">
-        <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
-          {messages.length === 0 ? (
-            <div className="flex items-center justify-center h-full min-h-75 text-muted-foreground">
-              <div className="text-center">
-                <MessageSquare className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                <p className="text-sm font-medium mb-1">AI Chat Assistant</p>
-                <p className="text-xs">Ask me anything! I can help with writing, coding, learning, and more.</p>
-                <div className="flex gap-2 mt-4 flex-wrap justify-center">
-                  {["Write a poem", "Explain recursion", "Summarize text", "Debug my code"].map((s) => (
-                    <Button
-                      key={s}
-                      variant="outline"
-                      size="sm"
-                      className="text-xs h-7"
-                      onClick={() => { setInput(s); inputRef.current?.focus(); }}
-                    >
-                      {s}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            </div>
+      {hydrated && savedChat.storageError && <p role="alert" className="text-sm text-destructive">{savedChat.storageError}</p>}
+      <div role="log" aria-label="Chat history" aria-busy={isLoading} className="min-h-48 max-h-96 overflow-y-auto border-b py-2">
+          {visibleMessages.length === 0 ? (
+            <p className="py-6 text-sm text-muted-foreground">No messages yet.</p>
           ) : (
-            messages.map((msg) => (
-              <div
-                key={msg.id}
-                className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-              >
-                {msg.role === "assistant" && (
-                  <div className="w-8 h-8 rounded-full bg-violet-500/20 flex items-center justify-center shrink-0">
-                    <Bot className="h-4 w-4 text-violet-500" />
-                  </div>
-                )}
-                <div
-                  className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm ${
-                    msg.role === "user"
-                      ? "bg-primary text-primary-foreground rounded-br-md"
-                      : "bg-muted rounded-bl-md"
-                  }`}
-                >
-                  <div className="whitespace-pre-wrap">{msg.content}</div>
-                  <div className="flex items-center justify-between mt-1">
-                    <span className="text-[10px] opacity-60">
-                      {new Date(msg.timestamp).toLocaleTimeString()}
-                    </span>
+            visibleMessages.map((msg) => (
+              <article key={msg.id} aria-label={msg.role === "user" ? "Your message" : "AI reply"} className="min-w-0 border-b py-3 last:border-0">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span className="font-medium text-foreground">{msg.role === "user" ? "You" : "AI"}</span>
+                    <time dateTime={new Date(msg.timestamp).toISOString()}>{new Date(msg.timestamp).toLocaleTimeString()}</time>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-5 w-5 opacity-40 hover:opacity-100"
+                      aria-label={msg.role === "user" ? "Copy your message" : "Copy AI reply"}
+                      title="Copy message"
+                      className="ml-auto size-11 shrink-0"
                       onClick={() => handleCopy(msg.content)}
                     >
-                      <Copy className="h-3 w-3" />
+                      <Copy className="size-4" aria-hidden="true" />
                     </Button>
                   </div>
-                </div>
-                {msg.role === "user" && (
-                  <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-                    <User className="h-4 w-4 text-primary" />
-                  </div>
-                )}
-              </div>
+                  <div className="whitespace-pre-wrap wrap-anywhere text-sm">{msg.content}</div>
+              </article>
             ))
           )}
           {isLoading && (
-            <div className="flex gap-3 justify-start">
-              <div className="w-8 h-8 rounded-full bg-violet-500/20 flex items-center justify-center shrink-0">
-                <Bot className="h-4 w-4 text-violet-500" />
-              </div>
-              <div className="bg-muted rounded-2xl rounded-bl-md px-4 py-3">
-                <div className="flex gap-1">
-                  <span className="w-2 h-2 rounded-full bg-violet-500 animate-bounce" style={{ animationDelay: "0ms" }} />
-                  <span className="w-2 h-2 rounded-full bg-violet-500 animate-bounce" style={{ animationDelay: "150ms" }} />
-                  <span className="w-2 h-2 rounded-full bg-violet-500 animate-bounce" style={{ animationDelay: "300ms" }} />
-                </div>
-              </div>
-            </div>
+            <p role="status" className="flex items-center gap-2 py-3 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />Waiting for reply...</p>
           )}
           <div ref={messagesEndRef} />
-        </CardContent>
-      </Card>
+      </div>
 
-      {/* Input */}
+      {error && (
+        <div role="alert" className="flex flex-wrap items-center gap-2 text-sm text-destructive">
+          <p className="min-w-0 wrap-anywhere">{error}</p>
+          <Button variant="outline" size="sm" className="min-h-11" disabled={isLoading} onClick={() => failedMessage && handleSend(failedMessage)}><RotateCcw className="size-4" aria-hidden="true" />Retry</Button>
+        </div>
+      )}
       <div className="flex gap-2">
         <Textarea
           ref={inputRef}
-          placeholder="Type your message... (Enter to send, Shift+Enter for new line)"
-          className="min-h-[50px] max-h-[120px] resize-none"
+          aria-label="Message"
+          placeholder="Type your message..."
+          className="min-w-0 min-h-12 max-h-30 resize-y"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           disabled={isLoading}
         />
         <Button
-          onClick={handleSend}
+          onClick={() => handleSend(failedMessage?.content === input.trim() ? failedMessage : undefined)}
           size="icon"
-          className="h-[50px] w-[50px] shrink-0"
+          aria-label="Send message"
+          title="Send message"
+          className="size-12 shrink-0"
           disabled={!input.trim() || isLoading}
         >
           {isLoading ? (
-            <Loader2 className="h-5 w-5 animate-spin" />
+            <Loader2 className="size-5 animate-spin motion-reduce:animate-none" aria-hidden="true" />
           ) : (
-            <Send className="h-5 w-5" />
+            <Send className="size-5" aria-hidden="true" />
           )}
         </Button>
       </div>

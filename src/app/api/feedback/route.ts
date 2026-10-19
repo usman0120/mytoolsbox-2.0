@@ -9,6 +9,8 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { checkAdminAccess } from "@/lib/auth/admin-auth";
+import { getFirebaseFirestore } from "@/lib/firebase/config";
 import {
   submitFeedback,
   getFeedback,
@@ -21,10 +23,20 @@ import type { FeedbackType, FeedbackStatus } from "@/types/user";
 // Admin check
 // ---------------------------------------------------------------------------
 
-async function isAdmin(): Promise<boolean> {
-  const cookieStore = await cookies();
-  const sessionCookie = cookieStore.get("__session");
-  return !!sessionCookie;
+async function authorizeAdmin(request: NextRequest) {
+  const accessError = await checkAdminAccess(request, await cookies());
+  if (accessError === null) {
+    try {
+      if (getFirebaseFirestore()) return null;
+    } catch {
+      return NextResponse.json({ error: "Feedback storage unavailable" }, { status: 503 });
+    }
+    return NextResponse.json({ error: "Feedback storage unavailable" }, { status: 503 });
+  }
+  return NextResponse.json(
+    { error: accessError === 503 ? "Authentication unavailable" : accessError === 403 ? "Admin access required" : "Unauthorized" },
+    { status: accessError }
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -75,9 +87,8 @@ export async function POST(request: NextRequest) {
 // ---------------------------------------------------------------------------
 
 export async function GET(request: NextRequest) {
-  if (!(await isAdmin())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const denied = await authorizeAdmin(request);
+  if (denied) return denied;
 
   try {
     const feedback = await getFeedback();
@@ -95,9 +106,8 @@ export async function GET(request: NextRequest) {
 // ---------------------------------------------------------------------------
 
 export async function PATCH(request: NextRequest) {
-  if (!(await isAdmin())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const denied = await authorizeAdmin(request);
+  if (denied) return denied;
 
   try {
     const body = await request.json() as {
@@ -105,9 +115,9 @@ export async function PATCH(request: NextRequest) {
       status: FeedbackStatus;
     };
 
-    if (!body.id || !body.status) {
+    if (typeof body.id !== "string" || !body.id.trim() || !["new", "investigating", "resolved", "closed"].includes(body.status)) {
       return NextResponse.json(
-        { error: "id and status are required" },
+        { error: "id and a valid status are required" },
         { status: 400 }
       );
     }
@@ -127,9 +137,8 @@ export async function PATCH(request: NextRequest) {
 // ---------------------------------------------------------------------------
 
 export async function DELETE(request: NextRequest) {
-  if (!(await isAdmin())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const denied = await authorizeAdmin(request);
+  if (denied) return denied;
 
   try {
     const { searchParams } = new URL(request.url);

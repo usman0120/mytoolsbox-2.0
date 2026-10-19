@@ -143,7 +143,7 @@ export function TextToPDFEngine() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="w-full min-w-0 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-border/50">
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20">
@@ -191,11 +191,11 @@ export function TextToPDFEngine() {
         </Card>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_20rem]">
         {/* Left: Input Selection & Editor */}
-        <div className="lg:col-span-7 space-y-4">
+        <div className="min-w-0 space-y-4">
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)} className="space-y-4">
-            <TabsList className="grid grid-cols-2 rounded-xl p-1 bg-muted/50 border border-border/50">
+            <TabsList className="grid h-auto grid-cols-1 sm:grid-cols-2 rounded-lg p-1 bg-muted/50 border border-border/50">
               <TabsTrigger value="file" className="rounded-lg gap-2 text-xs sm:text-sm">
                 <Upload className="h-4 w-4" /> Upload File (.txt, .md)
               </TabsTrigger>
@@ -212,7 +212,7 @@ export function TextToPDFEngine() {
                   }`}
                   onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
                   onDragLeave={() => setDragOver(false)}
-                  onDrop={(e) => { e.preventDefault(); setDragOver(false); e.dataTransfer.files[0] && loadFile(e.dataTransfer.files[0]); }}
+                  onDrop={(e) => { e.preventDefault(); setDragOver(false); if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); }}
                   onClick={() => fileInputRef.current?.click()}
                 >
                   <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-600">
@@ -229,7 +229,7 @@ export function TextToPDFEngine() {
                     className="hidden"
                     onChange={(e) => e.target.files?.[0] && loadFile(e.target.files[0])}
                   />
-                  <Button size="sm" variant="outline" className="rounded-xl pointer-events-none text-xs">
+                  <Button variant="outline" onClick={(event) => { event.stopPropagation(); fileInputRef.current?.click(); }} className="rounded-lg">
                     Browse File
                   </Button>
                 </div>
@@ -265,7 +265,8 @@ export function TextToPDFEngine() {
                   value={textContent}
                   onChange={(e) => setTextContent(e.target.value)}
                   placeholder="Type or paste your text or markdown here..."
-                  className="w-full h-80 rounded-2xl border border-border/60 bg-background p-4 text-xs font-mono leading-relaxed focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  aria-label="Text and Markdown editor"
+                  className="w-full min-h-80 rounded-lg border border-border/60 bg-background p-3 text-sm font-mono leading-relaxed focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             </TabsContent>
@@ -273,9 +274,9 @@ export function TextToPDFEngine() {
         </div>
 
         {/* Right: Typography, Layout & Formatting Settings */}
-        <div className="lg:col-span-5 space-y-4">
-          <Card className="border-border/50">
-            <CardContent className="p-5 space-y-4">
+        <section aria-label="PDF layout settings" className="min-w-0 space-y-4">
+          <div>
+            <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <Settings className="h-4 w-4 text-blue-600" />
                 <h4 className="font-semibold text-sm">PDF Layout & Typography</h4>
@@ -361,7 +362,7 @@ export function TextToPDFEngine() {
                 <div className="pt-2 border-t border-border/40 space-y-3">
                   <div className="flex items-center justify-between">
                     <Label className="text-xs cursor-pointer" htmlFor="toggle-num">
-                      Add Page Numbers ("Page X of Y")
+                      Add page numbers (Page X of Y)
                     </Label>
                     <input
                       type="checkbox"
@@ -405,9 +406,9 @@ export function TextToPDFEngine() {
                   </>
                 )}
               </Button>
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
   );

@@ -2,11 +2,10 @@
 // PDF Text & Structure Extractor
 // ---------------------------------------------------------------------------
 // Extracts clean textual content, headings, and lines from PDF pages
-// using PDF.js with pdf-lib fallback.
+// using PDF.js.
 // ---------------------------------------------------------------------------
 
 import { ensurePdfJsLoaded } from "@/features/documents/pdf-to-images";
-import { PDFDocument } from "pdf-lib";
 
 export interface PDFPageContent {
   pageNumber: number;
@@ -21,12 +20,17 @@ export async function extractPdfPages(file: File): Promise<PDFPageContent[]> {
   const pdfBlob = new Blob([arrayBuffer], { type: "application/pdf" });
   const pdfUrl = URL.createObjectURL(pdfBlob);
 
-  const hasPdfJs = await ensurePdfJsLoaded();
+  try {
+      const hasPdfJs = await ensurePdfJsLoaded();
+      if (!hasPdfJs) {
+        throw new Error("PDF.js is unavailable. Check your connection and try again.");
+      }
 
-  if (hasPdfJs) {
-    try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const pdfjsLib = (window as unknown as { pdfjsLib?: any }).pdfjsLib;
+      if (!pdfjsLib) {
+        throw new Error("PDF.js is unavailable. Check your connection and try again.");
+      }
       const loadingTask = pdfjsLib.getDocument(pdfUrl);
       const pdf = await loadingTask.promise;
       const totalPages = pdf.numPages;
@@ -67,27 +71,11 @@ export async function extractPdfPages(file: File): Promise<PDFPageContent[]> {
         });
       }
 
-      URL.revokeObjectURL(pdfUrl);
       return results;
-    } catch (err) {
-      console.warn("PDF.js extraction failed, falling back to basic page metadata:", err);
-    }
+  } catch (err) {
+    const detail = err instanceof Error ? ` ${err.message}` : "";
+    throw new Error(`Unable to extract PDF text.${detail}`, { cause: err });
+  } finally {
+    URL.revokeObjectURL(pdfUrl);
   }
-
-  URL.revokeObjectURL(pdfUrl);
-
-  // Fallback: extract using pdf-lib basic info
-  const doc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
-  const total = doc.getPageCount();
-  const fallbackResults: PDFPageContent[] = [];
-
-  for (let i = 1; i <= total; i++) {
-    fallbackResults.push({
-      pageNumber: i,
-      text: `Page ${i} Content from ${file.name}`,
-      lines: [`Page ${i} Content from ${file.name}`],
-    });
-  }
-
-  return fallbackResults;
 }

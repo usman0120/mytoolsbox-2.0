@@ -2,7 +2,6 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import {
-  Upload,
   FileText,
   Download,
   Trash2,
@@ -17,8 +16,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { HelpDisclosure } from "@/components/common/workload-layouts";
 import { toast } from "sonner";
 import { PDFDocument } from "pdf-lib";
 import { splitPDF, extractAllPages, SplitRange } from "@/features/documents/pdf-splitter";
@@ -171,11 +171,11 @@ export function PDFSplitterEngine() {
   }, [result]);
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
+    <div className="w-full min-w-0 space-y-4">
       {/* Upload Drop Zone */}
       {!file && (
         <div
-          className={`border-2 border-dashed rounded-2xl p-8 sm:p-10 text-center transition-all cursor-pointer ${
+          className={`border-2 border-dashed rounded-lg p-4 sm:p-6 text-center transition-colors cursor-pointer ${
             dragOver
               ? "border-primary bg-primary/5 scale-[0.99]"
               : "border-border hover:border-primary/50 hover:bg-muted/30"
@@ -192,14 +192,12 @@ export function PDFSplitterEngine() {
           }}
           onClick={() => fileInputRef.current?.click()}
         >
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary mx-auto mb-4">
-            <Scissors className="h-8 w-8" />
-          </div>
-          <h3 className="text-lg font-semibold mb-1">Upload PDF File to Split</h3>
-          <p className="text-sm text-muted-foreground mb-4 max-w-md mx-auto">
-            Extract specific page ranges, separate individual pages into a ZIP archive, or divide your document.
-          </p>
-          <Button variant="outline" size="sm" className="rounded-xl pointer-events-none">
+          <Scissors className="h-6 w-6 text-primary mx-auto mb-2" />
+          <h3 className="text-base font-semibold mb-3">Split PDF</h3>
+          <Button variant="outline" className="rounded-lg" onClick={(event) => {
+            event.stopPropagation();
+            fileInputRef.current?.click();
+          }}>
             <Plus className="h-4 w-4 mr-1.5" /> Select PDF Document
           </Button>
           <input
@@ -217,7 +215,7 @@ export function PDFSplitterEngine() {
 
       {/* Document Loaded & Splitting Configuration */}
       {file && (
-        <Card className="rounded-2xl border-border/60 shadow-sm overflow-hidden">
+        <section className="min-w-0 overflow-hidden">
           {/* File Header */}
           <div className="p-4 bg-muted/40 border-b border-border/60 flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
@@ -246,16 +244,18 @@ export function PDFSplitterEngine() {
             </Button>
           </div>
 
-          <CardContent className="p-5 space-y-6">
+          <div className="py-4 space-y-4">
             {/* Split Mode Selector */}
             <div className="space-y-2">
               <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Select Splitting Method
               </Label>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div
+                <button
+                  type="button"
+                  aria-pressed={mode === "range"}
                   onClick={() => setMode("range")}
-                  className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
+                  className={`min-h-11 p-3 rounded-lg border text-left transition-colors ${
                     mode === "range"
                       ? "border-primary bg-primary/5 ring-1 ring-primary"
                       : "border-border hover:border-border/80 bg-card"
@@ -265,14 +265,13 @@ export function PDFSplitterEngine() {
                     <Scissors className="h-4 w-4 text-primary" />
                     <span className="text-sm font-semibold">Single Range</span>
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    Extract a continuous sequence of pages (e.g. pages 2 to 5).
-                  </p>
-                </div>
+                </button>
 
-                <div
+                <button
+                  type="button"
+                  aria-pressed={mode === "custom"}
                   onClick={() => setMode("custom")}
-                  className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
+                  className={`min-h-11 p-3 rounded-lg border text-left transition-colors ${
                     mode === "custom"
                       ? "border-primary bg-primary/5 ring-1 ring-primary"
                       : "border-border hover:border-border/80 bg-card"
@@ -282,14 +281,13 @@ export function PDFSplitterEngine() {
                     <Layers className="h-4 w-4 text-primary" />
                     <span className="text-sm font-semibold">Custom Ranges</span>
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    Select distinct pages or multiple chunks (e.g. 1-3, 5, 8).
-                  </p>
-                </div>
+                </button>
 
-                <div
+                <button
+                  type="button"
+                  aria-pressed={mode === "all"}
                   onClick={() => setMode("all")}
-                  className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
+                  className={`min-h-11 p-3 rounded-lg border text-left transition-colors ${
                     mode === "all"
                       ? "border-primary bg-primary/5 ring-1 ring-primary"
                       : "border-border hover:border-border/80 bg-card"
@@ -299,16 +297,13 @@ export function PDFSplitterEngine() {
                     <Archive className="h-4 w-4 text-primary" />
                     <span className="text-sm font-semibold">Extract Every Page</span>
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    Split every single page into separate PDF files inside a ZIP.
-                  </p>
-                </div>
+                </button>
               </div>
             </div>
 
             {/* Mode-Specific Controls */}
             {mode === "range" && (
-              <div className="grid grid-cols-2 gap-4 max-w-md p-4 rounded-xl bg-muted/20 border border-border/50">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <Label htmlFor="startPage" className="text-xs font-medium">
                     Start Page
@@ -352,9 +347,9 @@ export function PDFSplitterEngine() {
                   placeholder={`e.g. 1-2, 4, 6-${totalPages}`}
                   className="h-9 rounded-xl text-xs font-mono"
                 />
-                <p className="text-[11px] text-muted-foreground">
+                <HelpDisclosure title="Page range syntax">
                   Valid page range: 1 to {totalPages}. Example: <code className="bg-muted px-1 rounded">1-3, 5, 7</code> extracts pages 1, 2, 3, 5, and 7.
-                </p>
+                </HelpDisclosure>
               </div>
             )}
 
@@ -387,8 +382,8 @@ export function PDFSplitterEngine() {
                 )}
               </Button>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </section>
       )}
 
       {/* Result Card */}

@@ -16,13 +16,10 @@ import {
   Bot,
   Zap,
   Clock,
-  Sparkles,
   Trophy,
   Copy,
   Check,
   Loader2,
-  ArrowRight,
-  Send,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth/auth-context";
 import { SignInDialog } from "@/components/auth/signin-dialog";
@@ -75,6 +72,8 @@ const AVAILABLE_COMPARE_MODELS: CompareModelConfig[] = [
 ];
 
 interface ModelResult {
+  model?: string;
+  provider?: string;
   text: string;
   latencyMs: number;
   tokens?: number;
@@ -114,7 +113,7 @@ export function ModelCompare() {
 
     if (!user) {
       setShowSignInDialog(true);
-      toast.info("Please sign in to run side-by-side AI model comparisons. You get 1,000 monthly credits!", {
+      toast.info("Please sign in to compare models. Each successful request uses credits.", {
         duration: 5000,
       });
       return;
@@ -135,7 +134,10 @@ export function ModelCompare() {
           model: configA.model,
           tier: "cheap",
         });
+        if (typeof res.text !== "string" || !res.text.trim()) throw new Error("The provider returned an empty response.");
         setResultA({
+          model: res.model,
+          provider: res.provider,
           text: res.text,
           latencyMs: Date.now() - start,
           tokens: res.usage?.totalTokens,
@@ -161,7 +163,10 @@ export function ModelCompare() {
           model: configB.model,
           tier: "cheap",
         });
+        if (typeof res.text !== "string" || !res.text.trim()) throw new Error("The provider returned an empty response.");
         setResultB({
+          model: res.model,
+          provider: res.provider,
           text: res.text,
           latencyMs: Date.now() - start,
           tokens: res.usage?.totalTokens,
@@ -193,23 +198,15 @@ export function ModelCompare() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
+    <div className="w-full min-w-0 space-y-4">
       {/* Intro Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-2xl bg-linear-to-r from-violet-500/10 via-background to-blue-500/10 border border-border/60">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <Sparkles className="h-5 w-5 text-violet-500" />
-            <h2 className="text-lg font-bold">Side-by-Side Model Arena</h2>
-          </div>
-          <p className="text-xs text-muted-foreground max-w-xl">
-            Compare latency, style, and reasoning accuracy between top AI models in real time with the same prompt.
-          </p>
-        </div>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-xs text-muted-foreground">Two provider requests. Each successful request uses credits.</p>
 
         {/* Model Selectors */}
-        <div className="flex items-center gap-2">
-          <Select value={modelA} onValueChange={(val) => val && setModelA(val)}>
-            <SelectTrigger className="w-36 h-9 text-xs rounded-xl font-medium">
+        <div className="flex w-full min-w-0 flex-wrap items-center gap-2 sm:w-auto">
+          <Select disabled={isComparing} value={modelA} onValueChange={(val) => { if (val) { setModelA(val); setResultA(null); setResultB(null); setWinner(null); } }}>
+            <SelectTrigger aria-label="First model" className="h-10 min-w-0 flex-1 text-xs rounded-md font-medium sm:w-40 sm:flex-none">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="rounded-xl text-xs">
@@ -223,8 +220,8 @@ export function ModelCompare() {
 
           <span className="text-xs font-bold text-muted-foreground">VS</span>
 
-          <Select value={modelB} onValueChange={(val) => val && setModelB(val)}>
-            <SelectTrigger className="w-36 h-9 text-xs rounded-xl font-medium">
+          <Select disabled={isComparing} value={modelB} onValueChange={(val) => { if (val) { setModelB(val); setResultA(null); setResultB(null); setWinner(null); } }}>
+            <SelectTrigger aria-label="Second model" className="h-10 min-w-0 flex-1 text-xs rounded-md font-medium sm:w-40 sm:flex-none">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="rounded-xl text-xs">
@@ -239,20 +236,21 @@ export function ModelCompare() {
       </div>
 
       {/* Input Prompt Area */}
-      <Card className="rounded-2xl border-border/60 overflow-hidden shadow-xs">
-        <CardContent className="p-4 space-y-3">
-          <div className="flex gap-2">
+      <section className="space-y-3">
+          <div className="flex flex-col sm:flex-row gap-2">
             <textarea
+              aria-label="Comparison prompt"
+              disabled={isComparing}
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               placeholder="Enter a prompt to test across both models..."
               rows={2}
-              className="flex-1 bg-transparent text-sm resize-none focus:outline-hidden placeholder:text-muted-foreground/60 leading-relaxed"
+              className="flex-1 min-w-0 rounded-md border border-input p-3 bg-background text-base resize-y focus:outline-none focus:ring-2 focus:ring-ring leading-relaxed"
             />
             <Button
               onClick={handleRunComparison}
               disabled={!prompt.trim() || isComparing}
-              className="h-11 px-5 rounded-xl font-medium gap-2 shrink-0 shadow-sm"
+              className="h-11 px-4 rounded-md font-medium gap-2 shrink-0"
             >
               {isComparing ? (
                 <>
@@ -278,41 +276,41 @@ export function ModelCompare() {
                 key={i}
                 type="button"
                 onClick={() => setPrompt(sample)}
+                disabled={isComparing}
                 className="text-[11px] text-muted-foreground hover:text-foreground bg-muted/50 hover:bg-muted px-2.5 py-1 rounded-full whitespace-nowrap transition-colors"
               >
                 {sample.slice(0, 45)}...
               </button>
             ))}
           </div>
-        </CardContent>
-      </Card>
+      </section>
 
       {/* Comparison Results Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid min-w-0 grid-cols-1 md:grid-cols-2 gap-4">
         {/* Model A Result Card */}
         <Card
-          className={`rounded-2xl border transition-all ${
+          className={`min-w-0 rounded-lg border ${
             winner === "A"
               ? "ring-2 ring-amber-500/50 border-amber-500/40 bg-amber-500/5"
               : "border-border/60 bg-card/60"
           }`}
         >
-          <CardHeader className="p-4 pb-2 border-b border-border/50 flex flex-row items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10">
+          <CardHeader className="p-3 border-b border-border/50 flex flex-row flex-wrap items-center justify-between gap-2">
+            <div className="flex min-w-0 flex-1 basis-40 items-center gap-2">
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10">
                 <Bot className="h-4 w-4 text-primary" />
               </div>
-              <div>
+              <div className="min-w-0 wrap-anywhere">
                 <CardTitle className="text-sm font-semibold">
                   {configA.name}
                 </CardTitle>
                 <span className="text-[10px] text-muted-foreground font-mono">
-                  {configA.badge}
+                  {resultA?.model || configA.badge}{resultA?.provider && ` / ${resultA.provider}`}
                 </span>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex max-w-full flex-wrap items-center gap-2">
               {resultA && !resultA.loading && !resultA.error && (
                 <>
                   <Badge variant="outline" className="text-[10px] h-5 gap-1 font-mono">
@@ -322,6 +320,8 @@ export function ModelCompare() {
                   <Button
                     variant="ghost"
                     size="icon"
+                    aria-label="Copy first response"
+                    title="Copy first response"
                     onClick={() => handleCopy("A", resultA.text)}
                     className="h-7 w-7 rounded-md"
                   >
@@ -345,21 +345,21 @@ export function ModelCompare() {
             </div>
           </CardHeader>
 
-          <CardContent className="p-4 min-h-64 max-h-[32rem] overflow-y-auto">
+          <CardContent className="min-w-0 p-3 min-h-64 max-h-[32rem] overflow-auto wrap-anywhere">
             {resultA?.loading ? (
               <div className="flex flex-col items-center justify-center h-48 text-muted-foreground gap-3">
                 <Loader2 className="h-6 w-6 animate-spin text-primary" />
                 <p className="text-xs">Generating with {configA.name}...</p>
               </div>
             ) : resultA?.error ? (
-              <div className="p-4 rounded-xl bg-destructive/10 text-destructive text-xs">
+              <div role="alert" className="p-3 rounded-md bg-destructive/10 text-destructive text-sm wrap-anywhere">
                 {resultA.error}
               </div>
             ) : resultA?.text ? (
               <MarkdownRenderer content={resultA.text} />
             ) : (
               <div className="flex items-center justify-center h-48 text-xs text-muted-foreground/60 italic">
-                Enter a prompt and click Compare to evaluate.
+                No response yet.
               </div>
             )}
           </CardContent>
@@ -367,28 +367,28 @@ export function ModelCompare() {
 
         {/* Model B Result Card */}
         <Card
-          className={`rounded-2xl border transition-all ${
+          className={`min-w-0 rounded-lg border ${
             winner === "B"
               ? "ring-2 ring-amber-500/50 border-amber-500/40 bg-amber-500/5"
               : "border-border/60 bg-card/60"
           }`}
         >
-          <CardHeader className="p-4 pb-2 border-b border-border/50 flex flex-row items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10">
+          <CardHeader className="p-3 border-b border-border/50 flex flex-row flex-wrap items-center justify-between gap-2">
+            <div className="flex min-w-0 flex-1 basis-40 items-center gap-2">
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10">
                 <Bot className="h-4 w-4 text-primary" />
               </div>
-              <div>
+              <div className="min-w-0 wrap-anywhere">
                 <CardTitle className="text-sm font-semibold">
                   {configB.name}
                 </CardTitle>
                 <span className="text-[10px] text-muted-foreground font-mono">
-                  {configB.badge}
+                  {resultB?.model || configB.badge}{resultB?.provider && ` / ${resultB.provider}`}
                 </span>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex max-w-full flex-wrap items-center gap-2">
               {resultB && !resultB.loading && !resultB.error && (
                 <>
                   <Badge variant="outline" className="text-[10px] h-5 gap-1 font-mono">
@@ -398,6 +398,8 @@ export function ModelCompare() {
                   <Button
                     variant="ghost"
                     size="icon"
+                    aria-label="Copy second response"
+                    title="Copy second response"
                     onClick={() => handleCopy("B", resultB.text)}
                     className="h-7 w-7 rounded-md"
                   >
@@ -421,21 +423,21 @@ export function ModelCompare() {
             </div>
           </CardHeader>
 
-          <CardContent className="p-4 min-h-64 max-h-[32rem] overflow-y-auto">
+          <CardContent className="min-w-0 p-3 min-h-64 max-h-[32rem] overflow-auto wrap-anywhere">
             {resultB?.loading ? (
               <div className="flex flex-col items-center justify-center h-48 text-muted-foreground gap-3">
                 <Loader2 className="h-6 w-6 animate-spin text-primary" />
                 <p className="text-xs">Generating with {configB.name}...</p>
               </div>
             ) : resultB?.error ? (
-              <div className="p-4 rounded-xl bg-destructive/10 text-destructive text-xs">
+              <div role="alert" className="p-3 rounded-md bg-destructive/10 text-destructive text-sm wrap-anywhere">
                 {resultB.error}
               </div>
             ) : resultB?.text ? (
               <MarkdownRenderer content={resultB.text} />
             ) : (
               <div className="flex items-center justify-center h-48 text-xs text-muted-foreground/60 italic">
-                Enter a prompt and click Compare to evaluate.
+                No response yet.
               </div>
             )}
           </CardContent>

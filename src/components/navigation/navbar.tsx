@@ -4,11 +4,8 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
 import {
-  Search,
   Menu,
-  X,
   ChevronDown,
-  Sparkles,
   MessageSquare,
   Lightbulb,
   Cpu,
@@ -20,12 +17,10 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { NAV_ITEMS, SITE_CONFIG } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { SignInDialog } from "@/components/auth/signin-dialog";
 import { UserMenu } from "@/components/auth/user-menu";
@@ -37,11 +32,11 @@ import { useI18n } from "@/lib/i18n";
 export function Navbar() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const router = useRouter();
   const { user, loading } = useAuth();
   const { t, localizePath } = useI18n();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [signInOpen, setSignInOpen] = useState(false);
+  const [signInRequested, setSignInRequested] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
   const getNavLabel = (href: string, fallback: string) => {
@@ -65,8 +60,9 @@ export function Navbar() {
 
   // Auto-open sign-in dialog when redirected from proxy
   const shouldOpenSignIn = searchParams.get("signin") === "true";
-  if (shouldOpenSignIn && !signInOpen) {
-    setSignInOpen(true);
+  if (shouldOpenSignIn !== signInRequested) {
+    setSignInRequested(shouldOpenSignIn);
+    if (shouldOpenSignIn) setSignInOpen(true);
   }
 
   const isAIActive = pathname.startsWith("/ai");
@@ -78,23 +74,22 @@ export function Navbar() {
         scrolled && "shadow-sm"
       )}
     >
-      <div className="container mx-auto flex h-15 items-center justify-between px-4">
-        {/* Logo — Enlarged & Sharp */}
+      <div className="mx-auto flex h-[var(--shell-header-height)] max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
+        {/* Logo — Refined editorial badge */}
         <Link href="/" className="flex items-center gap-2.5 shrink-0 group">
-          <div className="flex h-9.5 w-9.5 items-center justify-center rounded-xl bg-linear-to-br from-primary/20 to-primary/10 ring-1 ring-primary/25 group-hover:scale-105 transition-transform shadow-xs">
-            <img
-              src="/mytoolsbox logo.png"
-              alt={SITE_CONFIG.name}
-              className="h-7 w-7 object-contain"
-            />
+          <div className="flex h-7.5 w-7.5 items-center justify-center rounded-lg bg-primary text-primary-foreground font-semibold text-xs tracking-tight shadow-xs group-hover:opacity-90 transition-opacity">
+            tb.
           </div>
-          <span className="font-bold text-base tracking-tight hidden sm:inline-block">
+          <span className="font-semibold text-[15px] tracking-tight text-foreground hidden sm:inline-block">
             {SITE_CONFIG.name}
+          </span>
+          <span className="hidden md:inline-flex text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded border border-border/80 text-muted-foreground bg-muted/40">
+            PRO
           </span>
         </Link>
 
         {/* Desktop Nav */}
-        <nav className="hidden md:flex items-center gap-1" aria-label="Main navigation">
+        <nav className="hidden lg:flex items-center gap-1" aria-label="Main navigation">
           {NAV_ITEMS.map((item) => {
             const localizedHref = localizePath(item.href);
             const label = getNavLabel(item.href, item.label);
@@ -117,62 +112,62 @@ export function Navbar() {
                       <span className="absolute inset-x-2 -bottom-px h-0.5 bg-primary rounded-full" />
                     )}
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="center" className="w-56 rounded-2xl p-1.5 text-xs shadow-lg">
-                    <DropdownMenuItem className="p-0 cursor-pointer rounded-xl">
+                  <DropdownMenuContent align="center" className="w-56 rounded-xl p-1.5 text-sm shadow-md border-border/70">
+                    <DropdownMenuItem className="p-0 cursor-pointer rounded-lg">
                       <Link
                         href={localizePath("/ai")}
-                        className="flex items-center gap-2.5 p-2 w-full rounded-xl hover:bg-accent/60"
+                        className="flex items-center gap-2.5 p-2 w-full rounded-lg hover:bg-accent/60 transition-colors"
                       >
-                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-500/10 text-violet-600 dark:text-violet-400">
+                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
                           <MessageSquare className="h-3.5 w-3.5" />
                         </div>
                         <div>
-                          <div className="font-semibold text-foreground">{t("ai_new_chat")}</div>
+                          <div className="font-medium text-foreground text-xs">{t("ai_new_chat")}</div>
                           <div className="text-[10px] text-muted-foreground">{t("nav_ai_chat_sub")}</div>
                         </div>
                       </Link>
                     </DropdownMenuItem>
 
-                    <DropdownMenuItem className="p-0 cursor-pointer rounded-xl">
+                    <DropdownMenuItem className="p-0 cursor-pointer rounded-lg">
                       <Link
                         href={localizePath("/ai/prompts")}
-                        className="flex items-center gap-2.5 p-2 w-full rounded-xl hover:bg-accent/60"
+                        className="flex items-center gap-2.5 p-2 w-full rounded-lg hover:bg-accent/60 transition-colors"
                       >
-                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
                           <Lightbulb className="h-3.5 w-3.5" />
                         </div>
                         <div>
-                          <div className="font-semibold text-foreground">{t("ai_prompt_library")}</div>
+                          <div className="font-medium text-foreground text-xs">{t("ai_prompt_library")}</div>
                           <div className="text-[10px] text-muted-foreground">{t("nav_ai_prompts_sub")}</div>
                         </div>
                       </Link>
                     </DropdownMenuItem>
 
-                    <DropdownMenuItem className="p-0 cursor-pointer rounded-xl">
+                    <DropdownMenuItem className="p-0 cursor-pointer rounded-lg">
                       <Link
                         href={localizePath("/ai/compare")}
-                        className="flex items-center gap-2.5 p-2 w-full rounded-xl hover:bg-accent/60"
+                        className="flex items-center gap-2.5 p-2 w-full rounded-lg hover:bg-accent/60 transition-colors"
                       >
-                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
                           <Cpu className="h-3.5 w-3.5" />
                         </div>
                         <div>
-                          <div className="font-semibold text-foreground">{t("ai_compare_models")}</div>
+                          <div className="font-medium text-foreground text-xs">{t("ai_compare_models")}</div>
                           <div className="text-[10px] text-muted-foreground">{t("nav_ai_compare_sub")}</div>
                         </div>
                       </Link>
                     </DropdownMenuItem>
 
-                    <DropdownMenuItem className="p-0 cursor-pointer rounded-xl">
+                    <DropdownMenuItem className="p-0 cursor-pointer rounded-lg">
                       <Link
                         href={localizePath("/ai/personas")}
-                        className="flex items-center gap-2.5 p-2 w-full rounded-xl hover:bg-accent/60"
+                        className="flex items-center gap-2.5 p-2 w-full rounded-lg hover:bg-accent/60 transition-colors"
                       >
-                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
                           <Layers className="h-3.5 w-3.5" />
                         </div>
                         <div>
-                          <div className="font-semibold text-foreground">{t("ai_personas")}</div>
+                          <div className="font-medium text-foreground text-xs">{t("ai_personas")}</div>
                           <div className="text-[10px] text-muted-foreground">{t("nav_ai_personas_sub")}</div>
                         </div>
                       </Link>
@@ -191,7 +186,7 @@ export function Navbar() {
                 className={cn(
                   "relative px-3 py-1.5 text-sm rounded-lg transition-colors hover:bg-accent/60",
                   isActive
-                    ? "text-foreground font-medium"
+                    ? "text-foreground font-semibold"
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
@@ -222,7 +217,7 @@ export function Navbar() {
               <Button
                 variant="outline"
                 size="sm"
-                className="rounded-xl h-8 text-xs font-medium"
+                className="rounded-lg h-8 px-3 text-xs font-medium border-border/80 hover:bg-muted/50"
                 onClick={() => setSignInOpen(true)}
               >
                 {t("nav_signin")}
@@ -235,23 +230,22 @@ export function Navbar() {
             <Button
               variant="ghost"
               size="icon"
-              className="md:hidden rounded-xl h-9 w-9"
+              className="lg:hidden rounded-lg h-10 w-10"
               onClick={() => setMobileOpen(true)}
               aria-label="Open navigation menu"
             >
               <Menu className="h-5 w-5" />
             </Button>
-            <SheetContent side="right" className="w-80 p-0" aria-label="Mobile navigation">
+            <SheetContent side="right" className="w-80 max-w-full overflow-y-auto p-0" aria-label="Mobile navigation">
               <nav aria-label="Mobile navigation" className="flex flex-col gap-1 p-6">
                 <div className="flex items-center gap-2.5 mb-6">
-                  <div className="flex h-9.5 w-9.5 items-center justify-center rounded-xl bg-linear-to-br from-primary/20 to-primary/10 ring-1 ring-primary/25">
-                    <img
-                      src="/mytoolsbox logo.png"
-                      alt={SITE_CONFIG.name}
-                      className="h-7 w-7 object-contain"
-                    />
+                  <div className="flex h-7.5 w-7.5 items-center justify-center rounded-lg bg-primary text-primary-foreground font-semibold text-xs tracking-tight shadow-xs">
+                    tb.
                   </div>
-                  <span className="font-bold text-base">{SITE_CONFIG.name}</span>
+                  <span className="font-semibold text-base">{SITE_CONFIG.name}</span>
+                  <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded border border-border/80 text-muted-foreground bg-muted/40">
+                    PRO
+                  </span>
                 </div>
 
                 <div className="mb-3">
@@ -330,7 +324,6 @@ export function Navbar() {
                     className="flex items-center justify-between px-3 py-2 text-sm font-medium rounded-xl hover:bg-muted"
                   >
                     <span>Blog & Guides</span>
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">New</span>
                   </Link>
                   <Link
                     href={localizePath("/resources")}

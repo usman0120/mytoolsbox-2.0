@@ -251,9 +251,9 @@ export function ONLYOFFICEEditorEngine() {
   };
 
   return (
-    <div className="space-y-4 max-w-5xl mx-auto">
+    <div className="w-full min-w-0 space-y-4">
       {/* Top Document Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-2xl bg-card border border-border/60 shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-3 py-3 border-b border-border/60">
         <div className="flex items-center gap-3 min-w-0">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10 text-blue-500 shrink-0">
             <FileText className="h-5 w-5" />
@@ -262,7 +262,8 @@ export function ONLYOFFICEEditorEngine() {
             type="text"
             value={docTitle}
             onChange={(e) => setDocTitle(e.target.value)}
-            className="text-base font-semibold bg-transparent border-b border-transparent hover:border-border focus:border-primary focus:outline-hidden px-1 py-0.5 max-w-xs sm:max-w-md truncate"
+            aria-label="Document title"
+            className="w-full min-w-0 text-base font-semibold bg-transparent border-b border-transparent hover:border-border focus:border-primary focus:outline-hidden px-1 py-0.5 truncate"
             placeholder="Document Title"
           />
         </div>
@@ -355,17 +356,18 @@ export function ONLYOFFICEEditorEngine() {
       </div>
 
       {/* Document Workspace Canvas */}
-      <div className="rounded-2xl border border-border/60 bg-muted/10 p-4 sm:p-8 flex justify-center shadow-inner min-h-[500px]">
-        <div className="w-full max-w-3xl bg-background rounded-xl border border-border shadow-lg p-6 sm:p-12 min-h-[600px] flex flex-col">
+      <section aria-label="Document editor" className="min-w-0">
+        <div className="w-full bg-background rounded-lg border border-border p-3 sm:p-6 min-h-[600px] flex flex-col">
           <textarea
             ref={textareaRef}
+            aria-label="Document content"
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder="Type your document content here..."
             className="w-full flex-1 resize-none bg-transparent text-sm sm:text-base leading-relaxed text-foreground placeholder:text-muted-foreground focus:outline-hidden font-normal"
           />
         </div>
-      </div>
+      </section>
     </div>
   );
 }

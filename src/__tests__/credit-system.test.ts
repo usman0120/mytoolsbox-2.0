@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { afterEach, beforeEach, describe, it, expect, vi } from "vitest";
 import {
   CREDIT_COSTS,
   SUBSCRIPTION_PLANS,
@@ -249,6 +249,15 @@ describe("Credit System — AI Credits", () => {
   // Server Auth & Token Verification
   // -----------------------------------------------------------------------
   describe("Server Auth (Anti-Fraud)", () => {
+    const fetchMock = vi.fn();
+    beforeEach(() => {
+      vi.stubEnv("NODE_ENV", "production");
+      vi.stubEnv("NEXT_PUBLIC_FIREBASE_API_KEY", "test-public-key");
+      vi.stubGlobal("fetch", fetchMock);
+      fetchMock.mockReset();
+    });
+    afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
+
     // Helper to create mock JWT
     function createMockToken(payload: Record<string, unknown>): string {
       const header = Buffer.from(JSON.stringify({ alg: "RS256", typ: "JWT" })).toString("base64url");
@@ -257,7 +266,7 @@ describe("Credit System — AI Credits", () => {
       return `${header}.${body}.${sig}`;
     }
 
-    it("extracts authenticated user from valid Firebase JWT", async () => {
+    it("extracts authenticated user only after Firebase verifies the JWT", async () => {
       const { extractAuthUserFromCookies } = await import("@/lib/auth/server-auth");
       const validToken = createMockToken({
         sub: "user_abc12345",
@@ -265,6 +274,7 @@ describe("Credit System — AI Credits", () => {
         exp: Math.floor(Date.now() / 1000) + 3600,
         email: "test@example.com",
       });
+      fetchMock.mockResolvedValue({ ok: true, json: async () => ({ users: [{ localId: "user_abc12345", email: "test@example.com" }] }) });
 
       const mockCookies = {
         get: (name: string) => {
@@ -273,11 +283,14 @@ describe("Credit System — AI Credits", () => {
         },
       };
 
-      const user = extractAuthUserFromCookies(mockCookies);
+      const user = await extractAuthUserFromCookies(mockCookies);
       expect(user).not.toBeNull();
       expect(user?.userId).toBe("user_abc12345");
       expect(user?.email).toBe("test@example.com");
       expect(user?.isAnonymous).toBe(false);
+      expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining("accounts:lookup"), expect.objectContaining({
+        method: "POST", cache: "no-store", body: JSON.stringify({ idToken: validToken }), signal: expect.any(AbortSignal),
+      }));
     });
 
     it("rejects expired Firebase JWT tokens", async () => {
@@ -287,6 +300,7 @@ describe("Credit System — AI Credits", () => {
         user_id: "user_expired_999",
         exp: Math.floor(Date.now() / 1000) - 100, // in the past
       });
+      fetchMock.mockResolvedValue({ ok: false, status: 400 });
 
       const mockCookies = {
         get: (name: string) => {
@@ -295,7 +309,7 @@ describe("Credit System — AI Credits", () => {
         },
       };
 
-      const user = extractAuthUserFromCookies(mockCookies);
+      const user = await extractAuthUserFromCookies(mockCookies);
       expect(user).toBeNull();
     });
 
@@ -306,6 +320,7 @@ describe("Credit System — AI Credits", () => {
         user_id: "legit_user_111",
         exp: Math.floor(Date.now() / 1000) + 3600,
       });
+      fetchMock.mockResolvedValue({ ok: true, json: async () => ({ users: [{ localId: "legit_user_111" }] }) });
 
       const mockCookies = {
         get: (name: string) => {
@@ -315,8 +330,86 @@ describe("Credit System — AI Credits", () => {
         },
       };
 
-      const user = extractAuthUserFromCookies(mockCookies);
+      const user = await extractAuthUserFromCookies(mockCookies);
       expect(user).toBeNull(); // Tampering detected
+    });
+
+    it("rejects forged JWTs with plausible unexpired claims without falling back to __uid", async () => {
+      const { extractAuthUserFromCookies } = await import("@/lib/auth/server-auth");
+      const forged = createMockToken({ sub: "victim_user_123", exp: Math.floor(Date.now() / 1000) + 3600 });
+      fetchMock.mockResolvedValue({ ok: false, status: 400 });
+      expect(await extractAuthUserFromCookies({ get: (name) => ({ value: name === "__session" ? forged : "victim_user_123" }) })).toBeNull();
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
+    it.each(["production", "development", "test"])("rejects raw UID and UID-only cookies in %s", async (environment) => {
+      vi.stubEnv("NODE_ENV", environment);
+      const { extractAuthUserFromCookies, extractAuthUserFromToken } = await import("@/lib/auth/server-auth");
+      expect(await extractAuthUserFromToken("victim_user_123")).toBeNull();
+      expect(await extractAuthUserFromCookies({ get: (name) => name === "__uid" ? { value: "victim_user_123" } : undefined })).toBeNull();
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it("reports missing verification configuration without a network request", async () => {
+      vi.stubEnv("NEXT_PUBLIC_FIREBASE_API_KEY", "");
+      const { extractAuthUserFromToken, AuthVerificationUnavailableError } = await import("@/lib/auth/server-auth");
+      await expect(extractAuthUserFromToken(createMockToken({ sub: "user_abc12345" }))).rejects.toBeInstanceOf(AuthVerificationUnavailableError);
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it("retains verified anonymous identity metadata", async () => {
+      const { extractAuthUserFromToken } = await import("@/lib/auth/server-auth");
+      fetchMock.mockResolvedValue({ ok: true, json: async () => ({ users: [{ localId: "anon_user_123" }] }) });
+      expect(await extractAuthUserFromToken(createMockToken({ sub: "anon_user_123", firebase: { sign_in_provider: "anonymous" } }))).toEqual({ userId: "anon_user_123", email: undefined, isAnonymous: true });
+    });
+
+    it("rejects malformed tokens as invalid identity without calling Firebase", async () => {
+      const { extractAuthUserFromToken } = await import("@/lib/auth/server-auth");
+      for (const invalidToken of ["header.not-json.signature", "header..signature", createMockToken({ email: "forged@example.com" })]) {
+        expect(await extractAuthUserFromToken(invalidToken)).toBeNull();
+      }
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it("rejects a token whose subject differs from the verified UID", async () => {
+      const { extractAuthUserFromToken } = await import("@/lib/auth/server-auth");
+      fetchMock.mockResolvedValue({ ok: true, json: async () => ({ users: [{ localId: "verified_user_123" }] }) });
+      expect(await extractAuthUserFromToken(createMockToken({ sub: "victim_user_123" }))).toBeNull();
+    });
+
+    it("uses the verified account rather than conflicting token claims", async () => {
+      const { extractAuthUserFromToken } = await import("@/lib/auth/server-auth");
+      fetchMock.mockResolvedValue({ ok: true, json: async () => ({ users: [{ localId: "verified_user_123", email: "verified@example.com" }] }) });
+      expect(await extractAuthUserFromToken(createMockToken({ sub: "verified_user_123", user_id: "victim_user_123", email: "forged@example.com" }))).toEqual({ userId: "verified_user_123", email: "verified@example.com", isAnonymous: false });
+    });
+
+    it("does not fall back to cookies after invalid or malformed Authorization", async () => {
+      const { extractAuthUser } = await import("@/lib/auth/server-auth");
+      const cookies = { get: () => ({ value: createMockToken({ sub: "user_abc12345" }) }) };
+      expect(await extractAuthUser({ headers: { get: () => "Basic invalid" } }, cookies)).toBeNull();
+      expect(fetchMock).not.toHaveBeenCalled();
+      fetchMock.mockResolvedValue({ ok: false, status: 400 });
+      expect(await extractAuthUser({ headers: { get: () => `Bearer ${createMockToken({ sub: "victim_user_123" })}` } }, cookies)).toBeNull();
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
+    it("rejects disabled accounts and malformed account lists", async () => {
+      const { extractAuthUserFromToken } = await import("@/lib/auth/server-auth");
+      for (const users of [[], [{ localId: "user_abc12345", disabled: true }], [{ localId: "" }], [{ localId: 123 }], [{ localId: "user_abc12345" }, { localId: "other" }]]) {
+        fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ users }) });
+        expect(await extractAuthUserFromToken(createMockToken({ sub: "user_abc12345" }))).toBeNull();
+      }
+    });
+
+    it("reports network, provider and JSON failures as verification unavailable", async () => {
+      const { extractAuthUserFromToken, AuthVerificationUnavailableError } = await import("@/lib/auth/server-auth");
+      fetchMock.mockRejectedValueOnce(new Error("network"));
+      fetchMock.mockResolvedValueOnce({ ok: false, status: 503 });
+      fetchMock.mockResolvedValueOnce({ ok: false, status: 429 });
+      fetchMock.mockResolvedValueOnce({ ok: true, json: async () => { throw new Error("invalid JSON"); } });
+      for (let attempt = 0; attempt < 4; attempt += 1) {
+        await expect(extractAuthUserFromToken(createMockToken({ sub: "user_abc12345" }))).rejects.toBeInstanceOf(AuthVerificationUnavailableError);
+      }
     });
   });
 

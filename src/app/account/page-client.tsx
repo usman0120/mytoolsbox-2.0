@@ -7,12 +7,11 @@ import { useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+import { PageShell, ToolHeader, HelpDisclosure } from "@/components/common/workload-layouts";
 import {
   ArrowUpCircle, Shield, Zap, Clock, Heart, History, Cloud,
-  Sparkles, FileUp, Loader2, CheckCircle2, LogIn, Mail, Calculator
+  Sparkles, FileUp, Loader2, CheckCircle2, LogIn, Calculator
 } from "lucide-react";
-import { toast } from "sonner";
 import { SignInDialog } from "@/components/auth/signin-dialog";
 
 export function AccountPageClient() {
@@ -20,7 +19,7 @@ export function AccountPageClient() {
   const router = useRouter();
   const { t, localizePath } = useI18n();
   const [showSignIn, setShowSignIn] = useState(false);
-  const [upgrading, setUpgrading] = useState(false);
+  const [upgrading] = useState(false);
 
   if (authLoading) {
     return (
@@ -32,15 +31,10 @@ export function AccountPageClient() {
 
   if (!user) {
     return (
-      <div className="container max-w-4xl mx-auto py-8 px-4 space-y-8">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">{t("account_title", "Account")}</h1>
-          <p className="text-muted-foreground mt-1">
-            {t("auth_login_desc", "Sign in to manage your account and unlock more features.")}
-          </p>
-        </div>
-        <Card>
-          <CardContent className="py-12 text-center">
+      <PageShell className="max-w-4xl space-y-5">
+        <ToolHeader title={t("account_title", "Account")} />
+        <section className="border-t py-6">
+          <div className="max-w-xl space-y-3">
             <Shield className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
             <h3 className="text-lg font-medium mb-2">{t("auth_login_required", "Please log in first")}</h3>
             <p className="text-muted-foreground mb-4">
@@ -50,10 +44,10 @@ export function AccountPageClient() {
               <LogIn className="mr-2 h-4 w-4" />
               {t("auth_signin", "Sign In")}
             </Button>
-          </CardContent>
-        </Card>
+          </div>
+        </section>
         <SignInDialog open={showSignIn} onOpenChange={setShowSignIn} />
-      </div>
+      </PageShell>
     );
   }
 
@@ -81,20 +75,13 @@ export function AccountPageClient() {
   ];
 
   return (
-    <div className="container max-w-4xl mx-auto py-8 px-4 space-y-8">
+    <PageShell className="max-w-4xl space-y-5">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">{t("account_title", "Account")}</h1>
-        <p className="text-muted-foreground mt-1">
-          {isAnonymous
-            ? t("account_guest_sub", "You're using a guest account. Upgrade to unlock more features.")
-            : t("account_user_sub", "Manage your account, profile, and subscription.")}
-        </p>
-      </div>
+      <ToolHeader title={t("account_title", "Account")} />
 
       {/* Current Plan */}
-      <Card>
-        <CardHeader>
+      <Card className="rounded-lg">
+        <CardHeader className="px-4">
           <CardTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5" />
             {t("account_plan_title", "Current Plan")}
@@ -107,7 +94,7 @@ export function AccountPageClient() {
                 : t("account_plan_free_desc", "You're on the free account plan.")}
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 px-4">
           <div className="flex items-center gap-2">
             <Badge variant={isPro ? "default" : "secondary"} className="text-sm px-3 py-1">
               {isAnonymous ? t("auth_guest", "Guest") : isPro ? t("badge_pro", "Pro") : t("badge_free", "Free")}
@@ -130,7 +117,8 @@ export function AccountPageClient() {
           </div>
 
           {/* Feature comparison */}
-          <div className="grid gap-6 md:grid-cols-3 pt-4">
+          <HelpDisclosure title={t("account_plan_title", "Plan details")}>
+          <div className="grid gap-4 md:grid-cols-3">
             {/* Guest */}
             <div className="space-y-3">
               <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider">
@@ -176,6 +164,7 @@ export function AccountPageClient() {
               </ul>
             </div>
           </div>
+          </HelpDisclosure>
         </CardContent>
       </Card>
 
@@ -228,14 +217,12 @@ export function AccountPageClient() {
       </Card>
 
       {/* Quick Links */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("account_quick_links_title", "Quick Links")}</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
+      <section className="border-t pt-4">
+        <h2 className="text-base font-semibold mb-3">{t("account_quick_links_title", "Quick Links")}</h2>
+        <div className="flex flex-wrap gap-2">
           <Button
             variant="outline"
-            className="w-full justify-start"
+            className="justify-start"
             onClick={() => router.push(localizePath("/favorites"))}
           >
             <Heart className="mr-2 h-4 w-4" />
@@ -243,7 +230,7 @@ export function AccountPageClient() {
           </Button>
           <Button
             variant="outline"
-            className="w-full justify-start"
+            className="justify-start"
             onClick={() => router.push(localizePath("/history"))}
           >
             <History className="mr-2 h-4 w-4" />
@@ -251,16 +238,16 @@ export function AccountPageClient() {
           </Button>
           <Button
             variant="outline"
-            className="w-full justify-start"
+            className="justify-start"
             onClick={() => router.push(localizePath("/settings"))}
           >
             <Shield className="mr-2 h-4 w-4" />
             {t("auth_settings", "Settings")}
           </Button>
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
       <SignInDialog open={showSignIn} onOpenChange={setShowSignIn} />
-    </div>
+    </PageShell>
   );
 }

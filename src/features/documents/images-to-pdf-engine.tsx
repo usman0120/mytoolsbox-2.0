@@ -17,7 +17,7 @@ import {
   Sliders,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
@@ -138,10 +138,10 @@ export function ImagesToPDFEngine() {
   }, [result, images]);
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
+    <div className="w-full min-w-0 space-y-4">
       {/* Upload Zone */}
       <div
-        className={`border-2 border-dashed rounded-2xl p-8 sm:p-10 text-center transition-all cursor-pointer ${
+        className={`border-2 border-dashed rounded-lg p-4 sm:p-6 text-center transition-colors cursor-pointer ${
           dragOver
             ? "border-primary bg-primary/5 scale-[0.99]"
             : "border-border hover:border-primary/50 hover:bg-muted/30"
@@ -165,7 +165,7 @@ export function ImagesToPDFEngine() {
         <p className="text-sm text-muted-foreground mb-4 max-w-md mx-auto">
           Convert JPG, PNG, WebP, GIF, or BMP images into a single professional PDF document. Reorder and customize margins.
         </p>
-        <Button variant="outline" size="sm" className="rounded-xl pointer-events-none">
+        <Button variant="outline" onClick={(event) => { event.stopPropagation(); fileInputRef.current?.click(); }} className="rounded-lg">
           <Plus className="h-4 w-4 mr-1.5" /> Select Images
         </Button>
         <input
@@ -183,7 +183,7 @@ export function ImagesToPDFEngine() {
 
       {/* Selected Images Gallery */}
       {images.length > 0 && (
-        <Card className="rounded-2xl border-border/60 shadow-sm overflow-hidden">
+        <section aria-label="Image sequence and PDF layout" className="min-w-0">
           <div className="p-4 bg-muted/40 border-b border-border/60 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <span className="font-semibold text-sm">Image Sequence</span>
@@ -211,7 +211,7 @@ export function ImagesToPDFEngine() {
             </div>
           </div>
 
-          <CardContent className="p-4">
+          <div className="py-4">
             {/* Grid of Image Thumbnails */}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
               {images.map((img, idx) => (
@@ -269,7 +269,7 @@ export function ImagesToPDFEngine() {
             </div>
 
             {/* Layout & Margin Settings */}
-            <div className="mt-6 p-4 rounded-xl bg-muted/20 border border-border/50 grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+            <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
               <div>
                 <Label className="text-xs font-semibold mb-1.5 block">Page Size</Label>
                 <div className="flex rounded-lg bg-background p-0.5 border border-border/60">
@@ -388,8 +388,8 @@ export function ImagesToPDFEngine() {
                 )}
               </Button>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </section>
       )}
 
       {/* Result Card */}

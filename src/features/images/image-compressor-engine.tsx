@@ -107,7 +107,7 @@ export function ImageCompressorEngine() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="w-full min-w-0 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-border/50">
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20">
@@ -126,12 +126,12 @@ export function ImageCompressorEngine() {
 
       {!file && (
         <div
-          className={`border-2 border-dashed rounded-2xl p-10 text-center transition-all cursor-pointer ${
+          className={`border-2 border-dashed rounded-lg p-4 sm:p-6 text-center transition-colors cursor-pointer ${
             dragOver ? "border-emerald-500 bg-emerald-500/5 scale-[0.99]" : "border-border/60 hover:border-emerald-500/40 bg-card/50"
           }`}
           onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
           onDragLeave={() => setDragOver(false)}
-          onDrop={(e) => { e.preventDefault(); setDragOver(false); e.dataTransfer.files[0] && loadFile(e.dataTransfer.files[0]); }}
+          onDrop={(e) => { e.preventDefault(); setDragOver(false); if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); }}
           onClick={() => fileInputRef.current?.click()}
         >
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/10 ring-1 ring-emerald-500/20 text-emerald-600">
@@ -148,7 +148,7 @@ export function ImageCompressorEngine() {
             className="hidden"
             onChange={(e) => e.target.files?.[0] && loadFile(e.target.files[0])}
           />
-          <Button size="sm" className="rounded-xl gap-2 pointer-events-none bg-emerald-600 hover:bg-emerald-700 text-white">
+          <Button onClick={(event) => { event.stopPropagation(); fileInputRef.current?.click(); }} className="rounded-lg gap-2 bg-emerald-600 hover:bg-emerald-700 text-white">
             <Upload className="h-4 w-4" /> Select Image
           </Button>
         </div>
@@ -194,11 +194,11 @@ export function ImageCompressorEngine() {
             )}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_20rem]">
             {/* Left: Controls & Sliders */}
-            <div className="lg:col-span-5 space-y-4">
-              <Card className="border-border/50">
-                <CardContent className="p-5 space-y-5">
+            <section aria-label="Compression settings" className="min-w-0 xl:col-start-2 xl:row-start-1">
+              <div>
+                <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <h4 className="font-semibold text-sm">Compression Settings</h4>
                     {processing && (
@@ -293,14 +293,14 @@ export function ImageCompressorEngine() {
                       </div>
                     </div>
                   )}
-                </CardContent>
-              </Card>
-            </div>
+                </div>
+              </div>
+            </section>
 
             {/* Right: Visual Image Preview */}
-            <div className="lg:col-span-7 space-y-4">
-              <Card className="border-border/50 overflow-hidden">
-                <CardContent className="p-4 space-y-3">
+            <section aria-label="Image preview" className="order-first min-w-0 xl:col-start-1 xl:row-start-1">
+              <div>
+                <div className="space-y-3">
                   <div className="flex items-center justify-between text-xs">
                     <span className="font-semibold flex items-center gap-1.5">
                       <Eye className="h-4 w-4 text-emerald-600" /> Output Preview
@@ -327,9 +327,9 @@ export function ImageCompressorEngine() {
                       />
                     ) : null}
                   </div>
-                </CardContent>
-              </Card>
-            </div>
+                </div>
+              </div>
+            </section>
           </div>
         </div>
       )}

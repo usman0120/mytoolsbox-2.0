@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { ToolDefinition } from "@/types";
+import { EngineBoundary, EngineLoading, EngineUnavailable } from "@/components/common/engine-state";
 
 const engineMap: Record<string, React.ComponentType<unknown>> = {
   "math-solver": dynamic(() => import("@/features/apps/math-solver-engine").then((m) => ({ default: m.MathSolverEngine })), { loading: EngineLoading }),
@@ -27,14 +28,7 @@ const engineMap: Record<string, React.ComponentType<unknown>> = {
   "nutrition-ai": dynamic(() => import("@/features/apps/nutrition-ai-engine").then((m) => ({ default: m.NutritionAIEngine })), { loading: EngineLoading }),
 };
 
-function EngineLoading() {
-  return (
-    <div className="text-center py-8">
-      <div className="animate-spin h-8 w-8 border-4 border-cyan-500 border-t-transparent rounded-full mx-auto mb-3" />
-      <p className="text-sm text-muted-foreground">Loading app...</p>
-    </div>
-  );
-}
+export const appEngineSlugs = Object.keys(engineMap);
 
 interface AppEngineProps {
   app: ToolDefinition;
@@ -43,16 +37,7 @@ interface AppEngineProps {
 export function AppEngine({ app }: AppEngineProps) {
   const Engine = engineMap[app.slug];
 
-  if (!Engine) {
-    return (
-      <div className="border-2 border-dashed rounded-xl p-8 text-center">
-        <p className="font-medium mb-1">Coming Soon</p>
-        <p className="text-sm text-muted-foreground">
-          The {app.name} app is under development. Check back soon!
-        </p>
-      </div>
-    );
-  }
+  if (!Engine) return <EngineUnavailable name={app.name} />;
 
-  return <Engine />;
+  return <EngineBoundary key={app.slug} name={app.name}><Engine /></EngineBoundary>;
 }

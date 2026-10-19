@@ -28,7 +28,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { AI_PERSONAS } from "../prompt-library-data";
-import { SUPPORTED_PROVIDERS, getProviderConfig } from "@/lib/ai/providers-config";
+import { getProviderConfig } from "@/lib/ai/providers-config";
+import { useI18n } from "@/lib/i18n";
 
 interface ChatInputProps {
   input: string;
@@ -114,6 +115,7 @@ export function ChatInput({
   onPersonaChange,
   onOpenPromptLibrary,
 }: ChatInputProps) {
+  const { t } = useI18n();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [slashMenuDismissed, setSlashMenuDismissed] = useState(false);
@@ -122,27 +124,41 @@ export function ChatInput({
 
   // Auto-fetch available providers only if not provided by parent
   useEffect(() => {
-    if (availableProviders && availableProviders.length > 0) {
+    if (availableProviders !== undefined) {
       return;
     }
 
     let cancelled = false;
     fetch("/api/ai")
-      .then((res) => res.json())
+      .then((res) => { if (!res.ok) throw new Error("Provider status unavailable"); return res.json(); })
       .then((data) => {
         if (!cancelled && Array.isArray(data.providers)) {
           setFetchedProviders(data.providers);
         }
       })
       .catch(() => {
-        // Fallback default
-        if (!cancelled) setFetchedProviders(["gemini", "groq"]);
+        if (!cancelled) setFetchedProviders([]);
       });
 
     return () => {
       cancelled = true;
     };
   }, [availableProviders]);
+
+  useEffect(() => () => {
+    const recognition = recognitionRef.current;
+    if (recognition) {
+      recognition.onstart = null;
+      recognition.onresult = null;
+      recognition.onerror = null;
+      recognition.onend = null;
+      recognition.stop();
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isLoading) recognitionRef.current?.stop();
+  }, [isLoading]);
 
   // Auto-resize textarea as input grows smoothly up to 180px
   useEffect(() => {
@@ -171,7 +187,9 @@ export function ChatInput({
 
   // Keyboard shortcut: Enter to send, Shift+Enter for new line
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.nativeEvent.isComposing) return;
     if (e.key === "Escape") {
+      if (slashMenuOpen) { e.preventDefault(); e.stopPropagation(); }
       setSlashMenuDismissed(true);
       return;
     }
@@ -211,7 +229,8 @@ export function ChatInput({
       const recognition = new SpeechRecognition();
       recognition.continuous = true;
       recognition.interimResults = true;
-      recognition.lang = "en-US";
+      recognition.lang = document.documentElement.lang || navigator.language;
+      const initialInput = input;
 
       recognition.onstart = () => {
         setIsRecording(true);
@@ -220,11 +239,11 @@ export function ChatInput({
 
       recognition.onresult = (event: SpeechRecognitionEvent) => {
         let transcript = "";
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          transcript += event.results[i][0].transcript;
+        for (let resultIndex = 0; resultIndex < event.results.length; resultIndex++) {
+          transcript += event.results[resultIndex][0].transcript;
         }
         if (transcript) {
-          setInput(input ? `${input} ${transcript}` : transcript);
+          setInput(initialInput ? `${initialInput} ${transcript}` : transcript);
         }
       };
 
@@ -248,9 +267,7 @@ export function ChatInput({
   };
 
   // Dynamic Provider List & Display
-  const effectiveProviders = (availableProviders && availableProviders.length > 0)
-    ? availableProviders
-    : (fetchedProviders.length > 0 ? fetchedProviders : ["gemini", "groq"]);
+  const effectiveProviders = availableProviders ?? fetchedProviders;
 
   const getActiveProviderLabel = () => {
     if (selectedProvider === "auto") return "Auto Router";
@@ -262,8 +279,8 @@ export function ChatInput({
   const dynamicPlaceholder =
     placeholder ||
     (activePersona && activePersona.id !== "general"
-      ? `Ask ${activePersona.name} or type '/' for recipes...`
-      : "Ask anything, brainstorm, or paste code. Type '/' for quick recipes...");
+      ? `Ask ${activePersona.name}`
+      : t("contact_message", "Message"));
 
   const wordCount = input.trim() ? input.trim().split(/\s+/).length : 0;
 
@@ -271,10 +288,9 @@ export function ChatInput({
     <div className="p-2 sm:p-3 max-w-4xl mx-auto w-full relative shrink-0">
       {/* Floating Slash Command Autocomplete Menu */}
       {slashMenuOpen && filteredSlashCommands.length > 0 && (
-        <div className="absolute bottom-full mb-2 left-4 sm:left-6 right-4 sm:right-6 max-w-lg z-50 rounded-2xl border border-border/70 bg-popover/95 p-1.5 shadow-2xl backdrop-blur-xl animate-fade-in-up">
-          <div className="px-2.5 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center justify-between">
-            <span>Productivity Slash Recipes</span>
-            <span className="font-mono text-[9px]">Press Tab or Enter</span>
+        <div className="absolute bottom-full mb-2 left-2 right-2 max-w-lg max-h-64 overflow-y-auto z-50 rounded-lg border border-border bg-popover p-1.5 shadow-md">
+          <div className="px-2.5 py-1 text-xs font-semibold text-muted-foreground">
+            <span>Prompt starters</span>
           </div>
           <div className="space-y-0.5">
             {filteredSlashCommands.map((sc) => {
@@ -284,7 +300,7 @@ export function ChatInput({
                   key={sc.cmd}
                   type="button"
                   onClick={() => applySlashCommand(sc.prefix)}
-                  className="w-full flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-xs hover:bg-accent transition-colors group cursor-pointer"
+                  className="w-full min-h-11 flex items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm hover:bg-accent group cursor-pointer"
                 >
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
                     <Icon className="h-3.5 w-3.5" />
@@ -304,12 +320,13 @@ export function ChatInput({
       )}
 
       {/* Modern Multi-line AI Capsule Container (Gemini / Claude style) */}
-      <div className="relative flex flex-col bg-[#1e1f20] dark:bg-[#1e1f20] text-white rounded-[24px] sm:rounded-[28px] border border-white/10 dark:border-white/10 shadow-2xl p-2 sm:p-2.5 transition-all focus-within:ring-2 focus-within:ring-white/20 focus-within:border-white/20">
+      <div className="relative flex flex-col bg-background text-foreground rounded-lg border border-input p-2 focus-within:ring-2 focus-within:ring-ring">
         
         {/* Top: Full-Width Clean Textarea (Zero scrollbar clipping into buttons) */}
         <div className="w-full px-2 pt-1">
           <textarea
             ref={textareaRef}
+            aria-label={t("contact_message", "Message")}
             value={input}
             onChange={(e) => {
               setInput(e.target.value);
@@ -319,24 +336,26 @@ export function ChatInput({
             placeholder={dynamicPlaceholder}
             disabled={disabled || isLoading}
             rows={1}
-            className="w-full resize-none bg-transparent py-1 text-sm sm:text-base text-white placeholder:text-neutral-400 focus:outline-hidden max-h-48 leading-relaxed font-normal overflow-y-auto scrollbar-thin [scrollbar-color:rgba(255,255,255,0.2)_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/20 [&::-webkit-scrollbar-thumb]:rounded-full"
+            className="w-full resize-none bg-transparent py-1 text-base text-foreground placeholder:text-muted-foreground focus:outline-none max-h-48 leading-relaxed overflow-y-auto"
           />
         </div>
 
         {/* Bottom Toolbar Row */}
-        <div className="flex items-center justify-between gap-2 px-1 pt-1 border-t border-white/5 mt-0.5">
+        <div className="flex flex-wrap items-center justify-between gap-1 pt-1 border-t border-border mt-0.5">
           {/* Left Actions: Plus Menu & Clear */}
           <div className="flex items-center gap-1 shrink-0">
             <DropdownMenu>
               <DropdownMenuTrigger
-                className="flex h-8 w-8 sm:h-8.5 sm:w-8.5 items-center justify-center rounded-full hover:bg-white/10 text-neutral-300 hover:text-white transition-colors shrink-0 outline-none cursor-pointer"
+                disabled={isLoading || disabled}
+                aria-label="Prompt starters & personas"
+                className="flex h-11 w-11 items-center justify-center rounded-md hover:bg-accent text-muted-foreground hover:text-foreground shrink-0 cursor-pointer disabled:opacity-50"
                 title="Prompt starters & personas"
               >
                 <Plus className="h-4.5 w-4.5" />
               </DropdownMenuTrigger>
 
-              <DropdownMenuContent align="start" className="w-64 rounded-2xl p-1.5 text-xs shadow-2xl backdrop-blur-xl">
-                <div className="px-2.5 py-1 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+              <DropdownMenuContent align="start" className="w-64 max-h-80 overflow-y-auto rounded-lg p-1.5 text-sm">
+                <div className="px-2.5 py-1 text-xs font-semibold text-muted-foreground">
                   Quick Prompt Starters
                 </div>
                 {QUICK_ACTIONS.map((action) => {
@@ -348,7 +367,7 @@ export function ChatInput({
                         setInput(action.prefix);
                         textareaRef.current?.focus();
                       }}
-                      className="gap-2 cursor-pointer rounded-xl p-2"
+                      className="gap-2 cursor-pointer rounded-md p-2"
                     >
                       <ActionIcon className="h-3.5 w-3.5 text-primary" />
                       <span>{action.label}</span>
@@ -361,24 +380,24 @@ export function ChatInput({
                 {onOpenPromptLibrary && (
                   <DropdownMenuItem
                     onClick={onOpenPromptLibrary}
-                    className="gap-2 cursor-pointer rounded-xl p-2 font-medium text-amber-500"
+                    className="gap-2 cursor-pointer rounded-md p-2 font-medium"
                   >
                     <Sparkles className="h-3.5 w-3.5" />
-                    <span>Open 160+ Prompt Library</span>
+                    <span>{t("ai_prompt_library", "Prompt Library")}</span>
                   </DropdownMenuItem>
                 )}
 
                 {onPersonaChange && (
                   <>
                     <DropdownMenuSeparator />
-                    <div className="px-2.5 py-1 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                    <div className="px-2.5 py-1 text-xs font-semibold text-muted-foreground">
                       Active Persona
                     </div>
-                    {AI_PERSONAS.slice(0, 4).map((p) => (
+                    {AI_PERSONAS.map((p) => (
                       <DropdownMenuItem
                         key={p.id}
                         onClick={() => onPersonaChange(p.id)}
-                        className={`gap-2 cursor-pointer rounded-xl p-2 ${
+                        className={`gap-2 cursor-pointer rounded-md p-2 ${
                           activePersonaId === p.id ? "bg-accent font-semibold" : ""
                         }`}
                       >
@@ -396,7 +415,9 @@ export function ChatInput({
               <button
                 type="button"
                 onClick={onClear}
-                className="flex h-7 w-7 items-center justify-center rounded-full hover:bg-white/10 text-neutral-400 hover:text-rose-400 transition-colors cursor-pointer"
+                disabled={isLoading || disabled}
+                aria-label="Clear input"
+                className="flex h-11 w-11 items-center justify-center rounded-md hover:bg-accent text-muted-foreground hover:text-destructive cursor-pointer disabled:opacity-50"
                 title="Clear input"
               >
                 <Trash2 className="h-3.5 w-3.5" />
@@ -408,7 +429,7 @@ export function ChatInput({
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             {/* Live Word Count Indicator */}
             {wordCount > 0 && (
-              <span className="hidden sm:inline-block font-mono text-[10px] sm:text-[11px] text-neutral-400 select-none mr-0.5">
+              <span className="hidden sm:inline-block text-xs text-muted-foreground select-none mr-0.5">
                 {wordCount} {wordCount === 1 ? "word" : "words"}
               </span>
             )}
@@ -417,22 +438,23 @@ export function ChatInput({
             {onProviderChange && (
               <DropdownMenu>
                 <DropdownMenuTrigger
-                  className="flex items-center gap-1 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full bg-white/10 hover:bg-white/15 text-xs font-medium text-neutral-200 hover:text-white transition-all outline-none cursor-pointer border border-white/10"
-                  title="Select AI Model"
+                  disabled={isLoading || disabled}
+                  aria-label="Select AI provider"
+                  className="flex h-11 items-center gap-1 px-2 rounded-md hover:bg-accent text-xs font-medium text-foreground cursor-pointer disabled:opacity-50"
+                  title="Select AI provider"
                 >
-                  <Sparkles className="h-3 w-3 text-blue-400" />
+                  <Sparkles className="h-3 w-3 text-primary" />
                   <span className="truncate max-w-24 sm:max-w-32">{getActiveProviderLabel()}</span>
                   <ChevronDown className="h-3 w-3 opacity-60" />
                 </DropdownMenuTrigger>
 
-                <DropdownMenuContent align="end" className="w-64 rounded-2xl p-1.5 text-xs shadow-2xl backdrop-blur-xl">
+                <DropdownMenuContent align="end" className="w-64 rounded-lg p-1.5 text-sm">
                   {/* Auto Router Option */}
                   <DropdownMenuItem
                     onClick={() => {
                       onProviderChange("auto");
-                      toast.info("Auto Router enabled: Routes to optimal engine based on prompt complexity.");
                     }}
-                    className={`gap-2.5 cursor-pointer rounded-xl p-2.5 ${
+                    className={`gap-2.5 cursor-pointer rounded-md p-2.5 ${
                       selectedProvider === "auto" ? "bg-accent font-semibold" : ""
                     }`}
                   >
@@ -444,13 +466,13 @@ export function ChatInput({
                         <span className="font-semibold text-foreground">Auto Router</span>
                         {selectedProvider === "auto" && <Check className="h-3.5 w-3.5 text-primary" />}
                       </div>
-                      <p className="text-[10px] text-muted-foreground truncate">Auto-selects fastest & smartest engine</p>
+                      <p className="text-xs text-muted-foreground">Server-selected provider</p>
                     </div>
                   </DropdownMenuItem>
 
                   <DropdownMenuSeparator />
 
-                  <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                  <div className="px-2 py-1 text-xs font-semibold text-muted-foreground">
                     Configured AI Providers
                   </div>
 
@@ -465,7 +487,7 @@ export function ChatInput({
                           onProviderChange(pId);
                           toast.info(`Switched to ${cfg.name}`);
                         }}
-                        className={`gap-2.5 cursor-pointer rounded-xl p-2.5 ${
+                        className={`gap-2.5 cursor-pointer rounded-md p-2.5 ${
                           isSelected ? "bg-accent font-semibold" : ""
                         }`}
                       >
@@ -484,11 +506,11 @@ export function ChatInput({
                   })}
 
                   {/* If user wants to see other supported providers not yet configured */}
-                  {SUPPORTED_PROVIDERS.filter((p) => !effectiveProviders.includes(p.id)).length > 0 && (
+                  {effectiveProviders.length === 0 && (
                     <>
                       <DropdownMenuSeparator />
                       <div className="px-2 py-1 text-[10px] text-muted-foreground/80 font-normal">
-                        To add OpenAI, Claude, or DeepSeek, configure their API keys in <code className="font-mono text-[9px] bg-muted px-1 py-0.5 rounded">.env.local</code>.
+                        No configured providers were reported. Requests may be unavailable.
                       </div>
                     </>
                   )}
@@ -500,10 +522,13 @@ export function ChatInput({
             <button
               type="button"
               onClick={toggleSpeechRecognition}
-              className={`flex h-8 w-8 sm:h-8.5 sm:w-8.5 items-center justify-center rounded-full transition-colors cursor-pointer ${
+              disabled={isLoading || disabled}
+              aria-label={isRecording ? "Stop voice dictation" : "Dictate with voice"}
+              aria-pressed={isRecording}
+              className={`flex h-11 w-11 items-center justify-center rounded-md cursor-pointer disabled:opacity-50 ${
                 isRecording
-                  ? "bg-rose-500 text-white animate-pulse"
-                  : "hover:bg-white/10 text-neutral-300 hover:text-white"
+                  ? "bg-destructive text-destructive-foreground"
+                  : "hover:bg-accent text-muted-foreground hover:text-foreground"
               }`}
               title={isRecording ? "Stop voice dictation" : "Dictate with voice"}
             >
@@ -515,8 +540,9 @@ export function ChatInput({
               <button
                 type="button"
                 onClick={onStop}
-                className="flex h-8 w-8 sm:h-8.5 sm:w-8.5 items-center justify-center rounded-full bg-white text-neutral-900 hover:bg-neutral-200 shadow-sm transition-transform active:scale-95 cursor-pointer"
-                title="Stop generation"
+                aria-label="Stop waiting for response"
+                className="flex h-11 w-11 items-center justify-center rounded-md bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer"
+                title="Stop waiting for response"
               >
                 <Square className="h-3.5 w-3.5 fill-current" />
               </button>
@@ -525,7 +551,8 @@ export function ChatInput({
                 type="button"
                 onClick={onSend}
                 disabled={disabled}
-                className="flex h-8 w-8 sm:h-8.5 sm:w-8.5 items-center justify-center rounded-full bg-white text-neutral-950 hover:bg-neutral-200 shadow-sm transition-transform active:scale-95 disabled:opacity-40 cursor-pointer"
+                aria-label={t("contact_send", "Send message")}
+                className="flex h-11 w-11 items-center justify-center rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40 cursor-pointer"
                 title="Send message (Enter)"
               >
                 <ArrowUp className="h-4 w-4 stroke-[2.5]" />
@@ -536,8 +563,8 @@ export function ChatInput({
       </div>
 
       {/* Centered Disclaimer Under the Capsule */}
-      <p className="text-[10px] sm:text-[11px] text-center text-neutral-400 dark:text-neutral-500 mt-1 sm:mt-1.5 font-normal select-none truncate">
-        Gemini & Groq are AI and can make mistakes. Verify important information.
+      <p className="text-xs text-center text-muted-foreground mt-1.5">
+        AI can make mistakes. Verify important information.
       </p>
     </div>
   );

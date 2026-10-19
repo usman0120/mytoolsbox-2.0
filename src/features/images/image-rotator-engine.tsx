@@ -115,7 +115,7 @@ export function ImageRotatorEngine() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="w-full min-w-0 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-border/50">
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20">
@@ -210,15 +210,15 @@ export function ImageRotatorEngine() {
             )}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_20rem]">
             {/* Left Controls */}
-            <div className="lg:col-span-5 space-y-4">
-              <Card className="border-border/50">
-                <CardContent className="p-5 space-y-5">
+            <section aria-label="Rotation settings" className="min-w-0 xl:col-start-2 xl:row-start-1">
+              <div>
+                <div className="space-y-4">
                   {/* Quick Preset Buttons */}
                   <div>
                     <Label className="text-xs font-semibold mb-2 block">Quick Rotation Presets</Label>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 xl:grid-cols-1 gap-2">
                       <Button
                         type="button"
                         variant="outline"
@@ -314,14 +314,14 @@ export function ImageRotatorEngine() {
                       <option value="#000000">Black Background</option>
                     </select>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
+                </div>
+              </div>
+            </section>
 
             {/* Right Preview */}
-            <div className="lg:col-span-7 space-y-4">
-              <Card className="border-border/50 overflow-hidden">
-                <CardContent className="p-4 space-y-3">
+            <section aria-label="Rotation preview" className="order-first min-w-0 xl:col-start-1 xl:row-start-1">
+              <div>
+                <div className="space-y-3">
                   <div className="flex items-center justify-between text-xs">
                     <span className="font-semibold flex items-center gap-1.5">
                       <Eye className="h-4 w-4 text-indigo-600" /> Interactive Live Preview
@@ -349,9 +349,9 @@ export function ImageRotatorEngine() {
                       />
                     )}
                   </div>
-                </CardContent>
-              </Card>
-            </div>
+                </div>
+              </div>
+            </section>
           </div>
         </div>
       )}

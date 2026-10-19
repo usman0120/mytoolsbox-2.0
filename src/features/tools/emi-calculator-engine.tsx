@@ -3,64 +3,72 @@
 import { useState } from "react";
 import { Calculator } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { CalculatorLayout } from "@/components/common/workload-layouts";
 
 export function EMICalculatorEngine() {
   const [loan, setLoan] = useState("");
   const [rate, setRate] = useState("");
   const [tenure, setTenure] = useState("");
   const [result, setResult] = useState<{ emi: number; total: number; interest: number } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const clearResult = () => { setResult(null); setError(null); };
 
   const calculate = () => {
-    const p = Number(loan);
-    const r = Number(rate) / 12 / 100;
-    const n = Number(tenure) * 12;
-    if (!p || !r || !n) return;
-    const emi = (p * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
-    const total = emi * n;
-    setResult({ emi: Math.round(emi * 100) / 100, total: Math.round(total * 100) / 100, interest: Math.round((total - p) * 100) / 100 });
+    clearResult();
+    const principal = Number(loan);
+    const annualRate = Number(rate);
+    const months = Number(tenure) * 12;
+    if (!loan.trim() || !rate.trim() || !tenure.trim() || !Number.isFinite(principal) || principal <= 0
+      || !Number.isFinite(annualRate) || annualRate < 0 || !Number.isSafeInteger(months) || months <= 0) {
+      setError("Enter a positive loan amount, a nonnegative rate, and a term in whole months.");
+      return;
+    }
+    const monthlyRate = annualRate / 12 / 100;
+    const emi = monthlyRate === 0 ? principal / months
+      : principal * monthlyRate / -Math.expm1(-months * Math.log1p(monthlyRate));
+    const total = emi * months;
+    const nextResult = { emi: Math.round(emi * 100) / 100, total: Math.round(total * 100) / 100, interest: Math.round((total - principal) * 100) / 100 };
+    if (!Object.values(nextResult).every(Number.isFinite)) {
+      setError("The result is too large. Use smaller values.");
+      return;
+    }
+    setResult(nextResult);
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2 mb-2">
-        <Badge variant="secondary" className="rounded-full">EMI Calculator</Badge>
-        <span className="text-xs text-muted-foreground">Monthly loan payment calculator</span>
-      </div>
-
-      <div className="space-y-3">
+    <CalculatorLayout inputSection={
+      <div className="space-y-3" onChangeCapture={clearResult}>
         <div className="space-y-1.5">
-          <label className="text-xs font-medium">Loan Amount ($)</label>
-          <input type="number" value={loan} onChange={(e) => setLoan(e.target.value)} placeholder="50000" className="w-full px-3 py-2 text-sm rounded-xl border border-border/50 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20" />
+          <label htmlFor="emi-loan" className="text-sm font-medium">Loan Amount ($)</label>
+          <input id="emi-loan" type="number" value={loan} onChange={(e) => setLoan(e.target.value)} placeholder="50000" className="w-full min-h-11 px-3 py-2 text-base rounded-md border border-border/50 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20" />
         </div>
         <div className="space-y-1.5">
-          <label className="text-xs font-medium">Annual Interest Rate (%)</label>
-          <input type="number" value={rate} onChange={(e) => setRate(e.target.value)} placeholder="7.5" step="0.1" className="w-full px-3 py-2 text-sm rounded-xl border border-border/50 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20" />
+          <label htmlFor="emi-rate" className="text-sm font-medium">Annual Interest Rate (%)</label>
+          <input id="emi-rate" type="number" value={rate} onChange={(e) => setRate(e.target.value)} placeholder="7.5" step="0.1" className="w-full min-h-11 px-3 py-2 text-base rounded-md border border-border/50 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20" />
         </div>
         <div className="space-y-1.5">
-          <label className="text-xs font-medium">Tenure (years)</label>
-          <input type="number" value={tenure} onChange={(e) => setTenure(e.target.value)} placeholder="5" className="w-full px-3 py-2 text-sm rounded-xl border border-border/50 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20" />
+          <label htmlFor="emi-tenure" className="text-sm font-medium">Tenure (years)</label>
+          <input id="emi-tenure" type="number" value={tenure} onChange={(e) => setTenure(e.target.value)} placeholder="5" className="w-full min-h-11 px-3 py-2 text-base rounded-md border border-border/50 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20" />
         </div>
       </div>
 
-      <Button onClick={calculate} disabled={!loan || !rate || !tenure} className="gap-2 rounded-xl w-full"><Calculator className="h-4 w-4" />Calculate EMI</Button>
-
-      {result && (
-        <div className="grid grid-cols-3 gap-2">
-          <div className="p-3 bg-muted/30 rounded-xl text-center">
+      } controlsSection={<Button onClick={calculate} disabled={!loan || !rate || !tenure} className="gap-2 min-h-11 w-full"><Calculator className="h-4 w-4" />Calculate EMI</Button>}
+      resultSection={error ? <p role="alert" className="text-sm text-destructive">{error}</p> : result ? (
+        <div className="grid gap-3 tabular-nums [&>div]:wrap-break-word">
+          <div>
             <div className="text-lg font-bold text-primary">${result.emi.toLocaleString()}</div>
             <div className="text-xs text-muted-foreground">Monthly EMI</div>
           </div>
-          <div className="p-3 bg-muted/30 rounded-xl text-center">
+          <div>
             <div className="text-lg font-bold">${result.total.toLocaleString()}</div>
             <div className="text-xs text-muted-foreground">Total Payment</div>
           </div>
-          <div className="p-3 bg-muted/30 rounded-xl text-center">
+          <div>
             <div className="text-lg font-bold text-orange-500">${result.interest.toLocaleString()}</div>
             <div className="text-xs text-muted-foreground">Total Interest</div>
           </div>
         </div>
-      )}
-    </div>
+      ) : <p className="text-sm text-muted-foreground">Enter loan terms to calculate the monthly payment.</p>} />
   );
 }

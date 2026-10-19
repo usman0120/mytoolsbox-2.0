@@ -198,6 +198,97 @@ Give individual tools and useful informational pages descriptive URLs, meaningfu
 
 Develop and validate useful groups of tools before expanding into larger applications and specialized workspaces.
 
+## Audit and QA Snapshot (2026-10-18)
+
+This is an audit of the local worktree, not a release certification. Concurrent agents are changing production/UI code. This slice changes only the five existing root audit scripts, the existing apps ecosystem test file, and this README. No production files, catalogs, loaders, packages/configuration, URLs, user data, or features were removed or changed by this slice. The overhaul, retained-engine replacements, provider verification, and browser acceptance remain **pending**.
+
+### Reproducible Structured Inventory
+
+```bash
+node compare_slugs.js
+node check_hub_coverage.js
+node find_missing_engines.js
+node analyze_orphans.js
+node count_errors.js src/__tests__/apps-ecosystem.test.ts
+node node_modules/vitest/vitest.mjs run src/__tests__/apps-ecosystem.test.ts src/__tests__/multimedia-processor.test.ts
+```
+
+The scripts resolve paths from their own repository location rather than the caller's working directory. Catalog data is evaluated using TypeScript-transpiled trusted repository modules; loader keys/imports, source dependencies, proxy arrays, and direct storage calls use the TypeScript compiler AST, not regex parsing. Catalog evaluation does not import React engines. Unsupported loader syntax/dependencies fail explicitly. `count_errors.js` uses the installed ESLint API, accepts optional root-relative patterns, defaults to all source TypeScript, prints structured counts even when lint fails, and exits 0/1/2 for clean/errors/execution failure.
+
+`compare_slugs.js` emits a JSON inventory with these fields:
+
+| Surface | Recorded evidence | Snapshot |
+| --- | --- | --- |
+| Tool/app features | Namespace, stable ID/slug, catalog/loader/engine owner, category, status, processing/auth/pro metadata, advertised input/output, literal loader target, direct imports, direct storage calls, pending acceptance | 146 tools + 21 apps; all currently active |
+| Filesystem routes | Actual page/API owners and route patterns, plus not-found | 26 page files, 6 API handlers, 1 not-found |
+| Canonical pages | Static pages and expanded tool/app/hub/blog/resource catalog slugs | 222: 21 static + 167 features + 8 hubs + 20 blog posts + 6 guides |
+| Metadata/policies | Sitemap/robots/manifest owners; actual proxy locale/protected/auth-redirect arrays | 3 metadata owners, 7 locale prefixes |
+| Loader integrity | Catalog/live/legacy parity, duplicate IDs/slugs/keys, missing target files, legacy target drift | No defects found |
+| Hub integrity | IDs in their namespace and the detail page's actual slug-lookup contract | No unresolved IDs or slug-lookup mismatches; all 146 tools and 17 apps covered |
+| Source-import candidates | Both live loaders and static literal imports/exports in source | 201 engine-named files; 34 not directly loaded; 32 have no detected importers |
+
+The 21 static paths are `/`, `/tools`, `/apps`, `/hubs`, `/blog`, `/resources`, `/search`, `/ai`, `/ai/compare`, `/ai/prompts`, `/ai/personas`, `/about`, `/contact`, `/privacy`, `/terms`, `/dashboard`, `/account`, `/settings`, `/favorites`, `/history`, and `/admin`. API paths are `/api/admin`, `/api/feedback`, `/api/ai`, `/api/ai/credits`, `/api/ai/conversations`, and `/api/ai/chat`. An `og` directory or empty module directory is not evidence of a routable page/API. Locale rewrites are not counted as additional canonical pages or browser-verified routes; category query URLs and generated metadata URLs require separate sitemap/SEO acceptance.
+
+Tool prerender helpers are active-only; apps are active-or-beta. Direct slug lookup is not status-filtered and unknown slugs reach `notFound`. Blog/guides enumerate all their catalog slugs; hubs prerender active entries. Proxy-declared protected paths are dashboard/settings/favorites/history/account and redirect missing sessions to `/?signin=true`. These declarations do not prove identity or authorization. The admin client has a sign-in check, but the API guard has a separate blocker below.
+
+Hub coverage gaps are `/apps/farmer-ai`, `/apps/resume-builder`, `/apps/fitness-ai`, and `/apps/nutrition-ai`; they are not removal evidence. Static import candidates are also **not** a deletion list: the scan does not prove runtime reachability, outside-source usage, nonliteral imports, selected export correctness, or dynamic consumer contracts. Engine-owned storage extraction excludes aliases, hooks, shared modules and live Firestore records. Every feature's behavior verdict remains `unverified`; its acceptance record is a pending checklist, not fabricated output evidence.
+
+### Known Reference Defects
+
+The integrity tests record these 12 existing unresolved declared related links exactly. New defects fail the checks; repairs must reduce/update this explicit baseline, not add a blanket allowlist.
+
+```text
+/tools/image-converter -> jpg-to-png
+/tools/json-formatter -> json-to-csv, csv-to-json
+/tools/json-validator -> json-to-csv
+/tools/age-calculator -> date-calculator
+/tools/loan-calculator -> emi-calculator
+/tools/word-counter -> character-counter
+/tools/ai-regex-builder -> ai-code-explainer
+/tools/ai-sql-assistant -> ai-code-explainer
+/tools/ai-doc-generator -> ai-code-explainer
+/tools/ai-error-explainer -> ai-code-explainer
+/apps/ai-project-ideas -> code-explainer
+```
+
+Editorial related-tool links/callouts add **25 broken occurrences across 12 posts**: `svg-optimizer` (4), `world-clock` (4), `flow-pomodoro` (3), `css-gradient` (3), `markdown-editor` (4), `meta-tag-generator` (3), `cron-generator` (2), `compound-interest` (2), all linked under `/tools/`. The JSON report gives every exact owner/target occurrence; the existing test pins the owner-specific baseline. Blog related-post links, guide recommendations, declared related-app links, canonical route uniqueness, and hub IDs had no defects in this snapshot. None of these links were repaired or silently redirected here.
+
+### Behavior Evidence and Blockers
+
+| Surface and evidence owner | Actual control flow observed | Verdict and required verification |
+| --- | --- | --- |
+| [Admin API](src/app/api/admin/route.ts) | `isAdmin()` returns only cookie presence; `ADMIN_EMAILS` is unused. The same gate protects stats and IP unblocking. | **Release blocker:** an unverified/non-admin session cookie can pass this gate. Owning agent must implement verified identity and role authorization and test missing/forged/non-admin/admin sessions. No production security patch applied here. |
+| [AI text tool](src/features/tools/ai-text-generator-engine.tsx) | Calls `completeViaServer`, but empty text and caught failures call template `generateResponse` and append an assistant message. | Verified simulated **failure branches**, not a claim that all successful calls are dummy. Test 401/402/429/503/timeout/empty response as errors, never fabricated model success. |
+| [AI image tool](src/features/tools/ai-image-generator-engine.tsx) | Earlier inspected code ignored style and returned a gradient/text canvas as success after Pollinations failure. A concurrent replacement now sends style in the prompt, fetches a blob, checks image decoding, supports abort, and reports errors. | Earlier placeholder finding is **superseded**, not a current-code assertion. Replacement is not browser/provider-validated by this slice. Still directly calls Pollinations outside `completeViaServer`; CORS, credentials, availability, quota, truthful output format and authorization/accounting policy need a decision/verification. |
+| [AI resume helper](src/features/ai/resume-generation.ts), [resume engine](src/features/tools/ai-resume-maker-engine.tsx) | Current code calls `completeViaServer` with `doc_generation`, parses JSON with a bounded zod schema, escapes HTML, and persists/exports HTML. | Saved-plan timer/dummy evidence is stale. No removal recommendation on that basis. Live response, factual fidelity, prior-data preservation, printing/PDF claims, and provider failure tests remain pending; no direct PDF export was established. |
+| [MP3 cutter](src/features/tools/mp3-cutter-engine.tsx), [audio cutter](src/features/tools/audio-cutter-engine.tsx) | Both decode audio, copy the selected sample interval with optional 50ms fades, and call `audioBufferToWav`. Their compressed branches use Opus/WebM `MediaRecorder` but name the result `_cut.mp3`. | Real trimming, **incorrect MP3 format contract**. Browser media support and output bytes must be validated; the stop timer records actual playback, not simulated processing. WAV is a traced local alternative; relabeling WebM is not MP3 encoding. |
+| [Video-to-GIF](src/features/tools/video-to-gif-engine.tsx), [GIF maker](src/features/tools/video-to-gif-maker-engine.tsx) | Both seek/decode video frames and call `GifEncoder`; the first supports speed/captions, the second reversible bounce frames. | Real encoding and duplicate-workflow candidate with non-equivalent settings. Existing helper tests validate GIF89a/WAV headers, not browser decoding, actual clip duration, seeking at boundaries, parameter effects or cancellation. |
+
+Free/local constraints do not establish AI capability. The [AI route](src/app/api/ai/route.ts) checks authenticated/non-anonymous identity, abuse limits and credits before provider selection; no configured keys returns 503, exhausted credits returns 402, and all provider failures return 502. Credit deduction happens after a caller returns, before caller-specific downstream output validation: an empty/invalid model result is not proven charge-free. The server dispatches text/chat/generateContent requests; image-tier model labels alone do not provide an image-generation implementation. No secrets were inspected, no credentials added, and no live/billable calls made. Configured models, free quotas, current provider API support, successful authentication/Firestore operation and refund/error behavior are **unverified**. Server credential names/fallbacks are not evidence that credentials exist or are safe to expose.
+
+No approved local image model/runtime or MP3 encoder was established in this audit. Those capabilities require an explicit implementation/provider/dependency decision, with cost/privacy/browser-support review. Preserve honest unavailable/error states instead of invented success. Local media still depends on browser decoders, memory limits, canvas/AudioContext support and `MediaRecorder` codecs; dependency names and binary-header unit tests alone do not meet that acceptance gate. Resource copy claiming universal offline/local processing is not corroborated by these remote AI paths and remains pending correction by its owner.
+
+### Exact Approval List: Do Not Apply Yet
+
+These four items are proposals only. **No removals/consolidations are approved or applied.** No other engine/import candidate is proposed for removal by this audit. Approval must name the item; parity fixes, data migration and route acceptance must precede a public redirect/removal.
+
+| Item | Proposed change and preserved alternative | Old URL handling | Stable IDs and saved-data impact |
+| --- | --- | --- | --- |
+| A1 | Consolidate `/tools/mp3-cutter` into `/tools/audio-cutter` and retire the former engine only after sample/fade/export parity. Both use the same WAV helper and effectively the same interval copy; first resolve the false MP3 contract or provide real encoding. | Proposed permanent redirect only after parity; preserve query/locale semantics. Until then retain the route, not an automatic redirect. | Keep old favorite/history tool ID/slug/productType records and resolve an approved alias without destructive rewrites. No direct local/session storage calls were detected in either engine; transient file/preview state still needs acceptance. |
+| A2 | Consolidate `/tools/video-to-gif-maker` into `/tools/video-to-gif`. Preserve bounce playback **as well as** speed/captions, FPS/width/interval, limits and valid GIF output before retiring the duplicate engine. | Proposed permanent redirect after settings/export parity, including locale/query behavior. No redirect applied. | Preserve both original favorite/history identities via approved alias resolution. No direct engine storage calls detected; downloaded files stay untouched. Parameter/state compatibility must be tested. |
+| A3 | Consolidate `/tools/ai-text-generator` into `/ai`, retaining provider chat and transcript export/import. The current `/ai` path checks empty text and reports errors, but its concurrent implementation has not passed this slice's browser/live acceptance. | Migrate or expose an explicit legacy-transcript import/export path **before** a proposed permanent redirect. `/ai` is not a transparent data-format substitute today. | Retain `mytoolsbox-ai-chat`; validate a versioned non-destructive migration into Zustand key `mytoolsbox_ai_chat_store_v2` and authenticated Firestore conversations, preserving roles/text/timestamps. Do not label old template replies as verified model outputs or discard existing target chats. Keep legacy favorites/history as aliases. |
+| A4 | Remove the internal [engine-registry string map](src/features/engine-registry.ts), using the existing literal live loader authorities instead. Current source search found only its own `getToolEngine` declaration and audit access; paths match the live tool loader. | No public URL changes. Do not import client loaders into server catalogs; remove/adapt audit legacy expectations atomically only after approval and renewed reference check. | No catalog IDs/schema/storage changes. External consumers outside the scanned source remain unverified; confirm absence before removal. |
+
+Favorite/history persistence in [user-service](src/lib/firebase/user-service.ts) stores original `toolId`, `toolSlug`, and `productType` data under `users/{uid}/favorites` and `users/{uid}/history`; their pages construct URLs from those values. Existing alias/removed-item migration was not established. Future approved changes must coordinate catalogs, literal loaders, hubs, related/editorial links, search, sitemap/metadata, localizations, persisted records and unavailable-item rendering atomically. Tool and app `resume-builder` remain separate namespaces; no resume/image feature removal is proposed.
+
+### Verification and Remaining Gates
+
+The focused run passed **32 tests in 2 files** (28 apps ecosystem tests, including 10 new audit tests, plus 4 existing multimedia helper tests). Modified-test lint: **0 errors, 0 warnings**. Portable inventory/hub/missing/orphan reports executed successfully; editor diagnostics for touched code were clear. The direct installed Vitest entrypoint was used after intermittent silent `npx`/inline-command launcher failures; empty output is not recorded as a pass. The existing Vite configuration warning remains unchanged.
+
+The supplied pre-slice baseline was 392 passing tests with one credit timeout, and typecheck errors only in stale generated `.next` types. These are baseline observations, not permission to delete generated files or claim current whole-repo correctness. Full test/typecheck outcomes from this slice are recorded at handoff; production/UI changes by other agents are not certified here. No build, Playwright route crawl, desktop/mobile/light/dark screenshots, RTL/keyboard acceptance, consumer-opened exports, live persistence migration, or provider smoke has been completed by this slice.
+
+For **each of all 167 retained features**, the inventory carries pending checks: varied valid inputs/settings with a meaningful expected transformation and output-format validator; boundary/invalid input/error/cancel behavior; old saved data after reload where applicable; and offline/provider/auth/credit behavior. Feature-specific fixtures and successful output evidence still need to be supplied by the owning agent. Release also requires the saved plan's build/type/lint/test gates, route crawl at desktop/mobile in both themes, accessibility/localization, actual export consumers and controlled provider tests. Structural parity or a handful of helper tests must not be presented as a completed production overhaul.
+
 ## Getting Started
 
 You can explore the live website at [mytoolsbox.me](https://mytoolsbox.me).

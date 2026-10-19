@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Timer,
   Copy,
@@ -32,6 +32,7 @@ const PRESETS = [
 ];
 
 export function CronHelperEngine() {
+  const [hydrated, setHydrated] = useState(false);
   const [activeTab, setActiveTab] = useState<"analyzer" | "builder">("analyzer");
   const [expression, setExpression] = useState("0 9 * * 1-5");
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
@@ -44,10 +45,15 @@ export function CronHelperEngine() {
   const [builderDow, setBuilderDow] = useState<number[]>([1, 2, 3, 4, 5]);
   const [builderDom, setBuilderDom] = useState(1);
 
+  useEffect(() => {
+    const initialization = setTimeout(() => setHydrated(true), 0);
+    return () => clearTimeout(initialization);
+  }, []);
+
   // Live validation
   const validation = useMemo(() => {
-    return validateCron(expression);
-  }, [expression]);
+    return hydrated ? validateCron(expression) : null;
+  }, [expression, hydrated]);
 
   const handleCopy = async (text: string, key: string) => {
     await navigator.clipboard.writeText(text);
@@ -292,13 +298,13 @@ export function CronHelperEngine() {
       )}
 
       {/* Validation Results */}
-      {validation.status === "error" ? (
+      {validation?.status === "error" ? (
         <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs flex items-center gap-2">
           <AlertCircle className="h-4 w-4 shrink-0" />
           <span>{validation.error}</span>
         </div>
       ) : (
-        validation.data && (
+        validation?.data && (
           <div className="space-y-4">
             {/* Human Readable Banner */}
             <Card className="bg-primary/5 border-primary/20">

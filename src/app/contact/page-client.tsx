@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { SITE_CONFIG } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageShell, ToolHeader } from "@/components/common/workload-layouts";
 import {
   Mail,
   MessageSquare,
@@ -74,18 +73,11 @@ export function ContactPageClient() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-16 md:py-24 max-w-3xl">
+    <PageShell className="max-w-4xl">
       {/* Header */}
-      <div className="text-center mb-16">
-        <h1 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">
-          {t("contact_title")}
-        </h1>
-        <p className="text-lg text-muted-foreground leading-relaxed">
-          {t("contact_subtitle")}
-        </p>
-      </div>
+      <ToolHeader title={t("contact_title")} description={t("contact_subtitle")} />
 
-      <div className="grid md:grid-cols-2 gap-8 mb-16">
+      <div className="grid md:grid-cols-2 gap-6 mb-6">
         {/* Contact methods */}
         <div className="space-y-6">
           <h2 className="text-xl font-semibold">Get in Touch</h2>
@@ -151,15 +143,15 @@ export function ContactPageClient() {
             {[
               {
                 q: "Is it really free?",
-                a: "Yes! All core tools are free with no hidden fees. We may offer optional premium features in the future, but the essentials will always be free.",
+                a: "Availability and limits depend on the tool. AI features use credits; review the tool or account details before use.",
               },
               {
                 q: "Do I need an account?",
-                a: "No account required. You can use every tool instantly. Creating an account lets you save favorites and history, but it's completely optional.",
+                a: "Many tools are available without signing in. Account features and tools marked as requiring authentication need a sign-in.",
               },
               {
                 q: "Are my files safe?",
-                a: "Absolutely. All processing happens in your browser — your files never leave your device. We can't see them, and neither can anyone else.",
+                a: "Processing depends on the tool. Browser-based operations run locally, while server and AI features send data to their services. Review the tool's processing information and privacy policy before submitting sensitive data.",
               },
               {
                 q: "Can I request a tool?",
@@ -172,7 +164,7 @@ export function ContactPageClient() {
             ].map((faq) => (
               <details
                 key={faq.q}
-                className="group p-4 rounded-xl border border-border/50 bg-card/50"
+                className="group py-3 border-b border-border/50"
               >
                 <summary className="font-semibold text-sm cursor-pointer list-none flex items-center justify-between">
                   {faq.q}
@@ -188,14 +180,14 @@ export function ContactPageClient() {
       </div>
 
       {/* Contact Form */}
-      <Card className="mb-16">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+      <section className="mb-6 border-t border-border pt-5">
+        <div className="mb-4">
+          <h2 className="flex items-center gap-2 text-lg font-semibold">
             <Send className="h-5 w-5" />
             {t("contact_send")}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+          </h2>
+        </div>
+        <div>
           {submitted ? (
             <div className="text-center py-8 space-y-4">
               <CheckCircle2 className="h-12 w-12 mx-auto text-green-500" />
@@ -280,17 +272,17 @@ export function ContactPageClient() {
               </Button>
             </form>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
       {/* Response time */}
-      <div className="text-center p-6 rounded-xl border border-border/50 bg-muted/30">
+      <div className="py-4 border-t border-border/50">
         <p className="text-sm text-muted-foreground">
           We typically respond within{" "}
           <strong className="text-foreground">24-48 hours</strong>.
           For urgent issues, please include &ldquo;Urgent&rdquo; in your subject line.
         </p>
       </div>
-    </div>
+    </PageShell>
   );
 }

@@ -7,10 +7,10 @@ import Link from "next/link";
 import { getHistory, clearHistory, removeHistoryEntry } from "@/lib/firebase/user-service";
 import type { HistoryItem } from "@/types/user";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Clock, Trash2, Loader2, ExternalLink, History, LogIn } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { PageShell, ToolHeader } from "@/components/common/workload-layouts";
+import { Clock, Trash2, Loader2, History, LogIn } from "lucide-react";
 import { toast } from "sonner";
-import { CATEGORIES } from "@/lib/constants";
 import { SignInDialog } from "@/components/auth/signin-dialog";
 import { useI18n } from "@/lib/i18n";
 
@@ -87,11 +87,8 @@ export function HistoryPageClient() {
 
   if (!user) {
     return (
-      <div className="container mx-auto px-4 py-16 max-w-3xl">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-2">{t("hist_title")}</h1>
-          <p className="text-muted-foreground">{t("hist_subtitle")}</p>
-        </div>
+      <PageShell className="max-w-3xl">
+        <ToolHeader title={t("hist_title")} />
         <Card>
           <CardContent className="py-12 text-center">
             <History className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
@@ -106,7 +103,7 @@ export function HistoryPageClient() {
           </CardContent>
         </Card>
         <SignInDialog open={showSignIn} onOpenChange={setShowSignIn} />
-      </div>
+      </PageShell>
     );
   }
 
@@ -129,10 +126,10 @@ export function HistoryPageClient() {
     localizePath(`/${item.productType === "app" ? "apps" : "tools"}/${item.toolSlug}`);
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-3xl">
-      <div className="flex items-center justify-between mb-8">
+    <PageShell className="max-w-3xl">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <div>
-          <h1 className="text-3xl font-bold mb-2">{t("hist_title")}</h1>
+          <ToolHeader title={t("hist_title")} className="mb-1" />
           <p className="text-muted-foreground">
             {history.length === 0
               ? t("hist_empty")
@@ -160,17 +157,17 @@ export function HistoryPageClient() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-2">
+        <div className="divide-y border-y">
           {history.map((item) => (
-            <Card key={item.id} className="group">
-              <CardContent className="flex items-center justify-between p-3">
+            <div key={item.id} className="group">
+              <div className="flex items-center justify-between gap-3 py-3">
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <Link
                         href={getItemHref(item)}
-                        className="font-medium text-sm hover:text-primary transition-colors truncate"
+                        className="font-medium text-sm hover:text-primary transition-colors wrap-break-word"
                       >
                         {getToolName(item.toolSlug, item.toolName)}
                       </Link>
@@ -178,8 +175,8 @@ export function HistoryPageClient() {
                         {item.action}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                      <span className="px-1.5 py-0.5 rounded-full bg-muted text-[10px]">
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                      <span>
                         {getCatNameI18n(item.category, item.category)}
                       </span>
                       <span>{formatTime(item.timestamp)}</span>
@@ -192,16 +189,18 @@ export function HistoryPageClient() {
                 <Button
                   variant="ghost"
                   size="icon"
+                  aria-label={`${t("fav_remove", "Remove")} ${getToolName(item.toolSlug, item.toolName)}`}
+                  title={t("fav_remove", "Remove")}
                   onClick={() => handleRemove(item)}
                   className="text-muted-foreground hover:text-destructive"
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           ))}
         </div>
       )}
-    </div>
+    </PageShell>
   );
 }

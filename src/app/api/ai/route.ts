@@ -4,7 +4,7 @@ import type { AIRequest, AIResponse, AIProvider } from "@/lib/ai/types";
 import { getCreditCost, tierToCreditOperation, type CreditOperation, type SubscriptionTier } from "@/lib/ai/credits";
 import { checkAbuse } from "@/lib/payments/abuse";
 import { checkCredits, deductCredits } from "@/lib/credits";
-import { extractAuthUser, extractAuthUserFromCookies } from "@/lib/auth/server-auth";
+import { AuthVerificationUnavailableError, extractAuthUser } from "@/lib/auth/server-auth";
 import { SUPPORTED_PROVIDERS, getProviderConfig } from "@/lib/ai/providers-config";
 
 // ---------------------------------------------------------------------------
@@ -439,7 +439,7 @@ export async function POST(request: NextRequest) {
     // 2. Authentication & Session Validation (Anti-Fraud & Security)
     // -----------------------------------------------------------------------
     const cookieStore = await cookies();
-    const authUser = extractAuthUser(request, cookieStore);
+    const authUser = await extractAuthUser(request, cookieStore);
     const userId = authUser?.userId ?? null;
 
     // Strict security rule: Guests & unauthenticated requests are blocked from AI
@@ -550,6 +550,9 @@ export async function POST(request: NextRequest) {
       { status: 502 }
     );
   } catch (error) {
+    if (error instanceof AuthVerificationUnavailableError) {
+      return NextResponse.json({ error: error.message }, { status: 503 });
+    }
     console.error("AI API internal error:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Internal server error" },

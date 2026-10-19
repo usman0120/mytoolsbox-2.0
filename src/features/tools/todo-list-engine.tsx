@@ -30,18 +30,8 @@ const PRIORITY_BADGES: Record<TodoPriority, string> = {
 };
 
 export function TodoListEngine() {
-  const [todos, setTodos] = useState<TodoItem[]>(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      return raw ? JSON.parse(raw) : [
-        { id: "t1", text: "Complete project deliverables", completed: false, priority: "high", dueDate: new Date().toISOString().split("T")[0], createdAt: Date.now() },
-        { id: "t2", text: "Team alignment meeting", completed: true, priority: "medium", createdAt: Date.now() - 3600000 },
-        { id: "t3", text: "Read industry research paper", completed: false, priority: "low", createdAt: Date.now() - 7200000 },
-      ];
-    } catch {
-      return [];
-    }
-  });
+  const [todos, setTodos] = useState<TodoItem[]>([]);
+  const [storageLoaded, setStorageLoaded] = useState(false);
 
   const [newText, setNewText] = useState("");
   const [newPriority, setNewPriority] = useState<TodoPriority>("medium");
@@ -50,8 +40,31 @@ export function TodoListEngine() {
   const [sortBy, setSortBy] = useState<"date" | "priority" | "dueDate">("date");
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
-  }, [todos]);
+    const initialization = setTimeout(() => {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        const now = new Date();
+        setTodos(raw ? JSON.parse(raw) : [
+          { id: "t1", text: "Complete project deliverables", completed: false, priority: "high", dueDate: now.toISOString().split("T")[0], createdAt: now.getTime() },
+          { id: "t2", text: "Team alignment meeting", completed: true, priority: "medium", createdAt: now.getTime() - 3600000 },
+          { id: "t3", text: "Read industry research paper", completed: false, priority: "low", createdAt: now.getTime() - 7200000 },
+        ]);
+        setStorageLoaded(true);
+      } catch {
+        toast.error("Saved tasks could not be loaded. Existing data was not changed.");
+      }
+    }, 0);
+    return () => clearTimeout(initialization);
+  }, []);
+
+  useEffect(() => {
+    if (!storageLoaded) return;
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
+    } catch {
+      return;
+    }
+  }, [todos, storageLoaded]);
 
   const handleAdd = () => {
     if (!newText.trim()) return;

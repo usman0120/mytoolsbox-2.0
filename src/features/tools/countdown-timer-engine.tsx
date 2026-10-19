@@ -19,20 +19,34 @@ import {
 
 export function CountdownTimerEngine() {
   const [title, setTitle] = useState("Product Launch 🚀");
-  const [targetDateStr, setTargetDateStr] = useState(() => {
-    const d = new Date();
-    d.setDate(d.getDate() + 30);
-    return d.toISOString().split("T")[0];
-  });
+  const [targetDateStr, setTargetDateStr] = useState("");
   const [targetTimeStr, setTargetTimeStr] = useState("09:00");
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [upcomingPresets, setUpcomingPresets] = useState<ReturnType<typeof getUpcomingPresetEvents>>([]);
+
+  useEffect(() => {
+    const initialTick = setTimeout(() => {
+      const date = new Date();
+      date.setDate(date.getDate() + 30);
+      setTargetDateStr(date.toISOString().split("T")[0]);
+      setUpcomingPresets(getUpcomingPresetEvents());
+    }, 0);
+    return () => clearTimeout(initialTick);
+  }, []);
 
   const getTargetDateTime = useCallback(() => {
     return new Date(`${targetDateStr}T${targetTimeStr}:00`);
   }, [targetDateStr, targetTimeStr]);
 
-  const [timeLeft, setTimeLeft] = useState<TimeLeft>(() => calculateTimeLeft(getTargetDateTime()));
+  const [timeLeft, setTimeLeft] = useState<TimeLeft>({
+    days: 0,
+    hours: 0,
+    minutes: 0,
+    seconds: 0,
+    totalSeconds: 0,
+    isExpired: false,
+  });
 
   const hasAlarmPlayedRef = useRef(false);
 
@@ -58,6 +72,9 @@ export function CountdownTimerEngine() {
   }, [soundEnabled]);
 
   useEffect(() => {
+    if (!targetDateStr) return;
+    const initialTick = setTimeout(() => setTimeLeft(calculateTimeLeft(getTargetDateTime())), 0);
+
     const timer = setInterval(() => {
       const current = calculateTimeLeft(getTargetDateTime());
       setTimeLeft(current);
@@ -71,8 +88,11 @@ export function CountdownTimerEngine() {
       }
     }, 1000);
 
-    return () => clearInterval(timer);
-  }, [getTargetDateTime, playChime, title]);
+    return () => {
+      clearTimeout(initialTick);
+      clearInterval(timer);
+    };
+  }, [getTargetDateTime, playChime, title, targetDateStr]);
 
   const handleApplyPreset = (presetTitle: string, dateStr: string) => {
     const d = new Date(dateStr);
@@ -89,8 +109,6 @@ export function CountdownTimerEngine() {
     setTimeout(() => setCopied(false), 2000);
     toast.success("Countdown summary copied!");
   };
-
-  const upcomingPresets = getUpcomingPresetEvents();
 
   return (
     <div className="space-y-4">
@@ -158,7 +176,7 @@ export function CountdownTimerEngine() {
 
           {timeLeft.isExpired ? (
             <div className="py-6 space-y-2">
-              <span className="text-4xl sm:text-5xl font-black text-green-500">🎉 Time's Up!</span>
+              <span className="text-4xl sm:text-5xl font-black text-green-500">🎉 Time&apos;s Up!</span>
               <p className="text-xs text-muted-foreground">The countdown target date and time has passed.</p>
             </div>
           ) : (
@@ -191,7 +209,7 @@ export function CountdownTimerEngine() {
           )}
 
           <p className="text-xs text-muted-foreground font-mono">
-            Target: {getTargetDateTime().toLocaleString("en-US", { dateStyle: "full", timeStyle: "short" })}
+            Target: {targetDateStr ? getTargetDateTime().toLocaleString("en-US", { dateStyle: "full", timeStyle: "short" }) : "..."}
           </p>
         </div>
       </Card>

@@ -3,11 +3,11 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "sonner";
 import {
   ImagePlus, Download, RotateCw, Crop, SlidersHorizontal, Sun,
   Contrast, Droplet, Wand2, Type, Pencil, Eraser, Undo2,
@@ -68,6 +68,19 @@ interface CropRect {
   y: number;
   width: number;
   height: number;
+}
+
+interface EditorSnapshot {
+  image: string | null;
+  imageSize: { width: number; height: number };
+  filters: FilterSettings;
+  rotation: number;
+  textOverlays: TextOverlay[];
+  shapeOverlays: ShapeOverlay[];
+  layers: ImageLayer[];
+  drawing: string | null;
+  bgColor: string;
+  showBg: boolean;
 }
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -151,7 +164,11 @@ export function ImageEditorEngine() {
   const [showBg, setShowBg] = useState(false);
 
   // Undo
-  const [undoStack, setUndoStack] = useState<string[]>([]);
+  const [undoStack, setUndoStack] = useState<EditorSnapshot[]>([]);
+  const [drawing, setDrawing] = useState<string | null>(null);
+  const renderTaskRef = useRef<Promise<void>>(Promise.resolve());
+  const renderVersionRef = useRef(0);
+  const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
 
   // Refs
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -162,16 +179,30 @@ export function ImageEditorEngine() {
   // ─── Undo ──────────────────────────────────────────────────────────────────
 
   const pushUndo = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    setUndoStack((prev) => [...prev.slice(-30), canvas.toDataURL()]);
-  }, []);
+    setUndoStack((prev) => [...prev.slice(-29), {
+      image, imageSize, filters, rotation, textOverlays, shapeOverlays,
+      layers, drawing, bgColor, showBg,
+    }]);
+  }, [image, imageSize, filters, rotation, textOverlays, shapeOverlays, layers, drawing, bgColor, showBg]);
 
   const undo = () => {
     if (undoStack.length === 0 || !image) return;
     const prev = undoStack[undoStack.length - 1];
     setUndoStack((s) => s.slice(0, -1));
-    setImage(prev);
+    setImage(prev.image);
+    setImageSize(prev.imageSize);
+    setResizeW(prev.imageSize.width);
+    setResizeH(prev.imageSize.height);
+    setFilters(prev.filters);
+    setRotation(prev.rotation);
+    setTextOverlays(prev.textOverlays);
+    setShapeOverlays(prev.shapeOverlays);
+    setLayers(prev.layers);
+    setDrawing(prev.drawing);
+    setBgColor(prev.bgColor);
+    setShowBg(prev.showBg);
+    setCropRect(null);
+    setIsCropping(false);
   };
 
   // ─── File Upload ───────────────────────────────────────────────────────────
@@ -187,19 +218,25 @@ export function ImageEditorEngine() {
         setImageSize({ width: img.width, height: img.height });
         setResizeW(img.width);
         setResizeH(img.height);
+        setImage(dataUrl);
+        setOriginalImage(dataUrl);
+        setFilters(FILTER_PRESETS[0].settings);
+        setTextOverlays([]);
+        setShapeOverlays([]);
+        setLayers([]);
+        setRotation(0);
+        setUndoStack([]);
+        setCropRect(null);
+        setIsCropping(false);
+        setDrawing(null);
+        setShowBg(false);
       };
+      img.onerror = () => toast.error("Cannot decode this image. Select a supported image file.");
       img.src = dataUrl;
-      setImage(dataUrl);
-      setOriginalImage(dataUrl);
-      setFilters(FILTER_PRESETS[0].settings);
-      setTextOverlays([]);
-      setShapeOverlays([]);
-      setLayers([]);
-      setRotation(0);
-      setUndoStack([]);
-      setCropRect(null);
     };
+    reader.onerror = () => toast.error("Cannot read this image.");
     reader.readAsDataURL(file);
+    e.target.value = "";
   };
 
   // ─── Layer Management ──────────────────────────────────────────────────────
@@ -212,6 +249,7 @@ export function ImageEditorEngine() {
       const dataUrl = ev.target?.result as string;
       const img = new Image();
       img.onload = () => {
+        pushUndo();
         const newLayer: ImageLayer = {
           id: Date.now().toString(),
           name: `Layer ${layers.length + 1}`,
@@ -226,9 +264,11 @@ export function ImageEditorEngine() {
         setLayers((prev) => [...prev, newLayer]);
         setSelectedLayerId(newLayer.id);
       };
+      img.onerror = () => toast.error("Cannot decode this layer image.");
       img.src = dataUrl;
     };
     reader.readAsDataURL(file);
+    e.target.value = "";
   };
 
   const toggleLayerVisibility = (id: string) => {
@@ -266,18 +306,39 @@ export function ImageEditorEngine() {
 
   // ─── Render Canvas ─────────────────────────────────────────────────────────
 
-  const applyFilters = useCallback(() => {
+  const applyFilters = useCallback(async () => {
+    const version = ++renderVersionRef.current;
     const canvas = canvasRef.current;
     if (!canvas || !image) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const img = new Image();
-    img.onload = () => {
-      const w = resizeW || img.width;
-      const h = resizeH || img.height;
+    const loadImage = (source: string) => new Promise<HTMLImageElement>((resolve, reject) => {
+      const bitmap = new Image();
+      bitmap.onload = () => resolve(bitmap);
+      bitmap.onerror = () => reject(new Error("Cannot render this image."));
+      bitmap.src = source;
+    });
+    const [img, layerImages, drawingImage] = await Promise.all([
+      loadImage(image),
+      Promise.all(layers.filter((layer) => layer.visible).map(async (layer) => ({ layer, bitmap: await loadImage(layer.dataUrl) }))),
+      drawing ? loadImage(drawing) : Promise.resolve(null),
+    ]);
+    if (version !== renderVersionRef.current) return;
+      const rotated = rotation === 90 || rotation === 270;
+      const baseW = imageSize.width || img.width;
+      const baseH = imageSize.height || img.height;
+      const w = rotated ? baseH : baseW;
+      const h = rotated ? baseW : baseH;
       canvas.width = w;
       canvas.height = h;
+      setCanvasSize({ width: w, height: h });
+      const drawCanvas = drawCanvasRef.current;
+      if (drawCanvas) {
+        drawCanvas.width = w;
+        drawCanvas.height = h;
+        if (drawingImage) drawCanvas.getContext("2d")?.drawImage(drawingImage, 0, 0, w, h);
+      }
 
       ctx.clearRect(0, 0, w, h);
 
@@ -292,7 +353,7 @@ export function ImageEditorEngine() {
       if (rotation) {
         ctx.translate(w / 2, h / 2);
         ctx.rotate((rotation * Math.PI) / 180);
-        ctx.drawImage(img, -w / 2, -h / 2, w, h);
+        ctx.drawImage(img, -baseW / 2, -baseH / 2, baseW, baseH);
       } else {
         ctx.drawImage(img, 0, 0, w, h);
       }
@@ -309,11 +370,9 @@ export function ImageEditorEngine() {
       }
 
       // Draw layers
-      layers.filter((l) => l.visible).forEach((layer) => {
+      layerImages.forEach(({ layer, bitmap }) => {
         ctx.globalAlpha = layer.opacity / 100;
-        const layerImg = new Image();
-        layerImg.src = layer.dataUrl;
-        ctx.drawImage(layerImg, layer.x, layer.y, layer.width, layer.height);
+        ctx.drawImage(bitmap, layer.x, layer.y, layer.width, layer.height);
         ctx.globalAlpha = 1;
       });
 
@@ -369,35 +428,24 @@ export function ImageEditorEngine() {
         ctx.fillText(overlay.text, overlay.x, overlay.y);
       });
 
-      // Draw crop overlay
-      if (isCropping && cropRect) {
-        ctx.fillStyle = "rgba(0,0,0,0.5)";
-        ctx.fillRect(0, 0, w, cropRect.y);
-        ctx.fillRect(0, cropRect.y, cropRect.x, cropRect.height);
-        ctx.fillRect(cropRect.x + cropRect.width, cropRect.y, w - cropRect.x - cropRect.width, cropRect.height);
-        ctx.fillRect(0, cropRect.y + cropRect.height, w, h - cropRect.y - cropRect.height);
-        ctx.strokeStyle = "#3b82f6";
-        ctx.lineWidth = 2;
-        ctx.setLineDash([6, 3]);
-        ctx.strokeRect(cropRect.x, cropRect.y, cropRect.width, cropRect.height);
-        ctx.setLineDash([]);
-      }
-    };
-    img.src = image;
-  }, [image, filters, rotation, textOverlays, shapeOverlays, layers, isCropping, cropRect, showBg, bgColor, resizeW, resizeH]);
+      if (drawingImage) ctx.drawImage(drawingImage, 0, 0, w, h);
+  }, [image, imageSize, filters, rotation, textOverlays, shapeOverlays, layers, drawing, showBg, bgColor]);
 
   useEffect(() => {
-    applyFilters();
+    renderTaskRef.current = applyFilters();
+    void renderTaskRef.current.catch((error: unknown) => toast.error(error instanceof Error ? error.message : "Cannot render image."));
   }, [applyFilters]);
 
   // ─── Canvas Mouse Handlers ─────────────────────────────────────────────────
 
-  const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const handleCanvasMouseDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const x = Math.max(0, Math.min(canvas.width, (e.clientX - rect.left) * canvas.width / rect.width));
+    const y = Math.max(0, Math.min(canvas.height, (e.clientY - rect.top) * canvas.height / rect.height));
+    e.currentTarget.setPointerCapture(e.pointerId);
+    if (activeTool === "draw" || activeTool === "erase") pushUndo();
 
     if (activeTool === "draw") {
       setIsDrawing(true);
@@ -461,12 +509,12 @@ export function ImageEditorEngine() {
     }
   };
 
-  const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const handleCanvasMouseMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const x = Math.max(0, Math.min(canvas.width, (e.clientX - rect.left) * canvas.width / rect.width));
+    const y = Math.max(0, Math.min(canvas.height, (e.clientY - rect.top) * canvas.height / rect.height));
 
     if (isDrawing && (activeTool === "draw" || activeTool === "erase")) {
       const drawCanvas = drawCanvasRef.current;
@@ -477,7 +525,7 @@ export function ImageEditorEngine() {
       dctx.stroke();
     }
 
-    if (isCropping && cropStart) {
+    if (isCropping && e.buttons > 0) {
       setCropRect({
         x: Math.min(cropStart.x, x),
         y: Math.min(cropStart.y, y),
@@ -490,26 +538,35 @@ export function ImageEditorEngine() {
   const handleCanvasMouseUp = () => {
     if (isDrawing) {
       setIsDrawing(false);
-      pushUndo();
-      const mainCanvas = canvasRef.current;
       const drawCanvas = drawCanvasRef.current;
-      if (!mainCanvas || !drawCanvas) return;
-      const ctx = mainCanvas.getContext("2d");
-      if (!ctx) return;
-      ctx.drawImage(drawCanvas, 0, 0);
+      if (!drawCanvas) return;
+      setDrawing(drawCanvas.toDataURL());
       const dctx = drawCanvas.getContext("2d");
       if (dctx) {
         dctx.globalCompositeOperation = "source-over";
-        dctx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
       }
-      setImage(mainCanvas.toDataURL());
     }
   };
 
   // ─── Crop Actions ──────────────────────────────────────────────────────────
 
-  const applyCrop = () => {
+  const commitBitmap = (bitmap: HTMLCanvasElement) => {
+    setImage(bitmap.toDataURL());
+    setImageSize({ width: bitmap.width, height: bitmap.height });
+    setResizeW(bitmap.width);
+    setResizeH(bitmap.height);
+    setFilters(FILTER_PRESETS[0].settings);
+    setRotation(0);
+    setTextOverlays([]);
+    setShapeOverlays([]);
+    setLayers([]);
+    setDrawing(null);
+    setShowBg(false);
+  };
+
+  const applyCrop = async () => {
     if (!cropRect || cropRect.width < 10 || cropRect.height < 10) return;
+    try { await renderTaskRef.current; } catch { return; }
     pushUndo();
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -519,11 +576,7 @@ export function ImageEditorEngine() {
     const ctx = cropCanvas.getContext("2d");
     if (!ctx) return;
     ctx.drawImage(canvas, cropRect.x, cropRect.y, cropRect.width, cropRect.height, 0, 0, cropRect.width, cropRect.height);
-    const newDataUrl = cropCanvas.toDataURL();
-    setImage(newDataUrl);
-    setImageSize({ width: cropRect.width, height: cropRect.height });
-    setResizeW(cropRect.width);
-    setResizeH(cropRect.height);
+    commitBitmap(cropCanvas);
     setIsCropping(false);
     setCropRect(null);
     setActiveTool("select");
@@ -536,8 +589,9 @@ export function ImageEditorEngine() {
 
   // ─── Resize ────────────────────────────────────────────────────────────────
 
-  const applyResize = () => {
-    if (resizeW < 1 || resizeH < 1) return;
+  const applyResize = async () => {
+    if (!Number.isFinite(resizeW) || !Number.isFinite(resizeH) || resizeW < 1 || resizeH < 1) return;
+    try { await renderTaskRef.current; } catch { return; }
     pushUndo();
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -547,8 +601,7 @@ export function ImageEditorEngine() {
     const ctx = resizedCanvas.getContext("2d");
     if (!ctx) return;
     ctx.drawImage(canvas, 0, 0, resizeW, resizeH);
-    setImage(resizedCanvas.toDataURL());
-    setImageSize({ width: resizeW, height: resizeH });
+    commitBitmap(resizedCanvas);
   };
 
   const handleResizeWChange = (v: number) => {
@@ -578,6 +631,8 @@ export function ImageEditorEngine() {
       setUndoStack([]);
       setCropRect(null);
       setIsCropping(false);
+      setDrawing(null);
+      setShowBg(false);
       const img = new Image();
       img.onload = () => {
         setImageSize({ width: img.width, height: img.height });
@@ -588,11 +643,16 @@ export function ImageEditorEngine() {
     }
   };
 
-  const downloadImage = (format: "png" | "jpeg" | "webp") => {
+  const downloadImage = async (format: "png" | "jpeg" | "webp") => {
+    try { await renderTaskRef.current; } catch { return; }
     const canvas = canvasRef.current;
     if (!canvas) return;
     const mimeMap = { png: "image/png", jpeg: "image/jpeg", webp: "image/webp" };
     const dataUrl = canvas.toDataURL(mimeMap[format], 0.95);
+    if (!dataUrl.startsWith(`data:${mimeMap[format]};`)) {
+      toast.error(`This browser cannot export ${format.toUpperCase()}. Choose PNG or JPEG.`);
+      return;
+    }
     const a = document.createElement("a");
     a.href = dataUrl;
     a.download = `edited-image.${format}`;
@@ -607,7 +667,7 @@ export function ImageEditorEngine() {
   // ─── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="space-y-4">
+    <div className="w-full min-w-0 space-y-3 [&_button]:min-h-11 [&_input:not([type=range]):not([type=checkbox])]:min-h-11 **:data-[slot=card]:rounded-none **:data-[slot=card]:bg-transparent **:data-[slot=card]:ring-0 **:data-[slot=card]:py-2 **:data-[slot=card]:gap-2 **:data-[slot=card-header]:px-0 **:data-[slot=card-content]:px-0">
       {/* ── Toolbar ── */}
       <div className="flex flex-wrap items-center gap-2">
         <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="gap-1.5">
@@ -617,7 +677,7 @@ export function ImageEditorEngine() {
 
         <Separator orientation="vertical" className="h-8" />
 
-        <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
+        <div role="group" aria-label="Editing tools" className="flex flex-wrap items-center gap-1">
           {([
             { tool: "select" as Tool, icon: MousePointer, label: "Select" },
             { tool: "draw" as Tool, icon: Pencil, label: "Draw" },
@@ -629,21 +689,25 @@ export function ImageEditorEngine() {
             <Button
               key={tool}
               variant={activeTool === tool ? "default" : "ghost"}
-              size="sm"
-              className="h-8 gap-1"
+              size="icon"
+              className="h-11 w-11"
+              title={label}
+              aria-label={label}
+              aria-pressed={activeTool === tool}
+              disabled={!image}
               onClick={() => { setActiveTool(tool); if (tool !== "crop") { setIsCropping(false); setCropRect(null); } }}
             >
-              <Icon className="h-3.5 w-3.5" /> {label}
+              <Icon className="h-4 w-4" />
             </Button>
           ))}
         </div>
 
         <Separator orientation="vertical" className="h-8" />
 
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={undo} disabled={undoStack.length === 0}>
+        <Button variant="ghost" size="icon" className="h-11 w-11" title="Undo" aria-label="Undo" onClick={undo} disabled={undoStack.length === 0}>
           <Undo2 className="h-4 w-4" />
         </Button>
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={resetAll}>
+        <Button variant="ghost" size="icon" className="h-11 w-11" title="Reset image" aria-label="Reset image" onClick={resetAll} disabled={!image}>
           <RotateCw className="h-4 w-4" />
         </Button>
 
@@ -656,13 +720,13 @@ export function ImageEditorEngine() {
           </div>
         )}
 
-        <Button variant="outline" size="sm" onClick={() => downloadImage("png")} className="gap-1.5">
+        <Button variant="outline" size="sm" disabled={!image} onClick={() => downloadImage("png")} className="gap-1.5">
           <Download className="h-4 w-4" /> PNG
         </Button>
-        <Button variant="outline" size="sm" onClick={() => downloadImage("jpeg")} className="gap-1.5">
+        <Button variant="outline" size="sm" disabled={!image} onClick={() => downloadImage("jpeg")} className="gap-1.5">
           <Download className="h-4 w-4" /> JPEG
         </Button>
-        <Button variant="outline" size="sm" onClick={() => downloadImage("webp")} className="gap-1.5">
+        <Button variant="outline" size="sm" disabled={!image} onClick={() => downloadImage("webp")} className="gap-1.5">
           <Download className="h-4 w-4" /> WebP
         </Button>
       </div>
@@ -670,25 +734,24 @@ export function ImageEditorEngine() {
       {/* ── Tool-specific settings ── */}
       {activeTool === "text" && (
         <div className="flex flex-wrap items-center gap-3 p-2 bg-muted/30 rounded-lg">
-          <Input placeholder="Type text..." value={newText} onChange={(e) => setNewText(e.target.value)} className="max-w-50 h-8" />
+          <Input aria-label="Overlay text" placeholder="Type text..." value={newText} onChange={(e) => setNewText(e.target.value)} className="max-w-50 h-8" />
           <span className="text-xs">Color:</span>
-          <input type="color" value={textColor} onChange={(e) => setTextColor(e.target.value)} className="w-7 h-7 rounded cursor-pointer" />
+          <input aria-label="Text color" type="color" value={textColor} onChange={(e) => setTextColor(e.target.value)} className="w-11 h-11 rounded cursor-pointer" />
           <span className="text-xs">Size:</span>
-          <Input type="number" value={textSize} onChange={(e) => setTextSize(Number(e.target.value) || 24)} className="w-16 h-8" min={8} max={200} />
+          <Input aria-label="Text size" type="number" value={textSize} onChange={(e) => setTextSize(Number(e.target.value) || 24)} className="w-16 h-8" min={8} max={200} />
           <span className="text-xs">Font:</span>
-          <select value={textFont} onChange={(e) => setTextFont(e.target.value)} className="h-8 rounded-md border bg-background text-xs px-2">
+          <select aria-label="Text font" value={textFont} onChange={(e) => setTextFont(e.target.value)} className="h-11 rounded-md border bg-background text-sm px-2">
             {FONT_FAMILIES.map((f) => <option key={f} value={f}>{f}</option>)}
           </select>
-          <span className="text-xs text-muted-foreground">Click on canvas to place</span>
         </div>
       )}
 
       {activeTool === "draw" && (
-        <div className="flex items-center gap-3 p-2 bg-muted/30 rounded-lg">
+        <div className="flex flex-wrap items-center gap-3 py-2">
           <span className="text-xs">Color:</span>
-          <input type="color" value={drawColor} onChange={(e) => setDrawColor(e.target.value)} className="w-7 h-7 rounded cursor-pointer" />
+          <input aria-label="Brush color" type="color" value={drawColor} onChange={(e) => setDrawColor(e.target.value)} className="w-11 h-11 rounded cursor-pointer" />
           <span className="text-xs">Size:</span>
-          <input type="range" min="1" max="30" value={drawSize} onChange={(e) => setDrawSize(parseInt(e.target.value))} className="w-24" />
+          <input aria-label="Brush size" type="range" min="1" max="30" value={drawSize} onChange={(e) => setDrawSize(parseInt(e.target.value))} className="w-24" />
           <span className="text-xs text-muted-foreground">{drawSize}px</span>
         </div>
       )}
@@ -696,7 +759,7 @@ export function ImageEditorEngine() {
       {activeTool === "erase" && (
         <div className="flex items-center gap-3 p-2 bg-muted/30 rounded-lg">
           <span className="text-xs">Eraser Size:</span>
-          <input type="range" min="1" max="30" value={drawSize} onChange={(e) => setDrawSize(parseInt(e.target.value))} className="w-24" />
+          <input aria-label="Eraser size" type="range" min="1" max="30" value={drawSize} onChange={(e) => setDrawSize(parseInt(e.target.value))} className="w-24" />
           <span className="text-xs text-muted-foreground">{drawSize}px</span>
         </div>
       )}
@@ -709,66 +772,70 @@ export function ImageEditorEngine() {
                 key={st.type}
                 variant={activeShape === st.type ? "default" : "ghost"}
                 size="sm"
-                className="h-7 w-7 p-0"
+                className="h-11 w-11 p-0"
                 onClick={() => setActiveShape(st.type)}
                 title={st.label}
+                aria-label={st.label}
+                aria-pressed={activeShape === st.type}
               >
                 <st.icon className="h-3.5 w-3.5" />
               </Button>
             ))}
           </div>
           <span className="text-xs">Fill:</span>
-          <input type="color" value={shapeFill} onChange={(e) => setShapeFill(e.target.value)} className="w-7 h-7 rounded cursor-pointer" />
+          <input aria-label="Shape fill color" type="color" value={shapeFill} onChange={(e) => setShapeFill(e.target.value)} className="w-11 h-11 rounded cursor-pointer" />
           <span className="text-xs">Stroke:</span>
-          <input type="color" value={shapeStroke} onChange={(e) => setShapeStroke(e.target.value)} className="w-7 h-7 rounded cursor-pointer" />
+          <input aria-label="Shape stroke color" type="color" value={shapeStroke} onChange={(e) => setShapeStroke(e.target.value)} className="w-11 h-11 rounded cursor-pointer" />
           <span className="text-xs">Width:</span>
-          <input type="range" min="1" max="10" value={shapeStrokeWidth} onChange={(e) => setShapeStrokeWidth(parseInt(e.target.value))} className="w-20" />
+          <input aria-label="Shape stroke width" type="range" min="1" max="10" value={shapeStrokeWidth} onChange={(e) => setShapeStrokeWidth(parseInt(e.target.value))} className="w-20" />
           <span className="text-xs">Opacity:</span>
-          <input type="range" min="10" max="100" value={shapeOpacity} onChange={(e) => setShapeOpacity(parseInt(e.target.value))} className="w-20" />
+          <input aria-label="Shape opacity" type="range" min="10" max="100" value={shapeOpacity} onChange={(e) => setShapeOpacity(parseInt(e.target.value))} className="w-20" />
           <span className="text-xs text-muted-foreground">{shapeOpacity}%</span>
         </div>
       )}
 
-      {activeTool === "crop" && !isCropping && (
-        <div className="p-2 bg-muted/30 rounded-lg text-xs text-muted-foreground">
-          Click and drag on the canvas to select crop area, then click &quot;Apply Crop&quot;
-        </div>
-      )}
-
       {/* ── Main Layout ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+      <div className="flex min-w-0 flex-col gap-3">
         {/* Canvas */}
-        <div className="lg:col-span-3">
+        <div className="w-full min-w-0">
           {image ? (
-            <div className="relative inline-block max-w-full">
-              <canvas ref={canvasRef} className="max-w-full rounded-lg border" />
+            <div className="relative mx-auto max-w-full" style={{ width: canvasSize.height > 0 ? `min(100%, ${65 * canvasSize.width / canvasSize.height}dvh)` : "100%" }}>
+              <canvas ref={canvasRef} aria-label="Image preview" className="block w-full h-auto" />
               <canvas
                 ref={drawCanvasRef}
-                className="absolute inset-0 max-w-full rounded-lg"
-                style={{ pointerEvents: (activeTool === "draw" || activeTool === "erase") ? "auto" : "none" }}
-                onMouseDown={handleCanvasMouseDown}
-                onMouseMove={handleCanvasMouseMove}
-                onMouseUp={handleCanvasMouseUp}
-                onMouseLeave={handleCanvasMouseUp}
+                aria-label="Image editing canvas"
+                className="absolute inset-0 h-full w-full touch-none"
+                onPointerDown={handleCanvasMouseDown}
+                onPointerMove={handleCanvasMouseMove}
+                onPointerUp={handleCanvasMouseUp}
+                onPointerCancel={handleCanvasMouseUp}
               />
+              {isCropping && cropRect && canvasSize.width > 0 && (
+                <div className="absolute pointer-events-none border-2 border-primary border-dashed" style={{
+                  left: `${cropRect.x / canvasSize.width * 100}%`,
+                  top: `${cropRect.y / canvasSize.height * 100}%`,
+                  width: `${cropRect.width / canvasSize.width * 100}%`,
+                  height: `${cropRect.height / canvasSize.height * 100}%`,
+                }} />
+              )}
             </div>
           ) : (
-            <div
-              className="w-full h-100 rounded-xl border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-muted-foreground/50 transition-colors"
+            <button type="button"
+              className="w-full min-h-48 rounded-lg border border-dashed border-muted-foreground/30 flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-muted-foreground/50 transition-colors"
               onClick={() => fileInputRef.current?.click()}
             >
-              <ImagePlus className="h-12 w-12 text-muted-foreground/50" />
+              <ImagePlus className="h-8 w-8 text-muted-foreground/50" />
               <p className="text-muted-foreground">Click to upload an image</p>
               <p className="text-xs text-muted-foreground/70">JPEG, PNG, WebP supported</p>
-            </div>
+            </button>
           )}
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-3">
+        <div className="min-w-0 space-y-3">
           {image && (
             <Tabs defaultValue="filters">
-              <TabsList className="w-full">
+              <TabsList className="w-full h-auto flex-wrap">
                 <TabsTrigger value="filters" className="flex-1 text-xs">Filters</TabsTrigger>
                 <TabsTrigger value="layers" className="flex-1 text-xs">Layers</TabsTrigger>
                 <TabsTrigger value="resize" className="flex-1 text-xs">Resize</TabsTrigger>
@@ -776,7 +843,7 @@ export function ImageEditorEngine() {
               </TabsList>
 
               {/* ── Filters Tab ── */}
-              <TabsContent value="filters" className="space-y-3 mt-3">
+              <TabsContent value="filters" className="grid gap-4 mt-3 lg:grid-cols-3">
                 <Card>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm flex items-center gap-1.5">
@@ -786,14 +853,15 @@ export function ImageEditorEngine() {
                   <CardContent>
                     <div className="flex flex-wrap gap-1.5">
                       {FILTER_PRESETS.map((preset) => (
-                        <Badge
+                        <Button
                           key={preset.name}
                           variant="outline"
-                          className="cursor-pointer hover:bg-muted transition-colors"
+                          size="sm"
+                          aria-pressed={filters === preset.settings}
                           onClick={() => applyPreset(preset)}
                         >
                           {preset.name}
-                        </Badge>
+                        </Button>
                       ))}
                     </div>
                   </CardContent>
@@ -816,7 +884,7 @@ export function ImageEditorEngine() {
                           <span className="flex items-center gap-1"><Icon className="h-3 w-3" /> {label}</span>
                           <span>{value}%</span>
                         </div>
-                        <Slider value={[value]} onValueChange={(v) => { const val = Array.isArray(v) ? v[0] : v; pushUndo(); setFilters((f) => ({ ...f, [key]: val })); }} min={min} max={max} />
+                        <Slider aria-label={label} value={[value]} onValueChange={(v) => { const val = Array.isArray(v) ? v[0] : v; pushUndo(); setFilters((f) => ({ ...f, [key]: val })); }} min={min} max={max} />
                       </div>
                     ))}
                     <div className="space-y-1.5">
@@ -824,14 +892,14 @@ export function ImageEditorEngine() {
                         <span className="flex items-center gap-1"><Wand2 className="h-3 w-3" /> Warmth</span>
                         <span>{filters.warmth > 0 ? "+" : ""}{filters.warmth}</span>
                       </div>
-                      <Slider value={[filters.warmth + 50]} onValueChange={(v) => { const val = Array.isArray(v) ? v[0] : v; pushUndo(); setFilters((f) => ({ ...f, warmth: val - 50 })); }} min={0} max={100} />
+                      <Slider aria-label="Warmth" value={[filters.warmth + 50]} onValueChange={(v) => { const val = Array.isArray(v) ? v[0] : v; pushUndo(); setFilters((f) => ({ ...f, warmth: val - 50 })); }} min={0} max={100} />
                     </div>
                     <div className="space-y-1.5">
                       <div className="flex justify-between text-xs">
                         <span>Blur</span>
                         <span>{filters.blur}px</span>
                       </div>
-                      <Slider value={[filters.blur]} onValueChange={(v) => { const val = Array.isArray(v) ? v[0] : v; pushUndo(); setFilters((f) => ({ ...f, blur: val })); }} min={0} max={10} step={0.5} />
+                      <Slider aria-label="Blur" value={[filters.blur]} onValueChange={(v) => { const val = Array.isArray(v) ? v[0] : v; pushUndo(); setFilters((f) => ({ ...f, blur: val })); }} min={0} max={10} step={0.5} />
                     </div>
                   </CardContent>
                 </Card>
@@ -843,7 +911,7 @@ export function ImageEditorEngine() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       {[0, 90, 180, 270].map((deg) => (
                         <Button key={deg} variant={rotation === deg ? "default" : "outline"} size="sm"
                           onClick={() => { pushUndo(); setRotation(deg); }}>
@@ -876,20 +944,19 @@ export function ImageEditorEngine() {
                     {layers.map((layer) => (
                       <div
                         key={layer.id}
-                        className={`flex items-center gap-2 text-xs p-2 rounded border ${selectedLayerId === layer.id ? "border-primary bg-primary/5" : "border-transparent hover:bg-muted/50"}`}
-                        onClick={() => setSelectedLayerId(layer.id)}
+                        className={`flex flex-wrap items-center gap-1 text-xs py-2 border-b ${selectedLayerId === layer.id ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"}`}
                       >
-                        <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => toggleLayerVisibility(layer.id)}>
+                        <Button variant="ghost" size="icon" className="h-11 w-11" title="Toggle layer visibility" aria-label={`Toggle ${layer.name} visibility`} aria-pressed={layer.visible} onClick={() => { pushUndo(); toggleLayerVisibility(layer.id); }}>
                           {layer.visible ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
                         </Button>
-                        <span className="flex-1 truncate">{layer.name}</span>
-                        <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => moveLayerUp(layer.id)}>
+                        <button type="button" className="flex-1 min-w-16 text-left break-all" aria-pressed={selectedLayerId === layer.id} onClick={() => setSelectedLayerId(layer.id)}>{layer.name}</button>
+                        <Button variant="ghost" size="icon" className="h-11 w-11" title="Move layer up" aria-label={`Move ${layer.name} up`} onClick={() => { pushUndo(); moveLayerUp(layer.id); }}>
                           <ChevronUp className="h-3 w-3" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => moveLayerDown(layer.id)}>
+                        <Button variant="ghost" size="icon" className="h-11 w-11" title="Move layer down" aria-label={`Move ${layer.name} down`} onClick={() => { pushUndo(); moveLayerDown(layer.id); }}>
                           <ChevronDown className="h-3 w-3" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-5 w-5 text-destructive" onClick={() => deleteLayer(layer.id)}>
+                        <Button variant="ghost" size="icon" className="h-11 w-11 text-destructive" title="Delete layer" aria-label={`Delete ${layer.name}`} onClick={() => { pushUndo(); deleteLayer(layer.id); }}>
                           <Trash2 className="h-3 w-3" />
                         </Button>
                       </div>
@@ -908,22 +975,22 @@ export function ImageEditorEngine() {
                       <CardContent className="space-y-3">
                         <div>
                           <label className="text-xs text-muted-foreground">Name</label>
-                          <Input value={layer.name} onChange={(e) => updateLayer(layer.id, { name: e.target.value })} className="h-8 text-sm mt-1" />
+                          <Input aria-label="Layer name" value={layer.name} onChange={(e) => updateLayer(layer.id, { name: e.target.value })} className="h-8 text-sm mt-1" />
                         </div>
                         <div className="space-y-1.5">
                           <div className="flex justify-between text-xs">
                             <span>Opacity</span><span>{layer.opacity}%</span>
                           </div>
-                          <Slider value={[layer.opacity]} onValueChange={(v) => updateLayer(layer.id, { opacity: Array.isArray(v) ? v[0] : v })} min={10} max={100} />
+                          <Slider aria-label="Layer opacity" value={[layer.opacity]} onValueChange={(v) => updateLayer(layer.id, { opacity: Array.isArray(v) ? v[0] : v })} min={10} max={100} />
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                           <div>
                             <label className="text-xs text-muted-foreground">X</label>
-                            <Input type="number" value={layer.x} onChange={(e) => updateLayer(layer.id, { x: Number(e.target.value) || 0 })} className="h-8 text-sm mt-1" />
+                            <Input aria-label="Layer X position" type="number" value={layer.x} onChange={(e) => updateLayer(layer.id, { x: Number(e.target.value) || 0 })} className="h-8 text-sm mt-1" />
                           </div>
                           <div>
                             <label className="text-xs text-muted-foreground">Y</label>
-                            <Input type="number" value={layer.y} onChange={(e) => updateLayer(layer.id, { y: Number(e.target.value) || 0 })} className="h-8 text-sm mt-1" />
+                            <Input aria-label="Layer Y position" type="number" value={layer.y} onChange={(e) => updateLayer(layer.id, { y: Number(e.target.value) || 0 })} className="h-8 text-sm mt-1" />
                           </div>
                         </div>
                       </CardContent>
@@ -943,21 +1010,16 @@ export function ImageEditorEngine() {
                   <CardContent className="space-y-3">
                     <div className="flex items-center gap-2 text-xs">
                       <span>Lock aspect ratio</span>
-                      <button
-                        className={`w-8 h-5 rounded-full transition-colors ${lockAspect ? "bg-primary" : "bg-muted-foreground/30"}`}
-                        onClick={() => setLockAspect(!lockAspect)}
-                      >
-                        <div className={`w-4 h-4 rounded-full bg-white transition-transform ${lockAspect ? "translate-x-3.5" : "translate-x-0.5"}`} />
-                      </button>
+                      <input aria-label="Lock aspect ratio" type="checkbox" checked={lockAspect} onChange={(e) => setLockAspect(e.target.checked)} className="h-5 w-5 accent-primary" />
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div>
                         <label className="text-xs text-muted-foreground">Width (px)</label>
-                        <Input type="number" value={resizeW} onChange={(e) => handleResizeWChange(Number(e.target.value) || 1)} className="h-8 text-sm mt-1" min={1} />
+                        <Input aria-label="Width in pixels" type="number" value={resizeW} onChange={(e) => handleResizeWChange(Number(e.target.value) || 1)} className="h-8 text-sm mt-1" min={1} />
                       </div>
                       <div>
                         <label className="text-xs text-muted-foreground">Height (px)</label>
-                        <Input type="number" value={resizeH} onChange={(e) => handleResizeHChange(Number(e.target.value) || 1)} className="h-8 text-sm mt-1" min={1} />
+                        <Input aria-label="Height in pixels" type="number" value={resizeH} onChange={(e) => handleResizeHChange(Number(e.target.value) || 1)} className="h-8 text-sm mt-1" min={1} />
                       </div>
                     </div>
                     <Button size="sm" onClick={applyResize} className="w-full gap-1.5">
@@ -979,17 +1041,12 @@ export function ImageEditorEngine() {
                   <CardContent className="space-y-3">
                     <div className="flex items-center gap-2 text-xs">
                       <span>Show background</span>
-                      <button
-                        className={`w-8 h-5 rounded-full transition-colors ${showBg ? "bg-primary" : "bg-muted-foreground/30"}`}
-                        onClick={() => setShowBg(!showBg)}
-                      >
-                        <div className={`w-4 h-4 rounded-full bg-white transition-transform ${showBg ? "translate-x-3.5" : "translate-x-0.5"}`} />
-                      </button>
+                      <input aria-label="Show background" type="checkbox" checked={showBg} onChange={(e) => { pushUndo(); setShowBg(e.target.checked); }} className="h-5 w-5 accent-primary" />
                     </div>
                     {showBg && (
                       <div className="flex items-center gap-2">
                         <span className="text-xs">Color:</span>
-                        <input type="color" value={bgColor} onChange={(e) => setBgColor(e.target.value)} className="w-8 h-8 rounded cursor-pointer" />
+                        <input aria-label="Background color" type="color" value={bgColor} onChange={(e) => setBgColor(e.target.value)} className="w-11 h-11 rounded cursor-pointer" />
                         <span className="text-xs text-muted-foreground">{bgColor}</span>
                       </div>
                     )}
@@ -1007,7 +1064,7 @@ export function ImageEditorEngine() {
                         <div key={overlay.id} className="flex items-center gap-2 text-xs p-1.5 rounded hover:bg-muted/50">
                           <Type className="h-3 w-3 text-muted-foreground" />
                           <span className="truncate flex-1">{overlay.text}</span>
-                          <Button variant="ghost" size="icon" className="h-5 w-5 text-destructive"
+                          <Button variant="ghost" size="icon" className="h-11 w-11 text-destructive" title="Delete text" aria-label={`Delete text ${overlay.text}`}
                             onClick={() => { pushUndo(); setTextOverlays((prev) => prev.filter((t) => t.id !== overlay.id)); }}>
                             <Trash2 className="h-3 w-3" />
                           </Button>
@@ -1017,7 +1074,7 @@ export function ImageEditorEngine() {
                         <div key={shape.id} className="flex items-center gap-2 text-xs p-1.5 rounded hover:bg-muted/50">
                           <Square className="h-3 w-3 text-muted-foreground" />
                           <span className="truncate flex-1 capitalize">{shape.type}</span>
-                          <Button variant="ghost" size="icon" className="h-5 w-5 text-destructive"
+                          <Button variant="ghost" size="icon" className="h-11 w-11 text-destructive" title="Delete shape" aria-label={`Delete ${shape.type}`}
                             onClick={() => { pushUndo(); setShapeOverlays((prev) => prev.filter((s) => s.id !== shape.id)); }}>
                             <Trash2 className="h-3 w-3" />
                           </Button>

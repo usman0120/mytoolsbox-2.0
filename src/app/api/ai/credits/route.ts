@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { getUserCreditSummary } from "@/lib/credits";
-import { extractAuthUser } from "@/lib/auth/server-auth";
+import { AuthVerificationUnavailableError, extractAuthUser } from "@/lib/auth/server-auth";
 
 /**
  * GET /api/ai/credits
@@ -11,7 +11,7 @@ import { extractAuthUser } from "@/lib/auth/server-auth";
 export async function GET(request: NextRequest) {
   try {
     const cookieStore = await cookies();
-    const authUser = extractAuthUser(request, cookieStore);
+    const authUser = await extractAuthUser(request, cookieStore);
 
     if (!authUser || !authUser.userId) {
       return NextResponse.json(
@@ -32,6 +32,9 @@ export async function GET(request: NextRequest) {
       daysRemaining: summary.daysRemaining,
     });
   } catch (error) {
+    if (error instanceof AuthVerificationUnavailableError) {
+      return NextResponse.json({ error: error.message, remaining: 0, total: 0 }, { status: 503 });
+    }
     console.error("Credits fetch error:", error);
     return NextResponse.json(
       { error: "Failed to fetch credits", remaining: 0, total: 0 },

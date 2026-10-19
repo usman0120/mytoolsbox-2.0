@@ -5,8 +5,7 @@ import { useAuth } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useI18n } from "@/lib/i18n";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { PageShell, ToolHeader } from "@/components/common/workload-layouts";
 import { Loader2, Settings, Heart, Clock, Wrench, Sparkles } from "lucide-react";
 
 export function DashboardPageClient() {
@@ -64,29 +63,20 @@ export function DashboardPageClient() {
   ];
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-3xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">
-          {t("dash_welcome", "Welcome")}{user.displayName ? `, ${user.displayName.split(" ")[0]}` : ""}
-        </h1>
-        <p className="text-muted-foreground">
-          {t("dash_subtitle", "Your MyToolsBox dashboard — access your tools, favorites, and settings.")}
-        </p>
-      </div>
+    <PageShell className="max-w-3xl">
+      <ToolHeader title={`${t("dash_welcome", "Welcome")}${user.displayName ? `, ${user.displayName.split(" ")[0]}` : ""}`} />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="divide-y border-y">
         {cards.map((card) => (
-          <Link key={card.href} href={localizePath(card.href)}>
-            <Card className="h-full hover:border-primary/50 transition-colors cursor-pointer">
-              <CardHeader className="pb-2">
-                <card.icon className="h-5 w-5 text-primary mb-1" />
-                <CardTitle className="text-lg">{card.title}</CardTitle>
-                <CardDescription>{card.description}</CardDescription>
-              </CardHeader>
-            </Card>
+          <Link key={card.href} href={localizePath(card.href)} className="flex items-start gap-3 py-4 hover:text-primary">
+            <card.icon className="h-5 w-5 text-primary shrink-0" />
+            <div className="min-w-0">
+              <h2 className="text-base font-medium">{card.title}</h2>
+              {card.href !== "/tools" && <p className="text-sm text-muted-foreground">{card.description}</p>}
+            </div>
           </Link>
         ))}
       </div>
-    </div>
+    </PageShell>
   );
 }

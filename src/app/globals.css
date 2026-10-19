@@ -7,19 +7,20 @@
 /* ==========================================================================
    Design Tokens — MyToolsBox
    ==========================================================================
-   Philosophy:
-   - Neutral foundation with one distinctive brand accent (blue-violet)
-   - Rounded but not excessively rounded (radius: 0.625rem base)
-   - Subtle shadows, clean typography, large whitespace
-   - Small, purposeful animations
-   - Dark + light themes with consistent token mapping
+   Philosophy (Inspired by Editorial & Refined Workbench Aesthetic):
+   - Refined forest pine primary accent with warm ivory/off-white foundation
+   - Soft organic borders, generous whitespace, crisp card elevations
+   - Editorial serif accents paired with modern sans-serif body
+   - Distraction-free, zero gaudy gradients or excessive AI badges
+   - Seamless high-contrast Dark & Light theme balance
    ========================================================================== */
 
 @theme inline {
   /* ---- Typography ---- */
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-archivo);
   --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-geist-sans);
+  --font-serif: var(--font-serif);
+  --font-heading: var(--font-archivo);
 
   /* ---- Color tokens (mapped to CSS variables) ---- */
   --color-background: var(--background);
@@ -42,7 +43,7 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
 
-  /* ---- Brand colors (beyond shadcn) ---- */
+  /* ---- Brand colors ---- */
   --color-brand: var(--brand);
   --color-brand-foreground: var(--brand-foreground);
   --color-brand-muted: var(--brand-muted);
@@ -70,139 +71,137 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  /* ---- Border radius scale (base: 0.625rem — rounded but not excessive) ---- */
+  /* ---- Border radius scale ---- */
   --radius: 0.625rem;
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-xl: calc(var(--radius) * 1.35);
+  --radius-2xl: calc(var(--radius) * 1.75);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
 
   /* ---- Shadows ---- */
-  --shadow-xs: 0 1px 2px 0 oklch(0 0 0 / 0.04);
-  --shadow-sm:
-    0 1px 3px 0 oklch(0 0 0 / 0.06), 0 1px 2px -1px oklch(0 0 0 / 0.04);
-  --shadow-md:
-    0 4px 6px -1px oklch(0 0 0 / 0.06), 0 2px 4px -2px oklch(0 0 0 / 0.04);
-  --shadow-lg:
-    0 10px 15px -3px oklch(0 0 0 / 0.06), 0 4px 6px -4px oklch(0 0 0 / 0.04);
-  --shadow-xl:
-    0 20px 25px -5px oklch(0 0 0 / 0.06), 0 8px 10px -6px oklch(0 0 0 / 0.04);
+  --shadow-xs: 0 1px 2px 0 oklch(0 0 0 / 0.03);
+  --shadow-sm: 0 1px 3px 0 oklch(0 0 0 / 0.04), 0 1px 2px -1px oklch(0 0 0 / 0.03);
+  --shadow-md: 0 4px 6px -1px oklch(0 0 0 / 0.05), 0 2px 4px -2px oklch(0 0 0 / 0.03);
+  --shadow-lg: 0 10px 15px -3px oklch(0 0 0 / 0.05), 0 4px 6px -4px oklch(0 0 0 / 0.03);
+  --shadow-xl: 0 20px 25px -5px oklch(0 0 0 / 0.05), 0 8px 10px -6px oklch(0 0 0 / 0.03);
 }
 
 /* ==========================================================================
-   Light Mode — Clean & Airy
+   Light Mode — Refined Pine & Warm Ivory
    ========================================================================== */
 :root {
-  /* Neutral foundation */
-  --background: oklch(0.985 0.002 260);
-  --foreground: oklch(0.18 0.02 260);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.18 0.02 260);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.18 0.02 260);
+  --shell-header-height: 3.75rem;
 
-  /* Brand accent — distinctive blue-violet */
-  --primary: oklch(0.52 0.22 265);
+  /* Neutral foundation — warm paper/ivory */
+  --background: oklch(0.988 0.003 110);
+  --foreground: oklch(0.20 0.02 155);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.20 0.02 155);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.20 0.02 155);
+
+  /* Brand accent — deep forest pine / sage */
+  --primary: oklch(0.35 0.085 155);
   --primary-foreground: oklch(0.99 0 0);
-  --brand: oklch(0.52 0.22 265);
+  --brand: oklch(0.35 0.085 155);
   --brand-foreground: oklch(0.99 0 0);
-  --brand-muted: oklch(0.94 0.04 265);
+  --brand-muted: oklch(0.94 0.025 155);
 
   /* Surfaces */
-  --secondary: oklch(0.96 0.008 260);
-  --secondary-foreground: oklch(0.25 0.03 265);
-  --muted: oklch(0.965 0.004 260);
-  --muted-foreground: oklch(0.48 0.03 265);
-  --accent: oklch(0.94 0.03 265);
-  --accent-foreground: oklch(0.25 0.05 265);
+  --secondary: oklch(0.96 0.008 145);
+  --secondary-foreground: oklch(0.22 0.04 155);
+  --muted: oklch(0.962 0.006 145);
+  --muted-foreground: oklch(0.46 0.02 145);
+  --accent: oklch(0.94 0.02 155);
+  --accent-foreground: oklch(0.20 0.05 155);
 
   /* Semantic */
-  --destructive: oklch(0.55 0.22 20);
+  --destructive: oklch(0.55 0.2 25);
   --destructive-foreground: oklch(0.99 0 0);
-  --success: oklch(0.55 0.18 145);
+  --success: oklch(0.48 0.14 150);
   --success-foreground: oklch(0.99 0 0);
-  --warning: oklch(0.65 0.18 75);
+  --warning: oklch(0.65 0.16 75);
   --warning-foreground: oklch(0.15 0.02 75);
-  --info: oklch(0.55 0.15 240);
+  --info: oklch(0.48 0.12 215);
   --info-foreground: oklch(0.99 0 0);
 
   /* Borders & inputs */
-  --border: oklch(0.9 0.01 260);
-  --input: oklch(0.9 0.01 260);
-  --ring: oklch(0.52 0.22 265);
+  --border: oklch(0.90 0.008 145);
+  --input: oklch(0.90 0.008 145);
+  --ring: oklch(0.35 0.085 155);
 
   /* Charts */
-  --chart-1: oklch(0.52 0.22 265);
-  --chart-2: oklch(0.5 0.2 180);
-  --chart-3: oklch(0.6 0.22 40);
-  --chart-4: oklch(0.55 0.22 330);
-  --chart-5: oklch(0.5 0.2 130);
+  --chart-1: oklch(0.35 0.085 155);
+  --chart-2: oklch(0.55 0.12 180);
+  --chart-3: oklch(0.65 0.14 75);
+  --chart-4: oklch(0.50 0.12 215);
+  --chart-5: oklch(0.55 0.14 30);
 
   /* Sidebar */
-  --sidebar: oklch(0.985 0.002 260);
-  --sidebar-foreground: oklch(0.18 0.02 260);
-  --sidebar-primary: oklch(0.52 0.22 265);
+  --sidebar: oklch(0.985 0.003 110);
+  --sidebar-foreground: oklch(0.20 0.02 155);
+  --sidebar-primary: oklch(0.35 0.085 155);
   --sidebar-primary-foreground: oklch(0.99 0 0);
-  --sidebar-accent: oklch(0.94 0.03 265);
-  --sidebar-accent-foreground: oklch(0.25 0.05 265);
-  --sidebar-border: oklch(0.9 0.01 260);
-  --sidebar-ring: oklch(0.52 0.22 265);
+  --sidebar-accent: oklch(0.94 0.02 155);
+  --sidebar-accent-foreground: oklch(0.20 0.05 155);
+  --sidebar-border: oklch(0.90 0.008 145);
+  --sidebar-ring: oklch(0.35 0.085 155);
 }
 
 /* ==========================================================================
-   Dark Mode — Deep & Rich
+   Dark Mode — Obsidian Pine & Emerald Sage
    ========================================================================== */
 .dark {
-  --background: oklch(0.145 0.012 265);
-  --foreground: oklch(0.93 0.008 260);
-  --card: oklch(0.18 0.018 265);
-  --card-foreground: oklch(0.93 0.008 260);
-  --popover: oklch(0.18 0.018 265);
-  --popover-foreground: oklch(0.93 0.008 260);
+  --background: oklch(0.145 0.015 160);
+  --foreground: oklch(0.94 0.006 145);
+  --card: oklch(0.185 0.018 160);
+  --card-foreground: oklch(0.94 0.006 145);
+  --popover: oklch(0.185 0.018 160);
+  --popover-foreground: oklch(0.94 0.006 145);
 
-  --primary: oklch(0.68 0.18 265);
-  --primary-foreground: oklch(0.12 0.02 265);
-  --brand: oklch(0.68 0.18 265);
-  --brand-foreground: oklch(0.12 0.02 265);
-  --brand-muted: oklch(0.22 0.04 265);
+  --primary: oklch(0.72 0.13 155);
+  --primary-foreground: oklch(0.12 0.025 160);
+  --brand: oklch(0.72 0.13 155);
+  --brand-foreground: oklch(0.12 0.025 160);
+  --brand-muted: oklch(0.23 0.035 160);
 
-  --secondary: oklch(0.22 0.02 265);
-  --secondary-foreground: oklch(0.93 0.008 260);
-  --muted: oklch(0.22 0.02 265);
-  --muted-foreground: oklch(0.6 0.025 265);
-  --accent: oklch(0.25 0.035 265);
-  --accent-foreground: oklch(0.93 0.008 260);
+  --secondary: oklch(0.22 0.018 160);
+  --secondary-foreground: oklch(0.94 0.006 145);
+  --muted: oklch(0.22 0.018 160);
+  --muted-foreground: oklch(0.65 0.02 155);
+  --accent: oklch(0.25 0.03 160);
+  --accent-foreground: oklch(0.94 0.006 145);
 
-  --destructive: oklch(0.55 0.18 20);
+  --destructive: oklch(0.60 0.18 25);
   --destructive-foreground: oklch(0.99 0 0);
-  --success: oklch(0.6 0.16 145);
-  --success-foreground: oklch(0.12 0.02 145);
-  --warning: oklch(0.7 0.16 75);
-  --warning-foreground: oklch(0.12 0.02 75);
-  --info: oklch(0.6 0.14 240);
-  --info-foreground: oklch(0.12 0.02 240);
+  --success: oklch(0.68 0.14 150);
+  --success-foreground: oklch(0.12 0.025 160);
+  --warning: oklch(0.72 0.14 75);
+  --warning-foreground: oklch(0.12 0.025 160);
+  --info: oklch(0.65 0.12 215);
+  --info-foreground: oklch(0.12 0.025 160);
 
-  --border: oklch(0.27 0.02 265);
-  --input: oklch(0.27 0.02 265);
-  --ring: oklch(0.68 0.18 265);
+  --border: oklch(0.27 0.02 160);
+  --input: oklch(0.27 0.02 160);
+  --ring: oklch(0.72 0.13 155);
 
-  --chart-1: oklch(0.68 0.18 265);
-  --chart-2: oklch(0.6 0.18 180);
-  --chart-3: oklch(0.7 0.18 40);
-  --chart-4: oklch(0.65 0.18 330);
-  --chart-5: oklch(0.6 0.16 130);
+  --chart-1: oklch(0.72 0.13 155);
+  --chart-2: oklch(0.65 0.12 180);
+  --chart-3: oklch(0.72 0.14 75);
+  --chart-4: oklch(0.65 0.12 215);
+  --chart-5: oklch(0.65 0.14 30);
 
-  --sidebar: oklch(0.16 0.018 265);
-  --sidebar-foreground: oklch(0.93 0.008 260);
-  --sidebar-primary: oklch(0.68 0.18 265);
-  --sidebar-primary-foreground: oklch(0.12 0.02 265);
-  --sidebar-accent: oklch(0.25 0.035 265);
-  --sidebar-accent-foreground: oklch(0.93 0.008 260);
-  --sidebar-border: oklch(0.27 0.02 265);
-  --sidebar-ring: oklch(0.68 0.18 265);
+  --sidebar: oklch(0.16 0.016 160);
+  --sidebar-foreground: oklch(0.94 0.006 145);
+  --sidebar-primary: oklch(0.72 0.13 155);
+  --sidebar-primary-foreground: oklch(0.12 0.025 160);
+  --sidebar-accent: oklch(0.25 0.03 160);
+  --sidebar-accent-foreground: oklch(0.94 0.006 145);
+  --sidebar-border: oklch(0.27 0.02 160);
+  --sidebar-ring: oklch(0.72 0.13 155);
 }
 
 /* ==========================================================================
@@ -214,7 +213,9 @@
   }
   body {
     @apply bg-background text-foreground antialiased;
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    letter-spacing: 0;
+    line-height: 1.5;
+    text-rendering: optimizeLegibility;
   }
   html {
     @apply font-sans scroll-smooth;
@@ -222,11 +223,52 @@
 
   /* Subtle selection color */
   ::selection {
-    background: oklch(0.52 0.22 265 / 0.18);
+    background: oklch(0.35 0.085 155 / 0.15);
     color: var(--foreground);
   }
   .dark ::selection {
-    background: oklch(0.68 0.18 265 / 0.25);
+    background: oklch(0.72 0.13 155 / 0.22);
+  }
+}
+
+@utility tracking-tight {
+  letter-spacing: 0;
+}
+
+@utility tracking-tighter {
+  letter-spacing: 0;
+}
+
+@utility tracking-wide {
+  letter-spacing: 0;
+}
+
+@utility tracking-wider {
+  letter-spacing: 0;
+}
+
+@utility tracking-widest {
+  letter-spacing: 0;
+}
+
+@layer components {
+  .workspace {
+    overflow-wrap: anywhere;
+  }
+  .workspace :is(input, textarea, select) {
+    max-width: 100%;
+  }
+  .workspace :is(pre, table) {
+    overflow-wrap: normal;
+  }
+}
+
+@media (pointer: coarse) {
+  [data-slot="button"] {
+    min-height: 2.75rem;
+  }
+  [data-slot="button"][data-size^="icon"] {
+    min-width: 2.75rem;
   }
 }
 
@@ -428,13 +470,30 @@
 }
 
 /* ==========================================================================
-   Gradient Text — Brand accent only
+   Editorial Typography & Refined Sheets
+   ========================================================================== */
+.font-editorial {
+  font-family: var(--font-serif), Georgia, Cambria, "Times New Roman", Times, serif;
+}
+
+.preview-sheet {
+  background-color: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 20px -2px oklch(0 0 0 / 0.05), 0 2px 6px -1px oklch(0 0 0 / 0.03);
+}
+
+.dark .preview-sheet {
+  box-shadow: 0 4px 20px -2px oklch(0 0 0 / 0.35), 0 2px 6px -1px oklch(0 0 0 / 0.2);
+}
+
+/* ==========================================================================
+   Gradient Text — Restrained pine / emerald accent
    ========================================================================== */
 .gradient-text {
   background: linear-gradient(
     135deg,
-    oklch(0.52 0.22 265),
-    oklch(0.48 0.2 300)
+    oklch(0.35 0.085 155),
+    oklch(0.48 0.12 175)
   );
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -444,8 +503,8 @@
 .dark .gradient-text {
   background: linear-gradient(
     135deg,
-    oklch(0.72 0.16 265),
-    oklch(0.65 0.14 300)
+    oklch(0.72 0.13 155),
+    oklch(0.82 0.10 175)
   );
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -518,12 +577,15 @@ html.rtl {
 }
 
 html[lang="ur"] body {
-  font-family: var(--font-geist-sans), "Noto Nastaliq Urdu", "Urdu Typesetting", "Jameel Noori Nastaleeq", Tahoma, sans-serif;
+  font-family:
+    var(--font-geist-sans), "Noto Nastaliq Urdu", "Urdu Typesetting",
+    "Jameel Noori Nastaleeq", Tahoma, sans-serif;
   line-height: 1.8;
 }
 
 html[lang="ar"] body {
-  font-family: var(--font-geist-sans), "Noto Sans Arabic", "Segoe UI", Tahoma, sans-serif;
+  font-family:
+    var(--font-geist-sans), "Noto Sans Arabic", "Segoe UI", Tahoma, sans-serif;
   line-height: 1.6;
 }
 
@@ -531,4 +593,3 @@ html[dir="rtl"] .ltr-only {
   direction: ltr;
   text-align: left;
 }
-

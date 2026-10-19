@@ -11,6 +11,7 @@ import {
   Image as ImageIcon, Settings2, Repeat, ArrowLeftRight, Sparkles,
 } from "lucide-react";
 import { GifEncoder } from "@/lib/processing/client/gif-encoder";
+import { planGifFrames } from "./video-to-gif-sampling";
 
 export function VideoToGifMakerEngine() {
   const [file, setFile] = useState<File | null>(null);
@@ -90,18 +91,51 @@ export function VideoToGifMakerEngine() {
       canvas.height = height;
       const ctx = canvas.getContext("2d", { willReadFrequently: true })!;
 
-      const frameDelay = Math.round(1000 / fps);
-      const totalFrames = Math.max(1, Math.floor(duration * fps));
+      const { frameTimes, frameDelay } = planGifFrames(video.duration, startTime, duration, fps);
+      const totalFrames = frameTimes.length;
       const frames: ImageData[] = [];
 
       setStatusMessage("Extracting video frames...");
 
       for (let i = 0; i < totalFrames; i++) {
-        const targetTime = startTime + i / fps;
-        video.currentTime = Math.min(targetTime, video.duration);
-
-        await new Promise<void>((resolve) => {
-          video.onseeked = () => resolve();
+        const targetTime = frameTimes[i];
+        await new Promise<void>((resolve, reject) => {
+          if (video.error) {
+            reject(new Error("Unable to decode video frame."));
+            return;
+          }
+          if (video.currentTime === targetTime && !video.seeking && video.readyState >= 2) {
+            resolve();
+            return;
+          }
+          const cleanup = () => {
+            clearTimeout(timeout);
+            video.removeEventListener("seeked", onSeeked);
+            video.removeEventListener("error", onFailure);
+            video.removeEventListener("abort", onFailure);
+          };
+          const onSeeked = () => {
+            cleanup();
+            if (video.readyState < 2 || video.seeking || video.error) {
+              reject(new Error("Unable to decode video frame."));
+            } else resolve();
+          };
+          const onFailure = () => {
+            cleanup();
+            reject(new Error("Unable to seek video frame."));
+          };
+          const timeout = setTimeout(() => {
+            cleanup();
+            reject(new Error("Video frame seek timed out."));
+          }, 5000);
+          video.addEventListener("seeked", onSeeked);
+          video.addEventListener("error", onFailure);
+          video.addEventListener("abort", onFailure);
+          try {
+            video.currentTime = targetTime;
+          } catch {
+            onFailure();
+          }
         });
 
         ctx.drawImage(video, 0, 0, width, height);

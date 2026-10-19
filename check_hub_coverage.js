@@ -1,39 +1,15 @@
-const fs = require('fs');
+const { buildInventory } = require('./compare_slugs.js');
 
-const registry = fs.readFileSync('e:/working_projects/mytoolsbox-me_new/src/content/tools/registry.ts', 'utf8');
-const hubsRegistry = fs.readFileSync('e:/working_projects/mytoolsbox-me_new/src/content/hubs/registry.ts', 'utf8');
-
-// Extract all slugs from registry
-const registrySlugs = [...registry.matchAll(/slug:\s*"([^"]+)"/g)].map(m => m[1]);
-
-// Extract hub definitions
-const hubMatches = [...hubsRegistry.matchAll(/id:\s*"([^"]+)"[\s\S]*?toolIds:\s*\[([\s\S]*?)\]/g)];
-
-const hubCoverage = {};
-const allHubTools = new Set();
-
-for (const [, hubId, toolIdsStr] of hubMatches) {
-  const toolIds = [...toolIdsStr.matchAll(/"([^"]+)"/g)].map(m => m[1]);
-  hubCoverage[hubId] = toolIds;
-  toolIds.forEach(id => allHubTools.add(id));
+function hubCoverage() {
+  const inventory = buildInventory();
+  return {
+    hubs: inventory.hubs.map((hub) => ({ id: hub.id, tools: hub.toolIds.length, apps: (hub.appIds || []).length })),
+    coveredTools: new Set(inventory.hubReferences.filter((entry) => entry.namespace === 'tools').map((entry) => entry.id)).size,
+    coveredApps: new Set(inventory.hubReferences.filter((entry) => entry.namespace === 'apps').map((entry) => entry.id)).size,
+    uncovered: inventory.features.filter((entry) => !inventory.hubReferences.some((reference) => reference.namespace === entry.namespace && reference.id === entry.id)).map((entry) => entry.route),
+    invalidReferences: inventory.integrity.invalidHubReferences,
+  };
 }
 
-console.log('Hubs found:', Object.keys(hubCoverage).join(', '));
-console.log('Total unique tools across all hubs:', allHubTools.size);
-console.log('Registry tools:', registrySlugs.length);
-
-// Tools not in any hub
-const notInAnyHub = registrySlugs.filter(s => !allHubTools.has(s));
-console.log('\nTools NOT in any hub (' + notInAnyHub.length + '):');
-notInAnyHub.forEach(s => console.log('  ' + s));
-
-// Tools in hubs but not in registry
-const notInRegistry = [...allHubTools].filter(s => !registrySlugs.includes(s));
-console.log('\nTools in hubs but NOT in registry (' + notInRegistry.length + '):');
-notInRegistry.forEach(s => console.log('  ' + s));
-
-// Per-hub stats
-console.log('\n=== Per-hub coverage ===');
-for (const [hubId, toolIds] of Object.entries(hubCoverage)) {
-  console.log(`${hubId}: ${toolIds.length} tools`);
-}
+module.exports = { hubCoverage };
+if (require.main === module) console.log(JSON.stringify(hubCoverage(), null, 2));

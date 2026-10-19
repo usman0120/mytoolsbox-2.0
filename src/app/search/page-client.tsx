@@ -12,6 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { PageShell, ToolHeader } from "@/components/common/workload-layouts";
 import { searchTools } from "@/content/tools/registry";
 import { getActiveApps } from "@/content/apps/registry";
 import { ToolDefinition } from "@/types";
@@ -87,7 +88,7 @@ export function SearchPageClient() {
   const hasActiveFilters = filter !== "all" || selectedCategory !== "all";
 
   return (
-    <div className="container mx-auto px-4 py-10">
+    <PageShell>
       {/* Breadcrumb */}
       <div className="mb-6 animate-fade-in-up">
         <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
@@ -98,10 +99,7 @@ export function SearchPageClient() {
       </div>
 
       {/* Search header */}
-      <div className="mb-8 animate-fade-in-up">
-        <h1 className="text-2xl md:text-3xl font-bold mb-2">{t("search_title", "Search Tools & Apps")}</h1>
-        <p className="text-muted-foreground">Find tools and apps across the entire platform.</p>
-      </div>
+      <ToolHeader title={t("search_title", "Search Tools & Apps")} />
 
       {/* Search input */}
       <form onSubmit={handleSearch} className="mb-6 animate-fade-in-up">
@@ -109,8 +107,9 @@ export function SearchPageClient() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           <Input
             type="search"
+            aria-label={t("search_title", "Search Tools & Apps")}
             placeholder={t("search_placeholder", "What do you need to do? Compress a PDF, solve math, edit image...")}
-            className="pl-10 h-12 text-base rounded-xl border-2 focus-visible:border-primary/50"
+            className="pl-10 h-11 text-base rounded-md focus-visible:border-primary/50"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             autoFocus
@@ -125,6 +124,7 @@ export function SearchPageClient() {
             <button
               key={f}
               onClick={() => setFilter(f)}
+              aria-pressed={filter === f}
               className={cn(
                 "px-3 py-1.5 text-xs font-medium rounded-md transition-colors",
                 filter === f
@@ -137,6 +137,7 @@ export function SearchPageClient() {
           ))}
         </div>
         <select
+          aria-label={t("tools_all_categories", "Category")}
           value={selectedCategory}
           onChange={(e) => setSelectedCategory(e.target.value)}
           className="h-8 px-2.5 text-xs rounded-lg border bg-muted text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/30"
@@ -173,14 +174,14 @@ export function SearchPageClient() {
                 return (
                   <Link key={`${result.type}:${result.item.slug}`} href={localizePath(href)}>
                     <Card
-                      className="group card-lift border-border/50 hover:border-primary/30 overflow-hidden animate-fade-in-up"
+                      className="group h-full rounded-lg border-border/50 hover:border-primary/30 overflow-hidden"
                       style={{ animationDelay: `${i * 40}ms` }}
                     >
                       <CardContent className="p-4">
                         <div className="flex items-center gap-3">
                           <div
                             className={cn(
-                              "flex h-10 w-10 items-center justify-center rounded-xl ring-1 ring-border/50 group-hover:scale-110 transition-transform shrink-0",
+                              "flex h-8 w-8 items-center justify-center rounded-md shrink-0",
                               result.type === "app"
                                 ? "bg-violet-500/10 text-violet-600 dark:text-violet-400"
                                 : "bg-primary/10 text-primary"
@@ -189,8 +190,8 @@ export function SearchPageClient() {
                             <IconComponent className="h-5 w-5" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <h3 className="font-medium text-sm group-hover:text-primary transition-colors truncate">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h3 className="font-medium text-sm group-hover:text-primary transition-colors wrap-break-word">
                                 {displayName}
                               </h3>
                               <Badge
@@ -203,7 +204,7 @@ export function SearchPageClient() {
                                 {result.type === "app" ? "App" : "Tool"}
                               </Badge>
                             </div>
-                            <p className="text-xs text-muted-foreground truncate mt-0.5">
+                            <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
                               {result.item.shortDescription}
                             </p>
                           </div>
@@ -231,6 +232,6 @@ export function SearchPageClient() {
           <p className="text-sm">Type at least 2 characters to search across all tools and apps.</p>
         </div>
       )}
-    </div>
+    </PageShell>
   );
 }

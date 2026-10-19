@@ -103,7 +103,7 @@ export function ImageConverterEngine() {
   const currentExt = file ? file.name.split(".").pop()?.toUpperCase() : "";
 
   return (
-    <div className="space-y-6">
+    <div className="w-full min-w-0 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-border/50">
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20">
@@ -122,12 +122,12 @@ export function ImageConverterEngine() {
 
       {!file && (
         <div
-          className={`border-2 border-dashed rounded-2xl p-10 text-center transition-all cursor-pointer ${
+          className={`border-2 border-dashed rounded-lg p-4 sm:p-6 text-center transition-colors cursor-pointer ${
             dragOver ? "border-purple-500 bg-purple-500/5 scale-[0.99]" : "border-border/60 hover:border-purple-500/40 bg-card/50"
           }`}
           onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
           onDragLeave={() => setDragOver(false)}
-          onDrop={(e) => { e.preventDefault(); setDragOver(false); e.dataTransfer.files[0] && loadFile(e.dataTransfer.files[0]); }}
+          onDrop={(e) => { e.preventDefault(); setDragOver(false); if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); }}
           onClick={() => fileInputRef.current?.click()}
         >
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-purple-500/10 ring-1 ring-purple-500/20 text-purple-600">
@@ -144,7 +144,7 @@ export function ImageConverterEngine() {
             className="hidden"
             onChange={(e) => e.target.files?.[0] && loadFile(e.target.files[0])}
           />
-          <Button size="sm" className="rounded-xl gap-2 pointer-events-none bg-purple-600 hover:bg-purple-700 text-white">
+          <Button onClick={(event) => { event.stopPropagation(); fileInputRef.current?.click(); }} className="rounded-lg gap-2 bg-purple-600 hover:bg-purple-700 text-white">
             <Upload className="h-4 w-4" /> Select Image
           </Button>
         </div>
@@ -205,11 +205,11 @@ export function ImageConverterEngine() {
             )}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_20rem]">
             {/* Left Options */}
-            <div className="lg:col-span-5 space-y-4">
-              <Card className="border-border/50">
-                <CardContent className="p-5 space-y-4">
+            <section aria-label="Conversion settings" className="min-w-0 xl:col-start-2 xl:row-start-1">
+              <div>
+                <div className="space-y-4">
                   <div>
                     <h4 className="font-semibold text-sm mb-1">Target Format</h4>
                     <p className="text-xs text-muted-foreground">Select the destination format for your image.</p>
@@ -217,13 +217,13 @@ export function ImageConverterEngine() {
 
                   <div className="grid grid-cols-1 gap-2">
                     {FORMAT_OPTIONS.map((fmt) => (
-                      <div
+                      <button type="button" aria-pressed={targetFormat === fmt.id}
                         key={fmt.id}
                         onClick={() => {
                           setTargetFormat(fmt.id as ConvertOptions["format"]);
                           setOutputUrl(null);
                         }}
-                        className={`p-3 rounded-xl border cursor-pointer transition-all flex items-center justify-between ${
+                        className={`p-3 rounded-lg border text-left transition-colors flex items-center justify-between ${
                           targetFormat === fmt.id
                             ? "border-purple-600 bg-purple-500/10 shadow-xs"
                             : "border-border/50 hover:border-purple-500/30"
@@ -237,7 +237,7 @@ export function ImageConverterEngine() {
                           <p className="text-[11px] text-muted-foreground">{fmt.desc}</p>
                         </div>
                         {targetFormat === fmt.id && <span className="h-2 w-2 rounded-full bg-purple-600" />}
-                      </div>
+                      </button>
                     ))}
                   </div>
 
@@ -273,14 +273,14 @@ export function ImageConverterEngine() {
                       </div>
                     </div>
                   )}
-                </CardContent>
-              </Card>
-            </div>
+                </div>
+              </div>
+            </section>
 
             {/* Right Preview */}
-            <div className="lg:col-span-7 space-y-4">
-              <Card className="border-border/50 overflow-hidden">
-                <CardContent className="p-4 space-y-3">
+            <section aria-label="Image preview" className="order-first min-w-0 xl:col-start-1 xl:row-start-1">
+              <div>
+                <div className="space-y-3">
                   <div className="flex items-center justify-between text-xs">
                     <span className="font-semibold flex items-center gap-1.5">
                       <Eye className="h-4 w-4 text-purple-600" /> Image Preview
@@ -299,9 +299,9 @@ export function ImageConverterEngine() {
                       className="max-h-[460px] w-auto max-w-full object-contain rounded-lg shadow-sm"
                     />
                   </div>
-                </CardContent>
-              </Card>
-            </div>
+                </div>
+              </div>
+            </section>
           </div>
         </div>
       )}

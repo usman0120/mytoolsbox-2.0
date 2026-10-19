@@ -101,7 +101,7 @@ export function PPTToPDFEngine() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="w-full min-w-0 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-border/50">
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20">
@@ -120,12 +120,12 @@ export function PPTToPDFEngine() {
 
       {!file && (
         <div
-          className={`border-2 border-dashed rounded-2xl p-10 text-center transition-all cursor-pointer ${
+          className={`border-2 border-dashed rounded-lg p-4 sm:p-6 text-center transition-colors cursor-pointer ${
             dragOver ? "border-orange-500 bg-orange-500/5 scale-[0.99]" : "border-border/60 hover:border-orange-500/40 bg-card/50"
           }`}
           onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
           onDragLeave={() => setDragOver(false)}
-          onDrop={(e) => { e.preventDefault(); setDragOver(false); e.dataTransfer.files[0] && loadFile(e.dataTransfer.files[0]); }}
+          onDrop={(e) => { e.preventDefault(); setDragOver(false); if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); }}
           onClick={() => fileInputRef.current?.click()}
         >
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-500/10 ring-1 ring-orange-500/20 text-orange-600">
@@ -142,7 +142,7 @@ export function PPTToPDFEngine() {
             className="hidden"
             onChange={(e) => e.target.files?.[0] && loadFile(e.target.files[0])}
           />
-          <Button size="sm" className="rounded-xl gap-2 pointer-events-none bg-orange-600 hover:bg-orange-700 text-white">
+          <Button onClick={(event) => { event.stopPropagation(); fileInputRef.current?.click(); }} className="rounded-lg gap-2 bg-orange-600 hover:bg-orange-700 text-white">
             <Upload className="h-4 w-4" /> Select Presentation
           </Button>
         </div>
@@ -226,8 +226,8 @@ export function PPTToPDFEngine() {
           )}
 
           {/* Theme Selector */}
-          <Card className="border-border/50">
-            <CardContent className="p-4 space-y-3">
+          <section aria-label="Slide theme">
+            <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <Palette className="h-4 w-4 text-orange-600" />
                 <Label className="text-xs font-semibold">Choose Presentation Slide Theme:</Label>
@@ -238,10 +238,12 @@ export function PPTToPDFEngine() {
                   { id: "modern-navy", label: "Modern Navy (Dark)", desc: "Deep navy background with cyan accents", bg: "bg-blue-950 border-blue-400/40 text-blue-100" },
                   { id: "dark-slate", label: "Dark Slate (OLED)", desc: "Charcoal background with warm amber accents", bg: "bg-zinc-900 border-zinc-700 text-zinc-100" },
                 ].map((th) => (
-                  <div
+                  <button
+                    type="button"
+                    aria-pressed={theme === th.id}
                     key={th.id}
                     onClick={() => setTheme(th.id as typeof theme)}
-                    className={`p-3 rounded-xl border cursor-pointer transition-all ${
+                    className={`min-h-11 p-3 rounded-lg border text-left transition-colors ${
                       theme === th.id
                         ? "border-orange-600 ring-2 ring-orange-500/30 bg-orange-500/5 shadow-xs"
                         : "border-border/60 hover:border-orange-500/30"
@@ -252,11 +254,11 @@ export function PPTToPDFEngine() {
                       {theme === th.id && <span className="h-2 w-2 rounded-full bg-orange-600" />}
                     </div>
                     <p className="text-[11px] text-muted-foreground">{th.desc}</p>
-                  </div>
+                  </button>
                 ))}
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </section>
 
           {/* Slide Deck Grid Preview */}
           <div className="space-y-3">

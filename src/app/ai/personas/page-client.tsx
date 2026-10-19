@@ -3,7 +3,8 @@
 import { useRouter } from "next/navigation";
 import { AISubnav } from "@/features/ai/components/ai-subnav";
 import { useChatStore } from "@/features/ai/chat-store";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
+import { useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -15,7 +16,6 @@ import {
   Briefcase,
   ArrowRight,
   Bot,
-  CheckCircle2,
   Terminal,
   Database,
   FileText,
@@ -69,31 +69,31 @@ const SPECIALIZED_AI_TOOLS = [
 
 export function PersonasPageClient() {
   const router = useRouter();
-  const { setActivePersonaId, setPendingPrompt, addConversation } = useChatStore();
+  const { t, localizePath } = useI18n();
+  const { setActivePersonaId, setPendingPrompt, addConversation, updateConversation } = useChatStore();
 
   const handleLaunchPersona = (personaId: string, samplePrompt?: string) => {
     setActivePersonaId(personaId);
+    const conversationId = addConversation();
+    const persona = AI_PERSONAS.find((item) => item.id === personaId);
+    if (persona) updateConversation(conversationId, { personaId, systemPrompt: persona.systemPrompt });
     if (samplePrompt) {
       setPendingPrompt(samplePrompt);
     }
-    router.push("/ai");
+    router.push(localizePath("/ai"));
   };
 
   return (
-    <div className="container mx-auto px-3 sm:px-4 py-6 md:py-8 max-w-7xl">
+    <div className="container mx-auto px-3 sm:px-4 py-4 max-w-7xl">
       <AISubnav
-        title="AI Personas & Domain Engines"
-        subtitle="Specialized system prompts tuned for precise domain expertise. Select a persona or launch a targeted AI workflow."
+        title={t("ai_personas", "Personas & Tools")}
       />
 
       {/* Personas Grid */}
-      <div className="space-y-8 mt-6">
+      <div className="space-y-6 mt-4">
         <div>
           <div className="mb-4">
-            <h2 className="text-lg font-bold tracking-tight">Expert Personas</h2>
-            <p className="text-xs text-muted-foreground">
-              Configured system roles tailored with specialized guidelines, tone, and rigor.
-            </p>
+            <h2 className="text-base font-semibold">Personas</h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -102,13 +102,13 @@ export function PersonasPageClient() {
               return (
                 <Card
                   key={persona.id}
-                  className="group card-lift border-border/60 hover:border-primary/40 bg-card/70 hover:bg-card/95 rounded-2xl flex flex-col justify-between p-5 transition-all"
+                  className="group border-border/60 rounded-lg flex flex-col justify-between p-3 gap-3"
                 >
                   <div className="space-y-3.5">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-3">
                         <div
-                          className={`flex h-11 w-11 items-center justify-center rounded-xl bg-linear-to-br ${persona.gradient} ring-1 ring-border/50 group-hover:scale-105 transition-transform shrink-0`}
+                          className="shrink-0"
                         >
                           <Icon className={`h-5 w-5 ${persona.iconColor}`} />
                         </div>
@@ -125,15 +125,16 @@ export function PersonasPageClient() {
                       {persona.description}
                     </p>
 
-                    <div className="p-2.5 rounded-xl bg-muted/40 border border-border/40 text-[11px] text-muted-foreground font-mono line-clamp-3">
-                      &quot;{persona.systemPrompt}&quot;
-                    </div>
+                    <details className="text-xs text-muted-foreground">
+                      <summary className="cursor-pointer">System prompt</summary>
+                      <p className="mt-2 whitespace-pre-wrap wrap-break-word">{persona.systemPrompt}</p>
+                    </details>
                   </div>
 
                   <Button
                     onClick={() => handleLaunchPersona(persona.id)}
                     size="sm"
-                    className="w-full mt-4 rounded-xl text-xs gap-1.5 font-medium shadow-xs"
+                    className="w-full mt-2 rounded-md text-xs gap-1.5"
                   >
                     <span>Chat as {persona.name.split(" ")[0]}</span>
                     <ArrowRight className="h-3 w-3" />
@@ -147,10 +148,7 @@ export function PersonasPageClient() {
         {/* Specialized Workflows */}
         <div>
           <div className="mb-4">
-            <h2 className="text-lg font-bold tracking-tight">Specialized AI Workflows</h2>
-            <p className="text-xs text-muted-foreground">
-              One-click prompt structures for high-value technical and editorial workflows.
-            </p>
+            <h2 className="text-base font-semibold">Workflows</h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -159,7 +157,7 @@ export function PersonasPageClient() {
               return (
                 <Card
                   key={tool.name}
-                  className="card-lift border-border/60 hover:border-primary/40 bg-card/70 hover:bg-card/95 rounded-2xl p-5 flex flex-col justify-between"
+                  className="border-border/60 rounded-lg p-3 flex flex-col justify-between gap-3"
                 >
                   <div className="space-y-2.5">
                     <div className="flex items-center justify-between gap-2">
@@ -184,7 +182,7 @@ export function PersonasPageClient() {
                       onClick={() => handleLaunchPersona(tool.personaId, tool.prompt)}
                       size="sm"
                       variant="outline"
-                      className="rounded-xl text-xs gap-1.5 font-medium hover:bg-primary hover:text-primary-foreground transition-all"
+                      className="rounded-md text-xs gap-1.5"
                     >
                       <Zap className="h-3.5 w-3.5 text-amber-500" />
                       <span>Launch Workflow</span>

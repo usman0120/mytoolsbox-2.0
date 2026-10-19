@@ -12,12 +12,12 @@ import {
   deleteConversation,
   deleteAllConversations,
 } from "@/features/ai/chat-persistence";
-import { extractAuthUser } from "@/lib/auth/server-auth";
+import { AuthVerificationUnavailableError, extractAuthUser } from "@/lib/auth/server-auth";
 
 export async function GET(request: NextRequest) {
   try {
     const cookieStore = await cookies();
-    const authUser = extractAuthUser(request, cookieStore);
+    const authUser = await extractAuthUser(request, cookieStore);
     const userId = authUser?.userId ?? null;
 
     if (!userId) {
@@ -30,6 +30,9 @@ export async function GET(request: NextRequest) {
     const conversations = await fetchConversations(userId);
     return NextResponse.json({ conversations });
   } catch (error) {
+    if (error instanceof AuthVerificationUnavailableError) {
+      return NextResponse.json({ error: error.message }, { status: 503 });
+    }
     console.error("Fetch conversations error:", error);
     return NextResponse.json(
       { error: "Failed to fetch conversations" },
@@ -41,7 +44,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const cookieStore = await cookies();
-    const authUser = extractAuthUser(request, cookieStore);
+    const authUser = await extractAuthUser(request, cookieStore);
     const userId = authUser?.userId ?? null;
 
     if (!userId) {
@@ -96,6 +99,9 @@ export async function POST(request: NextRequest) {
         );
     }
   } catch (error) {
+    if (error instanceof AuthVerificationUnavailableError) {
+      return NextResponse.json({ error: error.message }, { status: 503 });
+    }
     console.error("Conversation save error:", error);
     return NextResponse.json(
       { error: "Failed to save conversation" },

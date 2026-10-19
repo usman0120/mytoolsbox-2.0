@@ -2,7 +2,6 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import {
   Search,
   ArrowRight,
@@ -10,12 +9,7 @@ import {
   Calendar,
   Clock,
   BookOpen,
-  Filter,
-  CheckCircle2,
   ChevronRight,
-  Layers,
-  Wrench,
-  ShieldCheck,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -25,10 +19,10 @@ import {
   BLOG_POSTS,
   BLOG_CATEGORIES,
   getFeaturedBlogPost,
-  type BlogPost,
 } from "@/content/blog/blogs-data";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import { PageShell, ToolHeader } from "@/components/common/workload-layouts";
 
 const POSTS_PER_PAGE = 9;
 
@@ -70,25 +64,13 @@ export function BlogPageClient() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <PageShell>
       {/* Top Hero Section */}
-      <section className="relative overflow-hidden border-b border-border/40 bg-gradient-to-b from-muted/40 via-background to-background py-14 sm:py-20">
-        <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:32px_32px] pointer-events-none" />
-        <div className="container relative mx-auto px-4 max-w-6xl">
-          <div className="flex flex-col items-center text-center space-y-4">
+      <section className="border-b border-border pb-5">
+        <div>
+          <div className="space-y-4">
             {/* Top Pill Badge matching Screenshot 1 */}
-            <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3.5 py-1 text-xs font-semibold tracking-wide text-primary">
-              <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span>TOOLBOX / Blog & Guides</span>
-            </div>
-
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-foreground">
-              Blog & Guides
-            </h1>
-
-            <p className="max-w-2xl text-base sm:text-lg text-muted-foreground leading-relaxed">
-              Practical tips, deep dives, and how-to guides for tools, web development, and digital workflows.
-            </p>
+            <ToolHeader icon={<BookOpen className="h-5 w-5" />} title="Blog & Guides" description="Practical guides for tools, web development, and digital workflows." />
 
             {/* Search Input Bar */}
             <div className="w-full max-w-xl pt-4">
@@ -96,17 +78,19 @@ export function BlogPageClient() {
                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="text"
+                  aria-label="Search articles"
                   placeholder="Search guides, tools, and technical topics..."
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="pl-10 pr-4 h-11 bg-background/80 border-border/80 rounded-xl shadow-xs focus-visible:ring-primary"
+                  className="pl-10 pr-14 h-10"
                 />
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery("")}
+                    aria-label="Clear article search"
                     className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground hover:text-foreground"
                   >
                     Clear
@@ -116,15 +100,16 @@ export function BlogPageClient() {
             </div>
 
             {/* Category Filter Pills */}
-            <div className="flex flex-wrap items-center justify-center gap-2 pt-3 max-w-3xl">
+            <div className="flex flex-wrap items-center gap-2 max-w-3xl">
               {BLOG_CATEGORIES.map((cat) => {
                 const isActive = selectedCategory === cat.slug;
                 return (
                   <button
                     key={cat.slug}
                     onClick={() => handleCategoryChange(cat.slug)}
+                    aria-pressed={isActive}
                     className={cn(
-                      "px-3.5 py-1.5 rounded-full text-xs font-medium transition-all duration-200 border",
+                      "px-3 py-1.5 rounded-md text-sm font-medium transition-colors border",
                       isActive
                         ? "bg-primary text-primary-foreground border-primary shadow-xs"
                         : "bg-muted/40 text-muted-foreground border-border/60 hover:bg-muted hover:text-foreground"
@@ -140,19 +125,19 @@ export function BlogPageClient() {
       </section>
 
       {/* Main Content Area */}
-      <div className="container mx-auto px-4 max-w-6xl py-12 space-y-16">
+      <div className="py-6 space-y-8">
         {/* Large Featured Post Banner (Visible when no specific search query is active) */}
         {!searchQuery && selectedCategory === "all" && (
           <div className="space-y-4">
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               <Sparkles className="h-4 w-4 text-emerald-500" />
-              <span>Must-Read Spotlight</span>
+              <span>Featured Article</span>
             </div>
 
             <Card className="overflow-hidden border border-border/60 bg-card hover:border-primary/40 transition-all duration-300 shadow-md group">
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-0">
                 {/* Image Section */}
-                <div className="relative lg:col-span-7 h-64 sm:h-80 lg:h-auto overflow-hidden bg-muted">
+                <div className="relative lg:col-span-7 h-48 sm:h-56 lg:h-auto overflow-hidden bg-muted">
                   <img
                     src={featuredPost.coverImage}
                     alt={featuredPost.title}
@@ -170,7 +155,7 @@ export function BlogPageClient() {
                 </div>
 
                 {/* Content Section */}
-                <div className="lg:col-span-5 p-6 sm:p-8 flex flex-col justify-between space-y-6">
+                <div className="lg:col-span-5 p-5 flex flex-col justify-between space-y-4">
                   <div className="space-y-3">
                     <div className="flex items-center gap-3 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
@@ -184,7 +169,7 @@ export function BlogPageClient() {
                       </span>
                     </div>
 
-                    <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground group-hover:text-primary transition-colors">
+                    <h2 className="text-xl font-semibold text-foreground group-hover:text-primary transition-colors">
                       <Link href={localizePath(`/blog/${featuredPost.slug}`)}>
                         {featuredPost.title}
                       </Link>
@@ -246,7 +231,7 @@ export function BlogPageClient() {
               {paginatedPosts.map((post) => (
                 <Card
                   key={post.slug}
-                  className="group flex flex-col overflow-hidden rounded-xl border border-border/60 bg-card hover:border-primary/40 hover:shadow-lg transition-all duration-300"
+                  className="group flex flex-col overflow-hidden rounded-lg border border-border/60 bg-card hover:border-primary/40 transition-colors"
                 >
                   {/* Card Cover Image */}
                   <Link
@@ -335,28 +320,16 @@ export function BlogPageClient() {
         </div>
 
         {/* Deep Emerald Green Bottom CTA Banner matching Screenshot 1 */}
-        <section className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-emerald-950 via-teal-950 to-slate-950 border border-emerald-500/30 p-8 sm:p-12 text-white shadow-xl">
-          <div className="absolute right-0 top-0 -mt-10 -mr-10 h-64 w-64 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
-          <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8">
-            <div className="space-y-3 max-w-2xl">
-              <div className="inline-flex items-center gap-2 rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-semibold tracking-wide text-emerald-300">
-                <Wrench className="h-3.5 w-3.5" />
-                <span>BROWSE TOOLS</span>
-              </div>
-              <h3 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-white">
-                Your Free Online Toolbox
-              </h3>
-              <p className="text-emerald-100/80 text-sm sm:text-base leading-relaxed">
-                192 free tools, no sign-up required, 100% private in-browser processing. Merge PDFs, resize images, format code, and automate daily tasks in seconds.
-              </p>
-            </div>
+        <section className="border-t border-border pt-5">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <h3 className="text-base font-semibold">Tools & Resources</h3>
 
             <div className="flex flex-wrap items-center gap-3 shrink-0">
               <Link
                 href={localizePath("/tools")}
                 className={cn(
                   buttonVariants({ size: "lg" }),
-                  "bg-white text-emerald-950 hover:bg-emerald-50 font-bold shadow-md gap-2"
+                  "gap-2"
                 )}
               >
                 <span>Browse Tools</span>
@@ -366,7 +339,7 @@ export function BlogPageClient() {
                 href={localizePath("/resources")}
                 className={cn(
                   buttonVariants({ variant: "outline", size: "lg" }),
-                  "border-emerald-500/40 text-white hover:bg-emerald-900/40 backdrop-blur-xs font-medium"
+                  "font-medium"
                 )}
               >
                 <span>View Resources</span>
@@ -375,6 +348,6 @@ export function BlogPageClient() {
           </div>
         </section>
       </div>
-    </div>
+    </PageShell>
   );
 }

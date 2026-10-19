@@ -1,4 +1,12 @@
-import { describe, it, expect } from "vitest";
+import { afterEach, describe, it, expect } from "vitest";
+import { createElement } from "react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { PercentageCalculatorEngine } from "../features/tools/percentage-calculator-engine";
+import { DiscountCalculatorEngine } from "../features/tools/discount-calculator-engine";
+import { EMICalculatorEngine } from "../features/tools/emi-calculator-engine";
+import { LoanCalculatorEngine } from "../features/tools/loan-calculator-engine";
+import { MortgageCalculatorEngine } from "../features/tools/mortgage-calculator-engine";
+import { TipCalculatorEngine } from "../features/tools/tip-calculator-engine";
 import { calculatePercentageComprehensive } from "../features/tools/percentage-calculator";
 import { calculateComprehensiveAge, dateDifference } from "../features/tools/age-calculator";
 import { calculateBMI, calculateDetailedBMI } from "../features/tools/bmi-calculator";
@@ -28,6 +36,157 @@ import { calculateTax } from "../features/tools/tax-calculator";
 import { calculateSalary } from "../features/tools/salary-calculator";
 import { calculateROI } from "../features/tools/roi-calculator";
 import { calculateBreakEven } from "../features/tools/break-even-calculator";
+
+afterEach(cleanup);
+
+function enter(label: string, value: string) {
+  fireEvent.change(screen.getByLabelText(label), { target: { value } });
+}
+
+describe("Active financial calculator engines", () => {
+  it.each([
+    [EMICalculatorEngine, "Loan Amount ($)", "Annual Interest Rate (%)", "Tenure (years)", "Calculate EMI", "12000", "1", "$1,000"],
+    [MortgageCalculatorEngine, "Home Price ($)", "Interest Rate (%)", "Loan Term", "Calculate", "120000", "10", "$1,000"],
+  ] as const)("calculates zero-interest payments (case %#)", (Engine, amountLabel, rateLabel, termLabel, button, amount, term, monthly) => {
+    render(createElement(Engine));
+    enter(amountLabel, amount);
+    enter(rateLabel, "0");
+    enter(termLabel, term);
+    fireEvent.click(screen.getByRole("button", { name: button }));
+    expect(screen.getByText(monthly)).toBeInTheDocument();
+    expect(screen.getByText("$0")).toBeInTheDocument();
+  });
+
+  it.each(["-5", "101"])("rejects invalid discount %s", (discount) => {
+    render(createElement(DiscountCalculatorEngine));
+    enter("Original Price ($)", "100");
+    enter("Discount (%)", discount);
+    fireEvent.click(screen.getByRole("button", { name: "Calculate" }));
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    expect(screen.queryByText("Final Price")).not.toBeInTheDocument();
+  });
+
+  it.each(["0", "-1", "1.5", ""])("rejects invalid split count %s instead of substituting one person", (people) => {
+    render(createElement(TipCalculatorEngine));
+    enter("Bill Amount ($)", "100");
+    enter("Number of People", people);
+    fireEvent.click(screen.getByRole("button", { name: "Calculate" }));
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    expect(screen.queryByText("Per Person")).not.toBeInTheDocument();
+  });
+
+  it("rejects a negative extra loan payment instead of showing an unpaid loan as paid off", () => {
+    render(createElement(LoanCalculatorEngine));
+    enter("Extra Monthly Payment ($)", "-2000");
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    expect(screen.queryByText(/Paid off in/)).not.toBeInTheDocument();
+  });
+
+  it.each([
+    [DiscountCalculatorEngine, [["Original Price ($)", "100"], ["Discount (%)", "20"]], "Calculate", "Final Price"],
+    [EMICalculatorEngine, [["Loan Amount ($)", "100000"], ["Annual Interest Rate (%)", "6"], ["Tenure (years)", "30"]], "Calculate EMI", "Monthly EMI"],
+    [MortgageCalculatorEngine, [["Home Price ($)", "300000"], ["Down Payment ($)", "60000"], ["Interest Rate (%)", "6.5"]], "Calculate", "Monthly"],
+    [TipCalculatorEngine, [["Bill Amount ($)", "100"]], "Calculate", "Per Person"],
+  ] as const)("clears outdated results after editing inputs (case %#)", (Engine, fields, button, resultLabel) => {
+    render(createElement(Engine));
+    fields.forEach(([label, value]) => enter(label, value));
+    fireEvent.click(screen.getByRole("button", { name: button }));
+    expect(screen.getByText(resultLabel)).toBeInTheDocument();
+    enter(fields[0][0], "200");
+    expect(screen.queryByText(resultLabel)).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ["percentOf", "25", "200", "50"],
+    ["isWhatPercent", "50", "200", "25%"],
+    ["percentChange", "100", "150", "50%"],
+    ["addPercent", "20", "100", "120"],
+    ["subtractPercent", "20", "100", "80"],
+    ["fractionToPercent", "3", "4", "75%"],
+  ])("updates the active percentage result for %s", (mode, first, second, expected) => {
+    render(createElement(PercentageCalculatorEngine));
+    enter("Calculation", mode);
+    fireEvent.change(screen.getByRole("spinbutton", { name: /\(X|Numerator|Initial|Percentage/ }), { target: { value: first } });
+    const inputs = screen.getAllByRole("spinbutton");
+    fireEvent.change(inputs[1], { target: { value: second } });
+    expect(screen.getByLabelText("Calculated result")).toHaveTextContent(expected);
+  });
+
+  it.each(["isWhatPercent", "fractionToPercent", "percentChange"])("rejects zero divisors in percentage mode %s", (mode) => {
+    render(createElement(PercentageCalculatorEngine));
+    enter("Calculation", mode);
+    const inputs = screen.getAllByRole("spinbutton");
+    fireEvent.change(inputs[mode === "percentChange" ? 0 : 1], { target: { value: "0" } });
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Calculated result")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Copy result" })).toBeDisabled();
+  });
+
+  it("calculates a discount and clears its result when selecting another preset", () => {
+    render(createElement(DiscountCalculatorEngine));
+    enter("Original Price ($)", "100");
+    enter("Discount (%)", "20");
+    fireEvent.click(screen.getByRole("button", { name: "Calculate" }));
+    expect(screen.getByText("$80")).toBeInTheDocument();
+    expect(screen.getByText("-$20")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "50%" }));
+    expect(screen.queryByText("Final Price")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Calculate" }));
+    expect(screen.getByText("$50")).toBeInTheDocument();
+  });
+
+  it.each([
+    [EMICalculatorEngine, [["Loan Amount ($)", "100000"], ["Annual Interest Rate (%)", "6"], ["Tenure (years)", "30"]], "Calculate EMI"],
+    [MortgageCalculatorEngine, [["Home Price ($)", "125000"], ["Down Payment ($)", "25000"], ["Interest Rate (%)", "6"]], "Calculate"],
+  ] as const)("calculates known nonzero-interest payments and totals (case %#)", (Engine, fields, button) => {
+    render(createElement(Engine));
+    fields.forEach(([label, value]) => enter(label, value));
+    fireEvent.click(screen.getByRole("button", { name: button }));
+    expect(screen.getByText("$599.55")).toBeInTheDocument();
+    expect(screen.getByText("$215,838.19")).toBeInTheDocument();
+    expect(screen.getByText("$115,838.19")).toBeInTheDocument();
+  });
+
+  it("rejects a down payment greater than the home price", () => {
+    render(createElement(MortgageCalculatorEngine));
+    enter("Home Price ($)", "100000");
+    enter("Down Payment ($)", "120000");
+    enter("Interest Rate (%)", "6");
+    fireEvent.click(screen.getByRole("button", { name: "Calculate" }));
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    expect(screen.queryByText("Monthly")).not.toBeInTheDocument();
+  });
+
+  it("calculates a tip split and recalculates after changing the preset", () => {
+    render(createElement(TipCalculatorEngine));
+    enter("Bill Amount ($)", "100");
+    enter("Number of People", "2");
+    fireEvent.click(screen.getByRole("button", { name: "Calculate" }));
+    expect(screen.getByText("$15")).toBeInTheDocument();
+    expect(screen.getByText("$115")).toBeInTheDocument();
+    expect(screen.getByText("$57.5")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "20%" }));
+    expect(screen.queryByText("Per Person")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Calculate" }));
+    expect(screen.getByText("$60")).toBeInTheDocument();
+  });
+
+  it("calculates real loan amortization and shortens repayment with extra payments", () => {
+    render(createElement(LoanCalculatorEngine));
+    enter("Loan Amount ($)", "100000");
+    enter("Annual Interest Rate (%)", "6");
+    expect(screen.getByText("$599.55")).toBeInTheDocument();
+    expect(screen.getByText(/Paid off in 360 months/)).toBeInTheDocument();
+    enter("Annual Interest Rate (%)", "0");
+    enter("Loan Amount ($)", "12000");
+    enter("Loan Term (Years)", "1");
+    expect(screen.getByText("$1,000.00")).toBeInTheDocument();
+    expect(screen.getByText(/Paid off in 12 months/)).toBeInTheDocument();
+    enter("Extra Monthly Payment ($)", "1000");
+    expect(screen.getByText(/Paid off in 6 months/)).toBeInTheDocument();
+    expect(screen.getByText("Total Loan Cost").parentElement).toHaveTextContent("$12,000.00");
+  });
+});
 
 describe("Math, Calculator, and Financial Tools Suite", () => {
   // 1. Percentage Calculator

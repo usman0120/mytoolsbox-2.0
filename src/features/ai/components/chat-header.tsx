@@ -23,6 +23,7 @@ import {
   Check,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useI18n } from "@/lib/i18n";
 
 interface ChatHeaderProps {
   creditsRemaining: number | null;
@@ -34,6 +35,7 @@ export function ChatHeader({
   creditsRemaining,
   onNewChat,
 }: ChatHeaderProps) {
+  const { t } = useI18n();
   const {
     isSidebarOpen,
     toggleSidebar,
@@ -145,7 +147,9 @@ export function ChatHeader({
           variant="ghost"
           size="icon"
           onClick={toggleSidebar}
-          className="h-8 w-8 rounded-lg hover:bg-muted shrink-0"
+          aria-label={isSidebarOpen ? "Collapse chat history" : "Open chat history"}
+          aria-expanded={isSidebarOpen}
+          className="h-11 w-11 rounded-md hover:bg-muted shrink-0"
           title={isSidebarOpen ? "Collapse sidebar (Ctrl+B)" : "Expand sidebar (Ctrl+B)"}
         >
           {isSidebarOpen ? (
@@ -160,6 +164,7 @@ export function ChatHeader({
           {isEditingTitle && activeConv ? (
             <input
               type="text"
+              aria-label="Conversation title"
               value={titleValue}
               onChange={(e) => setTitleValue(e.target.value)}
               onBlur={handleTitleSubmit}
@@ -168,7 +173,7 @@ export function ChatHeader({
                 if (e.key === "Escape") setIsEditingTitle(false);
               }}
               autoFocus
-              className="text-sm font-semibold bg-background border border-primary/50 rounded px-1.5 py-0.5 focus:outline-hidden"
+              className="text-base min-w-0 w-full font-semibold bg-background border border-input rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-ring"
             />
           ) : (
             <button
@@ -179,7 +184,7 @@ export function ChatHeader({
                 }
               }}
               suppressHydrationWarning
-              className="text-sm font-semibold text-foreground hover:text-primary transition-colors truncate max-w-44 sm:max-w-xs md:max-w-md text-left"
+              className="text-sm font-semibold text-foreground hover:text-primary truncate min-w-0 text-left"
               title="Click to rename chat"
             >
               {activeConv ? activeConv.title : "New Chat"}
@@ -209,7 +214,8 @@ export function ChatHeader({
       </div>
 
       {/* Right: Credits Badge, New Chat, Export / Share */}
-      <div className="flex items-center gap-1.5 md:gap-2">
+      <div className="flex items-center gap-1 shrink-0">
+        {creditsRemaining !== null && <span className="hidden sm:inline text-xs text-muted-foreground">{creditsRemaining.toLocaleString()} credits</span>}
 
 
 
@@ -218,7 +224,8 @@ export function ChatHeader({
           variant="outline"
           size="icon"
           onClick={onNewChat}
-          className="h-8 w-8 rounded-xl border-border/60 hover:bg-muted"
+          aria-label={t("ai_new_chat", "New chat")}
+          className="h-11 w-11 rounded-md border-border/60 hover:bg-muted"
           title="Start new chat"
         >
           <Plus className="h-4 w-4" />
@@ -228,18 +235,19 @@ export function ChatHeader({
         {activeConv && activeConv.messages.length > 0 && (
           <DropdownMenu>
             <DropdownMenuTrigger
-              className="inline-flex h-8 w-8 items-center justify-center rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-colors outline-none cursor-pointer"
+              aria-label="Export or share conversation"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer"
               title="Export or share conversation"
             >
               <Share2 className="h-4 w-4" />
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-52 rounded-2xl p-1.5 text-xs shadow-xl">
-              <div className="px-2.5 py-1 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+            <DropdownMenuContent align="end" className="w-52 rounded-lg p-1.5 text-sm">
+              <div className="px-2.5 py-1 text-xs font-semibold text-muted-foreground">
                 Export & Share
               </div>
               <DropdownMenuItem
                 onClick={handleCopyChat}
-                className="gap-2 cursor-pointer rounded-xl p-2"
+                className="gap-2 cursor-pointer rounded-md p-2"
               >
                 {copied ? (
                   <Check className="h-3.5 w-3.5 text-emerald-500" />
@@ -251,21 +259,21 @@ export function ChatHeader({
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={handleExportMarkdown}
-                className="gap-2 cursor-pointer rounded-xl p-2"
+                className="gap-2 cursor-pointer rounded-md p-2"
               >
                 <Download className="h-3.5 w-3.5 text-blue-500" />
                 <span>Export Markdown (.md)</span>
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={handleExportText}
-                className="gap-2 cursor-pointer rounded-xl p-2"
+                className="gap-2 cursor-pointer rounded-md p-2"
               >
                 <FileText className="h-3.5 w-3.5 text-neutral-400" />
                 <span>Export Plain Text (.txt)</span>
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={handleExportJSON}
-                className="gap-2 cursor-pointer rounded-xl p-2"
+                className="gap-2 cursor-pointer rounded-md p-2"
               >
                 <Download className="h-3.5 w-3.5 text-amber-500" />
                 <span>Export JSON (.json)</span>
