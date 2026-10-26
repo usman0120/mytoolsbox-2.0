@@ -1,13 +1,5 @@
-import type { Metadata } from "next";
-
-export const metadata: Metadata = {
-  title: "Account — MyToolsBox",
-  description: "Manage your MyToolsBox account, upgrade from guest, or view your subscription.",
-};
+import { redirect } from "next/navigation";
 
 export default function AccountPage() {
-  return <AccountPageClient />;
+  redirect("/settings?tab=account");
 }
-
-// Must be a separate client component because we use useAuth
-import { AccountPageClient } from "./page-client";

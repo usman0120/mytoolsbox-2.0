@@ -1,18 +1,23 @@
 "use client";
 
-import { useState } from "react";
-import Image from "next/image";
+import { useState, useRef, useId } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { BrandLogo } from "@/components/common/brand-logo";
+import { getAuthErrorMessage } from "@/lib/auth/auth-errors";
+import { safeReturnPath } from "@/lib/auth/auth-navigation";
 import { useAuth } from "@/lib/auth";
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Loader2, Eye, EyeOff, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { Loader2, Eye, EyeOff, ArrowLeft, CheckCircle2, AlertCircle, Heart, History } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
@@ -33,54 +38,52 @@ function GoogleIcon({ className }: { className?: string }) {
   );
 }
 
-// Map Firebase / generic auth errors to user-friendly messages
-function getAuthErrorMessage(error: unknown): string {
-  const msg = error instanceof Error ? error.message : String(error);
-  if (msg.includes("auth/user-not-found") || msg.includes("auth/invalid-credential") || msg.includes("auth/wrong-password")) {
-    return "Incorrect email or password. Please try again.";
-  }
-  if (msg.includes("auth/email-already-in-use")) {
-    return "This email is already registered. Try signing in instead.";
-  }
-  if (msg.includes("auth/weak-password")) {
-    return "Password must be at least 6 characters long.";
-  }
-  if (msg.includes("auth/invalid-email")) {
-    return "Please enter a valid email address.";
-  }
-  if (msg.includes("auth/too-many-requests")) {
-    return "Too many attempts. Please wait a moment before trying again.";
-  }
-  if (msg.includes("auth/network-request-failed")) {
-    return "Network error. Please check your connection and try again.";
-  }
-  if (msg.includes("auth/popup-closed-by-user") || msg.includes("auth/cancelled-popup-request")) {
-    return "Sign-in was cancelled. Please try again.";
-  }
-  if (msg.includes("auth/account-exists-with-different-credential")) {
-    return "An account already exists with this email using a different sign-in method.";
-  }
-  return "Something went wrong. Please try again.";
-}
-
 export function SignInDialog({ open, onOpenChange }: SignInDialogProps) {
   const { t } = useI18n();
-  const { signInWithGoogle, signInWithEmail, signUpWithEmail, signInAsGuest, resetPassword } =
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const id = useId();
+  const { isAnonymous, upgradeGuestToGoogle, upgradeGuestToEmail, signInWithGoogle, signInWithEmail, signUpWithEmail, signInAsGuest, resetPassword } =
     useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [pending, setPending] = useState<"google" | "guest" | "email" | "reset" | null>(null);
+  const isLoading = pending !== null;
+  const busy = useRef(false);
+  const [authError, setAuthError] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [mode, setMode] = useState<"signin" | "signup" | "reset">("signin");
   const [resetSent, setResetSent] = useState(false);
-  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string; confirmPassword?: string }>({});
+
+  const beginRequest = (action: NonNullable<typeof pending>) => {
+    if (busy.current) return false;
+    busy.current = true;
+    setPending(action);
+    setAuthError("");
+    return true;
+  };
+  const finishRequest = () => { busy.current = false; setPending(null); };
+  const completeSignIn = () => {
+    resetForm();
+    onOpenChange(false);
+    const next = safeReturnPath(searchParams.get("next"), window.location.origin);
+    if (next) router.push(next);
+    else if (searchParams.has("signin")) {
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("signin"); params.delete("next");
+      router.replace(`${window.location.pathname}${params.size ? `?${params}` : ""}`, { scroll: false });
+    }
+    router.refresh();
+  };
 
   const validateFields = (): boolean => {
-    const errors: { email?: string; password?: string } = {};
+    const errors: typeof fieldErrors = {};
     if (!email.trim()) {
       errors.email = "Email is required.";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       errors.email = "Please enter a valid email address.";
     }
     if (mode !== "reset") {
@@ -90,77 +93,80 @@ export function SignInDialog({ open, onOpenChange }: SignInDialogProps) {
         errors.password = "Password must be at least 6 characters.";
       }
     }
+    if (mode === "signup" && password !== confirmPassword) errors.confirmPassword = "Passwords do not match.";
     setFieldErrors(errors);
+    if (Object.keys(errors).length) document.getElementById(`${id}-${mode}-${errors.email ? "email" : errors.password ? "password" : "confirm"}`)?.focus();
     return Object.keys(errors).length === 0;
   };
 
   const handleGoogleSignIn = async () => {
-    setIsLoading(true);
+    if (!beginRequest("google")) return;
     try {
-      await signInWithGoogle();
+      if (isAnonymous && mode === "signup") await upgradeGuestToGoogle();
+      else await signInWithGoogle();
       toast.success("Signed in successfully!");
-      onOpenChange(false);
+      completeSignIn();
     } catch (error) {
-      toast.error(getAuthErrorMessage(error));
+      setAuthError(getAuthErrorMessage(error));
     } finally {
-      setIsLoading(false);
+      finishRequest();
     }
   };
 
   const handleGuestSignIn = async () => {
-    setIsLoading(true);
+    if (!beginRequest("guest")) return;
     try {
       await signInAsGuest();
       toast.success("Signed in as guest! You can create an account anytime.");
-      onOpenChange(false);
+      completeSignIn();
     } catch (error) {
-      toast.error(getAuthErrorMessage(error));
+      setAuthError(getAuthErrorMessage(error));
     } finally {
-      setIsLoading(false);
+      finishRequest();
     }
   };
 
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateFields()) return;
-    setIsLoading(true);
+    if (!beginRequest("email")) return;
     try {
       if (mode === "signup") {
-        await signUpWithEmail(email, password);
+        if (isAnonymous) await upgradeGuestToEmail(email.trim(), password);
+        else await signUpWithEmail(email.trim(), password);
         toast.success("Account created! Welcome to MyToolsBox.");
       } else {
-        await signInWithEmail(email, password);
+        await signInWithEmail(email.trim(), password);
         toast.success("Signed in successfully!");
       }
-      onOpenChange(false);
+      completeSignIn();
     } catch (error) {
-      toast.error(getAuthErrorMessage(error));
+      setAuthError(getAuthErrorMessage(error));
     } finally {
-      setIsLoading(false);
+      finishRequest();
     }
   };
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    const errors: { email?: string } = {};
-    if (!email.trim()) errors.email = "Email is required.";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.email = "Please enter a valid email address.";
-    if (errors.email) { setFieldErrors(errors); return; }
-
-    setIsLoading(true);
+    if (!validateFields() || !beginRequest("reset")) return;
     try {
-      await resetPassword(email);
+      await resetPassword(email.trim());
       setResetSent(true);
     } catch (error) {
-      toast.error(getAuthErrorMessage(error));
+      // Do not disclose whether an email has an account.
+      if (error && typeof error === "object" && "code" in error && error.code === "auth/user-not-found") setResetSent(true);
+      else setAuthError(getAuthErrorMessage(error));
     } finally {
-      setIsLoading(false);
+      finishRequest();
     }
   };
 
   const resetForm = () => {
     setEmail("");
     setPassword("");
+    setConfirmPassword("");
+    setAuthError("");
     setShowPassword(false);
     setMode("signin");
     setResetSent(false);
@@ -168,47 +174,48 @@ export function SignInDialog({ open, onOpenChange }: SignInDialogProps) {
   };
 
   const switchMode = (next: "signin" | "signup" | "reset") => {
+    if (busy.current) return;
     setMode(next);
     setFieldErrors({});
     setResetSent(false);
     setPassword("");
+    setConfirmPassword("");
+    setAuthError("");
+    setShowPassword(false);
   };
 
   return (
     <Dialog
       open={open}
       onOpenChange={(open) => {
+        if (busy.current) return;
         if (!open) resetForm();
         onOpenChange(open);
       }}
     >
-      <DialogContent className="sm:max-w-[400px] p-0 gap-0 overflow-hidden rounded-2xl border-border/70 shadow-xl">
+      <DialogContent showCloseButton={!isLoading} aria-busy={isLoading} className="sm:max-w-[460px] max-h-[calc(100dvh-2rem)] p-0 gap-0 overflow-y-auto rounded-3xl border-border/70 bg-background shadow-2xl">
         {/* Header */}
-        <div className="px-6 pt-7 pb-5 border-b border-border/50 text-center">
+        <div className="px-7 pt-8 pb-6 border-b border-border/50 bg-linear-to-br from-primary/10 via-primary/5 to-background text-center">
           <div className="flex justify-center mb-4">
-            <Image
-              src="/logo.png"
-              alt="MyToolsBox"
-              width={40}
-              height={40}
-              className="h-10 w-auto object-contain"
-              priority
-            />
+            <BrandLogo className="h-14" eager />
           </div>
-          <h2 className="text-lg font-bold tracking-tight text-foreground">
+          <DialogTitle className="text-2xl font-semibold tracking-tight text-foreground">
             {mode === "signin" && "Welcome back"}
             {mode === "signup" && "Create your account"}
             {mode === "reset" && "Reset your password"}
-          </h2>
-          <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+          </DialogTitle>
+          <DialogDescription className="text-sm text-muted-foreground mt-2 leading-relaxed">
             {mode === "signin" && "Sign in to access your tools, history, and favorites."}
             {mode === "signup" && "Create a free account to save your work and preferences."}
             {mode === "reset" && "Enter your email and we'll send you a reset link."}
-          </p>
+          </DialogDescription>
+          {mode !== "reset" && <div className="mt-4 flex justify-center gap-5 text-xs text-muted-foreground"><span className="inline-flex items-center gap-1.5"><Heart className="size-3.5" />Saved favorites</span><span className="inline-flex items-center gap-1.5"><History className="size-3.5" />Your activity</span></div>}
         </div>
 
         {/* Body */}
-        <div className="p-6 space-y-4">
+        <div className="p-6 sm:p-7 space-y-4">
+          {authError && <div role="alert" className="flex gap-2 rounded-xl border border-destructive/25 bg-destructive/5 p-3 text-sm text-destructive"><AlertCircle className="mt-0.5 size-4 shrink-0" /><p>{authError}</p></div>}
+          {isLoading && <p role="status" className="sr-only">{pending === "reset" ? "Sending reset link" : "Signing in"}…</p>}
 
           {/* Reset Password Sent State */}
           {mode === "reset" && resetSent ? (
@@ -218,7 +225,7 @@ export function SignInDialog({ open, onOpenChange }: SignInDialogProps) {
               </div>
               <h3 className="text-sm font-semibold">Check your inbox</h3>
               <p className="text-xs text-muted-foreground leading-relaxed max-w-sm mx-auto">
-                We sent a password reset link to <strong>{email}</strong>. Check your spam folder if you don&apos;t see it.
+                If an account exists for <strong>{email.trim()}</strong>, you’ll receive a reset link. Check your spam folder too.
               </p>
               <Button
                 variant="outline"
@@ -233,9 +240,9 @@ export function SignInDialog({ open, onOpenChange }: SignInDialogProps) {
             /* Reset Form */
             <form onSubmit={handleResetPassword} className="space-y-4" noValidate>
               <div className="space-y-1.5">
-                <Label htmlFor="reset-email" className="text-xs font-medium">Email address</Label>
+                <Label htmlFor={`${id}-reset-email`} className="text-xs font-medium">Email address</Label>
                 <Input
-                  id="reset-email"
+                  id={`${id}-reset-email`}
                   type="email"
                   autoComplete="email"
                   placeholder="you@example.com"
@@ -243,14 +250,15 @@ export function SignInDialog({ open, onOpenChange }: SignInDialogProps) {
                   onChange={(e) => { setEmail(e.target.value); setFieldErrors((p) => ({ ...p, email: undefined })); }}
                   disabled={isLoading}
                   aria-invalid={!!fieldErrors.email}
+                  aria-describedby={fieldErrors.email ? `${id}-email-error` : undefined}
                   className={cn("h-10 text-sm rounded-xl", fieldErrors.email && "border-destructive")}
                 />
                 {fieldErrors.email && (
-                  <p className="text-[11px] text-destructive">{fieldErrors.email}</p>
+                  <p id={`${id}-email-error`} className="text-xs text-destructive">{fieldErrors.email}</p>
                 )}
               </div>
               <Button type="submit" className="w-full h-10 rounded-xl text-xs font-medium" disabled={isLoading}>
-                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Send Reset Link"}
+                {pending === "reset" && <Loader2 className="h-4 w-4 animate-spin" />}{pending === "reset" ? "Sending link…" : "Send Reset Link"}
               </Button>
               <button
                 type="button"
@@ -273,7 +281,7 @@ export function SignInDialog({ open, onOpenChange }: SignInDialogProps) {
                   disabled={isLoading}
                   type="button"
                 >
-                  {isLoading ? (
+                  {pending === "google" ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
                     <GoogleIcon className="h-4 w-4" />
@@ -281,16 +289,16 @@ export function SignInDialog({ open, onOpenChange }: SignInDialogProps) {
                   Continue with Google
                 </Button>
 
-                <Button
+                {!isAnonymous && <Button
                   variant="outline"
                   className="w-full h-10 rounded-xl text-xs font-medium gap-2 border-border/70 hover:bg-muted/50 text-muted-foreground"
                   onClick={handleGuestSignIn}
                   disabled={isLoading}
                   type="button"
                 >
-                  {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  {pending === "guest" ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                   {t("auth_guest")}
-                </Button>
+                </Button>}
               </div>
 
               {/* Divider */}
@@ -306,6 +314,8 @@ export function SignInDialog({ open, onOpenChange }: SignInDialogProps) {
                 <button
                   type="button"
                   onClick={() => switchMode("signin")}
+                  disabled={isLoading}
+                  aria-pressed={mode === "signin"}
                   className={cn(
                     "flex-1 text-xs py-1.5 rounded-lg font-medium transition-colors",
                     mode === "signin"
@@ -318,6 +328,8 @@ export function SignInDialog({ open, onOpenChange }: SignInDialogProps) {
                 <button
                   type="button"
                   onClick={() => switchMode("signup")}
+                  disabled={isLoading}
+                  aria-pressed={mode === "signup"}
                   className={cn(
                     "flex-1 text-xs py-1.5 rounded-lg font-medium transition-colors",
                     mode === "signup"
@@ -333,11 +345,11 @@ export function SignInDialog({ open, onOpenChange }: SignInDialogProps) {
               <form onSubmit={handleEmailAuth} className="space-y-3" noValidate>
                 {/* Email */}
                 <div className="space-y-1.5">
-                  <Label htmlFor={`${mode}-email`} className="text-xs font-medium">
+                  <Label htmlFor={`${id}-${mode}-email`} className="text-xs font-medium">
                     Email address
                   </Label>
                   <Input
-                    id={`${mode}-email`}
+                    id={`${id}-${mode}-email`}
                     type="email"
                     autoComplete="email"
                     placeholder="you@example.com"
@@ -345,17 +357,18 @@ export function SignInDialog({ open, onOpenChange }: SignInDialogProps) {
                     onChange={(e) => { setEmail(e.target.value); setFieldErrors((p) => ({ ...p, email: undefined })); }}
                     disabled={isLoading}
                     aria-invalid={!!fieldErrors.email}
+                    aria-describedby={fieldErrors.email ? `${id}-email-error` : undefined}
                     className={cn("h-10 text-sm rounded-xl", fieldErrors.email && "border-destructive")}
                   />
                   {fieldErrors.email && (
-                    <p className="text-[11px] text-destructive">{fieldErrors.email}</p>
+                    <p id={`${id}-email-error`} className="text-xs text-destructive">{fieldErrors.email}</p>
                   )}
                 </div>
 
                 {/* Password */}
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor={`${mode}-password`} className="text-xs font-medium">
+                    <Label htmlFor={`${id}-${mode}-password`} className="text-xs font-medium">
                       Password
                     </Label>
                     {mode === "signin" && (
@@ -370,7 +383,7 @@ export function SignInDialog({ open, onOpenChange }: SignInDialogProps) {
                   </div>
                   <div className="relative">
                     <Input
-                      id={`${mode}-password`}
+                      id={`${id}-${mode}-password`}
                       type={showPassword ? "text" : "password"}
                       autoComplete={mode === "signup" ? "new-password" : "current-password"}
                       placeholder={mode === "signup" ? "Min. 6 characters" : "••••••••"}
@@ -378,6 +391,7 @@ export function SignInDialog({ open, onOpenChange }: SignInDialogProps) {
                       onChange={(e) => { setPassword(e.target.value); setFieldErrors((p) => ({ ...p, password: undefined })); }}
                       disabled={isLoading}
                       aria-invalid={!!fieldErrors.password}
+                      aria-describedby={fieldErrors.password ? `${id}-password-error` : mode === "signup" ? `${id}-password-hint` : undefined}
                       className={cn("h-10 text-sm rounded-xl pr-10", fieldErrors.password && "border-destructive")}
                     />
                     <button
@@ -390,17 +404,26 @@ export function SignInDialog({ open, onOpenChange }: SignInDialogProps) {
                     </button>
                   </div>
                   {fieldErrors.password && (
-                    <p className="text-[11px] text-destructive">{fieldErrors.password}</p>
+                    <p id={`${id}-password-error`} className="text-xs text-destructive">{fieldErrors.password}</p>
                   )}
                 </div>
 
+                {mode === "signup" && <div className="space-y-1.5">
+                  <p id={`${id}-password-hint`} className="text-xs leading-5 text-muted-foreground">At least 6 characters. A longer, unique password is safer.</p>
+                  <Label htmlFor={`${id}-signup-confirm`} className="text-xs font-medium">Confirm password</Label>
+                  <Input id={`${id}-signup-confirm`} type={showPassword ? "text" : "password"} autoComplete="new-password" value={confirmPassword}
+                    onChange={(event) => { setConfirmPassword(event.target.value); setFieldErrors((previous) => ({ ...previous, confirmPassword: undefined })); }}
+                    disabled={isLoading} aria-invalid={!!fieldErrors.confirmPassword} aria-describedby={fieldErrors.confirmPassword ? `${id}-confirm-error` : undefined} className="h-10 rounded-xl" />
+                  {fieldErrors.confirmPassword && <p id={`${id}-confirm-error`} className="text-xs text-destructive">{fieldErrors.confirmPassword}</p>}
+                </div>}
+                {isAnonymous && <p className="text-xs leading-5 text-muted-foreground">{mode === "signup" ? "Creating an account keeps the favorites and history in your current guest session." : "Signing in switches to that account. Guest favorites and history are not transferred. Choose Sign up to keep your current guest workspace."}</p>}
                 <Button
                   type="submit"
-                  className="w-full h-10 rounded-xl text-xs font-semibold"
+                  className="w-full h-11 rounded-xl text-sm font-semibold"
                   disabled={isLoading}
                 >
-                  {isLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                  {pending === "email" ? (
+                    <><Loader2 className="h-4 w-4 animate-spin" />{mode === "signup" ? "Creating account…" : "Signing in…"}</>
                   ) : mode === "signup" ? (
                     "Create Account"
                   ) : (

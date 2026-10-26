@@ -1,7 +1,7 @@
 import {
   doc, setDoc, getDoc, updateDoc, collection, addDoc,
   getDocs, deleteDoc, query, orderBy, limit, where,
-  serverTimestamp, Timestamp,
+  serverTimestamp, Timestamp, deleteField,
   type Firestore,
 } from "firebase/firestore";
 import { getFirebaseFirestore } from "@/lib/firebase/config";
@@ -19,6 +19,12 @@ function db(): Firestore | null {
   return getFirebaseFirestore();
 }
 
+function requireDb(): Firestore {
+  const firestore = db();
+  if (!firestore) throw new Error("Account storage is temporarily unavailable");
+  return firestore;
+}
+
 function uid(): string | null {
   // We get the current user's UID from the auth context at call time.
   // This is passed in by the caller to keep this service pure.
@@ -30,24 +36,25 @@ function uid(): string | null {
 // ---------------------------------------------------------------------------
 
 export async function getUserProfile(userId: string): Promise<UserProfile | null> {
-  const firestore = db();
-  if (!firestore) return null;
+  const firestore = requireDb();
   const snap = await getDoc(doc(firestore, "users", userId, "profile", "main"));
   if (!snap.exists()) return null;
   return snap.data() as UserProfile;
 }
 
 export async function saveUserProfile(userId: string, profile: Partial<UserProfile>): Promise<void> {
-  const firestore = db();
-  if (!firestore) return;
+  const firestore = requireDb();
   const ref = doc(firestore, "users", userId, "profile", "main");
   const existing = await getUserProfile(userId);
   if (existing) {
-    await updateDoc(ref, { ...profile, updatedAt: Date.now() });
+    // Firestore rejects undefined. Explicitly remove lifecycle timestamps when
+    // cancelling deletion or reactivating instead of sending undefined values.
+    const updates = Object.fromEntries(Object.entries(profile).map(([key, value]) => [key, value === undefined ? deleteField() : value]));
+    await updateDoc(ref, { ...updates, updatedAt: Date.now() });
   } else {
     await setDoc(ref, {
       ...DEFAULT_PROFILE,
-      ...profile,
+      ...Object.fromEntries(Object.entries(profile).filter(([, value]) => value !== undefined)),
       createdAt: Date.now(),
       updatedAt: Date.now(),
     });
@@ -82,8 +89,7 @@ export async function saveUserPreferences(
 // ---------------------------------------------------------------------------
 
 export async function getFavorites(userId: string): Promise<FavoriteItem[]> {
-  const firestore = db();
-  if (!firestore) return [];
+  const firestore = requireDb();
   const col = collection(firestore, "users", userId, "favorites");
   const q = query(col, orderBy("addedAt", "desc"));
   const snap = await getDocs(q);
@@ -103,8 +109,7 @@ export async function addFavorite(userId: string, item: Omit<FavoriteItem, "id" 
 }
 
 export async function removeFavorite(userId: string, favoriteId: string): Promise<void> {
-  const firestore = db();
-  if (!firestore) return;
+  const firestore = requireDb();
   await deleteDoc(doc(firestore, "users", userId, "favorites", favoriteId));
 }
 
@@ -125,8 +130,7 @@ export async function getHistory(
   userId: string,
   maxResults = 50,
 ): Promise<HistoryItem[]> {
-  const firestore = db();
-  if (!firestore) return [];
+  const firestore = requireDb();
   const col = collection(firestore, "users", userId, "history");
   const q = query(col, orderBy("timestamp", "desc"), limit(maxResults));
   const snap = await getDocs(q);
@@ -144,8 +148,7 @@ export async function addHistoryEntry(
 }
 
 export async function clearHistory(userId: string): Promise<void> {
-  const firestore = db();
-  if (!firestore) return;
+  const firestore = requireDb();
   const col = collection(firestore, "users", userId, "history");
   const snap = await getDocs(col);
   const batch = snap.docs.map((d) => deleteDoc(d.ref));
@@ -153,8 +156,7 @@ export async function clearHistory(userId: string): Promise<void> {
 }
 
 export async function removeHistoryEntry(userId: string, historyId: string): Promise<void> {
-  const firestore = db();
-  if (!firestore) return;
+  const firestore = requireDb();
   await deleteDoc(doc(firestore, "users", userId, "history", historyId));
 }
 
@@ -325,4 +327,4 @@ export async function reactivateAccount(userId: string): Promise<void> {
     deletionRequestedAt: undefined,
     deletionScheduledAt: undefined,
   });
-}
+}

@@ -78,7 +78,7 @@ const STATUS_MESSAGES: Record<ProcessingStatus, string> = {
   error: "Something went wrong. Please try again.",
   cancelled: "Processing was cancelled.",
   unsupported: "This file type is not supported yet.",
-  "limit-exceeded": "You've reached your limit. Upgrade to Pro for more.",
+  "limit-exceeded": "You've reached the processing limit. Try a smaller input or check your available credits.",
 };
 
 // ---------------------------------------------------------------------------

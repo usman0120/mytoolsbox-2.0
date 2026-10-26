@@ -10,9 +10,9 @@ import {
 } from "react";
 import {
   type User,
-  onAuthStateChanged,
   onIdTokenChanged,
   signInWithPopup,
+  linkWithPopup,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut,
@@ -40,6 +40,21 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+async function syncSessionCookies(firebaseUser: User | null) {
+  const secure = window.location.protocol === "https:" ? "; Secure" : "";
+  if (!firebaseUser) {
+    document.cookie = `__session=; path=/; max-age=0; SameSite=Lax${secure}`;
+    document.cookie = `__uid=; path=/; max-age=0; SameSite=Lax${secure}`;
+    return;
+  }
+  const token = await firebaseUser.getIdTokenResult();
+  if (getFirebaseAuth()?.currentUser !== firebaseUser) return;
+  // ID tokens expire hourly; don't leave an expired token cookie for 30 days.
+  const maxAge = Math.max(0, Math.floor((Date.parse(token.expirationTime) - Date.now()) / 1000));
+  document.cookie = `__session=${token.token}; path=/; max-age=${maxAge}; SameSite=Lax${secure}`;
+  document.cookie = `__uid=${firebaseUser.uid}; path=/; max-age=${maxAge}; SameSite=Lax${secure}`;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -48,47 +63,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const auth = getFirebaseAuth();
     if (!auth) {
       // Firebase not configured — skip auth entirely
-      setLoading(false);
+      queueMicrotask(() => setLoading(false));
       return;
     }
 
+    let active = true;
     const unsubscribe = onIdTokenChanged(auth, async (firebaseUser) => {
-      setUser(firebaseUser);
-      setLoading(false);
-
-      // Set or clear session and UID cookies for server route protection
-      if (firebaseUser) {
-        try {
-          const token = await firebaseUser.getIdToken();
-          const maxAge = 60 * 60 * 24 * 30; // 30 days
-          document.cookie = `__session=${token}; path=/; max-age=${maxAge}; SameSite=Lax`;
-          document.cookie = `__uid=${firebaseUser.uid}; path=/; max-age=${maxAge}; SameSite=Lax`;
-        } catch {
-          // Token retrieval failed — clear any stale cookies
-          document.cookie = "__session=; path=/; max-age=0";
-          document.cookie = "__uid=; path=/; max-age=0";
-        }
-      } else {
-        document.cookie = "__session=; path=/; max-age=0";
-        document.cookie = "__uid=; path=/; max-age=0";
+      try {
+        await syncSessionCookies(firebaseUser);
+      } catch {
+        if (auth.currentUser === firebaseUser) await syncSessionCookies(null);
+      }
+      if (active && auth.currentUser === firebaseUser) {
+        setUser(firebaseUser);
+        setLoading(false);
       }
     });
 
-    return () => unsubscribe();
+    // Keep server cookies current even when the user remains on one page.
+    const refreshSession = async () => {
+      const currentUser = auth.currentUser;
+      if (!currentUser) return;
+      try { await currentUser.getIdToken(true); await syncSessionCookies(currentUser); }
+      catch { if (auth.currentUser === currentUser) await syncSessionCookies(null); }
+    };
+    const refresh = window.setInterval(() => { void refreshSession(); }, 45 * 60 * 1000);
+    const onVisible = () => { if (document.visibilityState === "visible") void refreshSession(); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => { active = false; unsubscribe(); window.clearInterval(refresh); document.removeEventListener("visibilitychange", onVisible); };
   }, []);
 
   const signInWithGoogle = useCallback(async () => {
     const auth = getFirebaseAuth();
     if (!auth) throw new Error("Auth not available");
     const provider = new GoogleAuthProvider();
-    await signInWithPopup(auth, provider);
+    const result = await signInWithPopup(auth, provider);
+    await syncSessionCookies(result.user);
   }, []);
 
   const signInWithEmail = useCallback(
     async (email: string, password: string) => {
       const auth = getFirebaseAuth();
       if (!auth) throw new Error("Auth not available");
-      await signInWithEmailAndPassword(auth, email, password);
+      const result = await signInWithEmailAndPassword(auth, email.trim(), password);
+      await syncSessionCookies(result.user);
     },
     []
   );
@@ -97,7 +115,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (email: string, password: string) => {
       const auth = getFirebaseAuth();
       if (!auth) throw new Error("Auth not available");
-      await createUserWithEmailAndPassword(auth, email, password);
+      const result = await createUserWithEmailAndPassword(auth, email.trim(), password);
+      await syncSessionCookies(result.user);
     },
     []
   );
@@ -105,7 +124,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signInAsGuest = useCallback(async () => {
     const auth = getFirebaseAuth();
     if (!auth) throw new Error("Auth not available");
-    await signInAnonymously(auth);
+    const result = await signInAnonymously(auth);
+    await syncSessionCookies(result.user);
   }, []);
 
   const upgradeGuestToGoogle = useCallback(async () => {
@@ -114,12 +134,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error("No guest session to upgrade");
     }
     const provider = new GoogleAuthProvider();
-    await linkWithCredential(
-      auth.currentUser,
-      GoogleAuthProvider.credentialFromResult(
-        await signInWithPopup(auth, provider)
-      )!
-    );
+    const result = await linkWithPopup(auth.currentUser, provider);
+    await syncSessionCookies(result.user);
   }, []);
 
   const upgradeGuestToEmail = useCallback(
@@ -128,8 +144,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!auth?.currentUser || !auth.currentUser.isAnonymous) {
         throw new Error("No guest session to upgrade");
       }
-      const credential = EmailAuthProvider.credential(email, password);
-      await linkWithCredential(auth.currentUser, credential);
+      const credential = EmailAuthProvider.credential(email.trim(), password);
+      const result = await linkWithCredential(auth.currentUser, credential);
+      await syncSessionCookies(result.user);
     },
     []
   );
@@ -138,14 +155,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const auth = getFirebaseAuth();
     if (!auth) throw new Error("Auth not available");
     await signOut(auth);
-    document.cookie = "__session=; path=/; max-age=0";
-    document.cookie = "__uid=; path=/; max-age=0";
+    await syncSessionCookies(null);
   }, []);
 
   const resetPassword = useCallback(async (email: string) => {
     const auth = getFirebaseAuth();
     if (!auth) throw new Error("Auth not available");
-    await sendPasswordResetEmail(auth, email);
+    await sendPasswordResetEmail(auth, email.trim());
   }, []);
 
   const isAnonymous = user?.isAnonymous ?? false;

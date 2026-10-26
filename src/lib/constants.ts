@@ -13,6 +13,7 @@ export const NAV_ITEMS = [
   { label: "AI", href: "/ai" },
   { label: "Hubs", href: "/hubs" },
   { label: "Blog", href: "/blog" },
+  { label: "Resources", href: "/resources" },
 ] as const;
 
 // ---------------------------------------------------------------------------

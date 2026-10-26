@@ -1,3 +1,5 @@
+import { isAdminIdentity } from "./admin-policy";
+
 interface CookieReader {
   get: (name: string) => { value: string } | undefined;
 }
@@ -7,7 +9,7 @@ export async function checkAdminAccess(
   cookies: CookieReader,
 ): Promise<401 | 403 | 503 | null> {
   const authorization = request.headers.get("authorization");
-  const token = authorization
+  const token = authorization !== null
     ? (/^Bearer\s+(.+)$/i.exec(authorization)?.[1]?.trim() ?? "")
     : cookies.get("__session")?.value;
   if (!token) return 401;
@@ -26,33 +28,18 @@ export async function checkAdminAccess(
         signal: AbortSignal.timeout(10_000),
       },
     );
-    if (!response.ok) return response.status >= 500 ? 503 : 401;
+    if (!response.ok) return response.status >= 500 || response.status === 429 ? 503 : 401;
 
     const data = await response.json();
-    const account = data.users?.length === 1 ? data.users[0] : undefined;
+    const account = Array.isArray(data?.users) && data.users.length === 1 ? data.users[0] : undefined;
     if (!account || typeof account.localId !== "string" || !account.localId || account.disabled) return 401;
 
     const claimedUid = cookies.get("__uid")?.value;
     if (claimedUid && claimedUid !== account.localId) return 401;
 
-    let adminClaim = false;
-    if (typeof account.customAttributes === "string") {
-      try {
-        adminClaim = JSON.parse(account.customAttributes)?.admin === true;
-      } catch {
-        return 403;
-      }
-    }
-    const adminEmails = (process.env.ADMIN_EMAILS ?? "akbarali69048@gmail.com")
-      .split(",")
-      .map((email) => email.trim().toLowerCase())
-      .filter(Boolean);
-    if (!adminEmails.includes("akbarali69048@gmail.com")) {
-      adminEmails.push("akbarali69048@gmail.com");
-    }
-    const allowedEmail = typeof account.email === "string"
-      && adminEmails.includes(account.email.toLowerCase());
-    return adminClaim || allowedEmail ? null : 403;
+    // Only a Firebase-verified, verified-email identity can access admin data.
+    // Neither custom claims nor environment variables can grant other accounts access.
+    return isAdminIdentity(account) ? null : 403;
   } catch {
     return 503;
   }

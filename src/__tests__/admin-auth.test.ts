@@ -43,17 +43,21 @@ describe("verified admin access", () => {
     expect(await checkAdminAccess(request(), cookieStore("valid"))).toBe(403);
   });
   it("requires email verification for the allowlist", async () => {
-    fetchMock.mockResolvedValue(accountResponse({ localId: "user-id", email: "admin@example.com", emailVerified: false }));
+    fetchMock.mockResolvedValue(accountResponse({ localId: "user-id", email: "akbarali69048@gmail.com", emailVerified: false }));
     expect(await checkAdminAccess(request(), cookieStore("valid"))).toBe(403);
   });
-  it("accepts an allowlisted verified email", async () => {
-    fetchMock.mockResolvedValue(accountResponse({ localId: "admin-id", email: "ADMIN@example.com", emailVerified: true }));
+  it("accepts only the designated verified email", async () => {
+    fetchMock.mockResolvedValue(accountResponse({ localId: "admin-id", email: "AKBARALI69048@gmail.com", emailVerified: true }));
     expect(await checkAdminAccess(request(), cookieStore("valid"))).toBeNull();
     expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining("accounts:lookup"), expect.objectContaining({ cache: "no-store", body: JSON.stringify({ idToken: "valid" }) }));
   });
-  it("accepts a verified custom admin claim", async () => {
+  it("does not grant access through a custom admin claim", async () => {
     fetchMock.mockResolvedValue(accountResponse({ localId: "admin-id", customAttributes: '{"admin":true}' }));
-    expect(await checkAdminAccess(request(), cookieStore("valid"))).toBeNull();
+    expect(await checkAdminAccess(request(), cookieStore("valid"))).toBe(403);
+  });
+  it("does not grant access to other environment-allowlisted accounts", async () => {
+    fetchMock.mockResolvedValue(accountResponse({ localId: "admin-id", email: "admin@example.com", emailVerified: true, customAttributes: '{"admin":true}' }));
+    expect(await checkAdminAccess(request(), cookieStore("valid"))).toBe(403);
   });
   it("rejects disabled accounts and UID mismatches", async () => {
     fetchMock.mockResolvedValueOnce(accountResponse({ localId: "admin-id", disabled: true, customAttributes: '{"admin":true}' }));
@@ -72,6 +76,11 @@ describe("verified admin access", () => {
   it("does not fall back to cookies after an invalid Authorization header", async () => {
     const invalidHeader = new NextRequest("http://localhost/api/admin", { headers: { authorization: "Basic invalid" } });
     expect(await checkAdminAccess(invalidHeader, cookieStore("valid"))).toBe(401);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+  it("does not fall back to cookies after an empty Authorization header", async () => {
+    const emptyHeader = new NextRequest("http://localhost/api/admin", { headers: { authorization: "" } });
+    expect(await checkAdminAccess(emptyHeader, cookieStore("valid"))).toBe(401);
     expect(fetchMock).not.toHaveBeenCalled();
   });
   it("guards stats and mutations before reading or changing privileged data", async () => {

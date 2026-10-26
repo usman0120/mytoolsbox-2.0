@@ -88,6 +88,7 @@ export function proxy(request: NextRequest) {
   if (isProtected && !sessionCookie) {
     const signInUrl = new URL("/", request.url);
     signInUrl.searchParams.set("signin", "true");
+    signInUrl.searchParams.set("next", pathname + request.nextUrl.search);
     return NextResponse.redirect(signInUrl);
   }
 

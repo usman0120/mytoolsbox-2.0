@@ -4,8 +4,9 @@ import Link from "next/link";
 import { useI18n } from "@/lib/i18n";
 import { buttonVariants } from "@/components/ui/button";
 import { PageShell } from "@/components/common/workload-layouts";
-import { Home, Wrench, Search, FileText, Image as ImageIcon, Code2, Calculator } from "lucide-react";
+import { Home, Search, FileText, Image as ImageIcon, Code2, Calculator } from "lucide-react";
 import { SearchCommand } from "@/components/common/search-command";
+import { BrandLogo } from "@/components/common/brand-logo";
 
 const QUICK_LINKS = [
   { label: "Document Tools", href: "/tools?category=documents", icon: FileText },
@@ -27,7 +28,7 @@ export default function NotFound() {
           </span>
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-primary/10 text-primary">
-              <Wrench className="h-8 w-8" />
+              <BrandLogo className="h-12" />
             </div>
           </div>
         </div>
@@ -73,18 +74,14 @@ export default function NotFound() {
 
         {/* Action Buttons */}
         <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-          <Button asChild className="rounded-xl gap-2 text-xs font-medium">
-            <Link href={localizePath("/")}>
+            <Link href={localizePath("/")} className={buttonVariants({ className: "h-11 rounded-xl gap-2 px-5" })}>
               <Home className="h-3.5 w-3.5" />
               {t("not_found_btn", "Back to Home")}
             </Link>
-          </Button>
-          <Button asChild variant="outline" className="rounded-xl gap-2 text-xs">
-            <Link href={localizePath("/tools")}>
+            <Link href={localizePath("/tools")} className={buttonVariants({ variant: "outline", className: "h-11 rounded-xl gap-2 px-5" })}>
               <Search className="h-3.5 w-3.5" />
               {t("nav_tools", "Explore All Tools")}
             </Link>
-          </Button>
         </div>
       </div>
     </PageShell>

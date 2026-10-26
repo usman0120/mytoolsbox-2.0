@@ -25,7 +25,7 @@ export function ToolsPageClient() {
   const [activeCategory, setActiveCategory] = useState(initialCategory);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
-  const allTools = getActiveTools();
+  const allTools = useMemo(() => getActiveTools(), []);
 
   const filteredTools = useMemo(() => {
     let tools = allTools;
@@ -55,7 +55,7 @@ export function ToolsPageClient() {
           All Tools & <span className="font-editorial italic font-normal text-primary">Utilities.</span>
         </h1>
         <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-          Explore over 50+ privacy-first tools running client-side in your browser.
+          Explore {allTools.length} tools for everyday tasks. Processing and access requirements vary by tool.
         </p>
       </div>
 

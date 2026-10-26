@@ -10,6 +10,9 @@ import { SITE_CONFIG } from "@/lib/constants";
 import { SkipLink } from "@/components/common/accessibility";
 import { I18nProvider } from "@/lib/i18n";
 import { GoogleAnalytics } from "@/components/analytics/google-analytics";
+import { Toaster } from "@/components/ui/sonner";
+import { RequestNotice } from "@/components/common/request-notice";
+import { NavigationSkeleton } from "@/components/common/loading-skeleton";
 import "./globals.css";
 
 const GA_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
@@ -129,13 +132,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <ThemeProvider>
             <AuthProvider>
               <TooltipProvider>
-                <Suspense fallback={null}>
+                <Suspense fallback={<NavigationSkeleton />}>
                   <Navbar />
                 </Suspense>
                 <main id="main-content" className="flex-1" role="main">
+                  <Suspense fallback={null}><RequestNotice /></Suspense>
                   {children}
                 </main>
                 <Footer />
+                <Toaster richColors closeButton position="bottom-right" />
               </TooltipProvider>
             </AuthProvider>
           </ThemeProvider>

@@ -139,7 +139,7 @@ describe("Route/catalog integrity audit", () => {
   });
 
   it("records declared protected/localized routes and legacy chat storage without calling providers", () => {
-    expect(inventory.routingPolicies.protectedPaths).toEqual(["/dashboard", "/settings", "/favorites", "/history", "/account"]);
+    expect(inventory.routingPolicies.protectedPaths).toEqual(["/dashboard", "/settings", "/favorites", "/history", "/account", "/admin"]);
     expect(inventory.routingPolicies.localePrefixes).toEqual(["es", "ur", "fr", "de", "pt", "hi", "ar"]);
     const legacyChat = inventory.features.find((entry) => entry.namespace === "tools" && entry.slug === "ai-text-generator");
     expect(legacyChat?.persistence.directStorageReferences.some((entry) => entry.key === "mytoolsbox-ai-chat")).toBe(true);

@@ -14,15 +14,15 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   LogOut,
-  User,
   Settings,
   Heart,
   Clock,
-  ArrowUpCircle,
   Sparkles,
+  Shield,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useI18n } from "@/lib/i18n";
+import { isAdminIdentity } from "@/lib/auth/admin-policy";
 
 export function UserMenu() {
   const { user, isAnonymous, logOut } = useAuth();
@@ -32,7 +32,7 @@ export function UserMenu() {
 
   if (!user) return null;
 
-  const displayName = user.displayName ?? (isAnonymous ? t("auth_guest_title") : t("auth_profile"));
+  const displayName = user.displayName ?? (isAnonymous ? t("auth_guest_title") : "My account");
   const initials = user.displayName
     ? user.displayName
         .split(" ")
@@ -57,9 +57,9 @@ export function UserMenu() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="inline-flex size-8 shrink-0 items-center justify-center rounded-full border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none hover:bg-muted hover:text-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4">
+      <DropdownMenuTrigger aria-label="Open account menu" className="inline-flex size-8 shrink-0 items-center justify-center rounded-full border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none hover:bg-muted hover:text-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4">
         <Avatar className="h-8 w-8">
-          <AvatarImage src={user.photoURL ?? undefined} />
+          <AvatarImage src={user.photoURL ?? undefined} alt="Account avatar" />
           <AvatarFallback className="text-xs">{initials}</AvatarFallback>
         </Avatar>
       </DropdownMenuTrigger>
@@ -88,7 +88,7 @@ export function UserMenu() {
               </p>
               <button
                 type="button"
-                onClick={() => router.push(localizePath("/account"))}
+                onClick={() => router.push(localizePath("/settings?tab=account"))}
                 className="mt-2 inline-flex w-full items-center justify-center rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground shadow-sm transition hover:bg-primary/90"
               >
                 {t("auth_signin")} / {t("auth_signup")}
@@ -113,13 +113,6 @@ export function UserMenu() {
               </div>
               <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground">
                 <span>{t("auth_resets_in").replace("{days}", String(daysRemaining))}</span>
-                <button
-                  type="button"
-                  onClick={() => router.push(localizePath("/pricing"))}
-                  className="font-medium text-primary hover:underline"
-                >
-                  {t("auth_upgrade")}
-                </button>
               </div>
             </div>
           )}
@@ -127,17 +120,6 @@ export function UserMenu() {
 
         <DropdownMenuSeparator />
 
-        {isAnonymous && (
-          <DropdownMenuItem onClick={() => router.push(localizePath("/account"))}>
-            <ArrowUpCircle className="mr-2 h-4 w-4" />
-            {t("auth_upgrade")}
-          </DropdownMenuItem>
-        )}
-
-        <DropdownMenuItem onClick={() => router.push(localizePath("/settings"))}>
-          <User className="mr-2 h-4 w-4" />
-          {t("auth_profile")}
-        </DropdownMenuItem>
         <DropdownMenuItem onClick={() => router.push(localizePath("/settings?tab=favorites"))}>
           <Heart className="mr-2 h-4 w-4" />
           {t("auth_favorites")}
@@ -150,6 +132,10 @@ export function UserMenu() {
           <Settings className="mr-2 h-4 w-4" />
           {t("auth_settings")}
         </DropdownMenuItem>
+
+        {isAdminIdentity(user) && <DropdownMenuItem onClick={() => router.push(localizePath("/admin"))}>
+          <Shield className="mr-2 h-4 w-4" />Admin panel
+        </DropdownMenuItem>}
 
         <DropdownMenuSeparator />
 

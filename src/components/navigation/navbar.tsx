@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
+import dynamic from "next/dynamic";
+import { BrandLogo } from "@/components/common/brand-logo";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
 import {
@@ -23,12 +24,15 @@ import {
 import { NAV_ITEMS, SITE_CONFIG } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
-import { SignInDialog } from "@/components/auth/signin-dialog";
 import { UserMenu } from "@/components/auth/user-menu";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { SearchCommand } from "@/components/common/search-command";
 import { LanguageSwitcher } from "@/components/common/language-switcher";
 import { useI18n } from "@/lib/i18n";
+
+const SignInDialog = dynamic(() => import("@/components/auth/signin-dialog").then((module) => module.SignInDialog), {
+  loading: () => <div role="status" className="fixed inset-x-4 top-24 z-50 mx-auto max-w-sm rounded-2xl border bg-background p-6 text-center text-sm shadow-xl">Opening sign-in…</div>,
+});
 
 export function Navbar() {
   const pathname = usePathname();
@@ -77,15 +81,8 @@ export function Navbar() {
     >
       <div className="mx-auto flex h-[var(--shell-header-height)] max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
         {/* Logo — Refined editorial badge */}
-        <Link href="/" className="flex items-center gap-2.5 shrink-0 group">
-          <Image
-            src="/logo.png"
-            alt={SITE_CONFIG.name}
-            width={32}
-            height={32}
-            className="h-8 w-auto object-contain rounded-md"
-            priority
-          />
+        <Link href={localizePath("/")} aria-label="MyToolsBox home" className="flex items-center gap-2.5 shrink-0 group">
+          <BrandLogo className="h-9" eager />
           <span className="font-semibold text-[15px] tracking-tight text-foreground hidden sm:inline-block">
             {SITE_CONFIG.name}
           </span>
@@ -242,13 +239,7 @@ export function Navbar() {
             <SheetContent side="right" className="w-80 max-w-full overflow-y-auto p-0" aria-label="Mobile navigation">
               <nav aria-label="Mobile navigation" className="flex flex-col gap-1 p-6">
                 <div className="flex items-center gap-2.5 mb-6">
-                  <Image
-                    src="/logo.png"
-                    alt={SITE_CONFIG.name}
-                    width={32}
-                    height={32}
-                    className="h-8 w-auto object-contain rounded-md"
-                  />
+                  <BrandLogo className="h-9" />
                   <span className="font-semibold text-base">{SITE_CONFIG.name}</span>
                 </div>
 
@@ -347,7 +338,7 @@ export function Navbar() {
                         onClick={() => setMobileOpen(false)}
                         className="flex items-center px-3 py-2 text-sm rounded-xl hover:bg-muted"
                       >
-                        {t("nav_settings_profile")}
+                        {t("auth_settings")}
                       </Link>
                     </div>
                   ) : (
@@ -368,7 +359,7 @@ export function Navbar() {
         </div>
       </div>
 
-      <SignInDialog open={signInOpen} onOpenChange={setSignInOpen} />
+      {signInOpen && <SignInDialog open={signInOpen} onOpenChange={setSignInOpen} />}
     </header>
   );
 }

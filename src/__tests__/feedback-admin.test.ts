@@ -27,7 +27,7 @@ beforeEach(() => {
   vi.stubGlobal("fetch", fetchMock);
   mocks.cookies.mockResolvedValue(cookieStore("cookie-token"));
   mocks.firestore.mockReturnValue({});
-  fetchMock.mockResolvedValue(account({ customAttributes: '{"admin":true}' }));
+  fetchMock.mockResolvedValue(account({ email: "akbarali69048@gmail.com", emailVerified: true }));
   mocks.read.mockResolvedValue([]);
   mocks.submit.mockResolvedValue("message-id");
 });

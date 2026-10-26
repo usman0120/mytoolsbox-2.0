@@ -3,7 +3,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-libra
 import { AdminPageClient } from "@/app/admin/page-client";
 
 const mocks = vi.hoisted(() => ({
-  auth: { user: { uid: "admin-id" } as { uid: string } | null, loading: false },
+  auth: { user: { uid: "admin-id", email: "akbarali69048@gmail.com", emailVerified: true } as { uid: string; email?: string; emailVerified?: boolean } | null, loading: false },
   push: vi.fn(), success: vi.fn(), error: vi.fn(),
 }));
 vi.mock("@/lib/auth", () => ({ useAuth: () => mocks.auth }));
@@ -24,7 +24,7 @@ const tab = (name: string) => fireEvent.click(screen.getByRole("tab", { name }))
 
 beforeEach(() => {
   vi.resetAllMocks();
-  mocks.auth.user = { uid: "admin-id" };
+  mocks.auth.user = { uid: "admin-id", email: "akbarali69048@gmail.com", emailVerified: true };
   mocks.auth.loading = false;
   vi.stubGlobal("fetch", fetchMock);
   fetchMock.mockImplementation(async (url: string) => url.startsWith("/api/admin") ? response(security) : response({ feedback: [feedbackItem] }));
@@ -32,6 +32,18 @@ beforeEach(() => {
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
 describe("truthful admin dashboard", () => {
+  it("rejects the former test UID bypass without fetching private data", () => {
+    mocks.auth.user = { uid: "admin-id" };
+    render(<AdminPageClient />);
+    expect(screen.getByRole("alert")).toHaveTextContent("not authorized");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+  it("rejects the administrator email until it is verified", () => {
+    mocks.auth.user = { uid: "admin-id", email: "akbarali69048@gmail.com", emailVerified: false };
+    render(<AdminPageClient />);
+    expect(screen.getByRole("alert")).toHaveTextContent("not authorized");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
   it("shows unavailable metric sections without fabricated numbers", async () => {
     render(<AdminPageClient />);
     expect(await screen.findByText("Active Tokens")).toBeInTheDocument();

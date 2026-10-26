@@ -9,10 +9,10 @@ import { AlertTriangle, RefreshCw, Home, Wrench } from "lucide-react";
 
 interface ErrorPageProps {
   error: Error & { digest?: string };
-  reset: () => void;
+  retry: () => void;
 }
 
-export default function ErrorPage({ error, reset }: ErrorPageProps) {
+export default function ErrorPage({ error, retry }: ErrorPageProps) {
   useEffect(() => {
     // Log the error to an error reporting service
     console.error("[ErrorBoundary]", error);
@@ -44,7 +44,7 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
         {/* Actions */}
         <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
           <Button
-            onClick={reset}
+             onClick={retry}
             className="rounded-xl gap-2 text-xs font-medium"
           >
             <RefreshCw className="h-3.5 w-3.5" />

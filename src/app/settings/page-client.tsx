@@ -1,6 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useTheme } from "next-themes";
+import { sendEmailVerification } from "firebase/auth";
+import { getAuthErrorMessage } from "@/lib/auth/auth-errors";
+import { PageSkeleton, ListSkeleton } from "@/components/common/loading-skeleton";
 import { useAuth } from "@/lib/auth";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -42,7 +46,6 @@ import {
   RotateCcw,
   Ban,
   Mail,
-  Calendar,
   Heart,
   History,
   ExternalLink,
@@ -60,10 +63,18 @@ interface SettingsPageClientProps {
 }
 
 export function SettingsPageClient({ initialTab }: SettingsPageClientProps) {
+  const { user, loading } = useAuth();
+  if (loading) return <PageSkeleton label="Loading settings" />;
+  // Remount on identity changes so another account never sees stale private data.
+  return <SettingsWorkspace key={user?.uid ?? "signed-out"} initialTab={initialTab} />;
+}
+
+function SettingsWorkspace({ initialTab }: SettingsPageClientProps) {
   const { user, loading: authLoading, logOut } = useAuth();
+  const { theme, setTheme } = useTheme();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { t, localizePath, getToolName } = useI18n();
+  const { t, localizePath } = useI18n();
 
   // Determine active tab from URL query params or prop
   const urlTab = searchParams.get("tab");
@@ -71,28 +82,31 @@ export function SettingsPageClient({ initialTab }: SettingsPageClientProps) {
     ? urlTab
     : (initialTab ?? "account");
 
-  const [activeTab, setActiveTab] = useState<string>(defaultTab);
-
-  // Sync state if URL search params change
-  useEffect(() => {
-    if (urlTab === "history" || urlTab === "favorites" || urlTab === "account") {
-      setActiveTab(urlTab);
-    }
-  }, [urlTab]);
+  const activeTab = defaultTab;
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
 
   const [profile, setProfile] = useState<UserProfile>(DEFAULT_PROFILE);
   const [currentTime, setCurrentTime] = useState(() => Date.now());
   const [loaded, setLoaded] = useState(false);
+  const [accountError, setAccountError] = useState("");
+  const [accountRetry, setAccountRetry] = useState(0);
+  const [verificationPending, setVerificationPending] = useState(false);
+  const [verificationSent, setVerificationSent] = useState(false);
   const [showSignIn, setShowSignIn] = useState(false);
 
   // Favorites state
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
-  const [favoritesLoading, setFavoritesLoading] = useState(false);
+  const [favoritesLoading, setFavoritesLoading] = useState(true);
+  const [favoritesLoaded, setFavoritesLoaded] = useState(false);
+  const [favoritesError, setFavoritesError] = useState("");
   const [favoriteSearch, setFavoriteSearch] = useState("");
 
   // History state
   const [history, setHistory] = useState<HistoryItem[]>([]);
-  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(true);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
+  const [historyError, setHistoryError] = useState("");
   const [historySearch, setHistorySearch] = useState("");
 
   // Deletion & Disable Modals
@@ -100,11 +114,15 @@ export function SettingsPageClient({ initialTab }: SettingsPageClientProps) {
   const [showDisableDialog, setShowDisableDialog] = useState(false);
   const [showClearHistoryDialog, setShowClearHistoryDialog] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const actionLock = useRef(false);
+  const [pendingItems, setPendingItems] = useState<Set<string>>(new Set());
+  const itemLocks = useRef(new Set<string>());
 
   // Load user profile & status
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
+    queueMicrotask(() => { if (!cancelled) { setLoaded(false); setAccountError(""); } });
 
     getUserProfile(user.uid)
       .then((prof) => {
@@ -118,25 +136,26 @@ export function SettingsPageClient({ initialTab }: SettingsPageClientProps) {
         setLoaded(true);
       })
       .catch(() => {
-        if (!cancelled) setLoaded(true);
+        if (!cancelled) { setLoaded(true); setAccountError("We couldn’t load your account information. Please try again."); }
       });
 
     return () => {
       cancelled = true;
     };
-  }, [user]);
+  }, [user, accountRetry]);
 
   // Load Favorites
   const loadFavorites = useCallback(async () => {
     if (!user) return;
     setFavoritesLoading(true);
+    setFavoritesError("");
     try {
       const items = await getFavorites(user.uid);
-      setFavorites(items);
+      if (mounted.current) { setFavorites(items); setFavoritesLoaded(true); }
     } catch {
-      toast.error("Failed to load saved favorites");
+      if (mounted.current) setFavoritesError("We couldn’t load your favorites. Check your connection and retry.");
     } finally {
-      setFavoritesLoading(false);
+      if (mounted.current) setFavoritesLoading(false);
     }
   }, [user]);
 
@@ -144,71 +163,93 @@ export function SettingsPageClient({ initialTab }: SettingsPageClientProps) {
   const loadHistory = useCallback(async () => {
     if (!user) return;
     setHistoryLoading(true);
+    setHistoryError("");
     try {
       const items = await getHistory(user.uid);
-      setHistory(items);
+      if (mounted.current) { setHistory(items); setHistoryLoaded(true); }
     } catch {
-      toast.error("Failed to load activity history");
+      if (mounted.current) setHistoryError("We couldn’t load your activity history. Check your connection and retry.");
     } finally {
-      setHistoryLoading(false);
+      if (mounted.current) setHistoryLoading(false);
     }
   }, [user]);
 
   useEffect(() => {
     if (!user) return;
-    if (activeTab === "favorites") {
-      loadFavorites();
-    } else if (activeTab === "history") {
-      loadHistory();
-    }
-  }, [user, activeTab, loadFavorites, loadHistory]);
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled) return;
+      if (activeTab === "favorites" && !favoritesLoaded) void loadFavorites();
+      else if (activeTab === "history" && !historyLoaded) void loadHistory();
+    });
+    return () => { cancelled = true; };
+  }, [user, activeTab, favoritesLoaded, historyLoaded, loadFavorites, loadHistory]);
 
   // Remove Favorite
   const handleRemoveFavorite = async (item: FavoriteItem) => {
-    if (!user) return;
+    const key = `favorite:${item.id}`;
+    if (!user || itemLocks.current.has(key)) return;
+    itemLocks.current.add(key);
+    setPendingItems(new Set(itemLocks.current));
     try {
       await removeFavorite(user.uid, item.id);
+      if (!mounted.current) return;
       setFavorites((prev) => prev.filter((f) => f.id !== item.id));
       toast.success("Removed from favorites");
     } catch {
       toast.error("Failed to remove favorite");
+    } finally {
+      itemLocks.current.delete(key);
+      if (mounted.current) setPendingItems(new Set(itemLocks.current));
     }
   };
 
   // Clear History
   const handleClearHistory = async () => {
-    if (!user) return;
+    if (!user || actionLock.current) return;
+    actionLock.current = true;
     setActionLoading(true);
     try {
       await clearHistory(user.uid);
+      if (!mounted.current) return;
       setHistory([]);
       setShowClearHistoryDialog(false);
       toast.success("Activity history cleared");
     } catch {
       toast.error("Failed to clear history");
     } finally {
-      setActionLoading(false);
+      actionLock.current = false;
+      if (mounted.current) setActionLoading(false);
     }
   };
 
   // Remove History Entry
   const handleRemoveHistoryEntry = async (item: HistoryItem) => {
-    if (!user) return;
+    const key = `history:${item.id}`;
+    if (!user || itemLocks.current.has(key)) return;
+    itemLocks.current.add(key);
+    setPendingItems(new Set(itemLocks.current));
     try {
       await removeHistoryEntry(user.uid, item.id);
+      if (!mounted.current) return;
       setHistory((prev) => prev.filter((h) => h.id !== item.id));
       toast.success("Entry removed");
     } catch {
       toast.error("Failed to remove entry");
+    } finally {
+      itemLocks.current.delete(key);
+      if (mounted.current) setPendingItems(new Set(itemLocks.current));
     }
   };
 
   // Request 30-Day Deletion
   const handleRequestDeletion = async () => {
-    if (!user) return;
+    if (!user || actionLock.current) return;
+    actionLock.current = true;
     setActionLoading(true);
     try {
       const { deletionScheduledAt } = await scheduleAccountDeletion(user.uid);
+      if (!mounted.current) return;
       const deletionRequestedAt = Date.now();
       setCurrentTime(deletionRequestedAt);
       setProfile((prev) => ({
@@ -219,22 +260,25 @@ export function SettingsPageClient({ initialTab }: SettingsPageClientProps) {
       }));
       setShowDeleteDialog(false);
       toast.warning(
-        "Account deletion scheduled. You have 30 days to log in and cancel.",
+        "Deletion request recorded. You can cancel it from the Account tab.",
         { duration: 6000 }
       );
     } catch {
       toast.error("Failed to schedule account deletion");
     } finally {
-      setActionLoading(false);
+      actionLock.current = false;
+      if (mounted.current) setActionLoading(false);
     }
   };
 
   // Cancel Deletion & Reactivate
   const handleCancelDeletion = async () => {
-    if (!user) return;
+    if (!user || actionLock.current) return;
+    actionLock.current = true;
     setActionLoading(true);
     try {
       await cancelAccountDeletion(user.uid);
+      if (!mounted.current) return;
       setProfile((prev) => ({
         ...prev,
         status: "active",
@@ -245,36 +289,42 @@ export function SettingsPageClient({ initialTab }: SettingsPageClientProps) {
     } catch {
       toast.error("Failed to cancel account deletion");
     } finally {
-      setActionLoading(false);
+      actionLock.current = false;
+      if (mounted.current) setActionLoading(false);
     }
   };
 
   // Disable Account
   const handleDisableAccount = async () => {
-    if (!user) return;
+    if (!user || actionLock.current) return;
+    actionLock.current = true;
     setActionLoading(true);
     try {
       await disableAccount(user.uid);
+      if (!mounted.current) return;
       setProfile((prev) => ({
         ...prev,
         status: "disabled",
         disabledAt: Date.now(),
       }));
       setShowDisableDialog(false);
-      toast.info("Account disabled. You can reactivate anytime by logging in.");
+      toast.info("Account marked inactive. You can reactivate it from this page.");
     } catch {
       toast.error("Failed to disable account");
     } finally {
-      setActionLoading(false);
+      actionLock.current = false;
+      if (mounted.current) setActionLoading(false);
     }
   };
 
   // Reactivate Disabled Account
   const handleReactivateAccount = async () => {
-    if (!user) return;
+    if (!user || actionLock.current) return;
+    actionLock.current = true;
     setActionLoading(true);
     try {
       await reactivateAccount(user.uid);
+      if (!mounted.current) return;
       setProfile((prev) => ({
         ...prev,
         status: "active",
@@ -284,7 +334,8 @@ export function SettingsPageClient({ initialTab }: SettingsPageClientProps) {
     } catch {
       toast.error("Failed to reactivate account");
     } finally {
-      setActionLoading(false);
+      actionLock.current = false;
+      if (mounted.current) setActionLoading(false);
     }
   };
 
@@ -317,13 +368,7 @@ export function SettingsPageClient({ initialTab }: SettingsPageClientProps) {
     );
   }, [history, historySearch]);
 
-  if (authLoading || (user && !loaded)) {
-    return (
-      <div className="container mx-auto px-4 py-20 flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
+  if (authLoading) return <PageSkeleton label="Loading settings" />;
 
   if (!user) {
     return (
@@ -364,11 +409,11 @@ export function SettingsPageClient({ initialTab }: SettingsPageClientProps) {
             <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
             <div>
               <h3 className="font-semibold text-sm text-amber-600 dark:text-amber-400">
-                Account Scheduled for Permanent Deletion
+                Account Deletion Requested
               </h3>
               <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-                Your account will be permanently erased in <strong>{daysRemaining} days</strong>.
-                You can cancel this request at any time during this 30-day window.
+                Your request has a <strong>{daysRemaining}-day</strong> recovery window remaining.
+                Automatic deletion is not available yet. Contact support to complete permanent removal.
               </p>
             </div>
           </div>
@@ -390,9 +435,9 @@ export function SettingsPageClient({ initialTab }: SettingsPageClientProps) {
           <div className="flex items-start gap-3">
             <Ban className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
             <div>
-              <h3 className="font-semibold text-sm">Account is Currently Disabled</h3>
+              <h3 className="font-semibold text-sm">Account Marked Inactive</h3>
               <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-                Your account is inactive. Your tools, favorites, and history are preserved safely.
+                This account is marked inactive. Saved data is retained; this setting does not revoke your sign-in sessions.
               </p>
             </div>
           </div>
@@ -418,23 +463,22 @@ export function SettingsPageClient({ initialTab }: SettingsPageClientProps) {
       <Tabs
         value={activeTab}
         onValueChange={(val) => {
-          setActiveTab(val);
-          router.replace(`/settings?tab=${val}`, { scroll: false });
+          router.replace(localizePath(`/settings?tab=${val}`), { scroll: false });
         }}
         className="space-y-6"
       >
-        <TabsList className="rounded-xl p-1 bg-muted/50 border border-border/60">
+        <TabsList className="grid h-auto w-full grid-cols-3 rounded-xl p-1 bg-muted/50 border border-border/60">
           <TabsTrigger value="account" className="rounded-lg gap-2 text-xs font-medium py-1.5 px-4 cursor-pointer">
             <Shield className="h-3.5 w-3.5" />
             Account
           </TabsTrigger>
           <TabsTrigger value="history" className="rounded-lg gap-2 text-xs font-medium py-1.5 px-4 cursor-pointer">
             <History className="h-3.5 w-3.5" />
-            History ({history.length})
+            History {historyLoaded && !historyError ? `(${history.length})` : ""}
           </TabsTrigger>
           <TabsTrigger value="favorites" className="rounded-lg gap-2 text-xs font-medium py-1.5 px-4 cursor-pointer">
             <Heart className="h-3.5 w-3.5" />
-            Favorites ({favorites.length})
+            Favorites {favoritesLoaded && !favoritesError ? `(${favorites.length})` : ""}
           </TabsTrigger>
         </TabsList>
 
@@ -442,6 +486,8 @@ export function SettingsPageClient({ initialTab }: SettingsPageClientProps) {
             TAB 1: ACCOUNT (Profile tab deleted completely, UID removed)
            ========================================== */}
         <TabsContent value="account" className="space-y-6 focus-visible:outline-hidden">
+          {accountError && <div role="alert" className="rounded-xl border border-destructive/30 p-4 text-sm"><p>{accountError}</p><Button className="mt-3" variant="outline" onClick={() => setAccountRetry((value) => value + 1)}>Retry account information</Button></div>}
+          {!loaded ? <ListSkeleton label="Loading account information" /> : !accountError && <>
           {/* Account Details Card (NO User ID / UID) */}
           <Card className="rounded-2xl border-border/60 shadow-xs">
             <CardHeader className="pb-4">
@@ -476,7 +522,7 @@ export function SettingsPageClient({ initialTab }: SettingsPageClientProps) {
                         ? "Pending Deletion"
                         : isDisabled
                         ? "Disabled"
-                        : "Active & Good Standing"}
+                         : "Active"}
                     </span>
                   </div>
                   <Badge
@@ -492,7 +538,7 @@ export function SettingsPageClient({ initialTab }: SettingsPageClientProps) {
               <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-border/50 text-xs text-muted-foreground">
                 <div className="flex items-center gap-2">
                   <Sparkles className="h-3.5 w-3.5 text-primary" />
-                  <span>Authenticated via {user.providerData[0]?.providerId === "google.com" ? "Google Account" : "Secure Auth"}</span>
+                  <span>Signed in with {user.isAnonymous ? "a guest session" : user.providerData[0]?.providerId === "google.com" ? "Google" : "email and password"}</span>
                 </div>
                 <Button
                   variant="outline"
@@ -506,8 +552,19 @@ export function SettingsPageClient({ initialTab }: SettingsPageClientProps) {
               </div>
             </CardContent>
           </Card>
+          </>}
+
+          {user.isAnonymous && <Card className="rounded-2xl"><CardHeader><CardTitle>Keep your guest workspace</CardTitle><CardDescription>Create an account to keep access to your favorites and history across devices.</CardDescription></CardHeader><CardContent><Button onClick={() => setShowSignIn(true)}>Create an account or sign in</Button></CardContent></Card>}
+          {!user.isAnonymous && !user.emailVerified && <Card className="rounded-2xl"><CardHeader><CardTitle>Verify your email</CardTitle><CardDescription>Confirm ownership of your email address. Administrator access requires a verified email.</CardDescription></CardHeader><CardContent><Button disabled={verificationPending || verificationSent} onClick={async () => {
+            setVerificationPending(true);
+            try { await sendEmailVerification(user); setVerificationSent(true); toast.success("Verification email sent. Check your inbox, then sign in again after verifying."); }
+            catch (error) { toast.error(getAuthErrorMessage(error)); }
+            finally { setVerificationPending(false); }
+          }}>{verificationPending && <Loader2 className="size-4 animate-spin" />}{verificationSent ? "Verification email sent" : "Send verification email"}</Button></CardContent></Card>}
+          <Card className="rounded-2xl"><CardHeader><CardTitle>Appearance</CardTitle><CardDescription>Choose how MyToolsBox looks on this device.</CardDescription></CardHeader><CardContent><div role="group" aria-label="Color theme" className="flex flex-wrap gap-2">{["light", "dark", "system"].map((value) => <Button key={value} variant={theme === value ? "default" : "outline"} aria-pressed={theme === value} onClick={() => setTheme(value)} className="capitalize">{value}</Button>)}</div></CardContent></Card>
 
           {/* Account Lifecycle Actions: Disable & 30-Day Deletion */}
+          {loaded && !accountError && <>
           <Card className="rounded-2xl border-destructive/30 bg-destructive/5 overflow-hidden shadow-xs">
             <CardHeader className="pb-3 border-b border-destructive/20">
               <CardTitle className="text-base text-destructive flex items-center gap-2">
@@ -515,7 +572,7 @@ export function SettingsPageClient({ initialTab }: SettingsPageClientProps) {
                 Account Management & Danger Zone
               </CardTitle>
               <CardDescription className="text-xs">
-                Options to temporarily disable your account or request permanent deletion with a 30-day recovery window.
+                Manage your account status or record a deletion request. For permanent removal, contact support.
               </CardDescription>
             </CardHeader>
 
@@ -527,8 +584,8 @@ export function SettingsPageClient({ initialTab }: SettingsPageClientProps) {
                     {isDisabled ? "Reactivate Account" : "Disable Account"}
                   </h4>
                   <p className="text-xs text-muted-foreground max-w-md leading-relaxed">
-                    Temporarily pause your account. Your saved tools, history, and preferences are safely preserved.
-                    You can log back in at any time to re-enable it.
+                    Mark your account inactive while keeping your saved data. This changes account status only;
+                    it does not block sign-in or revoke sessions. Reactivate it here at any time.
                   </p>
                 </div>
                 {isDisabled ? (
@@ -561,10 +618,10 @@ export function SettingsPageClient({ initialTab }: SettingsPageClientProps) {
                   </h4>
                   <p className="text-xs text-muted-foreground max-w-md leading-relaxed">
                     {isPendingDeletion
-                      ? `Your account is scheduled to be permanently wiped on ${new Date(
+                      ? `Your deletion request has a recovery date of ${new Date(
                           profile.deletionScheduledAt!
-                        ).toLocaleDateString()}. You have ${daysRemaining} days remaining to reactivate it.`
-                      : "Account deletion initiates a 30-day grace period. If you change your mind, simply sign in within 30 days to cancel deletion. After 30 days, all your data is permanently erased."}
+                        ).toLocaleDateString()}. Cancel it here if you change your mind. Contact support to complete permanent removal.`
+                      : "Record a deletion request with a 30-day recovery window. Automatic account erasure is not available yet; contact support to complete permanent removal."}
                   </p>
                 </div>
 
@@ -586,12 +643,13 @@ export function SettingsPageClient({ initialTab }: SettingsPageClientProps) {
                     className="rounded-xl shrink-0 text-xs gap-1.5 shadow-xs"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
-                    Delete Account (30 Days)
+                    Request Account Deletion
                   </Button>
                 )}
               </div>
             </CardContent>
           </Card>
+          </>}
         </TabsContent>
 
         {/* ==========================================
@@ -603,7 +661,7 @@ export function SettingsPageClient({ initialTab }: SettingsPageClientProps) {
               <div>
                 <CardTitle className="text-base font-semibold">Activity History</CardTitle>
                 <CardDescription className="text-xs">
-                  Review the tools and applications you have recently executed in your browser.
+                  Review your 50 most recent tool and application activities.
                 </CardDescription>
               </div>
               {history.length > 0 && (
@@ -625,6 +683,7 @@ export function SettingsPageClient({ initialTab }: SettingsPageClientProps) {
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                   <Input
                     placeholder="Search activity history..."
+                    aria-label="Search activity history"
                     value={historySearch}
                     onChange={(e) => setHistorySearch(e.target.value)}
                     className="pl-9 h-9 text-xs rounded-xl bg-background/60"
@@ -632,11 +691,7 @@ export function SettingsPageClient({ initialTab }: SettingsPageClientProps) {
                 </div>
               )}
 
-              {historyLoading ? (
-                <div className="py-12 flex items-center justify-center">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                </div>
-              ) : history.length === 0 ? (
+              {historyLoading ? <ListSkeleton label="Loading activity history" /> : historyError ? <div role="alert" className="rounded-xl border border-destructive/30 p-4 text-sm"><p>{historyError}</p><Button variant="outline" onClick={loadHistory} className="mt-3">Retry history</Button></div> : history.length === 0 ? (
                 <div className="py-12 text-center">
                   <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted/50 text-muted-foreground mx-auto mb-3">
                     <History className="h-6 w-6" />
@@ -694,7 +749,7 @@ export function SettingsPageClient({ initialTab }: SettingsPageClientProps) {
 
                         <div className="flex items-center gap-1 shrink-0">
                           <Link href={href}>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg">
+                            <Button variant="ghost" size="icon" aria-label={`Open ${item.toolName}`} className="h-9 w-9 rounded-lg">
                               <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
                             </Button>
                           </Link>
@@ -702,9 +757,11 @@ export function SettingsPageClient({ initialTab }: SettingsPageClientProps) {
                             variant="ghost"
                             size="icon"
                             onClick={() => handleRemoveHistoryEntry(item)}
+                            aria-label={`Remove ${item.toolName} from history`}
+                            disabled={actionLoading || pendingItems.has(`history:${item.id}`)}
                             className="h-7 w-7 rounded-lg text-muted-foreground hover:text-destructive"
                           >
-                            <Trash2 className="h-3.5 w-3.5" />
+                            {pendingItems.has(`history:${item.id}`) ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
                           </Button>
                         </div>
                       </div>
@@ -734,6 +791,7 @@ export function SettingsPageClient({ initialTab }: SettingsPageClientProps) {
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                   <Input
                     placeholder="Search saved favorites..."
+                    aria-label="Search saved favorites"
                     value={favoriteSearch}
                     onChange={(e) => setFavoriteSearch(e.target.value)}
                     className="pl-9 h-9 text-xs rounded-xl bg-background/60"
@@ -741,11 +799,7 @@ export function SettingsPageClient({ initialTab }: SettingsPageClientProps) {
                 </div>
               )}
 
-              {favoritesLoading ? (
-                <div className="py-12 flex items-center justify-center">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                </div>
-              ) : favorites.length === 0 ? (
+              {favoritesLoading ? <ListSkeleton label="Loading favorites" /> : favoritesError ? <div role="alert" className="rounded-xl border border-destructive/30 p-4 text-sm"><p>{favoritesError}</p><Button variant="outline" onClick={loadFavorites} className="mt-3">Retry favorites</Button></div> : favorites.length === 0 ? (
                 <div className="py-12 text-center">
                   <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary mx-auto mb-3">
                     <Heart className="h-6 w-6" />
@@ -782,9 +836,11 @@ export function SettingsPageClient({ initialTab }: SettingsPageClientProps) {
                               variant="ghost"
                               size="icon"
                               onClick={() => handleRemoveFavorite(item)}
+                              aria-label={`Remove ${item.toolName} from favorites`}
+                              disabled={pendingItems.has(`favorite:${item.id}`)}
                               className="h-6 w-6 rounded-md text-muted-foreground hover:text-destructive"
                             >
-                              <Trash2 className="h-3 w-3" />
+                              {pendingItems.has(`favorite:${item.id}`) ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="h-3 w-3" />}
                             </Button>
                           </div>
                           <Link href={href} className="font-semibold text-xs text-foreground group-hover:text-primary transition-colors block">
@@ -806,6 +862,7 @@ export function SettingsPageClient({ initialTab }: SettingsPageClientProps) {
           </Card>
         </TabsContent>
       </Tabs>
+      <SignInDialog open={showSignIn} onOpenChange={setShowSignIn} />
 
       {/* Clear History Confirmation Dialog */}
       <Dialog open={showClearHistoryDialog} onOpenChange={setShowClearHistoryDialog}>
@@ -851,9 +908,9 @@ export function SettingsPageClient({ initialTab }: SettingsPageClientProps) {
             </div>
             <DialogTitle className="text-base font-bold">Schedule Account Deletion?</DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground leading-relaxed pt-1">
-              Your account will enter a <strong>30-day grace period</strong> before any data is permanently erased.
+              This records a deletion request with a <strong>30-day recovery window</strong>.
               <br /><br />
-              If you change your mind, simply <strong>sign in anytime within 30 days</strong> to immediately cancel the deletion request and reactivate your account. After 30 days, all your data will be permanently removed.
+              You can cancel the request from the Account tab. Automatic deletion is not available yet; contact support to complete permanent account and data removal.
             </DialogDescription>
           </DialogHeader>
 
@@ -889,7 +946,7 @@ export function SettingsPageClient({ initialTab }: SettingsPageClientProps) {
             </div>
             <DialogTitle className="text-base font-bold">Temporarily Disable Account?</DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground leading-relaxed pt-1">
-              Disabling your account deactivates your profile and pauses active sessions. Your history, favorites, and saved settings will remain completely safe. You can reactivate anytime simply by logging back in.
+              This marks your account inactive and retains saved data. It does not revoke sessions or prevent sign-in. You can reactivate from the Account tab at any time.
             </DialogDescription>
           </DialogHeader>
 
