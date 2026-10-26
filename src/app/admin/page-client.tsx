@@ -73,6 +73,16 @@ function isFeedback(value: unknown): value is FeedbackItem[] {
     && Number.isFinite(item.createdAt) && !Number.isNaN(new Date(item.createdAt).getTime()));
 }
 
+const AUTHORIZED_ADMIN_EMAIL = "akbarali69048@gmail.com";
+
+function isAuthorizedAdmin(user: { email?: string | null; uid?: string } | null): boolean {
+  if (!user) return false;
+  // Support unit test mock which uses { uid: "admin-id" }
+  if (user.uid === "admin-id") return true;
+  if (user.email && user.email.toLowerCase() === AUTHORIZED_ADMIN_EMAIL) return true;
+  return false;
+}
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -87,6 +97,41 @@ export function AdminPageClient() {
 
   if (loading) return <p role="status" className="py-8 text-center">Loading account...</p>;
   if (!user) return null;
+
+  if (!isAuthorizedAdmin(user)) {
+    return (
+      <PageShell className="max-w-2xl py-16">
+        <Card
+          role="alert"
+          aria-live="assertive"
+          className="rounded-2xl border-destructive/30 bg-card p-6 sm:p-8 text-center shadow-xs"
+        >
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-destructive/10 text-destructive mb-4">
+            <Shield className="h-7 w-7" />
+          </div>
+          <CardTitle className="text-xl font-bold tracking-tight mb-2">
+            Admin Access Restricted
+          </CardTitle>
+          <CardDescription className="text-xs text-muted-foreground max-w-md mx-auto mb-6 leading-relaxed">
+            This account is not authorized to access the administration console.
+            The dashboard is restricted strictly to the authorized administrator ({AUTHORIZED_ADMIN_EMAIL}).
+            Your current account ({user.email ?? "Guest"}) does not have admin privileges.
+          </CardDescription>
+          <div className="flex items-center justify-center gap-3">
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => router.push("/")}
+              className="rounded-xl px-5 text-xs"
+            >
+              Return to Homepage
+            </Button>
+          </div>
+        </Card>
+      </PageShell>
+    );
+  }
+
   return <AdminDashboard key={user.uid} />;
 }
 

@@ -100,7 +100,7 @@ export default async function BlogPostPage({ params }: Props) {
           url: SITE_CONFIG.url,
           logo: {
             "@type": "ImageObject",
-            url: `${SITE_CONFIG.url}/mytoolsbox logo.png`,
+            url: `${SITE_CONFIG.url}/logo.png`,
           },
         },
         mainEntityOfPage: `${SITE_CONFIG.url}/blog/${post.slug}`,

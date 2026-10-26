@@ -6,7 +6,7 @@ import { checkAbuse } from "@/lib/payments/abuse";
 const LOCALES = ["es", "ur", "fr", "de", "pt", "hi", "ar"];
 
 // Paths that require authentication
-const PROTECTED_PATHS = ["/dashboard", "/settings", "/favorites", "/history", "/account"];
+const PROTECTED_PATHS = ["/dashboard", "/settings", "/favorites", "/history", "/account", "/admin"];
 
 // Paths that redirect to home if already authenticated
 const AUTH_PATHS = ["/signin", "/signup"];

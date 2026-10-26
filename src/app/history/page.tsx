@@ -1,11 +1,5 @@
-import { Metadata } from "next";
-import { HistoryPageClient } from "./page-client";
-
-export const metadata: Metadata = {
-  title: "History - MyToolsBox",
-  description: "Your tool usage history on MyToolsBox.",
-};
+import { redirect } from "next/navigation";
 
 export default function HistoryPage() {
-  return <HistoryPageClient />;
+  redirect("/settings?tab=history");
 }

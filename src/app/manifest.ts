@@ -15,13 +15,13 @@ export default function manifest(): MetadataRoute.Manifest {
     categories: ["productivity", "utilities", "developer", "education", "business"],
     icons: [
       {
-        src: "/mytoolsbox logo.png",
+        src: "/logo.png",
         sizes: "192x192",
         type: "image/png",
         purpose: "maskable",
       },
       {
-        src: "/mytoolsbox logo.png",
+        src: "/logo.png",
         sizes: "512x512",
         type: "image/png",
         purpose: "any",

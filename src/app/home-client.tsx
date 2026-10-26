@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   ArrowRight,
   ChevronRight,
@@ -198,9 +199,13 @@ export function HomeClient({ popularTools, featuredApps }: HomeClientProps) {
                   {/* Mockup Header */}
                   <div className="flex items-center justify-between pb-4 mb-4 border-b border-border/60">
                     <div className="flex items-center gap-2">
-                      <div className="h-6 w-6 rounded-md bg-primary text-primary-foreground flex items-center justify-center font-bold text-[10px]">
-                        tb.
-                      </div>
+                      <Image
+                        src="/logo.png"
+                        alt="MyToolsBox"
+                        width={24}
+                        height={24}
+                        className="h-6 w-auto object-contain rounded"
+                      />
                       <span className="text-xs font-semibold tracking-tight text-foreground">
                         Live Preview Workbench
                       </span>

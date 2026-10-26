@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
 import {
@@ -77,14 +78,16 @@ export function Navbar() {
       <div className="mx-auto flex h-[var(--shell-header-height)] max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
         {/* Logo — Refined editorial badge */}
         <Link href="/" className="flex items-center gap-2.5 shrink-0 group">
-          <div className="flex h-7.5 w-7.5 items-center justify-center rounded-lg bg-primary text-primary-foreground font-semibold text-xs tracking-tight shadow-xs group-hover:opacity-90 transition-opacity">
-            tb.
-          </div>
+          <Image
+            src="/logo.png"
+            alt={SITE_CONFIG.name}
+            width={32}
+            height={32}
+            className="h-8 w-auto object-contain rounded-md"
+            priority
+          />
           <span className="font-semibold text-[15px] tracking-tight text-foreground hidden sm:inline-block">
             {SITE_CONFIG.name}
-          </span>
-          <span className="hidden md:inline-flex text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded border border-border/80 text-muted-foreground bg-muted/40">
-            PRO
           </span>
         </Link>
 
@@ -239,13 +242,14 @@ export function Navbar() {
             <SheetContent side="right" className="w-80 max-w-full overflow-y-auto p-0" aria-label="Mobile navigation">
               <nav aria-label="Mobile navigation" className="flex flex-col gap-1 p-6">
                 <div className="flex items-center gap-2.5 mb-6">
-                  <div className="flex h-7.5 w-7.5 items-center justify-center rounded-lg bg-primary text-primary-foreground font-semibold text-xs tracking-tight shadow-xs">
-                    tb.
-                  </div>
+                  <Image
+                    src="/logo.png"
+                    alt={SITE_CONFIG.name}
+                    width={32}
+                    height={32}
+                    className="h-8 w-auto object-contain rounded-md"
+                  />
                   <span className="font-semibold text-base">{SITE_CONFIG.name}</span>
-                  <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded border border-border/80 text-muted-foreground bg-muted/40">
-                    PRO
-                  </span>
                 </div>
 
                 <div className="mb-3">

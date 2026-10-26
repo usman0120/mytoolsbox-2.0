@@ -65,8 +65,8 @@ export const metadata: Metadata = {
     },
   },
   icons: {
-    icon: "/mytoolsbox logo.png",
-    apple: "/mytoolsbox logo.png",
+    icon: "/logo.png",
+    apple: "/logo.png",
   },
   openGraph: {
     title: `${SITE_CONFIG.name} - Free Online Tools`,
@@ -76,7 +76,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/mytoolsbox logo.png",
+        url: "/logo.png",
         width: 512,
         height: 512,
         alt: SITE_CONFIG.name,
@@ -87,7 +87,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: `${SITE_CONFIG.name} - Free Online Tools`,
     description: "Free online tools for documents, images, development, and more.",
-    images: ["/mytoolsbox logo.png"],
+    images: ["/logo.png"],
   },
   robots: {
     index: true,

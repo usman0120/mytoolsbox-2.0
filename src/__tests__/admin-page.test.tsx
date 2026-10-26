@@ -209,7 +209,8 @@ describe("truthful admin dashboard", () => {
     view.rerender(<AdminPageClient />);
     expect(await screen.findByRole("alert")).toHaveTextContent("not authorized");
     await act(async () => { finish(response({ feedback: [feedbackItem] })); });
-    tab("Feedback");
+    // After identity change, the admin dashboard is replaced by the Access Restricted card.
+    // The late feedback response should never be rendered: verify data is discarded.
     expect(screen.queryByText("Actual submitted report")).not.toBeInTheDocument();
   });
 });

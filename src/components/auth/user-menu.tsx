@@ -138,11 +138,11 @@ export function UserMenu() {
           <User className="mr-2 h-4 w-4" />
           {t("auth_profile")}
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => router.push(localizePath("/favorites"))}>
+        <DropdownMenuItem onClick={() => router.push(localizePath("/settings?tab=favorites"))}>
           <Heart className="mr-2 h-4 w-4" />
           {t("auth_favorites")}
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => router.push(localizePath("/history"))}>
+        <DropdownMenuItem onClick={() => router.push(localizePath("/settings?tab=history"))}>
           <Clock className="mr-2 h-4 w-4" />
           {t("auth_history")}
         </DropdownMenuItem>
