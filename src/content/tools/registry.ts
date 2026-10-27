@@ -1,6 +1,9 @@
 import { ToolDefinition, type ToolAudience } from "@/types";
 
-export const toolRegistry: ToolDefinition[] = [
+import { RETIRED_TOOLS } from "@/lib/catalog/consolidation";
+
+// Retired definitions are kept as historical metadata, not live products.
+const toolDefinitions: ToolDefinition[] = [
   // ============ DOCUMENTS ============
   {
     id: "pdf-merger",
@@ -3639,6 +3642,11 @@ export const toolRegistry: ToolDefinition[] = [
     status: "active",
   },
 ];
+
+export const toolRegistry = toolDefinitions.filter((tool) => !RETIRED_TOOLS[tool.slug]).map((tool) => ({
+  ...tool,
+  relatedTools: tool.relatedTools.filter((id) => !RETIRED_TOOLS[id]),
+}));
 
 export function getToolBySlug(slug: string): ToolDefinition | undefined {
   return toolRegistry.find((t) => t.slug === slug);

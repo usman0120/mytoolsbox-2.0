@@ -35,8 +35,6 @@ interface ChatStore {
   isStreaming: boolean;
   selectedProvider: string;
   selectedModel: string;
-  activePersonaId: string;
-  customSystemPrompt: string;
   searchQuery: string;
   favoritePromptIds: string[];
   pendingPrompt: string | null;
@@ -73,8 +71,6 @@ interface ChatStore {
   setStreaming: (streaming: boolean) => void;
   setProvider: (provider: string) => void;
   setModel: (model: string) => void;
-  setActivePersonaId: (personaId: string) => void;
-  setCustomSystemPrompt: (prompt: string) => void;
   setSearchQuery: (query: string) => void;
   toggleFavoritePrompt: (promptId: string) => void;
   setPendingPrompt: (prompt: string | null) => void;
@@ -95,8 +91,6 @@ export const useChatStore = create<ChatStore>()(
       isStreaming: false,
       selectedProvider: "auto",
       selectedModel: "auto",
-      activePersonaId: "general",
-      customSystemPrompt: "",
       searchQuery: "",
       favoritePromptIds: ["code-1", "write-1", "biz-1", "edu-1"],
       pendingPrompt: null,
@@ -110,8 +104,6 @@ export const useChatStore = create<ChatStore>()(
         const newConv =
           conversation ??
           createNewConversation(state.selectedProvider, state.selectedModel);
-        newConv.personaId = state.activePersonaId;
-        newConv.systemPrompt = state.customSystemPrompt;
 
         set({
           conversations: [newConv, ...state.conversations],
@@ -393,10 +385,6 @@ export const useChatStore = create<ChatStore>()(
 
       setModel: (model) => set({ selectedModel: model }),
 
-      setActivePersonaId: (personaId) => set({ activePersonaId: personaId }),
-
-      setCustomSystemPrompt: (prompt) => set({ customSystemPrompt: prompt }),
-
       setSearchQuery: (query) => set({ searchQuery: query }),
 
       toggleFavoritePrompt: (promptId) =>
@@ -447,8 +435,6 @@ export const useChatStore = create<ChatStore>()(
         activeConversationId: state.activeConversationId,
         selectedProvider: state.selectedProvider,
         selectedModel: state.selectedModel,
-        activePersonaId: state.activePersonaId,
-        customSystemPrompt: state.customSystemPrompt,
         favoritePromptIds: state.favoritePromptIds,
         isSidebarOpen: state.isSidebarOpen,
       }),

@@ -109,7 +109,7 @@ ${eduLines.length > 0 ? `<div class="section"><div class="section-title">Educati
   return resumeHTML;
 }
 
-export function AIResumeMakerEngine() {
+export function ResumeAIAssistant() {
   const mountedRef = useRef(true);
   useEffect(() => {
     mountedRef.current = true;

@@ -19,7 +19,7 @@ function loadCatalog(relativePath, exportName) {
   const exports = {};
   const module = { exports };
   const catalogRequire = (specifier) => {
-    if (!specifier.startsWith('@/content/')) throw new Error(`Unexpected catalog dependency: ${specifier}`);
+    if (!specifier.startsWith('@/content/') && specifier !== '@/lib/catalog/consolidation') throw new Error(`Unexpected catalog dependency: ${specifier}`);
     return loadCatalog(`src/${specifier.slice(2)}.ts`);
   };
   vm.runInNewContext(compiled, { exports, module, require: catalogRequire }, { filename, timeout: 5000 });

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
+import { consolidatedPath } from "@/lib/catalog/consolidation";
 import { getAppBySlug, getActiveApps } from "@/content/apps/registry";
 import {
   generateToolMetadata,
@@ -38,6 +39,8 @@ export async function generateMetadata({ params }: AppPageProps): Promise<Metada
 
 export default async function AppPage({ params }: AppPageProps) {
   const { slug } = await params;
+  const replacement = consolidatedPath(`/apps/${slug}`);
+  if (replacement) permanentRedirect(replacement);
   const app = getAppBySlug(slug);
 
   if (!app) notFound();

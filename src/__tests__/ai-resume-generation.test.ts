@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { completeViaServer } from "@/lib/ai/router";
 import { escapeResumeText, generateResumeContent } from "@/features/ai/resume-generation";
-import { AIResumeMakerEngine } from "@/features/tools/ai-resume-maker-engine";
+import { ResumeAIAssistant as AIResumeMakerEngine } from "@/features/apps/resume-ai-assistant";
 
 vi.mock("@/lib/ai/router", () => ({ completeViaServer: vi.fn() }));
 vi.mock("sonner", () => ({ toast: { error: vi.fn(), success: vi.fn() } }));

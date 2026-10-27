@@ -101,7 +101,7 @@ function generateQuestions(topic: string, difficulty: string, count: number): Qu
   return questions;
 }
 
-export function AIQuizGeneratorEngine() {
+export function QuizAIAssistant() {
   const [topic, setTopic] = useState("");
   const [customTopic, setCustomTopic] = useState("");
   const [difficulty, setDifficulty] = useState("Medium");

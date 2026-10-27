@@ -9,7 +9,6 @@ import { ChatMessages } from "./components/chat-messages";
 import { ChatInput } from "./components/chat-input";
 import { SignInDialog } from "@/components/auth/signin-dialog";
 import { completeViaServer } from "@/lib/ai";
-import { AI_PERSONAS } from "./prompt-library-data";
 import { toast } from "sonner";
 import { subscribeConversations } from "./chat-persistence";
 import type { ChatMessage } from "./types";
@@ -18,6 +17,8 @@ import type { AIProvider } from "@/lib/ai";
 interface AIChatProps {
   onOpenPromptLibrary?: () => void;
 }
+
+const DEFAULT_SYSTEM_PROMPT = "You are a helpful AI assistant. Provide accurate, clear responses formatted with markdown.";
 
 export function AIChat({ onOpenPromptLibrary }: AIChatProps) {
   const { user } = useAuth();
@@ -35,8 +36,6 @@ export function AIChat({ onOpenPromptLibrary }: AIChatProps) {
     setProvider,
     selectedModel,
     setModel,
-    activePersonaId,
-    setActivePersonaId,
     updateConversation,
     pendingPrompt,
     setPendingPrompt,
@@ -235,10 +234,7 @@ export function AIChat({ onOpenPromptLibrary }: AIChatProps) {
 
     addMessage(convId, initialAssistantMessage);
 
-    // Get persona system prompt
-    const persona =
-      AI_PERSONAS.find((p) => p.id === activePersonaId) || AI_PERSONAS[0];
-    const systemPrompt = activeConv?.systemPrompt || persona.systemPrompt;
+    const systemPrompt = DEFAULT_SYSTEM_PROMPT;
 
     // Build context history
     const contextMessages = [
@@ -332,9 +328,6 @@ export function AIChat({ onOpenPromptLibrary }: AIChatProps) {
 
     addMessage(activeConv.id, initialAssistantMessage);
 
-    const persona =
-      AI_PERSONAS.find((p) => p.id === activePersonaId) || AI_PERSONAS[0];
-
     const request = { cancelled: false, conversationId: activeConv.id, messageId: assistantMsgId };
     requestRef.current = request;
 
@@ -344,7 +337,7 @@ export function AIChat({ onOpenPromptLibrary }: AIChatProps) {
 
       const response = await completeViaServer({
         prompt: JSON.stringify(messages.slice(0, actualIndex + 1).map(({ role, content }) => ({ role, content }))),
-        systemPrompt: activeConv.systemPrompt || persona.systemPrompt,
+        systemPrompt: DEFAULT_SYSTEM_PROMPT,
         provider: providerArg,
         model: selectedModel === "auto" ? undefined : selectedModel || undefined,
         tier: "cheap",
@@ -445,15 +438,6 @@ export function AIChat({ onOpenPromptLibrary }: AIChatProps) {
             setModel("auto");
             if (activeConv) {
               updateConversation(activeConv.id, { provider: p });
-            }
-          }}
-          activePersonaId={activePersonaId}
-          onPersonaChange={(pId) => {
-            setActivePersonaId(pId);
-            if (activeConv) {
-              updateConversation(activeConv.id, { personaId: pId });
-              const persona = AI_PERSONAS.find((item) => item.id === pId);
-              if (persona) updateConversation(activeConv.id, { systemPrompt: persona.systemPrompt });
             }
           }}
           onOpenPromptLibrary={onOpenPromptLibrary}

@@ -10,8 +10,6 @@ import {
   ChevronDown,
   MessageSquare,
   Lightbulb,
-  Cpu,
-  Layers,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -143,35 +141,6 @@ export function Navbar() {
                       </Link>
                     </DropdownMenuItem>
 
-                    <DropdownMenuItem className="p-0 cursor-pointer rounded-lg">
-                      <Link
-                        href={localizePath("/ai/compare")}
-                        className="flex items-center gap-2.5 p-2 w-full rounded-lg hover:bg-accent/60 transition-colors"
-                      >
-                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                          <Cpu className="h-3.5 w-3.5" />
-                        </div>
-                        <div>
-                          <div className="font-medium text-foreground text-xs">{t("ai_compare_models")}</div>
-                          <div className="text-[10px] text-muted-foreground">{t("nav_ai_compare_sub")}</div>
-                        </div>
-                      </Link>
-                    </DropdownMenuItem>
-
-                    <DropdownMenuItem className="p-0 cursor-pointer rounded-lg">
-                      <Link
-                        href={localizePath("/ai/personas")}
-                        className="flex items-center gap-2.5 p-2 w-full rounded-lg hover:bg-accent/60 transition-colors"
-                      >
-                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                          <Layers className="h-3.5 w-3.5" />
-                        </div>
-                        <div>
-                          <div className="font-medium text-foreground text-xs">{t("ai_personas")}</div>
-                          <div className="text-[10px] text-muted-foreground">{t("nav_ai_personas_sub")}</div>
-                        </div>
-                      </Link>
-                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               );
@@ -287,22 +256,6 @@ export function Navbar() {
                     >
                       <Lightbulb className="h-3.5 w-3.5 text-amber-500" />
                       {t("ai_prompt_library")}
-                    </Link>
-                    <Link
-                      href={localizePath("/ai/compare")}
-                      onClick={() => setMobileOpen(false)}
-                      className="flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-xl hover:bg-muted"
-                    >
-                      <Cpu className="h-3.5 w-3.5 text-blue-500" />
-                      {t("ai_compare_models")}
-                    </Link>
-                    <Link
-                      href={localizePath("/ai/personas")}
-                      onClick={() => setMobileOpen(false)}
-                      className="flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-xl hover:bg-muted"
-                    >
-                      <Layers className="h-3.5 w-3.5 text-emerald-500" />
-                      {t("ai_personas")}
                     </Link>
                   </div>
 

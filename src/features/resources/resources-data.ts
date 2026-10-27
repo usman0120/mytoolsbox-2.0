@@ -141,7 +141,7 @@ export const RESOURCE_GUIDES: ResourceGuide[] = [
     recommendedTools: [
       { name: "Canva Studio", slug: "canva", description: "Create social graphics & presentations" },
       { name: "Color Palette", slug: "color-palette", description: "Generate accessible brand palettes" },
-      { name: "Video to GIF Maker", slug: "video-to-gif-maker", description: "Convert video clips into lightweight GIFs" }
+      { name: "Video to GIF", slug: "video-to-gif", description: "Convert video clips into lightweight GIFs" }
     ],
     sections: [
       {

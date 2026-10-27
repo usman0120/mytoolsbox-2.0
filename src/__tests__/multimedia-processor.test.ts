@@ -1,13 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { createElement } from "react";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { MP3CutterEngine } from "@/features/tools/mp3-cutter-engine";
 import { AudioCutterEngine } from "@/features/tools/audio-cutter-engine";
 import { GifEncoder, encodeGif } from "@/lib/processing/client/gif-encoder";
 import { extractWaveformPeaks, audioBufferToWav } from "@/lib/processing/client/audio-processor";
 
 for (const [name, Engine] of [
-  ["MP3 cutter", MP3CutterEngine],
   ["Audio cutter", AudioCutterEngine],
 ] as const) {
 describe(`${name} output contracts`, () => {

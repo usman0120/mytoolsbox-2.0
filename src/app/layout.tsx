@@ -13,6 +13,7 @@ import { GoogleAnalytics } from "@/components/analytics/google-analytics";
 import { Toaster } from "@/components/ui/sonner";
 import { RequestNotice } from "@/components/common/request-notice";
 import { NavigationSkeleton } from "@/components/common/loading-skeleton";
+import { FullPageTranslations } from "@/components/common/full-page-translations";
 import "./globals.css";
 
 const GA_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
@@ -137,6 +138,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 </Suspense>
                 <main id="main-content" className="flex-1" role="main">
                   <Suspense fallback={null}><RequestNotice /></Suspense>
+                  <FullPageTranslations />
                   {children}
                 </main>
                 <Footer />

@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// AI Chat Types – conversation, message, prompt library, personas, comparisons
+// AI Chat Types – conversations, messages, and the prompt library
 // ---------------------------------------------------------------------------
 
 export interface ChatConversation {
@@ -8,6 +8,7 @@ export interface ChatConversation {
   messages: ChatMessage[];
   provider: string;
   model?: string;
+  // Legacy export fields only; no persona selection or behavior remains.
   personaId?: string;
   systemPrompt?: string;
   createdAt: number;
@@ -32,17 +33,6 @@ export interface ChatMessage {
   feedback?: "like" | "dislike" | null;
 }
 
-export interface AIPersona {
-  id: string;
-  name: string;
-  role: string;
-  description: string;
-  systemPrompt: string;
-  iconName: string;
-  gradient: string;
-  iconColor: string;
-}
-
 export interface PromptCategory {
   id: string;
   name: string;
@@ -62,26 +52,6 @@ export interface PromptTemplate {
   suggestedModel?: string;
 }
 
-export interface CompareModelOption {
-  id: string;
-  provider: string;
-  model: string;
-  name: string;
-  badge: string;
-}
-
-export interface CompareResult {
-  provider: string;
-  model: string;
-  text: string;
-  latencyMs: number;
-  usage?: {
-    totalTokens: number;
-  };
-  isLoading: boolean;
-  error?: string;
-}
-
 export interface ChatState {
   conversations: ChatConversation[];
   activeConversationId: string | null;
@@ -89,8 +59,6 @@ export interface ChatState {
   isStreaming: boolean;
   selectedProvider: string;
   selectedModel: string;
-  activePersonaId: string;
-  customSystemPrompt: string;
   searchQuery: string;
   favoritePromptIds: string[];
   pendingPrompt: string | null;

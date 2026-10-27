@@ -199,9 +199,6 @@ const engineMap: Record<string, React.ComponentType<Record<string, unknown>>> = 
   "study-timer": dynamic(() => import("@/features/tools/study-timer-engine").then((m) => ({ default: m.StudyTimerEngine })), {
     loading: () => <EngineLoading />,
   }),
-  "quiz-generator": dynamic(() => import("@/features/tools/quiz-generator-engine").then((m) => ({ default: m.QuizGeneratorEngine })), {
-    loading: () => <EngineLoading />,
-  }),
   "flashcard-generator": dynamic(() => import("@/features/tools/flashcard-generator-engine").then((m) => ({ default: m.FlashcardGeneratorEngine })), {
     loading: () => <EngineLoading />,
   }),
@@ -275,9 +272,6 @@ const engineMap: Record<string, React.ComponentType<Record<string, unknown>>> = 
   "url-shortener": dynamic(() => import("@/features/tools/url-shortener-engine").then((m) => ({ default: m.URLShortenerEngine })), {
     loading: () => <EngineLoading />,
   }),
-  "mp3-cutter": dynamic(() => import("@/features/tools/mp3-cutter-engine").then((m) => ({ default: m.MP3CutterEngine })), {
-    loading: () => <EngineLoading />,
-  }),
   "text-to-speech": dynamic(() => import("@/features/tools/text-to-speech-engine").then((m) => ({ default: m.TextToSpeechEngine })), {
     loading: () => <EngineLoading />,
   }),
@@ -349,9 +343,6 @@ const engineMap: Record<string, React.ComponentType<Record<string, unknown>>> = 
   "video-compressor": dynamic(() => import("@/features/tools/video-compressor-engine").then((m) => ({ default: m.VideoCompressorEngine })), {
     loading: () => <EngineLoading />,
   }),
-  "video-to-gif-maker": dynamic(() => import("@/features/tools/video-to-gif-maker-engine").then((m) => ({ default: m.VideoToGifMakerEngine })), {
-    loading: () => <EngineLoading />,
-  }),
   "merge-videos": dynamic(() => import("@/features/tools/merge-videos-engine").then((m) => ({ default: m.MergeVideosEngine })), {
     loading: () => <EngineLoading />,
   }),
@@ -382,9 +373,6 @@ const engineMap: Record<string, React.ComponentType<Record<string, unknown>>> = 
     loading: () => <EngineLoading />,
   }),
   "flashcard-creator": dynamic(() => import("@/features/tools/flashcard-creator-engine").then((m) => ({ default: m.FlashcardCreatorEngine })), {
-    loading: () => <EngineLoading />,
-  }),
-  "quiz-maker": dynamic(() => import("@/features/tools/quiz-maker-engine").then((m) => ({ default: m.QuizMakerEngine })), {
     loading: () => <EngineLoading />,
   }),
   // Image Manipulation Tools (Phase 2)
@@ -441,22 +429,10 @@ const engineMap: Record<string, React.ComponentType<Record<string, unknown>>> = 
   "ai-text-generator": dynamic(() => import("@/features/tools/ai-text-generator-engine").then((m) => ({ default: m.AITextGeneratorEngine })), {
     loading: () => <EngineLoading />,
   }),
-  "ai-resume-maker": dynamic(() => import("@/features/tools/ai-resume-maker-engine").then((m) => ({ default: m.AIResumeMakerEngine })), {
-    loading: () => <EngineLoading />,
-  }),
   "ai-summary-tool": dynamic(() => import("@/features/tools/ai-summary-tool-engine").then((m) => ({ default: m.AISummaryToolEngine })), {
     loading: () => <EngineLoading />,
   }),
-  "ai-presentation-maker": dynamic(() => import("@/features/tools/ai-presentation-maker-engine").then((m) => ({ default: m.AIPresentationMakerEngine })), {
-    loading: () => <EngineLoading />,
-  }),
   "barcode-scanner": dynamic(() => import("@/features/tools/barcode-scanner-engine").then((m) => ({ default: m.BarcodeScannerEngine })), {
-    loading: () => <EngineLoading />,
-  }),
-  "resume-builder": dynamic(() => import("@/features/tools/resume-builder-engine").then((m) => ({ default: m.ResumeBuilderEngine })), {
-    loading: () => <EngineLoading />,
-  }),
-  "cv-maker": dynamic(() => import("@/features/tools/cv-maker-engine").then((m) => ({ default: m.CVMakerEngine })), {
     loading: () => <EngineLoading />,
   }),
   "cover-letter-generator": dynamic(() => import("@/features/tools/cover-letter-generator-engine").then((m) => ({ default: m.CoverLetterGeneratorEngine })), {

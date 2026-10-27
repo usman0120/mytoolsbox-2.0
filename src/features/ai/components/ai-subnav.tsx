@@ -10,8 +10,6 @@ import { SignInDialog } from "@/components/auth/signin-dialog";
 import {
   MessageSquare,
   Lightbulb,
-  Cpu,
-  Sparkles,
   LogIn,
 } from "lucide-react";
 
@@ -42,18 +40,6 @@ export function AISubnav({
       href: "/ai/prompts",
       label: t("ai_prompt_library", "Prompt Library"),
       icon: Lightbulb,
-      badge: null,
-    },
-    {
-      href: "/ai/compare",
-      label: t("ai_compare_models", "Compare Models"),
-      icon: Cpu,
-      badge: null,
-    },
-    {
-      href: "/ai/personas",
-      label: t("ai_personas", "Personas & Tools"),
-      icon: Sparkles,
       badge: null,
     },
   ];

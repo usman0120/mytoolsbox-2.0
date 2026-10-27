@@ -21,6 +21,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { escapeDocumentStrings } from "@/lib/documents/escape-document";
 
 interface ResumeData {
   fullName: string;
@@ -115,7 +116,7 @@ function saveResume(data: ResumeData) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 }
 
-export function ResumeBuilderEngine() {
+export function ResumeEditor() {
   const [data, setData] = useState<ResumeData>(() => loadResume() || SAMPLE_RESUME);
   const [activeTab, setActiveTab] = useState("edit");
   const [copied, setCopied] = useState(false);
@@ -226,7 +227,7 @@ export function ResumeBuilderEngine() {
   }, []);
 
   const generateResumeHTML = useCallback((): string => {
-    const { fullName, email, phone, location, website, summary, skills, experience, education, template } = data;
+    const { fullName, email, phone, location, website, summary, skills, experience, education, template } = escapeDocumentStrings(data);
 
     const templateStyles: Record<string, string> = {
       modern: `
@@ -610,6 +611,7 @@ export function ResumeBuilderEngine() {
           <Card className="shadow-xs overflow-hidden border">
             <CardContent className="p-0 bg-muted/10">
               <iframe
+                sandbox=""
                 srcDoc={generateResumeHTML()}
                 className="w-full min-h-[700px] border-0 bg-white"
                 title="Resume Live Preview"

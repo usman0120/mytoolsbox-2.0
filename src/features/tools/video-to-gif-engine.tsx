@@ -29,6 +29,7 @@ export function VideoToGifEngine() {
   const [fps, setFps] = useState(12);
   const [width, setWidth] = useState(400);
   const [speed, setSpeed] = useState(1.0);
+  const [bounce, setBounce] = useState(false);
   const [topText, setTopText] = useState("");
   const [bottomText, setBottomText] = useState("");
   const [fontSize, setFontSize] = useState(24);
@@ -105,6 +106,7 @@ export function VideoToGifEngine() {
       const totalFrames = frameTimes.length;
 
       video.pause();
+      const bounceFrames: ImageData[] = [];
 
       for (let i = 0; i < totalFrames; i++) {
         const frameTime = frameTimes[i];
@@ -173,12 +175,16 @@ export function VideoToGifEngine() {
 
         const imageData = ctx.getImageData(0, 0, targetWidth, targetHeight);
         encoder.addFrame(imageData, { delay: frameDelay });
+        if (bounce) bounceFrames.push(imageData);
 
         const pct = Math.round(((i + 1) / totalFrames) * 85);
         setProgress(pct);
         setStatusMessage(`Capturing frame ${i + 1} of ${totalFrames}...`);
       }
 
+      if (bounceFrames.length > 2) {
+        for (let index = bounceFrames.length - 2; index > 0; index--) encoder.addFrame(bounceFrames[index], { delay: frameDelay });
+      }
       setStatusMessage("Encoding animated GIF89a binary...");
       setProgress(90);
 
@@ -197,7 +203,7 @@ export function VideoToGifEngine() {
     } finally {
       setIsConverting(false);
     }
-  }, [videoFile, width, fps, duration, startTime, speed, topText, bottomText, fontSize]);
+  }, [videoFile, width, fps, duration, startTime, speed, bounce, topText, bottomText, fontSize]);
 
   const handleDownload = () => {
     if (!gifUrl) return;
@@ -340,6 +346,7 @@ export function VideoToGifEngine() {
                 </div>
 
                 {/* Text Captions */}
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={bounce} onChange={(event) => setBounce(event.target.checked)} disabled={isConverting} />Bounce loop (forward and reverse)</label>
                 <div className="space-y-2 pt-2 border-t">
                   <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
                     <Type className="h-3.5 w-3.5" /> Meme Text Overlay (Optional)

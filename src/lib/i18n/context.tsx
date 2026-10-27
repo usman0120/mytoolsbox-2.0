@@ -14,6 +14,7 @@ import {
   type TranslationDictionary,
   LOCALIZED_TOOL_NAMES,
 } from "./translations";
+import { localePath } from "./locale-path";
 
 interface I18nContextType {
   locale: LocaleCode;
@@ -31,46 +32,22 @@ const I18nContext = createContext<I18nContextType | null>(null);
 export function I18nProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocaleState] = useState<LocaleCode>(DEFAULT_LOCALE);
 
-  // Initialize from URL, cookie, or storage
+  // Initialize once, then follow browser back/forward without remounting inputs.
   useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    // 1. Check URL path prefix (e.g. /es/tools/pdf-merger or /ur)
-    const pathname = window.location.pathname;
-    const pathPrefix = pathname.split("/")[1];
-    if (pathPrefix && isSupportedLocale(pathPrefix)) {
-      setLocaleState(pathPrefix);
-      return;
-    }
-
-    // 2. Check query parameter ?lang=es
-    const searchParams = new URLSearchParams(window.location.search);
-    const langParam = searchParams.get("lang");
-    if (langParam && isSupportedLocale(langParam)) {
-      setLocaleState(langParam);
-      return;
-    }
-
-    // 3. Check localStorage
-    try {
-      const saved = localStorage.getItem(LOCALE_COOKIE_KEY);
-      if (saved && isSupportedLocale(saved)) {
-        setLocaleState(saved);
-        return;
-      }
-    } catch {
-      // storage unavailable
-    }
-
-    // 4. Check cookie
-    const cookies = document.cookie.split(";");
-    for (const c of cookies) {
-      const [name, val] = c.trim().split("=");
-      if (name === LOCALE_COOKIE_KEY && val && isSupportedLocale(val)) {
-        setLocaleState(val);
-        return;
-      }
-    }
+    let active = true;
+    const initialLocale = () => {
+      const prefix = window.location.pathname.split("/")[1];
+      if (isSupportedLocale(prefix)) return prefix;
+      const query = new URLSearchParams(window.location.search).get("lang");
+      if (query && isSupportedLocale(query)) return query;
+      try { const saved = localStorage.getItem(LOCALE_COOKIE_KEY); if (saved && isSupportedLocale(saved)) return saved; } catch { /* Storage may be blocked. */ }
+      const cookie = document.cookie.split(";").find((item) => item.trim().startsWith(`${LOCALE_COOKIE_KEY}=`))?.split("=")[1];
+      return cookie && isSupportedLocale(cookie) ? cookie : DEFAULT_LOCALE;
+    };
+    queueMicrotask(() => { if (active) setLocaleState(initialLocale()); });
+    const onNavigation = () => { const prefix = window.location.pathname.split("/")[1]; setLocaleState(isSupportedLocale(prefix) ? prefix : DEFAULT_LOCALE); };
+    window.addEventListener("popstate", onNavigation);
+    return () => { active = false; window.removeEventListener("popstate", onNavigation); };
   }, []);
 
   // Sync html lang and dir attributes whenever locale changes
@@ -93,30 +70,14 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
 
     try {
       localStorage.setItem(LOCALE_COOKIE_KEY, newLocale);
-      document.cookie = `${LOCALE_COOKIE_KEY}=${newLocale}; path=/; max-age=31536000; SameSite=Lax`;
     } catch {
       // ignore
     }
+    document.cookie = `${LOCALE_COOKIE_KEY}=${newLocale}; path=/; max-age=31536000; SameSite=Lax`;
 
     // Update browser URL smoothly without full reload
     if (typeof window !== "undefined") {
-      const pathname = window.location.pathname;
-      const segments = pathname.split("/").filter(Boolean);
-      const search = window.location.search;
-      let newPath = pathname;
-
-      if (segments.length > 0 && isSupportedLocale(segments[0])) {
-        if (newLocale === DEFAULT_LOCALE) {
-          newPath = "/" + segments.slice(1).join("/");
-          if (newPath === "") newPath = "/";
-        } else {
-          newPath = `/${newLocale}/` + segments.slice(1).join("/");
-        }
-      } else if (newLocale !== DEFAULT_LOCALE) {
-        newPath = `/${newLocale}${pathname === "/" ? "" : pathname}`;
-      }
-
-      window.history.replaceState({}, "", `${newPath}${search}`);
+      window.history.replaceState({}, "", localePath(window.location.pathname + window.location.search + window.location.hash, newLocale));
     }
   }, []);
 
@@ -155,13 +116,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
 
   const localizePath = useCallback(
     (path: string): string => {
-      const clean = path ? (path.startsWith("/") ? path : `/${path}`) : "/";
-      if (locale === DEFAULT_LOCALE) return clean;
-      const segments = clean.split("/").filter(Boolean);
-      if (segments.length > 0 && isSupportedLocale(segments[0])) {
-        return `/${locale}/${segments.slice(1).join("/")}`;
-      }
-      return `/${locale}${clean === "/" ? "" : clean}`;
+      return localePath(path, locale);
     },
     [locale]
   );

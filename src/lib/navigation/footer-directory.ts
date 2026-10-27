@@ -36,9 +36,8 @@ export const FOOTER_PLATFORM_SECTIONS: FooterSection[] = [
   ].map(([name, slug]) => ({ name, href: `/apps/${slug}` })) },
   { title: "AI workspace", href: "/ai", links: [
     { name: "AI Chat", href: "/ai" }, { name: "Prompt Library", href: "/ai/prompts" },
-    { name: "Compare Models", href: "/ai/compare" }, { name: "AI Personas", href: "/ai/personas" },
     { name: "AI Notes Generator", href: "/apps/ai-notes-generator" }, { name: "AI Planning", href: "/apps/ai-planning" },
-    { name: "AI Quiz Generator", href: "/apps/ai-quiz-generator" }, { name: "AI Diagram Generator", href: "/apps/ai-diagram-generator" },
+    { name: "AI Diagram Generator", href: "/apps/ai-diagram-generator" },
     { name: "AI Project Ideas", href: "/apps/ai-project-ideas" },
   ] },
   { title: "Workflow hubs", href: "/hubs", links: ["Students", "Developers", "Business", "Designers", "Writers", "Researchers", "Farmers", "Everyone"].map((name) => ({ name, href: `/hubs/${name.toLowerCase()}` })) },

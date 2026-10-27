@@ -94,16 +94,13 @@ export function getToolEngine(slug: string): string {
     "password-generator": "tools/password-generator-engine",
     // Academic tools
     "study-timer": "tools/study-timer-engine",
-    "quiz-generator": "tools/quiz-generator-engine",
     "flashcard-generator": "tools/flashcard-generator-engine",
     "gpa-calculator": "tools/gpa-calculator-engine",
     "citation-generator": "tools/citation-generator-engine",
     "equation-to-latex-converter": "tools/equation-to-latex-converter-engine",
     "pdf-highlighter-notes": "tools/pdf-highlighter-notes-engine",
     "flashcard-creator": "tools/flashcard-creator-engine",
-    "quiz-maker": "tools/quiz-maker-engine",
     // Media tools
-    "mp3-cutter": "tools/mp3-cutter-engine",
     "text-to-speech": "tools/text-to-speech-engine",
     "video-to-gif": "tools/video-to-gif-engine",
     "screen-recorder": "tools/screen-recorder-engine",
@@ -116,7 +113,6 @@ export function getToolEngine(slug: string): string {
     "audio-cutter": "tools/audio-cutter-engine",
     "audio-converter": "tools/audio-converter-engine",
     "video-compressor": "tools/video-compressor-engine",
-    "video-to-gif-maker": "tools/video-to-gif-maker-engine",
     "merge-videos": "tools/merge-videos-engine",
     "extract-audio-from-video": "tools/extract-audio-from-video-engine",
     "video-resizer": "tools/video-resizer-engine",
@@ -135,16 +131,12 @@ export function getToolEngine(slug: string): string {
     "social-media-content-generator": "tools/social-media-content-generator-engine",
     "rfp-monkey": "tools/rfp-monkey-engine",
     // Career tools
-    "resume-builder": "tools/resume-builder-engine",
-    "cv-maker": "tools/cv-maker-engine",
     "cover-letter-generator": "tools/cover-letter-generator-engine",
     "paragraph-rewriter": "tools/paragraph-rewriter-engine",
     // AI tools
     "ai-image-generator": "tools/ai-image-generator-engine",
     "ai-text-generator": "tools/ai-text-generator-engine",
-    "ai-resume-maker": "tools/ai-resume-maker-engine",
     "ai-summary-tool": "tools/ai-summary-tool-engine",
-    "ai-presentation-maker": "tools/ai-presentation-maker-engine",
     // File Conversion & Document Tools
     "pdf-to-office-converter": "documents/pdf-to-office-converter-engine",
     "word-to-pdf-converter": "documents/word-to-pdf-converter-engine",

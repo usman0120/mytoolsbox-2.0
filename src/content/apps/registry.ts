@@ -1,6 +1,8 @@
 import { ToolDefinition } from "@/types";
 
-export const appRegistry: ToolDefinition[] = [
+import { RETIRED_APPS, RETIRED_TOOLS } from "@/lib/catalog/consolidation";
+
+const appDefinitions: ToolDefinition[] = [
   {
     id: "farmer-ai",
     name: "Farmer AI",
@@ -87,23 +89,23 @@ export const appRegistry: ToolDefinition[] = [
     id: "resume-builder",
     name: "Resume Builder",
     slug: "resume-builder",
-    description: "Create professional, ATS-friendly resumes in minutes. Choose from modern templates, add your experience, and export as PDF.",
-    shortDescription: "Build professional resumes with templates",
+    description: "One workspace for resumes, detailed academic CVs, and optional AI assistance. Edit templates, keep existing drafts, download HTML or JSON, and use browser printing to save as PDF.",
+    shortDescription: "Resume editor, academic CVs & optional AI assistance",
     category: "productivity",
     audiences: ["everyone", "business", "students"],
     icon: "FileUser",
-    features: ["Multiple templates", "ATS-friendly export", "Real-time preview", "Section reordering", "PDF export", "Auto-save"],
+    features: ["Resume templates", "Academic CV fields", "Optional AI assistance", "Live preview", "HTML and JSON export", "Browser print / Save as PDF", "Local draft storage"],
     inputTypes: [],
-    outputTypes: ["application/pdf"],
-    processingMode: "client",
+    outputTypes: ["text/html", "application/json"],
+    processingMode: "hybrid",
     requiresAuth: false,
     requiresPro: false,
     productType: "app",
     seoTitle: "Free Resume Builder - Professional CV Maker",
-    seoDescription: "Create professional, ATS-friendly resumes with modern templates. Real-time preview, PDF export, and auto-save. No account needed.",
+    seoDescription: "Build resumes and academic CVs in one workspace with templates, local drafts, HTML/JSON export, browser printing, and optional account-based AI assistance.",
     faq: [
-      { question: "Can I download my resume as PDF?", answer: "Yes! Export your resume as a professional PDF with one click." },
-      { question: "Are the templates ATS-friendly?", answer: "All templates are designed to be ATS-compatible, ensuring your resume passes automated screening." },
+      { question: "Can I save a PDF?", answer: "Use Print and choose Save as PDF in your browser. HTML and JSON downloads are also available." },
+      { question: "Are AI features required?", answer: "No. Resume and CV editing work locally. Optional AI assistance requires an account, internet access, and available credits." },
     ],
     relatedTools: [],
     keywords: ["resume builder", "cv maker", "resume template", "professional resume", "ATS resume"],
@@ -164,15 +166,15 @@ export const appRegistry: ToolDefinition[] = [
     id: "presentation-maker",
     name: "Presentation Maker",
     slug: "presentation-maker",
-    description: "Create beautiful slide presentations with drag-and-drop. Choose from templates, add rich content, and present or export.",
-    shortDescription: "Create beautiful slide presentations",
+    description: "Build slide decks with templates, an editor and presenter view, or draft presentations with optional AI assistance in the same workspace.",
+    shortDescription: "Slide editor, presenter view & optional AI assistance",
     category: "productivity",
     audiences: ["business", "students", "teachers", "everyone"],
     icon: "Presentation",
-    features: ["Slide templates", "Drag & drop editor", "Rich text & images", "Presenter mode", "Export to PDF", "Auto-save"],
+    features: ["Slide templates", "Slide editing and reordering", "Images and text", "Presenter mode", "HTML export", "Optional AI assistance"],
     inputTypes: [],
-    outputTypes: ["application/pdf"],
-    processingMode: "client",
+    outputTypes: ["text/html"],
+    processingMode: "hybrid",
     requiresAuth: false,
     requiresPro: false,
     productType: "app",
@@ -292,23 +294,23 @@ export const appRegistry: ToolDefinition[] = [
     id: "quiz-maker",
     name: "Quiz Maker",
     slug: "quiz-maker",
-    description: "Create interactive quizzes with multiple question types. Add images, set timers, and share with a link or export as PDF.",
-    shortDescription: "Create interactive quizzes & tests",
+    description: "Create multiple-choice and true/false quizzes, generate questions from notes, set points and timers, review results, or use optional AI assistance in one workspace.",
+    shortDescription: "Quiz editor, notes generation & optional AI assistance",
     category: "academic",
     audiences: ["students", "teachers", "everyone"],
     icon: "HelpCircle",
-    features: ["Multiple choice", "True/false", "Fill in blank", "Image questions", "Timer", "Export PDF", "Share link"],
+    features: ["Multiple choice", "True/false", "Question points", "Notes-to-questions", "Timer", "Results and grading", "JSON export", "Optional AI assistance"],
     inputTypes: [],
-    outputTypes: ["application/pdf"],
-    processingMode: "client",
+    outputTypes: ["application/json"],
+    processingMode: "hybrid",
     requiresAuth: false,
     requiresPro: false,
     productType: "app",
     seoTitle: "Free Quiz Maker - Create Interactive Quizzes",
     seoDescription: "Create interactive quizzes with multiple question types. Add images, set timers, and share. Free and no account needed.",
     faq: [
-      { question: "Can I add images to questions?", answer: "Yes! Add images to both questions and answer choices for visual quizzes." },
-      { question: "How do I share my quiz?", answer: "Generate a shareable link or export as PDF. Students can take the quiz without creating an account." },
+      { question: "How do I create questions?", answer: "Write multiple-choice or true/false questions, generate questions locally from definitions and Q: / A: notes, or use optional account-based AI assistance." },
+      { question: "How do I share my quiz?", answer: "Download the quiz as JSON. A hosted share-link feature is not currently provided." },
     ],
     relatedTools: ["study-planner", "citation-generator"],
     keywords: ["quiz maker", "test creator", "online quiz", "exam maker", "quiz generator"],
@@ -614,6 +616,11 @@ export const appRegistry: ToolDefinition[] = [
     status: "active",
   },
 ];
+
+export const appRegistry = appDefinitions.filter((app) => !RETIRED_APPS[app.slug]).map((app) => ({
+  ...app,
+  relatedTools: app.relatedTools.filter((id) => !RETIRED_TOOLS[id] && !RETIRED_APPS[id]),
+}));
 
 export function getAppBySlug(slug: string): ToolDefinition | undefined {
   return appRegistry.find((app) => app.slug === slug);

@@ -1,6 +1,8 @@
 import type { HubDefinition } from "@/types";
 
-export const hubRegistry: HubDefinition[] = [
+import { RETIRED_TOOLS, canonicalAppId } from "@/lib/catalog/consolidation";
+
+const hubDefinitions: HubDefinition[] = [
   {
     id: "students",
     name: "Students",
@@ -216,6 +218,21 @@ export const hubRegistry: HubDefinition[] = [
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+export const hubRegistry = hubDefinitions.map((hub) => ({
+  ...hub,
+  toolIds: [...new Set(hub.toolIds.flatMap((id) => {
+    const target = RETIRED_TOOLS[id];
+    return target ? target.startsWith("/tools/") ? [target.split("?")[0].split("/")[2]] : [] : [id];
+  }))],
+  appIds: [...new Set([
+    ...(hub.appIds ?? []).map(canonicalAppId),
+    ...hub.toolIds.flatMap((id) => {
+      const target = RETIRED_TOOLS[id];
+      return target?.startsWith("/apps/") ? [target.split("?")[0].split("/")[2]] : [];
+    }),
+  ])],
+}));
 
 export function getHubBySlug(slug: string): HubDefinition | undefined {
   return hubRegistry.find((h) => h.slug === slug);

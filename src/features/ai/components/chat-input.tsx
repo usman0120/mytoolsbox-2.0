@@ -27,7 +27,6 @@ import {
   Check,
 } from "lucide-react";
 import { toast } from "sonner";
-import { AI_PERSONAS } from "../prompt-library-data";
 import { getProviderConfig } from "@/lib/ai/providers-config";
 import { useI18n } from "@/lib/i18n";
 
@@ -43,8 +42,6 @@ interface ChatInputProps {
   selectedProvider?: string;
   onProviderChange?: (provider: string) => void;
   availableProviders?: string[];
-  activePersonaId?: string;
-  onPersonaChange?: (personaId: string) => void;
   onOpenPromptLibrary?: () => void;
 }
 
@@ -111,8 +108,6 @@ export function ChatInput({
   selectedProvider = "gemini",
   onProviderChange,
   availableProviders,
-  activePersonaId = "general",
-  onPersonaChange,
   onOpenPromptLibrary,
 }: ChatInputProps) {
   const { t } = useI18n();
@@ -275,12 +270,7 @@ export function ChatInput({
     return cfg.modelLabel;
   };
 
-  const activePersona = AI_PERSONAS.find((p) => p.id === activePersonaId);
-  const dynamicPlaceholder =
-    placeholder ||
-    (activePersona && activePersona.id !== "general"
-      ? `Ask ${activePersona.name}`
-      : t("contact_message", "Message"));
+  const dynamicPlaceholder = placeholder || t("contact_message", "Message");
 
   const wordCount = input.trim() ? input.trim().split(/\s+/).length : 0;
 
@@ -347,9 +337,9 @@ export function ChatInput({
             <DropdownMenu>
               <DropdownMenuTrigger
                 disabled={isLoading || disabled}
-                aria-label="Prompt starters & personas"
+                aria-label="Prompt starters"
                 className="flex h-11 w-11 items-center justify-center rounded-md hover:bg-accent text-muted-foreground hover:text-foreground shrink-0 cursor-pointer disabled:opacity-50"
-                title="Prompt starters & personas"
+                title="Prompt starters"
               >
                 <Plus className="h-4.5 w-4.5" />
               </DropdownMenuTrigger>
@@ -387,26 +377,6 @@ export function ChatInput({
                   </DropdownMenuItem>
                 )}
 
-                {onPersonaChange && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <div className="px-2.5 py-1 text-xs font-semibold text-muted-foreground">
-                      Active Persona
-                    </div>
-                    {AI_PERSONAS.map((p) => (
-                      <DropdownMenuItem
-                        key={p.id}
-                        onClick={() => onPersonaChange(p.id)}
-                        className={`gap-2 cursor-pointer rounded-md p-2 ${
-                          activePersonaId === p.id ? "bg-accent font-semibold" : ""
-                        }`}
-                      >
-                        <Sparkles className="h-3.5 w-3.5 text-primary" />
-                        <span>{p.name}</span>
-                      </DropdownMenuItem>
-                    ))}
-                  </>
-                )}
               </DropdownMenuContent>
             </DropdownMenu>
 

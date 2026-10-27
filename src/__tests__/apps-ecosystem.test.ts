@@ -162,9 +162,9 @@ describe("Route/catalog integrity audit", () => {
       expect(inventory.editorialRoutes.filter((entry) => entry.namespace === namespace).map((entry) => entry.route))
         .toEqual(catalog.map((entry) => `/${namespace}/${entry.slug}`));
     }
-    expect(inventory.canonicalPages.some((entry) => entry.route === "/ai/compare")).toBe(true);
+    expect(inventory.canonicalPages.some((entry) => entry.route === "/ai/compare")).toBe(false);
     expect(inventory.canonicalPages.some((entry) => entry.route === "/ai/prompts")).toBe(true);
-    expect(inventory.canonicalPages.some((entry) => entry.route === "/ai/personas")).toBe(true);
+    expect(inventory.canonicalPages.some((entry) => entry.route === "/ai/personas")).toBe(false);
     expect(inventory.integrity.duplicateCanonicalRoutes).toEqual([]);
     expect(inventory.integrity.invalidRelatedAppReferences).toEqual([]);
   });

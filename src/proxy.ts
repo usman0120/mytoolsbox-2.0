@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { checkAbuse } from "@/lib/payments/abuse";
+import { consolidatedPath } from "@/lib/catalog/consolidation";
 
 // Non-default supported locale prefixes for localized URL rewriting
 const LOCALES = ["es", "ur", "fr", "de", "pt", "hi", "ar"];
@@ -27,6 +28,16 @@ export function proxy(request: NextRequest) {
   const normalizedPath = isLocalePrefix
     ? "/" + pathSegments.slice(1).join("/")
     : pathname;
+
+  const replacement = consolidatedPath(normalizedPath);
+  if (replacement) {
+    const target = new URL(replacement, request.url);
+    request.nextUrl.searchParams.forEach((value, key) => {
+      if (!target.searchParams.has(key)) target.searchParams.set(key, value);
+    });
+    if (locale) target.pathname = `/${locale}${target.pathname}`;
+    return NextResponse.redirect(target, 308);
+  }
 
   // Check if the path is protected
   const isProtected = PROTECTED_PATHS.some(

@@ -351,6 +351,30 @@ Never commit `.env.local`, service-account credentials, private API keys, or oth
 - Account inactivity and deletion requests currently update stored account status only. They do not revoke Firebase sessions or automatically erase accounts. The UI explains these limits and directs users to support for permanent removal.
 - Shared branding uses `public/logo.png`. Footer links are maintained in `src/lib/navigation/footer-directory.ts` and tested against real catalog entries and routes.
 
+### Product consolidation and multilingual UI
+
+The general Tools directory remains available. Compare Models and Personas/Tools have been removed, including persona selection in chat. Historical `/ai/compare` and `/ai/personas` URLs redirect to `/ai`.
+
+One canonical product now serves each merged workflow:
+
+| Previous entry | Canonical workspace |
+| --- | --- |
+| Resume Builder tool, CV Maker, AI Resume Maker | `/apps/resume-builder` (resume, academic CV and AI modes) |
+| Quiz Maker tool, Quiz Generator tool, AI Quiz Generator app | `/apps/quiz-maker` (editor/notes and AI modes) |
+| AI Presentation Maker tool | `/apps/presentation-maker` (editor and AI modes) |
+| MP3 Cutter | `/tools/audio-cutter` |
+| Video to GIF Maker | `/tools/video-to-gif` (including bounce, speed and captions) |
+
+Old links redirect permanently while preserving locale/query parameters. Existing favorite/history IDs and resume/CV/AI draft storage are retained. Retired metadata is excluded from live catalogs, search, hubs, loaders and sitemaps.
+
+Language switches use local, generated catalogs for page body text, tool descriptions, dialogs, labels, placeholders and accessibility text—not only a small hand-maintained heading dictionary. Input values, code, user messages, marked output regions and document previews are excluded. The adapter changes existing text-node data only; it does not add/remove React-managed nodes or remount the workspace.
+
+`npm run i18n:generate` uses a development-only, MIT-licensed quantized M2M100 model and checkpoints `public/i18n/*.json`. No account, API key, translation server or paid API is required. The model stays in ignored `.data/translation-models`; visitors fetch only static catalogs and never send content to a translator. Model download and CPU inference can be slow. Generation now defaults to **50 new strings, five minutes per run, and 60 seconds per inference batch**, with worker termination on timeout and progress after every batch. Checkpoints and downloaded weights are retained. To deliberately process more, use explicit limits, e.g. `npm run i18n:generate -- --max-strings=500 --max-minutes=15`. It never runs as part of the production build. Machine translations need review, especially legal/medical copy.
+
+`npm run i18n:check` reports missing source strings and fails on incomplete coverage. Until generation completes, the UI explicitly reports partial coverage and retains English where unavailable; a partial catalog must not be presented as complete multilingual support. SSR metadata and user-authored/generated content are not automatically translated by this UI adapter.
+
+Production builds use `tsconfig.build.json` to exclude stale development-cache types while retaining application, test and fresh production route validation. Type checking is not disabled.
+
 ### 4. Start the development server
 
 ```bash

@@ -22,6 +22,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { escapeDocumentStrings } from "@/lib/documents/escape-document";
 
 interface CVData {
   fullName: string;
@@ -149,7 +150,7 @@ function saveCV(data: CVData) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 }
 
-export function CVMakerEngine() {
+export function CVEditor() {
   const [data, setData] = useState<CVData>(() => loadCV() || SAMPLE_CV);
   const [activeTab, setActiveTab] = useState("edit");
   const [copied, setCopied] = useState(false);
@@ -273,7 +274,7 @@ export function CVMakerEngine() {
       certifications,
       publications,
       template,
-    } = data;
+    } = escapeDocumentStrings(data);
 
     const templateStyles: Record<string, string> = {
       professional: `
@@ -590,7 +591,7 @@ export function CVMakerEngine() {
         <TabsContent value="preview" className="mt-4">
           <Card className="shadow-xs overflow-hidden border">
             <CardContent className="p-0 bg-muted/10">
-              <iframe srcDoc={generateCVHTML()} className="w-full min-h-[700px] border-0 bg-white" title="CV Live Preview" />
+              <iframe sandbox="" srcDoc={generateCVHTML()} className="w-full min-h-[700px] border-0 bg-white" title="CV Live Preview" />
             </CardContent>
           </Card>
         </TabsContent>

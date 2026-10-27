@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { VideoToGifEngine } from "./video-to-gif-engine";
-import { VideoToGifMakerEngine } from "./video-to-gif-maker-engine";
 import { planGifFrames } from "./video-to-gif-sampling";
 import { GifEncoder } from "@/lib/processing/client/gif-encoder";
 
@@ -102,7 +101,7 @@ function uploadAndConfigure(Engine: typeof VideoToGifEngine, start = 9.5, durati
 }
 
 describe.each([
-  ["converter", VideoToGifEngine], ["maker", VideoToGifMakerEngine],
+  ["converter", VideoToGifEngine],
 ] as const)("%s extraction", (_, Engine) => {
   it("captures only remaining source frames and produces a real GIF", async () => {
     uploadAndConfigure(Engine);
@@ -161,7 +160,7 @@ it("preserves speed and captions in the converter", async () => {
 });
 
 it("preserves bounce without duplicating its turning endpoints", async () => {
-  uploadAndConfigure(VideoToGifMakerEngine);
+  uploadAndConfigure(VideoToGifEngine);
   fireEvent.click(screen.getByRole("checkbox"));
   fireEvent.click(screen.getByRole("button", { name: /(?:Create|Generate) Animated GIF/ }));
   await waitFor(() => expect(GifEncoder.prototype.render).toHaveBeenCalledOnce());

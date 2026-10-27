@@ -248,7 +248,7 @@ export function ChatMessages({
                 {isUser ? (
                   msg.content
                 ) : (
-                  <MarkdownRenderer content={msg.content} />
+                  <div data-user-content translate="no"><MarkdownRenderer content={msg.content} /></div>
                 )}
               </div>
 

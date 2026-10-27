@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
+import { consolidatedPath } from "@/lib/catalog/consolidation";
 import { getToolBySlug, getActiveTools } from "@/content/tools/registry";
 import {
   generateToolMetadata,
@@ -38,6 +39,8 @@ export async function generateMetadata({ params }: ToolPageProps): Promise<Metad
 
 export default async function ToolPage({ params }: ToolPageProps) {
   const { slug } = await params;
+  const replacement = consolidatedPath(`/tools/${slug}`);
+  if (replacement) permanentRedirect(replacement);
   const tool = getToolBySlug(slug);
 
   if (!tool) notFound();

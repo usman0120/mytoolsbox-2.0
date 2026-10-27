@@ -163,7 +163,7 @@ ${slidesHTML}
 </html>`;
 }
 
-export function AIPresentationMakerEngine() {
+export function PresentationAIAssistant() {
   const [data, setData] = useState<PresentationData>(() => loadData() || {
     topic: "",
     audience: "",
