@@ -24,10 +24,10 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import type { FeedbackType } from "@/types/user";
-import { useI18n } from "@/lib/i18n";
+import { UI_COPY } from "@/lib/ui-copy";
 
 export function ContactPageClient() {
-  const { t } = useI18n();
+  const { t } = UI_COPY;
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");

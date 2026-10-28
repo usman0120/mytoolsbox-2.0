@@ -55,7 +55,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { SignInDialog } from "@/components/auth/signin-dialog";
-import { useI18n } from "@/lib/i18n";
+import { UI_COPY } from "@/lib/ui-copy";
 import { PageShell, ToolHeader } from "@/components/common/workload-layouts";
 
 interface SettingsPageClientProps {
@@ -74,7 +74,7 @@ function SettingsWorkspace({ initialTab }: SettingsPageClientProps) {
   const { theme, setTheme } = useTheme();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { t, localizePath } = useI18n();
+  const { t } = UI_COPY;
 
   // Determine active tab from URL query params or prop
   const urlTab = searchParams.get("tab");
@@ -463,7 +463,7 @@ function SettingsWorkspace({ initialTab }: SettingsPageClientProps) {
       <Tabs
         value={activeTab}
         onValueChange={(val) => {
-          router.replace(localizePath(`/settings?tab=${val}`), { scroll: false });
+          router.replace(`/settings?tab=${val}`, { scroll: false });
         }}
         className="space-y-6"
       >
@@ -700,7 +700,7 @@ function SettingsWorkspace({ initialTab }: SettingsPageClientProps) {
                   <p className="text-xs text-muted-foreground max-w-sm mx-auto mb-4 leading-relaxed">
                     As you use tools and apps, your actions will be organized here for easy recall.
                   </p>
-                  <Link href={localizePath("/tools")}>
+                  <Link href="/tools">
                     <Button size="sm" className="rounded-xl text-xs">
                       Explore Tools
                     </Button>
@@ -713,7 +713,7 @@ function SettingsWorkspace({ initialTab }: SettingsPageClientProps) {
               ) : (
                 <div className="divide-y divide-border/40">
                   {filteredHistory.map((item) => {
-                    const href = localizePath(`/${item.productType === "app" ? "apps" : "tools"}/${item.toolSlug}`);
+                    const href = `/${item.productType === "app" ? "apps" : "tools"}/${item.toolSlug}`;
                     return (
                       <div
                         key={item.id}
@@ -808,7 +808,7 @@ function SettingsWorkspace({ initialTab }: SettingsPageClientProps) {
                   <p className="text-xs text-muted-foreground max-w-sm mx-auto mb-4 leading-relaxed">
                     Bookmark your favorite utilities from any tool page to launch them instantly from here.
                   </p>
-                  <Link href={localizePath("/tools")}>
+                  <Link href="/tools">
                     <Button size="sm" className="rounded-xl text-xs">
                       Browse All Tools
                     </Button>
@@ -821,7 +821,7 @@ function SettingsWorkspace({ initialTab }: SettingsPageClientProps) {
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                   {filteredFavorites.map((item) => {
-                    const href = localizePath(`/${item.productType === "app" ? "apps" : "tools"}/${item.toolSlug}`);
+                    const href = `/${item.productType === "app" ? "apps" : "tools"}/${item.toolSlug}`;
                     return (
                       <div
                         key={item.id}

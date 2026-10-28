@@ -28,7 +28,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { getProviderConfig } from "@/lib/ai/providers-config";
-import { useI18n } from "@/lib/i18n";
+import { UI_COPY } from "@/lib/ui-copy";
 
 interface ChatInputProps {
   input: string;
@@ -42,7 +42,6 @@ interface ChatInputProps {
   selectedProvider?: string;
   onProviderChange?: (provider: string) => void;
   availableProviders?: string[];
-  onOpenPromptLibrary?: () => void;
 }
 
 const QUICK_ACTIONS = [
@@ -108,9 +107,8 @@ export function ChatInput({
   selectedProvider = "gemini",
   onProviderChange,
   availableProviders,
-  onOpenPromptLibrary,
 }: ChatInputProps) {
-  const { t } = useI18n();
+  const { t } = UI_COPY;
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [slashMenuDismissed, setSlashMenuDismissed] = useState(false);
@@ -364,18 +362,6 @@ export function ChatInput({
                     </DropdownMenuItem>
                   );
                 })}
-
-                <DropdownMenuSeparator />
-
-                {onOpenPromptLibrary && (
-                  <DropdownMenuItem
-                    onClick={onOpenPromptLibrary}
-                    className="gap-2 cursor-pointer rounded-md p-2 font-medium"
-                  >
-                    <Sparkles className="h-3.5 w-3.5" />
-                    <span>{t("ai_prompt_library", "Prompt Library")}</span>
-                  </DropdownMenuItem>
-                )}
 
               </DropdownMenuContent>
             </DropdownMenu>

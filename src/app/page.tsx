@@ -7,11 +7,12 @@ import {
   generateOrganizationJsonLd,
 } from "@/lib/seo";
 import { HomeClient } from "./home-client";
+import { WORKFLOW_PRESETS } from "@/features/workflows/presets";
 
 export const metadata: Metadata = generateSEOMetadata({
-  title: "Free Online Tools & Daily Utilities - 100% Private In-Browser",
+  title: "Tools, Apps & Connected Workflows",
   description:
-    "Over 150+ free, fast, and secure online tools for documents, images, coding, writing, mathematics, and daily tasks. 100% client-side with zero data uploads.",
+    "Tools for everyday tasks, apps for deeper work, and local workflows that connect the steps. Upload once, process PDF, image, text and data files, and download the finished result.",
   path: "",
   keywords: [
     "online tools",
@@ -45,7 +46,7 @@ export default function Home() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationLd) }}
       />
-      <HomeClient popularTools={popularTools} featuredApps={featuredApps} />
+      <HomeClient popularTools={popularTools} featuredApps={featuredApps} workflowCount={WORKFLOW_PRESETS.length} featuredWorkflows={WORKFLOW_PRESETS.filter((workflow) => ["pdf-images-200kb", "image-email-pack", "files-verified"].includes(workflow.id)).map(({ id, name, description }) => ({ id, name, description }))} />
     </>
   );
 }

@@ -35,7 +35,6 @@ interface ChatMessagesProps {
   onSelectPrompt: (promptText: string) => void;
   onRegenerate: () => void;
   onFeedback: (messageId: string, feedback: "like" | "dislike") => void;
-  onOpenPromptLibrary?: () => void;
 }
 
 const STARTER_CARDS = [
@@ -97,7 +96,6 @@ export function ChatMessages({
   onSelectPrompt,
   onRegenerate,
   onFeedback,
-  onOpenPromptLibrary,
 }: ChatMessagesProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -189,21 +187,6 @@ export function ChatMessages({
           ))}
         </div>
 
-        {/* Open Prompt Library Pill */}
-        {onOpenPromptLibrary && (
-          <div className="text-center sm:text-left">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onOpenPromptLibrary}
-              className="rounded-md text-xs gap-2"
-            >
-              <Sparkles className="h-3.5 w-3.5 text-amber-500" />
-              <span>Prompt Library</span>
-              <ArrowRight className="h-3 w-3 opacity-70" />
-            </Button>
-          </div>
-        )}
       </div>
     );
   }

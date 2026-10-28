@@ -1,91 +1,18 @@
-"use client";
-
 import Link from "next/link";
-import { SITE_CONFIG } from "@/lib/constants";
-import { useI18n } from "@/lib/i18n";
-import { Shield, Zap, Globe, Heart, ArrowRight } from "lucide-react";
+import { ArrowRight, Wrench, Layers, GitBranch, ShieldCheck, MessageSquare, BookOpen } from "lucide-react";
 import { PageShell, ToolHeader } from "@/components/common/workload-layouts";
 
 export function AboutPageClient() {
-  const { t, localizePath } = useI18n();
-
-  const principles = [
-    {
-      title: t("about_privacy_title"),
-      description: t("privacy_page_title", "Privacy Policy"),
-      href: "/privacy",
-      icon: Shield,
-    },
-    {
-      title: t("nav_tools"),
-      description: t("nav_tools"),
-      href: "/tools",
-      icon: Heart,
-    },
-    {
-      title: t("feature_fast_title"),
-      description: t("nav_apps"),
-      href: "/apps",
-      icon: Zap,
-    },
-    {
-      title: t("nav_resources"),
-      description: t("nav_resources"),
-      href: "/resources",
-      icon: Globe,
-    },
+  const areas = [
+    { title: "Tools for focused tasks", description: "Documents, images, text, development and calculations—open a utility and get to work.", href: "/tools", icon: Wrench },
+    { title: "Apps for deeper work", description: "Dedicated workspaces for resumes, study, creative work and AI conversations.", href: "/apps", icon: Layers },
+    { title: "Workflows for the whole job", description: "Connect local processors so one output becomes the next input. Start with a preset, or create, save and edit your own.", href: "/workflows", icon: GitBranch },
+    { title: "Guides and role-based hubs", description: "Find useful combinations of tools and practical resources for your role.", href: "/hubs", icon: BookOpen },
   ];
-
-  return (
-    <PageShell className="max-w-3xl">
-      {/* Header */}
-      <ToolHeader title={t("about_title")} />
-
-      {/* Mission */}
-      <section className="mb-8">
-        <h2 className="text-xl font-semibold mb-4">{t("about_mission_title")}</h2>
-        <div className="prose prose-neutral dark:prose-invert max-w-none text-muted-foreground space-y-4">
-          <p className="leading-relaxed">
-            {SITE_CONFIG.name}: {t("nav_tools")}, {t("nav_apps")}, {t("nav_ai")}, {t("nav_resources")}.
-          </p>
-        </div>
-      </section>
-
-      {/* Principles */}
-      <section className="mb-8">
-        <h2 className="text-xl font-semibold mb-6">{t("features_title")}</h2>
-        <div className="grid sm:grid-cols-2 gap-4">
-          {principles.map((principle) => {
-            const Icon = principle.icon;
-            return (
-              <Link
-                key={principle.title}
-                href={localizePath(principle.href)}
-                className="flex items-center gap-3 py-3 border-b border-border/50 hover:text-primary transition-colors"
-              >
-                <div className="text-primary shrink-0">
-                  <Icon className="h-4.5 w-4.5" />
-                </div>
-                <span className="text-sm">
-                  {principle.description}
-                </span>
-                <ArrowRight className="ml-auto h-4 w-4 shrink-0" />
-              </Link>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* CTA */}
-      <div className="pt-5 border-t border-border/50">
-        <p className="text-muted-foreground mb-4">{t("contact_subtitle")}</p>
-        <Link
-          href={localizePath("/contact")}
-          className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
-        >
-          {t("contact_title")} <ArrowRight className="h-4 w-4" />
-        </Link>
-      </div>
-    </PageShell>
-  );
+  return <PageShell className="max-w-4xl"><ToolHeader title="Useful tools. Connected work." description="MyToolsBox brings everyday utilities, dedicated apps and local workflows into one clear workspace." />
+    <section className="mb-10 rounded-3xl border bg-primary/5 p-6 sm:p-8"><h2 className="text-2xl font-semibold tracking-tight">Less switching. More finishing.</h2><p className="mt-4 text-sm leading-8 text-muted-foreground">A PDF-to-image job shouldn’t require downloading a folder, opening another website, and uploading every image again. Workflows connect those steps inside your browser so you can choose the input once and download the finished result.</p><Link href="/workflows?preset=pdf-images-200kb" className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-primary">Try PDF → images under 200 KB<ArrowRight className="size-4" /></Link></section>
+    <section className="mb-10 grid gap-4 sm:grid-cols-2">{areas.map(({ title, description, href, icon: Icon }) => <Link href={href} key={href} className="rounded-2xl border bg-card p-6 transition-colors hover:border-primary/40"><Icon className="mb-4 size-6 text-primary" /><h2 className="text-base font-semibold">{title}</h2><p className="mt-3 text-sm leading-7 text-muted-foreground">{description}</p><ArrowRight className="mt-4 size-4 text-primary" /></Link>)}</section>
+    <section className="grid gap-6 border-t pt-8 sm:grid-cols-2"><div><h2 className="flex items-center gap-2 text-lg font-semibold"><ShieldCheck className="size-5 text-primary" />Local where it matters</h2><p className="mt-3 text-sm leading-7 text-muted-foreground">Workflow files are processed on your device and passed between steps without server file storage. Save workflow definitions locally, export them for backup, and keep your original files.</p></div><div><h2 className="flex items-center gap-2 text-lg font-semibold"><MessageSquare className="size-5 text-primary" />Clear about online features</h2><p className="mt-3 text-sm leading-7 text-muted-foreground">AI Chat lives in Apps and uses configured online providers. Sign-in and credits are required for AI requests. Account synchronization also uses online services. Read the processing information before sharing sensitive content.</p></div></section>
+    <section className="mt-10 border-t pt-7"><h2 className="text-lg font-semibold">Built around useful, honest results</h2><p className="mt-3 text-sm leading-7 text-muted-foreground">Workflow connections are type-checked, file-size targets are measured, and failures are shown rather than replaced with invented output. Browser support and resource limits still apply. Inspect important outputs before relying on them.</p><Link href="/contact" className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-primary">Suggest an improvement<ArrowRight className="size-4" /></Link></section>
+  </PageShell>;
 }

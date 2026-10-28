@@ -23,7 +23,7 @@ import {
   Check,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useI18n } from "@/lib/i18n";
+import { UI_COPY } from "@/lib/ui-copy";
 
 interface ChatHeaderProps {
   creditsRemaining: number | null;
@@ -35,7 +35,7 @@ export function ChatHeader({
   creditsRemaining,
   onNewChat,
 }: ChatHeaderProps) {
-  const { t } = useI18n();
+  const { t } = UI_COPY;
   const {
     isSidebarOpen,
     toggleSidebar,

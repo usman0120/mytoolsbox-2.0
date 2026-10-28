@@ -36,8 +36,6 @@ interface ChatStore {
   selectedProvider: string;
   selectedModel: string;
   searchQuery: string;
-  favoritePromptIds: string[];
-  pendingPrompt: string | null;
 
   // Actions
   setConversations: (conversations: ChatConversation[]) => void;
@@ -72,8 +70,6 @@ interface ChatStore {
   setProvider: (provider: string) => void;
   setModel: (model: string) => void;
   setSearchQuery: (query: string) => void;
-  toggleFavoritePrompt: (promptId: string) => void;
-  setPendingPrompt: (prompt: string | null) => void;
 
   // Helpers
   getActiveConversation: () => ChatConversation | undefined;
@@ -92,8 +88,6 @@ export const useChatStore = create<ChatStore>()(
       selectedProvider: "auto",
       selectedModel: "auto",
       searchQuery: "",
-      favoritePromptIds: ["code-1", "write-1", "biz-1", "edu-1"],
-      pendingPrompt: null,
 
       setConversations: (conversations) => set({ conversations }),
 
@@ -387,18 +381,6 @@ export const useChatStore = create<ChatStore>()(
 
       setSearchQuery: (query) => set({ searchQuery: query }),
 
-      toggleFavoritePrompt: (promptId) =>
-        set((state) => {
-          const exists = state.favoritePromptIds.includes(promptId);
-          return {
-            favoritePromptIds: exists
-              ? state.favoritePromptIds.filter((id) => id !== promptId)
-              : [...state.favoritePromptIds, promptId],
-          };
-        }),
-
-      setPendingPrompt: (prompt) => set({ pendingPrompt: prompt }),
-
       getActiveConversation: () => {
         const state = get();
         return state.conversations.find(
@@ -435,7 +417,6 @@ export const useChatStore = create<ChatStore>()(
         activeConversationId: state.activeConversationId,
         selectedProvider: state.selectedProvider,
         selectedModel: state.selectedModel,
-        favoritePromptIds: state.favoritePromptIds,
         isSidebarOpen: state.isSidebarOpen,
       }),
     }

@@ -9,13 +9,12 @@ import { Button } from "@/components/ui/button";
 import { PageShell, ToolHeader } from "@/components/common/workload-layouts";
 import { Layout, Search, X, ArrowRight, Grid3X3, List } from "lucide-react";
 import { getActiveApps } from "@/content/apps/registry";
-import { useI18n } from "@/lib/i18n";
-import { VIEW_MODE_LABELS } from "@/lib/i18n/translations";
+import { UI_COPY } from "@/lib/ui-copy";
 import * as Icons from "lucide-react";
 
 export function AppsPageClient() {
-  const { t, localizePath, getCategoryName, locale } = useI18n();
-  const viewLabels = VIEW_MODE_LABELS[locale];
+  const { t, categoryName: getCategoryName } = UI_COPY;
+  const viewLabels = { grid: "Grid view", list: "List view" };
   const apps = getActiveApps();
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -112,7 +111,7 @@ export function AppsPageClient() {
           {filteredApps.map((app) => {
             const IconComponent = (Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[app.icon] || Icons.Layout;
             return (
-              <Link key={app.id} href={localizePath(`/apps/${app.slug}`)} className="group">
+              <Link key={app.id} href={`/apps/${app.slug}`} className="group">
                 <div className="h-full p-5 rounded-2xl border border-border/70 bg-card hover:border-primary/40 hover:bg-card/90 transition-all duration-200 hover:-translate-y-0.5 flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between mb-3">
@@ -156,7 +155,7 @@ export function AppsPageClient() {
             return (
               <Link
                 key={app.id}
-                href={localizePath(`/apps/${app.slug}`)}
+                href={`/apps/${app.slug}`}
                 className="group flex flex-wrap items-center gap-4 p-4 rounded-xl border border-border/70 bg-card hover:border-primary/40 hover:bg-card/90 transition-all duration-200"
               >
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-200 shrink-0">

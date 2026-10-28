@@ -1,318 +1,47 @@
 "use client";
-
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { BrandLogo } from "@/components/common/brand-logo";
+import { useEffect, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useState, useEffect } from "react";
-import {
-  Menu,
-  ChevronDown,
-  MessageSquare,
-  Lightbulb,
-} from "lucide-react";
+import { Menu, ChevronDown, ArrowUpRight, GitBranch } from "lucide-react";
+import { BrandLogo } from "@/components/common/brand-logo";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { NAV_ITEMS, SITE_CONFIG } from "@/lib/constants";
-import { cn } from "@/lib/utils";
-import { useAuth } from "@/lib/auth";
-import { UserMenu } from "@/components/auth/user-menu";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { NAV_MENUS } from "@/lib/navigation/menus";
+import { SITE_CONFIG } from "@/lib/constants";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { SearchCommand } from "@/components/common/search-command";
-import { LanguageSwitcher } from "@/components/common/language-switcher";
-import { useI18n } from "@/lib/i18n";
+import { UserMenu } from "@/components/auth/user-menu";
+import { useAuth } from "@/lib/auth";
+import { cn } from "@/lib/utils";
 
-const SignInDialog = dynamic(() => import("@/components/auth/signin-dialog").then((module) => module.SignInDialog), {
-  loading: () => <div role="status" className="fixed inset-x-4 top-24 z-50 mx-auto max-w-sm rounded-2xl border bg-background p-6 text-center text-sm shadow-xl">Opening sign-in…</div>,
-});
+const SignInDialog = dynamic(() => import("@/components/auth/signin-dialog").then((module) => module.SignInDialog), { loading: () => <p role="status" className="fixed inset-x-4 top-24 z-50 mx-auto max-w-sm rounded-xl border bg-background p-5 text-center text-sm shadow-lg">Opening sign-in…</p> });
 
 export function Navbar() {
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const pathname = usePathname(), params = useSearchParams();
   const { user, loading } = useAuth();
-  const { t, localizePath } = useI18n();
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [signInOpen, setSignInOpen] = useState(false);
-  const [signInRequested, setSignInRequested] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-
-  const getNavLabel = (href: string, fallback: string) => {
-    switch (href) {
-      case "/tools": return t("nav_tools");
-      case "/apps": return t("nav_apps");
-      case "/ai": return t("nav_ai");
-      case "/hubs": return t("nav_hubs");
-      case "/blog": return "Blog";
-      case "/resources": return t("nav_resources");
-      default: return fallback;
-    }
-  };
-
-  // Track scroll for shadow effect
-  useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 10);
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  // Auto-open sign-in dialog when redirected from proxy
-  const shouldOpenSignIn = searchParams.get("signin") === "true";
-  if (shouldOpenSignIn !== signInRequested) {
-    setSignInRequested(shouldOpenSignIn);
-    if (shouldOpenSignIn) setSignInOpen(true);
-  }
-
-  const isAIActive = pathname.startsWith("/ai");
-
-  return (
-    <header
-      className={cn(
-        "sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-xl supports-backdrop-filter:bg-background/60 transition-shadow duration-300",
-        scrolled && "shadow-sm"
-      )}
-    >
-      <div className="mx-auto flex h-[var(--shell-header-height)] max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
-        {/* Logo — Refined editorial badge */}
-        <Link href={localizePath("/")} aria-label="MyToolsBox home" className="flex items-center gap-2.5 shrink-0 group">
-          <BrandLogo className="h-9" eager />
-          <span className="font-semibold text-[15px] tracking-tight text-foreground hidden sm:inline-block">
-            {SITE_CONFIG.name}
-          </span>
-        </Link>
-
-        {/* Desktop Nav */}
-        <nav className="hidden lg:flex items-center gap-1" aria-label="Main navigation">
-          {NAV_ITEMS.map((item) => {
-            const localizedHref = localizePath(item.href);
-            const label = getNavLabel(item.href, item.label);
-
-            // Handle AI specially with a dropdown menu
-            if (item.href === "/ai") {
-              return (
-                <DropdownMenu key="ai-dropdown">
-                  <DropdownMenuTrigger
-                    className={cn(
-                      "relative flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg transition-colors hover:bg-accent/60 outline-none select-none cursor-pointer",
-                      isAIActive
-                        ? "text-foreground font-semibold"
-                        : "text-muted-foreground hover:text-foreground"
-                    )}
-                  >
-                    <span>{t("nav_ai")}</span>
-                    <ChevronDown className="h-3 w-3 opacity-60" />
-                    {isAIActive && (
-                      <span className="absolute inset-x-2 -bottom-px h-0.5 bg-primary rounded-full" />
-                    )}
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="center" className="w-56 rounded-xl p-1.5 text-sm shadow-md border-border/70">
-                    <DropdownMenuItem className="p-0 cursor-pointer rounded-lg">
-                      <Link
-                        href={localizePath("/ai")}
-                        className="flex items-center gap-2.5 p-2 w-full rounded-lg hover:bg-accent/60 transition-colors"
-                      >
-                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                          <MessageSquare className="h-3.5 w-3.5" />
-                        </div>
-                        <div>
-                          <div className="font-medium text-foreground text-xs">{t("ai_new_chat")}</div>
-                          <div className="text-[10px] text-muted-foreground">{t("nav_ai_chat_sub")}</div>
-                        </div>
-                      </Link>
-                    </DropdownMenuItem>
-
-                    <DropdownMenuItem className="p-0 cursor-pointer rounded-lg">
-                      <Link
-                        href={localizePath("/ai/prompts")}
-                        className="flex items-center gap-2.5 p-2 w-full rounded-lg hover:bg-accent/60 transition-colors"
-                      >
-                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                          <Lightbulb className="h-3.5 w-3.5" />
-                        </div>
-                        <div>
-                          <div className="font-medium text-foreground text-xs">{t("ai_prompt_library")}</div>
-                          <div className="text-[10px] text-muted-foreground">{t("nav_ai_prompts_sub")}</div>
-                        </div>
-                      </Link>
-                    </DropdownMenuItem>
-
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              );
-            }
-
-            const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
-            return (
-              <Link
-                key={item.href}
-                href={localizedHref}
-                aria-current={isActive ? "page" : undefined}
-                className={cn(
-                  "relative px-3 py-1.5 text-sm rounded-lg transition-colors hover:bg-accent/60",
-                  isActive
-                    ? "text-foreground font-semibold"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                {isActive && (
-                  <span className="absolute inset-x-2 -bottom-px h-0.5 bg-primary rounded-full" />
-                )}
-                {label}
-              </Link>
-            );
-          })}
-        </nav>
-
-        {/* Search + Auth */}
-        <div className="flex items-center gap-1.5 sm:gap-2">
-          <div className="hidden sm:block">
-            <SearchCommand variant="navbar" />
-          </div>
-          <LanguageSwitcher variant="navbar" />
-          <ThemeToggle />
-
-          {/* Desktop Auth */}
-          <div className="hidden sm:flex items-center">
-            {loading ? (
-              <div className="h-8 w-8 rounded-full bg-muted animate-pulse" />
-            ) : user ? (
-              <UserMenu />
-            ) : (
-              <Button
-                variant="outline"
-                size="sm"
-                className="rounded-lg h-8 px-3 text-xs font-medium border-border/80 hover:bg-muted/50"
-                onClick={() => setSignInOpen(true)}
-              >
-                {t("nav_signin")}
-              </Button>
-            )}
-          </div>
-
-          {/* Mobile menu */}
-          <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="lg:hidden rounded-lg h-10 w-10"
-              onClick={() => setMobileOpen(true)}
-              aria-label="Open navigation menu"
-            >
-              <Menu className="h-5 w-5" />
-            </Button>
-            <SheetContent side="right" className="w-80 max-w-full overflow-y-auto p-0" aria-label="Mobile navigation">
-              <nav aria-label="Mobile navigation" className="flex flex-col gap-1 p-6">
-                <div className="flex items-center gap-2.5 mb-6">
-                  <BrandLogo className="h-9" />
-                  <span className="font-semibold text-base">{SITE_CONFIG.name}</span>
-                </div>
-
-                <div className="mb-3">
-                  <SearchCommand variant="navbar" />
-                </div>
-
-                <div className="mb-4">
-                  <LanguageSwitcher variant="mobile" />
-                </div>
-
-                <div className="space-y-1">
-                  <Link
-                    href={localizePath("/tools")}
-                    onClick={() => setMobileOpen(false)}
-                    className="flex items-center px-3 py-2 text-sm font-medium rounded-xl hover:bg-muted"
-                  >
-                    {t("nav_tools")}
-                  </Link>
-                  <Link
-                    href={localizePath("/apps")}
-                    onClick={() => setMobileOpen(false)}
-                    className="flex items-center px-3 py-2 text-sm font-medium rounded-xl hover:bg-muted"
-                  >
-                    {t("nav_apps")}
-                  </Link>
-
-                  {/* AI Mobile Submenu */}
-                  <div className="py-2 border-y border-border/50 my-2 space-y-1">
-                    <div className="px-3 text-xs font-semibold text-primary uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                      {t("footer_ai_suite")}
-                    </div>
-                    <Link
-                      href={localizePath("/ai")}
-                      onClick={() => setMobileOpen(false)}
-                      className="flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-xl hover:bg-muted"
-                    >
-                      <MessageSquare className="h-3.5 w-3.5 text-violet-500" />
-                      {t("ai_new_chat")}
-                    </Link>
-                    <Link
-                      href={localizePath("/ai/prompts")}
-                      onClick={() => setMobileOpen(false)}
-                      className="flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-xl hover:bg-muted"
-                    >
-                      <Lightbulb className="h-3.5 w-3.5 text-amber-500" />
-                      {t("ai_prompt_library")}
-                    </Link>
-                  </div>
-
-                  <Link
-                    href={localizePath("/hubs")}
-                    onClick={() => setMobileOpen(false)}
-                    className="flex items-center px-3 py-2 text-sm font-medium rounded-xl hover:bg-muted"
-                  >
-                    {t("nav_hubs")}
-                  </Link>
-                  <Link
-                    href={localizePath("/blog")}
-                    onClick={() => setMobileOpen(false)}
-                    className="flex items-center justify-between px-3 py-2 text-sm font-medium rounded-xl hover:bg-muted"
-                  >
-                    <span>Blog & Guides</span>
-                  </Link>
-                  <Link
-                    href={localizePath("/resources")}
-                    onClick={() => setMobileOpen(false)}
-                    className="flex items-center px-3 py-2 text-sm font-medium rounded-xl hover:bg-muted"
-                  >
-                    {t("nav_resources")}
-                  </Link>
-                </div>
-
-                <div className="mt-6 pt-6 border-t border-border/50">
-                  {user ? (
-                    <div className="space-y-2">
-                      <div className="text-xs text-muted-foreground px-3">{user.email}</div>
-                      <Link
-                        href={localizePath("/settings")}
-                        onClick={() => setMobileOpen(false)}
-                        className="flex items-center px-3 py-2 text-sm rounded-xl hover:bg-muted"
-                      >
-                        {t("auth_settings")}
-                      </Link>
-                    </div>
-                  ) : (
-                    <Button
-                      onClick={() => {
-                        setMobileOpen(false);
-                        setSignInOpen(true);
-                      }}
-                      className="w-full rounded-xl text-xs"
-                    >
-                      {t("nav_signin")}
-                    </Button>
-                  )}
-                </div>
-              </nav>
-            </SheetContent>
-          </Sheet>
-        </div>
+  const [mobileOpen, setMobileOpen] = useState(false), [signInOpen, setSignInOpen] = useState(false), [requested, setRequested] = useState(false), [scrolled, setScrolled] = useState(false);
+  const signInRequested = params.get("signin") === "true";
+  if (signInRequested !== requested) { setRequested(signInRequested); if (signInRequested) setSignInOpen(true); }
+  useEffect(() => { const scroll = () => setScrolled(window.scrollY > 8); window.addEventListener("scroll", scroll, { passive: true }); return () => window.removeEventListener("scroll", scroll); }, []);
+  return <header className={cn("sticky top-0 z-50 border-b border-border/60 bg-background/90 backdrop-blur-xl", scrolled && "shadow-sm")}>
+    <div className="mx-auto flex h-[var(--shell-header-height)] max-w-[1440px] items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
+      <Link href="/" aria-label="MyToolsBox home" className="flex shrink-0 items-center gap-2.5"><BrandLogo eager className="h-9" /><span className="hidden text-[15px] font-semibold tracking-tight sm:block">{SITE_CONFIG.name}</span></Link>
+      <nav aria-label="Main navigation" className="hidden items-center gap-1 lg:flex">{NAV_MENUS.map((menu) => {
+        const active = pathname === menu.href || pathname.startsWith(menu.href + "/");
+        return <DropdownMenu key={menu.label}><DropdownMenuTrigger className={cn("flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-primary", active ? "font-semibold text-primary" : "text-muted-foreground")}>
+          {menu.label === "Workflows" && <GitBranch className="size-3.5" />}{menu.label}<ChevronDown className="size-3" />
+        </DropdownMenuTrigger><DropdownMenuContent align="center" className="w-[min(720px,calc(100vw-2rem))] rounded-2xl p-5 shadow-xl">
+          <div className="mb-4 flex items-center justify-between border-b pb-4"><div><p className="text-base font-semibold">{menu.label}</p><p className="mt-1 text-xs text-muted-foreground">{menu.label === "Workflows" ? "Connect local tools. Upload once. Download the result." : menu.label === "Apps" ? "Dedicated workspaces, including AI Chat." : menu.label === "Tools" ? "Focused utilities for everyday tasks." : "Guides, resources and workspaces for your role."}</p></div><DropdownMenuItem render={<Link href={menu.href} />} className="inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-lg border px-3 py-2 text-xs font-medium text-primary">Explore<ArrowUpRight className="size-3.5" /></DropdownMenuItem></div>
+          <div className="grid gap-6 sm:grid-cols-2">{menu.sections.map((section) => <div key={section.title}><h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{section.title}</h3>{section.links.map((link) => <DropdownMenuItem key={link.href} render={<Link href={link.href} />} className="cursor-pointer rounded-lg px-3 py-2 text-sm">{link.label}<ArrowUpRight className="ml-auto size-3 text-muted-foreground" /></DropdownMenuItem>)}</div>)}</div>
+        </DropdownMenuContent></DropdownMenu>;
+      })}</nav>
+      <div className="flex items-center gap-2"><div className="hidden sm:block"><SearchCommand variant="navbar" /></div><ThemeToggle /><div className="hidden sm:block">{loading ? <div aria-label="Loading account" className="size-8 rounded-full bg-muted motion-safe:animate-pulse" /> : user ? <UserMenu /> : <Button variant="outline" size="sm" onClick={() => setSignInOpen(true)}>Sign in</Button>}</div>
+        <Button size="icon" variant="ghost" className="lg:hidden" aria-label="Open navigation menu" onClick={() => setMobileOpen(true)}><Menu className="size-5" /></Button>
       </div>
-
-      {signInOpen && <SignInDialog open={signInOpen} onOpenChange={setSignInOpen} />}
-    </header>
-  );
+    </div>
+    <Sheet open={mobileOpen} onOpenChange={setMobileOpen}><SheetContent side="right" className="w-[360px] max-w-full overflow-y-auto"><SheetHeader><SheetTitle><span className="flex items-center gap-2"><BrandLogo className="h-8" />MyToolsBox</span></SheetTitle></SheetHeader><nav aria-label="Mobile navigation" className="space-y-5 px-4 pb-6"><SearchCommand variant="navbar" />{NAV_MENUS.map((menu) => <section key={menu.label}><h3 className="mb-2 text-xs font-semibold uppercase tracking-widest text-primary">{menu.label}</h3><Link onClick={() => setMobileOpen(false)} href={menu.href} className="mb-2 flex items-center justify-between rounded-xl border px-3 py-2.5 text-sm font-semibold">Explore {menu.label}<ArrowUpRight className="size-4" /></Link>{menu.sections.flatMap((section) => section.links).slice(0, 6).map((link) => <Link key={link.href} onClick={() => setMobileOpen(false)} href={link.href} className="block rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-muted">{link.label}</Link>)}</section>)}<div className="border-t pt-4">{user ? <Link href="/settings" onClick={() => setMobileOpen(false)} className="block rounded-xl border p-3 text-sm">Account & settings</Link> : <Button className="w-full" onClick={() => { setMobileOpen(false); setSignInOpen(true); }}>Sign in</Button>}</div></nav></SheetContent></Sheet>
+    {signInOpen && <SignInDialog open={signInOpen} onOpenChange={setSignInOpen} />}
+  </header>;
 }

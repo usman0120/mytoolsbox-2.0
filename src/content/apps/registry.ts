@@ -4,10 +4,20 @@ import { RETIRED_APPS, RETIRED_TOOLS } from "@/lib/catalog/consolidation";
 
 const appDefinitions: ToolDefinition[] = [
   {
+    id: "ai-chat", name: "AI Chat", slug: "ai-chat", category: "productivity", productType: "app",
+    description: "A conversation workspace for writing, coding, learning and brainstorming with configured AI providers. Sign-in, internet access and credits are required for AI requests.",
+    shortDescription: "Your AI conversation workspace", audiences: ["everyone", "developers", "students", "writers", "business"], icon: "MessageSquare",
+    features: ["Conversation history", "Provider and model selection", "Markdown responses", "Copy and export", "Message feedback", "Account-based conversation sync"],
+    inputTypes: ["text/plain"], outputTypes: ["text/plain"], processingMode: "server", requiresAuth: true, requiresPro: false, status: "active",
+    seoTitle: "AI Chat — Writing, Coding & Learning Assistant", seoDescription: "Chat with configured AI providers in a dedicated app. Organize conversations, select models and export responses. AI requests require sign-in and available credits.",
+    faq: [{ question: "Are my requests processed locally?", answer: "No. AI requests are sent to configured providers. Do not submit sensitive information without reviewing the privacy policy." }, { question: "Do I need an account?", answer: "AI requests require sign-in, internet access, configured providers and available credits." }],
+    relatedTools: ["word-counter", "json-formatter"], keywords: ["AI chat", "AI assistant", "writing", "coding", "learning"],
+  },
+  {
     id: "farmer-ai",
     name: "Farmer AI",
     slug: "farmer-ai",
-    description: "Complete farming utility platform with 7 calculators, AI crop disease assistant, weather planning, and multilingual agricultural knowledge base. From crop planning to profit analysis — everything a farmer needs.",
+    description: "Farming calculators, a crop disease assistant, weather planning and an English agricultural knowledge base. From crop planning to cost and profit analysis.",
     shortDescription: "Farming calculators, AI crop assistant & weather planning",
     category: "calculators",
     audiences: ["farmers", "everyone", "business", "researchers"],
@@ -22,7 +32,7 @@ const appDefinitions: ToolDefinition[] = [
       "Cost & profit analysis",
       "AI crop disease image assistant",
       "Weather-based activity planner",
-      "Multilingual AI knowledge assistant",
+      "Agricultural knowledge assistant",
       "Organic fertilizer alternatives",
       "Sensitivity & break-even analysis",
     ],
@@ -33,11 +43,10 @@ const appDefinitions: ToolDefinition[] = [
     requiresPro: false,
     productType: "app",
     seoTitle: "Free Farmer AI - Farming Calculators, Crop Assistant & Weather Planner",
-    seoDescription: "Complete farming platform with crop, fertilizer, land, yield, irrigation, planting, and profit calculators. AI-powered crop disease detection and multilingual agricultural assistant. Free for all farmers.",
+    seoDescription: "Farming calculators for crop, fertilizer, land, yield, irrigation, planting and profit, with a crop disease assistant and agricultural reference tools.",
     faq: [
       { question: "What calculators are included?", answer: "Seven calculators: Crop Yield, Fertilizer, Land Area, Yield Analysis, Irrigation, Planting Planner, and Cost/Profit with sensitivity analysis." },
       { question: "Can I upload crop photos for disease detection?", answer: "Yes! The AI Crop Image Assistant can analyze photos of leaves, pests, or crop issues and provide preliminary guidance. Always confirm with a local expert for treatment decisions." },
-      { question: "What languages does the AI assistant support?", answer: "The knowledge assistant supports English, Hindi, Punjabi, Bengali, Marathi, Gujarati, Tamil, Telugu, Kannada, and Malayalam." },
       { question: "Is this suitable for small farmers?", answer: "Absolutely! All calculators work for any farm size. The cost-profit calculator includes break-even analysis and sensitivity scenarios to help small farmers make informed decisions." },
       { question: "Does it work offline?", answer: "All calculators work fully offline. The AI assistant and image analysis require internet connectivity, but fall back to offline knowledge base when unavailable." },
     ],

@@ -33,25 +33,6 @@ export interface ChatMessage {
   feedback?: "like" | "dislike" | null;
 }
 
-export interface PromptCategory {
-  id: string;
-  name: string;
-  icon: string;
-  description: string;
-}
-
-export interface PromptTemplate {
-  id: string;
-  categoryId: string;
-  title: string;
-  prompt: string;
-  description: string;
-  tags: string[];
-  isFavorite?: boolean;
-  placeholders?: string[];
-  suggestedModel?: string;
-}
-
 export interface ChatState {
   conversations: ChatConversation[];
   activeConversationId: string | null;
@@ -60,6 +41,4 @@ export interface ChatState {
   selectedProvider: string;
   selectedModel: string;
   searchQuery: string;
-  favoritePromptIds: string[];
-  pendingPrompt: string | null;
 }

@@ -12,7 +12,7 @@ vi.mock("@/lib/auth", () => ({ useAuth: () => ({
   upgradeGuestToEmail: mocks.upgrade, upgradeGuestToGoogle: mocks.upgrade,
 }) }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: mocks.refresh, push: mocks.push, replace: mocks.replace }), useSearchParams: () => new URLSearchParams() }));
-vi.mock("@/lib/i18n", () => ({ useI18n: () => ({ t: (key: string) => ({ auth_signin: "Sign in", auth_signup: "Sign up", auth_guest: "Continue as guest", auth_forgot_pwd: "Forgot password?" })[key] ?? key }) }));
+vi.mock("@/lib/ui-copy", () => ({ UI_COPY: { t: (key: string) => ({ auth_signin: "Sign in", auth_signup: "Sign up", auth_guest: "Continue as guest", auth_forgot_pwd: "Forgot password?" })[key] ?? key } }));
 vi.mock("@/components/common/brand-logo", () => ({ BrandLogo: () => <span>MyToolsBox</span> }));
 vi.mock("sonner", () => ({ toast: { success: vi.fn() } }));
 const submit = () => fireEvent.submit(document.querySelector("form")!);

@@ -18,7 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { Loader2, Eye, EyeOff, ArrowLeft, CheckCircle2, AlertCircle, Heart, History } from "lucide-react";
-import { useI18n } from "@/lib/i18n";
+import { UI_COPY } from "@/lib/ui-copy";
 import { cn } from "@/lib/utils";
 
 interface SignInDialogProps {
@@ -39,7 +39,7 @@ function GoogleIcon({ className }: { className?: string }) {
 }
 
 export function SignInDialog({ open, onOpenChange }: SignInDialogProps) {
-  const { t } = useI18n();
+  const { t } = UI_COPY;
   const router = useRouter();
   const searchParams = useSearchParams();
   const id = useId();

@@ -9,7 +9,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@/lib/auth", () => ({ useAuth: () => mocks.auth }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: mocks.replace, push: vi.fn() }), useSearchParams: () => mocks.params }));
 vi.mock("next-themes", () => ({ useTheme: () => ({ theme: "system", setTheme: vi.fn() }) }));
-vi.mock("@/lib/i18n", () => ({ useI18n: () => ({ t: (key: string) => key, localizePath: (path: string) => path }) }));
+vi.mock("@/lib/ui-copy", () => ({ UI_COPY: { t: (key: string) => key } }));
 vi.mock("@/components/auth/signin-dialog", () => ({ SignInDialog: () => null }));
 vi.mock("@/lib/firebase/user-service", () => ({
   getUserProfile: mocks.profile, getFavorites: mocks.favorites, getHistory: mocks.history, removeFavorite: mocks.remove,

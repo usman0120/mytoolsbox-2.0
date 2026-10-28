@@ -5,6 +5,7 @@ import { ToolDefinition } from "@/types";
 import { EngineBoundary, EngineLoading, EngineUnavailable } from "@/components/common/engine-state";
 
 const engineMap: Record<string, React.ComponentType<unknown>> = {
+  "ai-chat": dynamic(() => import("@/features/apps/ai-chat-engine").then((module) => ({ default: module.AIChatEngine })), { loading: EngineLoading }),
   "math-solver": dynamic(() => import("@/features/apps/math-solver-engine").then((m) => ({ default: m.MathSolverEngine })), { loading: EngineLoading }),
   "resume-builder": dynamic(() => import("@/features/apps/resume-builder-engine").then((m) => ({ default: m.ResumeBuilderEngine })), { loading: EngineLoading }),
   "invoice-maker": dynamic(() => import("@/features/apps/invoice-maker-engine").then((m) => ({ default: m.InvoiceMakerEngine })), { loading: EngineLoading }),

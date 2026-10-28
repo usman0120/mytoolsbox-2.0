@@ -11,13 +11,12 @@ import { ToolCard } from "@/components/common/tool-card";
 import { PageShell, ToolHeader } from "@/components/common/workload-layouts";
 import { getActiveTools, searchTools } from "@/content/tools/registry";
 import { CATEGORIES } from "@/lib/constants";
-import { useI18n } from "@/lib/i18n";
-import { VIEW_MODE_LABELS } from "@/lib/i18n/translations";
+import { UI_COPY } from "@/lib/ui-copy";
 import * as Icons from "lucide-react";
 
 export function ToolsPageClient() {
-  const { t, getToolName, getCategoryName, localizePath, locale } = useI18n();
-  const viewLabels = VIEW_MODE_LABELS[locale];
+  const { t, toolName: getToolName, categoryName: getCategoryName } = UI_COPY;
+  const viewLabels = { grid: "Grid view", list: "List view" };
   const searchParams = useSearchParams();
   const initialCategory = searchParams.get("category") || "";
 
@@ -198,7 +197,7 @@ export function ToolsPageClient() {
             return (
               <Link
                 key={tool.id}
-                href={localizePath(`/${tool.productType}s/${tool.slug}`)}
+                href={`/${tool.productType}s/${tool.slug}`}
                 className="group flex flex-wrap items-center gap-4 p-4 rounded-xl border border-border/70 bg-card hover:border-primary/40 hover:bg-card/90 transition-all duration-200"
               >
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-200 shrink-0">

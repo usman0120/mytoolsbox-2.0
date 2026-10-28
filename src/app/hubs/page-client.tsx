@@ -21,7 +21,7 @@ import {
 import { getActiveTools, getToolsByAudience } from "@/content/tools/registry";
 import { getActiveApps } from "@/content/apps/registry";
 import type { ToolAudience } from "@/types";
-import { useI18n } from "@/lib/i18n";
+import { UI_COPY } from "@/lib/ui-copy";
 import { PageShell, ToolHeader } from "@/components/common/workload-layouts";
 
 interface HubData {
@@ -119,7 +119,7 @@ const HUBS: HubData[] = [
 ];
 
 export function HubsPageClient() {
-  const { t, localizePath, getToolName } = useI18n();
+  const { t, toolName: getToolName } = UI_COPY;
   const allTools = getActiveTools();
   const allApps = getActiveApps();
 
@@ -189,7 +189,7 @@ export function HubsPageClient() {
                     </p>
                     <div className="flex flex-wrap gap-1.5">
                       {tools.slice(0, 5).map((tool) => (
-                        <Link key={tool.slug} href={localizePath(`/tools/${tool.slug}`)}>
+                        <Link key={tool.slug} href={`/tools/${tool.slug}`}>
                           <span className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors border border-border/60">
                             {getToolName(tool.slug, tool.name)}
                           </span>
@@ -212,7 +212,7 @@ export function HubsPageClient() {
                     </p>
                     <div className="flex flex-wrap gap-1.5">
                       {apps.slice(0, 3).map((app) => (
-                        <Link key={app.slug} href={localizePath(`/apps/${app.slug}`)}>
+                        <Link key={app.slug} href={`/apps/${app.slug}`}>
                           <span className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors border border-border/60">
                             {getToolName(app.slug, app.name)}
                           </span>
@@ -229,7 +229,7 @@ export function HubsPageClient() {
               </div>
 
               <div className="pt-3 border-t border-border/40">
-                <Link href={localizePath(`/hubs/${hub.audience}`)} className="block">
+                <Link href={`/hubs/${hub.audience}`} className="block">
                   <Button variant="ghost" size="sm" className="w-full justify-between group/btn rounded-xl text-xs font-medium text-primary hover:text-primary">
                     <span>{t("hubs_explore_btn")}</span>
                     <ArrowRight className="h-3.5 w-3.5 group-hover/btn:translate-x-1 transition-transform" />

@@ -21,14 +21,14 @@ import {
   Shield,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useI18n } from "@/lib/i18n";
+import { UI_COPY } from "@/lib/ui-copy";
 import { isAdminIdentity } from "@/lib/auth/admin-policy";
 
 export function UserMenu() {
   const { user, isAnonymous, logOut } = useAuth();
   const { remaining, total, daysRemaining, loading: creditsLoading } = useCredits();
   const router = useRouter();
-  const { t, localizePath } = useI18n();
+  const { t } = UI_COPY;
 
   if (!user) return null;
 
@@ -88,7 +88,7 @@ export function UserMenu() {
               </p>
               <button
                 type="button"
-                onClick={() => router.push(localizePath("/settings?tab=account"))}
+                onClick={() => router.push("/settings?tab=account")}
                 className="mt-2 inline-flex w-full items-center justify-center rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground shadow-sm transition hover:bg-primary/90"
               >
                 {t("auth_signin")} / {t("auth_signup")}
@@ -120,20 +120,20 @@ export function UserMenu() {
 
         <DropdownMenuSeparator />
 
-        <DropdownMenuItem onClick={() => router.push(localizePath("/settings?tab=favorites"))}>
+        <DropdownMenuItem onClick={() => router.push("/settings?tab=favorites")}>
           <Heart className="mr-2 h-4 w-4" />
           {t("auth_favorites")}
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => router.push(localizePath("/settings?tab=history"))}>
+        <DropdownMenuItem onClick={() => router.push("/settings?tab=history")}>
           <Clock className="mr-2 h-4 w-4" />
           {t("auth_history")}
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => router.push(localizePath("/settings"))}>
+        <DropdownMenuItem onClick={() => router.push("/settings")}>
           <Settings className="mr-2 h-4 w-4" />
           {t("auth_settings")}
         </DropdownMenuItem>
 
-        {isAdminIdentity(user) && <DropdownMenuItem onClick={() => router.push(localizePath("/admin"))}>
+        {isAdminIdentity(user) && <DropdownMenuItem onClick={() => router.push("/admin")}>
           <Shield className="mr-2 h-4 w-4" />Admin panel
         </DropdownMenuItem>}
 

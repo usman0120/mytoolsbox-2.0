@@ -27,7 +27,7 @@ const { buildInventory } = auditRequire("../../compare_slugs.js") as {
     appLoaders: { slug: string; target: string }[];
     canonicalPages: { route: string }[];
     editorialRoutes: { namespace: string; slug: string; route: string }[];
-    routingPolicies: { protectedPaths: string[]; localePrefixes: string[] };
+    routingPolicies: { protectedPaths: string[] };
     integrity: {
       tools: Record<string, string[]>;
       apps: Record<string, string[]>;
@@ -138,9 +138,8 @@ describe("Route/catalog integrity audit", () => {
     }
   });
 
-  it("records declared protected/localized routes and legacy chat storage without calling providers", () => {
+  it("records protected routes and legacy chat storage without calling providers", () => {
     expect(inventory.routingPolicies.protectedPaths).toEqual(["/dashboard", "/settings", "/favorites", "/history", "/account", "/admin"]);
-    expect(inventory.routingPolicies.localePrefixes).toEqual(["es", "ur", "fr", "de", "pt", "hi", "ar"]);
     const legacyChat = inventory.features.find((entry) => entry.namespace === "tools" && entry.slug === "ai-text-generator");
     expect(legacyChat?.persistence.directStorageReferences.some((entry) => entry.key === "mytoolsbox-ai-chat")).toBe(true);
   });
@@ -163,7 +162,7 @@ describe("Route/catalog integrity audit", () => {
         .toEqual(catalog.map((entry) => `/${namespace}/${entry.slug}`));
     }
     expect(inventory.canonicalPages.some((entry) => entry.route === "/ai/compare")).toBe(false);
-    expect(inventory.canonicalPages.some((entry) => entry.route === "/ai/prompts")).toBe(true);
+    expect(inventory.canonicalPages.some((entry) => entry.route === "/ai/prompts")).toBe(false);
     expect(inventory.canonicalPages.some((entry) => entry.route === "/ai/personas")).toBe(false);
     expect(inventory.integrity.duplicateCanonicalRoutes).toEqual([]);
     expect(inventory.integrity.invalidRelatedAppReferences).toEqual([]);

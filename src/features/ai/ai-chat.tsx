@@ -14,13 +14,9 @@ import { subscribeConversations } from "./chat-persistence";
 import type { ChatMessage } from "./types";
 import type { AIProvider } from "@/lib/ai";
 
-interface AIChatProps {
-  onOpenPromptLibrary?: () => void;
-}
+const DEFAULT_SYSTEM_PROMPT = "You are a helpful AI assistant. Provide accurate, clear responses in US English, formatted with markdown.";
 
-const DEFAULT_SYSTEM_PROMPT = "You are a helpful AI assistant. Provide accurate, clear responses formatted with markdown.";
-
-export function AIChat({ onOpenPromptLibrary }: AIChatProps) {
+export function AIChat() {
   const { user } = useAuth();
   const {
     conversations,
@@ -37,18 +33,11 @@ export function AIChat({ onOpenPromptLibrary }: AIChatProps) {
     selectedModel,
     setModel,
     updateConversation,
-    pendingPrompt,
-    setPendingPrompt,
     isStreaming,
     setStreaming,
   } = useChatStore();
 
-  const [draftInput, setDraftInput] = useState("");
-  const input = pendingPrompt ?? draftInput;
-  const setInput = (value: string) => {
-    setPendingPrompt(null);
-    setDraftInput(value);
-  };
+  const [input, setInput] = useState("");
   const [creditBalance, setCreditBalance] = useState<{ uid: string; remaining: number } | null>(null);
   const creditsRemaining = creditBalance?.uid === user?.uid ? creditBalance?.remaining ?? null : null;
   const [availableProviders, setAvailableProviders] = useState<string[]>([]);
@@ -187,10 +176,9 @@ export function AIChat({ onOpenPromptLibrary }: AIChatProps) {
   // Start a new chat
   const handleNewChat = useCallback(() => {
     const newId = addConversation();
-    setPendingPrompt(null);
-    setDraftInput("");
+    setInput("");
     return newId;
-  }, [addConversation, setPendingPrompt]);
+  }, [addConversation]);
 
   // Send message
   const handleSend = async () => {
@@ -420,7 +408,6 @@ export function AIChat({ onOpenPromptLibrary }: AIChatProps) {
           }}
           onRegenerate={handleRegenerate}
           onFeedback={handleFeedback}
-          onOpenPromptLibrary={onOpenPromptLibrary}
         />
 
         {/* Bottom Gemini Floating Capsule Input Area */}
@@ -440,7 +427,6 @@ export function AIChat({ onOpenPromptLibrary }: AIChatProps) {
               updateConversation(activeConv.id, { provider: p });
             }
           }}
-          onOpenPromptLibrary={onOpenPromptLibrary}
         />
       </div>
 

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ToolDefinition } from "@/types";
 import * as Icons from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useI18n } from "@/lib/i18n";
+import { UI_COPY } from "@/lib/ui-copy";
 
 interface ToolCardProps {
   tool: ToolDefinition;
@@ -12,10 +12,10 @@ interface ToolCardProps {
 }
 
 export function ToolCard({ tool, className }: ToolCardProps) {
-  const { t, getToolName, localizePath } = useI18n();
+  const { t, toolName: getToolName } = UI_COPY;
   const IconComponent = (Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[tool.icon] || Icons.Wrench;
   const displayName = getToolName(tool.slug, tool.name);
-  const href = localizePath(`/${tool.productType}s/${tool.slug}`);
+  const href = `/${tool.productType}s/${tool.slug}`;
 
   return (
     <Link href={href} className="block group h-full">

@@ -44,3 +44,6 @@ next-env.d.ts
 
 # local persistent data
 .data/
+
+# Generated from the pinned PDF.js dependency by predev/prebuild
+/public/pdfjs/

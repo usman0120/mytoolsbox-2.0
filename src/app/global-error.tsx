@@ -1,7 +1,7 @@
 "use client";
 
 export default function GlobalError({ error, retry }: { error: Error & { digest?: string }; retry: () => void }) {
-  return <html lang="en"><body style={{ margin: 0, background: "#f7faf8", color: "#153e2d", fontFamily: "system-ui, sans-serif" }}>
+  return <html lang="en-US"><body style={{ margin: 0, background: "#f7faf8", color: "#153e2d", fontFamily: "system-ui, sans-serif" }}>
     <title>Something went wrong | MyToolsBox</title>
     <main style={{ maxWidth: 520, margin: "12vh auto", padding: 32, textAlign: "center" }}>
       {/* A native image keeps this fallback independent of the failed layout. */}

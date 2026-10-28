@@ -2,10 +2,10 @@
 
 import { Component, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
-import { useI18n } from "@/lib/i18n";
+import { UI_COPY } from "@/lib/ui-copy";
 
 export function EngineLoading() {
-  const { t } = useI18n();
+  const { t } = UI_COPY;
   return (
     <div role="status" className="flex min-h-32 items-center justify-center gap-3 text-sm text-muted-foreground">
       <span aria-hidden="true" className="size-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />

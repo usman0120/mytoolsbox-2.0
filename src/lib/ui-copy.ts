@@ -1,6 +1,5 @@
-import type { TranslationDictionary } from "../types";
-
-export const en: TranslationDictionary = {
+// Shared US English interface copy. No language switching or translation runtime.
+const COPY: Record<string, string> = {
   // Navigation
   nav_tools: "Tools",
   nav_apps: "Apps",
@@ -81,9 +80,6 @@ export const en: TranslationDictionary = {
   ai_suite_desc: "Harness high-speed intelligence powered by Google Gemini 2.0 Flash and Groq Llama 3.3 70B. Chat, benchmark models side-by-side, explore 160+ curated prompts, and activate expert domain personas.",
   ai_workspace_btn: "Open AI Workspace",
   ai_chat_desc: "Conversational workspace with real-time routing, speech-to-text dictation, and syntax-highlighted code export.",
-  ai_prompts_desc: "Battle-tested prompts across Software Engineering, Copywriting, Mathematics, Academic Research, and Product Strategy.",
-  ai_compare_desc: "Run head-to-head comparisons of Gemini 2.0 Flash against Groq Llama 3.3 70B with real-time millisecond latency metrics.",
-  ai_personas_desc: "Tuned system roles for Staff Software Engineers, Mathematics Professors, Master Copywriters, and Executive Product Managers.",
 
   // Homepage Popular & Explore
   popular_tag: "Most Used",
@@ -178,9 +174,6 @@ export const en: TranslationDictionary = {
   ai_page_title: "AI Workspace Suite",
   ai_page_subtitle: "Chat, brainstorm, code, and solve problems with leading AI models.",
   ai_new_chat: "New Chat",
-  ai_prompt_library: "Prompt Library",
-  ai_compare_models: "Compare Models",
-  ai_personas: "Personas & Tools",
 
   // Search Page
   search_title: "Search Tools & Apps",
@@ -234,9 +227,6 @@ export const en: TranslationDictionary = {
   // Navbar Submenus
   nav_settings_profile: "Settings & Profile",
   nav_ai_chat_sub: "Multi-turn AI Assistant",
-  nav_ai_prompts_sub: "160+ Curated Templates",
-  nav_ai_compare_sub: "Side-by-side Arena",
-  nav_ai_personas_sub: "Specialized Engines",
 
   // Tool Card & Extra Badges
   badge_soon: "Soon",
@@ -381,12 +371,6 @@ export const en: TranslationDictionary = {
   ai_subnav_subtitle: "High-performance AI chat, real-time model comparisons, and curated prompts powered by Google Gemini and Groq.",
   ai_subnav_badge: "Production Ready",
   ai_subnav_free_credits: "Get 1,000 free monthly credits",
-  ai_compare_title: "AI Model Comparison Arena",
-  ai_compare_subtitle: "Benchmark responses side-by-side in real time across Google Gemini and Groq models.",
-  ai_personas_title: "AI Expert Personas & Tools",
-  ai_personas_subtitle: "Specialized roles configured for software engineering, executive strategy, writing, and research.",
-  ai_prompts_title: "AI Prompt Library",
-  ai_prompts_subtitle: "160+ production-grade prompts across 8 specialized domains.",
 
   // Legal (Privacy & Terms)
   privacy_page_title: "Privacy Policy",
@@ -399,4 +383,11 @@ export const en: TranslationDictionary = {
   not_found_title: "Page Not Found",
   not_found_desc: "The page you are looking for doesn't exist or has been moved.",
   not_found_btn: "Back to Home",
+};
+
+export function uiText(key: string, fallback?: string): string { return COPY[key] ?? fallback ?? key; }
+export const UI_COPY = {
+  t: uiText,
+  toolName: (_slug: string, name: string) => name,
+  categoryName: (id: string, name: string) => COPY[`cat_${id}`] ?? name,
 };

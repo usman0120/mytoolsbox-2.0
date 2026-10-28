@@ -9,7 +9,7 @@ import { addHistoryEntry, isFavorited } from "@/lib/firebase/user-service";
 const auth = vi.hoisted(() => ({ user: { uid: "test-user" } as { uid: string } | null }));
 vi.mock("@/lib/auth/auth-context", () => ({ useAuth: () => auth }));
 vi.mock("@/lib/auth", () => ({ useAuth: () => auth }));
-vi.mock("@/lib/i18n", () => ({ useI18n: () => ({ t: (key: string) => key, localizePath: (path: string) => path, getToolName: (_slug: string, name: string) => name }) }));
+vi.mock("@/lib/ui-copy", () => ({ UI_COPY: { t: (key: string) => key, toolName: (_slug: string, name: string) => name } }));
 vi.mock("@/features/app-engine", () => ({ AppEngine: () => createElement("div", null, "App workspace") }));
 vi.mock("@/lib/firebase/user-service", () => ({ addHistoryEntry: vi.fn(), isFavorited: vi.fn(), addFavorite: vi.fn(), getFavorites: vi.fn(), removeFavorite: vi.fn() }));
 vi.mock("@/lib/analytics", () => ({ trackEvent: vi.fn() }));

@@ -3,9 +3,6 @@ import type { NextRequest } from "next/server";
 import { checkAbuse } from "@/lib/payments/abuse";
 import { consolidatedPath } from "@/lib/catalog/consolidation";
 
-// Non-default supported locale prefixes for localized URL rewriting
-const LOCALES = ["es", "ur", "fr", "de", "pt", "hi", "ar"];
-
 // Paths that require authentication
 const PROTECTED_PATHS = ["/dashboard", "/settings", "/favorites", "/history", "/account", "/admin"];
 
@@ -18,16 +15,7 @@ const ABUSE_CHECK_PATHS = ["/api/", "/tools/", "/apps/"];
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // -------------------------------------------------------------------------
-  // Multi-Language Subpath Detection & Normalization (e.g. /es/tools/... -> /tools/...)
-  // -------------------------------------------------------------------------
-  const pathSegments = pathname.split("/").filter(Boolean);
-  const firstSegment = pathSegments[0];
-  const isLocalePrefix = firstSegment && LOCALES.includes(firstSegment);
-  const locale = isLocalePrefix ? firstSegment : null;
-  const normalizedPath = isLocalePrefix
-    ? "/" + pathSegments.slice(1).join("/")
-    : pathname;
+  const normalizedPath = pathname;
 
   const replacement = consolidatedPath(normalizedPath);
   if (replacement) {
@@ -35,7 +23,6 @@ export function proxy(request: NextRequest) {
     request.nextUrl.searchParams.forEach((value, key) => {
       if (!target.searchParams.has(key)) target.searchParams.set(key, value);
     });
-    if (locale) target.pathname = `/${locale}${target.pathname}`;
     return NextResponse.redirect(target, 308);
   }
 
@@ -105,21 +92,6 @@ export function proxy(request: NextRequest) {
 
   if (isAuthPath && sessionCookie) {
     return NextResponse.redirect(new URL("/", request.url));
-  }
-
-  // -------------------------------------------------------------------------
-  // Internal rewrite for localized paths (preserves URL in browser for Googlebot)
-  // -------------------------------------------------------------------------
-  if (locale) {
-    const targetUrl = new URL(normalizedPath === "" ? "/" : normalizedPath, request.url);
-    targetUrl.searchParams.set("lang", locale);
-    request.nextUrl.searchParams.forEach((val, key) => {
-      if (key !== "lang") targetUrl.searchParams.set(key, val);
-    });
-
-    const response = NextResponse.rewrite(targetUrl);
-    response.headers.set("x-locale", locale);
-    return response;
   }
 
   return NextResponse.next();

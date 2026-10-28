@@ -30,7 +30,6 @@ import {
   type BlogPost,
   getRelatedBlogPosts,
 } from "@/content/blog/blogs-data";
-import { useI18n } from "@/lib/i18n";
 import { SITE_CONFIG } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { PageShell, ToolHeader } from "@/components/common/workload-layouts";
@@ -85,7 +84,6 @@ function getCalloutIcon(iconName?: string) {
 }
 
 export function BlogPostClient({ post }: Props) {
-  const { localizePath } = useI18n();
   const [copied, setCopied] = useState(false);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
 
@@ -153,7 +151,7 @@ export function BlogPostClient({ post }: Props) {
       parts.push(
         <Link
           key={match.index}
-          href={localizePath(href)}
+          href={href}
           className="font-semibold text-primary underline decoration-primary/40 underline-offset-4 hover:decoration-primary transition-colors"
         >
           {label}
@@ -176,11 +174,11 @@ export function BlogPostClient({ post }: Props) {
         <div>
           {/* Breadcrumbs */}
           <nav className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground mb-6 overflow-x-auto">
-            <Link href={localizePath("/")} className="hover:text-foreground transition-colors shrink-0">
+            <Link href="/" className="hover:text-foreground transition-colors shrink-0">
               Home
             </Link>
             <ChevronRight className="h-3.5 w-3.5 shrink-0" />
-            <Link href={localizePath("/blog")} className="hover:text-foreground transition-colors shrink-0">
+            <Link href="/blog" className="hover:text-foreground transition-colors shrink-0">
               Blog
             </Link>
             <ChevronRight className="h-3.5 w-3.5 shrink-0" />
@@ -316,7 +314,7 @@ export function BlogPostClient({ post }: Props) {
                         </div>
 
                         <Link
-                          href={localizePath(`/tools/${section.toolCallout.slug}`)}
+                          href={`/tools/${section.toolCallout.slug}`}
                           className={cn(
                             buttonVariants({ variant: "default" }),
                             "shrink-0 w-full sm:w-auto gap-2 shadow-xs"
@@ -450,7 +448,7 @@ export function BlogPostClient({ post }: Props) {
                     {post.relatedTools.map((tool) => (
                       <Link
                         key={tool.slug}
-                        href={localizePath(`/tools/${tool.slug}`)}
+                        href={`/tools/${tool.slug}`}
                         className="flex items-center justify-between p-3 rounded-lg border border-border/60 bg-muted/20 hover:border-primary/50 hover:bg-muted/50 transition-all group"
                       >
                         <div className="space-y-0.5">
@@ -469,7 +467,7 @@ export function BlogPostClient({ post }: Props) {
               )}
 
               {/* Client-Side Privacy Guarantee Badge Card */}
-              <Link href={localizePath("/privacy")} className="inline-flex items-center gap-2 text-sm text-primary hover:underline">
+              <Link href="/privacy" className="inline-flex items-center gap-2 text-sm text-primary hover:underline">
                 <ShieldCheck className="h-4 w-4" /> Privacy Policy
               </Link>
             </div>
@@ -483,7 +481,7 @@ export function BlogPostClient({ post }: Props) {
               Related Guides & Articles
             </h3>
             <Link
-              href={localizePath("/blog")}
+              href="/blog"
               className="text-xs font-semibold text-primary hover:underline inline-flex items-center gap-1"
             >
               <span>View all guides</span>
@@ -498,7 +496,7 @@ export function BlogPostClient({ post }: Props) {
                 className="group flex flex-col overflow-hidden rounded-lg border border-border/60 bg-card hover:border-primary/40 transition-colors"
               >
                 <Link
-                  href={localizePath(`/blog/${rPost.slug}`)}
+                  href={`/blog/${rPost.slug}`}
                   className="relative aspect-[16/10] overflow-hidden bg-muted block"
                 >
                   <img
@@ -523,14 +521,14 @@ export function BlogPostClient({ post }: Props) {
                     </div>
 
                     <h4 className="font-bold text-sm text-foreground group-hover:text-primary transition-colors line-clamp-2">
-                      <Link href={localizePath(`/blog/${rPost.slug}`)}>
+                      <Link href={`/blog/${rPost.slug}`}>
                         {rPost.title}
                       </Link>
                     </h4>
                   </div>
 
                   <Link
-                    href={localizePath(`/blog/${rPost.slug}`)}
+                    href={`/blog/${rPost.slug}`}
                     className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline pt-2 border-t border-border/40"
                   >
                     <span>Read Article</span>
@@ -549,7 +547,7 @@ export function BlogPostClient({ post }: Props) {
 
             <div className="flex flex-wrap items-center gap-3 shrink-0">
               <Link
-                href={localizePath("/tools")}
+                href="/tools"
                 className={cn(
                   buttonVariants({ size: "lg" }),
                   "gap-2"
@@ -559,7 +557,7 @@ export function BlogPostClient({ post }: Props) {
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
-                href={localizePath("/blog")}
+                href="/blog"
                 className={cn(
                   buttonVariants({ variant: "outline", size: "lg" }),
                   "font-medium"

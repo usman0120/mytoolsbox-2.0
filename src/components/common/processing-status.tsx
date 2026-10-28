@@ -1,7 +1,7 @@
 import { ProcessingStatus } from "@/lib/processing/types";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { useI18n } from "@/lib/i18n";
+import { UI_COPY } from "@/lib/ui-copy";
 import {
   Loader2,
   CheckCircle2,
@@ -91,7 +91,7 @@ interface ProcessingStatusBadgeProps {
 
 export function ProcessingStatusBadge({ status }: ProcessingStatusBadgeProps) {
   const config = STATUS_CONFIG[status];
-  const { t } = useI18n();
+  const { t } = UI_COPY;
   if (!config) return null;
 
   const Icon = config.icon;

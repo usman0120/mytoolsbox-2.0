@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useI18n } from "@/lib/i18n";
+import { UI_COPY } from "@/lib/ui-copy";
 import { buttonVariants } from "@/components/ui/button";
 import { PageShell } from "@/components/common/workload-layouts";
 import { Home, Search, FileText, Image as ImageIcon, Code2, Calculator } from "lucide-react";
@@ -16,7 +16,7 @@ const QUICK_LINKS = [
 ];
 
 export default function NotFound() {
-  const { t, localizePath } = useI18n();
+  const { t } = UI_COPY;
 
   return (
     <PageShell className="max-w-2xl py-16">
@@ -62,7 +62,7 @@ export default function NotFound() {
             {QUICK_LINKS.map(({ label, href, icon: Icon }) => (
               <Link
                 key={href}
-                href={localizePath(href)}
+                href={href}
                 className="flex flex-col items-center gap-2 px-3 py-4 rounded-xl border border-border/60 bg-card/60 hover:bg-muted/60 hover:border-primary/30 transition-all text-xs font-medium text-muted-foreground hover:text-foreground"
               >
                 <Icon className="h-5 w-5 text-primary/60" />
@@ -74,11 +74,11 @@ export default function NotFound() {
 
         {/* Action Buttons */}
         <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-            <Link href={localizePath("/")} className={buttonVariants({ className: "h-11 rounded-xl gap-2 px-5" })}>
+            <Link href="/" className={buttonVariants({ className: "h-11 rounded-xl gap-2 px-5" })}>
               <Home className="h-3.5 w-3.5" />
               {t("not_found_btn", "Back to Home")}
             </Link>
-            <Link href={localizePath("/tools")} className={buttonVariants({ variant: "outline", className: "h-11 rounded-xl gap-2 px-5" })}>
+            <Link href="/tools" className={buttonVariants({ variant: "outline", className: "h-11 rounded-xl gap-2 px-5" })}>
               <Search className="h-3.5 w-3.5" />
               {t("nav_tools", "Explore All Tools")}
             </Link>

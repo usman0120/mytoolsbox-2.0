@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import type { HubDefinition } from "@/types";
 import type { ToolDefinition } from "@/types";
-import { useI18n } from "@/lib/i18n";
+import { UI_COPY } from "@/lib/ui-copy";
 import { PageShell, ToolHeader } from "@/components/common/workload-layouts";
 
 interface HubDetailClientProps {
@@ -33,7 +33,7 @@ interface HubDetailClientProps {
 
 export function HubDetailClient({ slug, hub, tools, apps }: HubDetailClientProps) {
   const router = useRouter();
-  const { t, localizePath, getToolName } = useI18n();
+  const { t, toolName: getToolName } = UI_COPY;
 
   const getLocalizedHub = () => {
     switch (slug) {
@@ -66,9 +66,9 @@ export function HubDetailClient({ slug, hub, tools, apps }: HubDetailClientProps
       {/* Breadcrumb */}
       <div className="mb-6">
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Link href={localizePath("/")} className="hover:text-foreground transition-colors">Home</Link>
+          <Link href="/" className="hover:text-foreground transition-colors">Home</Link>
           <ChevronRight className="h-3.5 w-3.5" />
-          <Link href={localizePath("/hubs")} className="hover:text-foreground transition-colors">{t("nav_hubs")}</Link>
+          <Link href="/hubs" className="hover:text-foreground transition-colors">{t("nav_hubs")}</Link>
           <ChevronRight className="h-3.5 w-3.5" />
           <span className="text-foreground font-medium">{localizedHub.name}</span>
         </div>
@@ -88,7 +88,7 @@ export function HubDetailClient({ slug, hub, tools, apps }: HubDetailClientProps
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {tools.map((tool) => (
-              <Link key={tool.slug} href={localizePath(`/tools/${tool.slug}`)} className="group">
+              <Link key={tool.slug} href={`/tools/${tool.slug}`} className="group">
                 <div className="h-full p-4 rounded-xl border border-border/70 bg-card hover:border-primary/40 hover:bg-card/90 transition-all duration-200 hover:-translate-y-0.5 flex items-start gap-3.5">
                   <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-200 shrink-0">
                     <Zap className="h-4.5 w-4.5" />
@@ -118,7 +118,7 @@ export function HubDetailClient({ slug, hub, tools, apps }: HubDetailClientProps
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {apps.map((app) => (
-              <Link key={app.slug} href={localizePath(`/apps/${app.slug}`)} className="group">
+              <Link key={app.slug} href={`/apps/${app.slug}`} className="group">
                 <div className="h-full p-4 rounded-xl border border-border/70 bg-card hover:border-primary/40 hover:bg-card/90 transition-all duration-200 hover:-translate-y-0.5 flex items-start gap-3.5">
                   <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-200 shrink-0">
                     <Sparkles className="h-4.5 w-4.5" />
@@ -144,7 +144,7 @@ export function HubDetailClient({ slug, hub, tools, apps }: HubDetailClientProps
             <HubIcon className={`h-10 w-10 ${vis.iconColor}`} />
           </div>
           <p className="text-lg font-medium">{t("search_no_results")}</p>
-          <Button variant="outline" className="rounded-xl" onClick={() => router.push(localizePath("/hubs"))}>
+          <Button variant="outline" className="rounded-xl" onClick={() => router.push("/hubs")}>
             <ArrowLeft className="h-4 w-4 mr-1.5" />
             {t("hubs_back")}
           </Button>

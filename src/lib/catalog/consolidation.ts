@@ -16,10 +16,11 @@ export const RETIRED_APPS: Record<string, string> = {
 export const REMOVED_AI_PATHS = ["/ai/compare", "/ai/personas"];
 
 export function consolidatedPath(pathname: string): string | undefined {
+  if (pathname === "/ai") return "/apps/ai-chat";
   const [, , slug] = pathname.split("/");
   if (pathname === `/tools/${slug}` && Object.hasOwn(RETIRED_TOOLS, slug)) return RETIRED_TOOLS[slug];
   if (pathname === `/apps/${slug}` && Object.hasOwn(RETIRED_APPS, slug)) return RETIRED_APPS[slug];
-  if (REMOVED_AI_PATHS.includes(pathname)) return "/ai";
+  if (REMOVED_AI_PATHS.includes(pathname)) return "/apps/ai-chat";
 }
 
 export function canonicalAppId(id: string): string {

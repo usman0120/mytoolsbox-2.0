@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { useI18n } from "@/lib/i18n";
+import { UI_COPY } from "@/lib/ui-copy";
 import type { ResourceGuide } from "@/features/resources/resources-data";
 import { PageShell, ToolHeader } from "@/components/common/workload-layouts";
 
@@ -19,7 +19,7 @@ interface Props {
 }
 
 export function ResourceGuidePageClient({ guide }: Props) {
-  const { t, localizePath } = useI18n();
+  const { t } = UI_COPY;
   const [copiedCodeIdx, setCopiedCodeIdx] = useState<number | null>(null);
   const [copiedShare, setCopiedShare] = useState(false);
   const [feedback, setFeedback] = useState<"yes" | "no" | null>(null);
@@ -48,7 +48,7 @@ export function ResourceGuidePageClient({ guide }: Props) {
       {/* Breadcrumb & Navigation */}
       <div className="flex items-center justify-between mb-6">
         <Link
-          href={localizePath("/resources")}
+          href="/resources"
           className="inline-flex items-center text-xs font-medium text-muted-foreground hover:text-foreground transition-colors group"
         >
           <ArrowLeft className="h-4 w-4 mr-1.5 transition-transform group-hover:-translate-x-0.5" />
@@ -135,7 +135,7 @@ export function ResourceGuidePageClient({ guide }: Props) {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {guide.recommendedTools.map((tool) => (
-              <Link key={tool.slug} href={localizePath(`/tools/${tool.slug}`)}>
+              <Link key={tool.slug} href={`/tools/${tool.slug}`}>
                 <Card className="h-full border hover:border-primary/50 transition-all hover:scale-[1.02] shadow-xs cursor-pointer">
                   <CardContent className="p-3.5 space-y-1.5 flex flex-col justify-between h-full">
                     <div>

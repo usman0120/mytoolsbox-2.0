@@ -34,13 +34,18 @@ export const FOOTER_PLATFORM_SECTIONS: FooterSection[] = [
     ["Math Solver", "math-solver"], ["Study Planner", "study-planner"], ["Research Assistant", "research-assistant"],
     ["Quiz Maker", "quiz-maker"], ["Farmer AI", "farmer-ai"], ["Fitness AI", "fitness-ai"], ["Nutrition AI", "nutrition-ai"], ["Habit Tracker", "habit-tracker"],
   ].map(([name, slug]) => ({ name, href: `/apps/${slug}` })) },
-  { title: "AI workspace", href: "/ai", links: [
-    { name: "AI Chat", href: "/ai" }, { name: "Prompt Library", href: "/ai/prompts" },
+  { title: "AI apps", href: "/apps/ai-chat", links: [
+    { name: "AI Chat", href: "/apps/ai-chat" },
     { name: "AI Notes Generator", href: "/apps/ai-notes-generator" }, { name: "AI Planning", href: "/apps/ai-planning" },
     { name: "AI Diagram Generator", href: "/apps/ai-diagram-generator" },
     { name: "AI Project Ideas", href: "/apps/ai-project-ideas" },
   ] },
-  { title: "Workflow hubs", href: "/hubs", links: ["Students", "Developers", "Business", "Designers", "Writers", "Researchers", "Farmers", "Everyone"].map((name) => ({ name, href: `/hubs/${name.toLowerCase()}` })) },
+  { title: "Workflows", href: "/workflows", links: [
+    { name: "Workflow builder", href: "/workflows#builder" }, { name: "PDF images under 200 KB", href: "/workflows?preset=pdf-images-200kb" },
+    { name: "Email-ready images", href: "/workflows?preset=image-email-pack" }, { name: "Photos to PDF", href: "/workflows?preset=photos-letter-pdf" },
+    { name: "Text analysis reports", href: "/workflows?preset=text-analysis" }, { name: "CSV to JSON", href: "/workflows?preset=csv-json-pack" },
+  ] },
+  { title: "Role-based hubs", href: "/hubs", links: ["Students", "Developers", "Business", "Designers", "Writers", "Researchers", "Farmers", "Everyone"].map((name) => ({ name, href: `/hubs/${name.toLowerCase()}` })) },
   { title: "Your workspace", href: "/settings", links: [
     { name: "Account & settings", href: "/settings?tab=account" }, { name: "Saved favorites", href: "/settings?tab=favorites" },
     { name: "Activity history", href: "/settings?tab=history" }, { name: "Resources & templates", href: "/resources" },

@@ -4,20 +4,20 @@ import { useEffect } from "react";
 import { useAuth } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useI18n } from "@/lib/i18n";
+import { UI_COPY } from "@/lib/ui-copy";
 import { PageShell, ToolHeader } from "@/components/common/workload-layouts";
 import { Loader2, Settings, Heart, Clock, Wrench, Sparkles } from "lucide-react";
 
 export function DashboardPageClient() {
   const { user, loading } = useAuth();
   const router = useRouter();
-  const { t, localizePath } = useI18n();
+  const { t } = UI_COPY;
 
   useEffect(() => {
     if (!loading && !user) {
-      router.push(localizePath("/?signin=true"));
+      router.push("/?signin=true");
     }
-  }, [loading, user, router, localizePath]);
+  }, [loading, user, router]);
 
   if (loading) {
     return (
@@ -68,7 +68,7 @@ export function DashboardPageClient() {
 
       <div className="divide-y border-y">
         {cards.map((card) => (
-          <Link key={card.href} href={localizePath(card.href)} className="flex items-start gap-3 py-4 hover:text-primary">
+          <Link key={card.href} href={card.href} className="flex items-start gap-3 py-4 hover:text-primary">
             <card.icon className="h-5 w-5 text-primary shrink-0" />
             <div className="min-w-0">
               <h2 className="text-base font-medium">{card.title}</h2>

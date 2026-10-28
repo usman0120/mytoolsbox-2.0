@@ -8,12 +8,10 @@ import { Footer } from "@/components/navigation";
 import { AuthProvider } from "@/lib/auth";
 import { SITE_CONFIG } from "@/lib/constants";
 import { SkipLink } from "@/components/common/accessibility";
-import { I18nProvider } from "@/lib/i18n";
 import { GoogleAnalytics } from "@/components/analytics/google-analytics";
 import { Toaster } from "@/components/ui/sonner";
 import { RequestNotice } from "@/components/common/request-notice";
 import { NavigationSkeleton } from "@/components/common/loading-skeleton";
-import { FullPageTranslations } from "@/components/common/full-page-translations";
 import "./globals.css";
 
 const GA_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
@@ -56,17 +54,6 @@ export const metadata: Metadata = {
   authors: [{ name: SITE_CONFIG.name }],
   alternates: {
     canonical: SITE_CONFIG.url,
-    languages: {
-      "en": `${SITE_CONFIG.url}/en`,
-      "es": `${SITE_CONFIG.url}/es`,
-      "ur": `${SITE_CONFIG.url}/ur`,
-      "fr": `${SITE_CONFIG.url}/fr`,
-      "de": `${SITE_CONFIG.url}/de`,
-      "pt": `${SITE_CONFIG.url}/pt`,
-      "hi": `${SITE_CONFIG.url}/hi`,
-      "ar": `${SITE_CONFIG.url}/ar`,
-      "x-default": SITE_CONFIG.url,
-    },
   },
   icons: {
     icon: "/logo.png",
@@ -121,7 +108,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
-      lang="en"
+      lang="en-US"
       className={`${archivo.variable} ${geistMono.variable} ${newsreader.variable} h-full antialiased`}
       suppressHydrationWarning
     >
@@ -129,7 +116,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* Google Analytics 4 Scripts & Route Navigation Tracker */}
         {GA_ID && <GoogleAnalytics measurementId={GA_ID} />}
         <SkipLink />
-        <I18nProvider>
           <ThemeProvider>
             <AuthProvider>
               <TooltipProvider>
@@ -138,7 +124,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 </Suspense>
                 <main id="main-content" className="flex-1" role="main">
                   <Suspense fallback={null}><RequestNotice /></Suspense>
-                  <FullPageTranslations />
                   {children}
                 </main>
                 <Footer />
@@ -146,7 +131,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </TooltipProvider>
             </AuthProvider>
           </ThemeProvider>
-        </I18nProvider>
       </body>
     </html>
   );

@@ -4,7 +4,7 @@ import { Wifi, WifiOff, RefreshCw } from "lucide-react";
 import { useOnlineStatus, useOfflineQueue } from "@/hooks/use-offline";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
-import { useI18n } from "@/lib/i18n";
+import { UI_COPY } from "@/lib/ui-copy";
 
 // ---------------------------------------------------------------------------
 // OfflineIndicator — subtle banner shown when offline
@@ -13,7 +13,7 @@ import { useI18n } from "@/lib/i18n";
 export function OfflineIndicator() {
   const { isOnline, wasOnline } = useOnlineStatus();
   const [reconnectTimer, setReconnectTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
-  const { t } = useI18n();
+  const { t } = UI_COPY;
 
   // Compute visibility during render
   const visible = !isOnline;
@@ -68,7 +68,7 @@ export function OfflineIndicator() {
 
 export function OfflineQueueIndicator() {
   const { queueSize, isOnline } = useOfflineQueue();
-  const { t } = useI18n();
+  const { t } = UI_COPY;
 
   if (queueSize === 0) return null;
 
@@ -105,7 +105,7 @@ export function OfflineQueueIndicator() {
 // ---------------------------------------------------------------------------
 
 export function OfflineToolBadge({ className }: { className?: string }) {
-  const { t } = useI18n();
+  const { t } = UI_COPY;
   return (
     <span
       className={cn(

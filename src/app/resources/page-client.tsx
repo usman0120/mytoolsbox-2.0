@@ -22,11 +22,11 @@ import {
   type ResourceTemplate,
 } from "@/features/resources/resources-data";
 import { createDocxBlob } from "@/lib/documents/openxml-builder";
-import { useI18n } from "@/lib/i18n";
+import { UI_COPY } from "@/lib/ui-copy";
 import { PageShell, ToolHeader } from "@/components/common/workload-layouts";
 
 export function ResourcesPageClient() {
-  const { t, localizePath } = useI18n();
+  const { t } = UI_COPY;
   const [activeTab, setActiveTab] = useState("guides");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
@@ -159,7 +159,7 @@ export function ResourcesPageClient() {
           </TabsTrigger>
           <div className="ml-auto flex items-center pr-1">
             <Link
-              href={localizePath("/blog")}
+              href="/blog"
               className="h-7 inline-flex items-center text-xs gap-1.5 px-2.5 rounded-lg text-primary hover:text-primary hover:bg-primary/10 font-medium transition-colors"
             >
               <Sparkles className="h-3 w-3" />
@@ -234,7 +234,7 @@ export function ResourcesPageClient() {
                       <Eye className="h-3.5 w-3.5" /> {t("resources_quick_preview", "Quick Preview")}
                     </Button>
                     <Link
-                      href={localizePath(`/resources/${guide.slug}`)}
+                      href={`/resources/${guide.slug}`}
                       className="inline-flex items-center font-medium text-primary hover:underline text-xs gap-1"
                     >
                       {t("resources_read_full", "Read Full Guide")} <ArrowRight className="h-3.5 w-3.5" />
@@ -322,7 +322,7 @@ export function ResourcesPageClient() {
 
                     <div className="flex items-center gap-1.5">
                       {template.toolIntegration && (
-                        <Link href={localizePath(`/tools/${template.toolIntegration.toolSlug}`)}>
+                        <Link href={`/tools/${template.toolIntegration.toolSlug}`}>
                           <Button variant="ghost" size="sm" className="h-7 text-[11px] text-primary gap-1">
                             <ExternalLink className="h-3 w-3" /> {template.toolIntegration.toolName}
                           </Button>
@@ -449,7 +449,7 @@ export function ResourcesPageClient() {
                             <div className="mt-3 pt-2 border-t flex items-center gap-2">
                               <span className="text-[10px]">Related tool:</span>
                               <Link
-                                href={localizePath(`/tools/${faq.relatedToolSlug}`)}
+                                href={`/tools/${faq.relatedToolSlug}`}
                                 className="text-[11px] font-semibold text-primary hover:underline flex items-center gap-1"
                               >
                                 Launch {faq.relatedToolSlug} <ArrowRight className="h-2.5 w-2.5" />
@@ -579,7 +579,7 @@ export function ResourcesPageClient() {
               >
                 {t("action_clear_all", "Close")}
               </Button>
-              <Link href={localizePath(`/resources/${previewGuide.slug}`)}>
+              <Link href={`/resources/${previewGuide.slug}`}>
                 <Button size="sm" className="text-xs gap-1">
                   {t("resources_read_full", "Read Full Guide")} <ArrowRight className="h-3.5 w-3.5" />
                 </Button>

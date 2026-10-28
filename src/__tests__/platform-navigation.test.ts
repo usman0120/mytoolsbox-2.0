@@ -20,7 +20,7 @@ describe("footer directory", () => {
   it("links only to real active tools, apps, hubs, and platform routes", () => {
     for (const section of [...FOOTER_TOOL_SECTIONS, ...FOOTER_PLATFORM_SECTIONS]) {
       for (const href of [section.href, ...section.links.map((link) => link.href)]) {
-        const [path] = href.split("?");
+        const [path] = href.split(/[?#]/);
         const [, module, slug] = path.split("/");
         if (module === "tools" && slug) expect(getToolBySlug(slug)?.status, href).toBe("active");
         else if (module === "apps" && slug) expect(getAppBySlug(slug)?.status, href).toBe("active");

@@ -3,16 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "node scripts/copy-pdfjs-assets.mjs",
+    "prebuild": "node scripts/copy-pdfjs-assets.mjs",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage",
-    "i18n:extract": "node scripts/generate-ui-translations.mjs --extract-only",
-    "i18n:generate": "node scripts/generate-ui-translations.mjs",
-    "i18n:check": "node scripts/generate-ui-translations.mjs --check"
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
@@ -29,6 +28,7 @@
     "next": "16.3.5",
     "next-themes": "^0.4.6",
     "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "6.4.299",
     "qrcode": "^1.5.4",
     "react": "19.2.8",
     "react-dom": "19.2.8",
@@ -41,7 +41,6 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
-    "@xenova/transformers": "2.17.2",
     "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4",
     "@testing-library/dom": "^10.4.2",
@@ -58,10 +57,5 @@
     "typescript": "^5",
     "vite": "^8.3.0",
     "vitest": "^5.0.1"
-  },
-  "overrides": {
-    "@xenova/transformers": {
-      "sharp": "0.35.4"
-    }
   }
 }

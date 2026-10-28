@@ -17,14 +17,14 @@ import { searchTools } from "@/content/tools/registry";
 import { getActiveApps } from "@/content/apps/registry";
 import { ToolDefinition } from "@/types";
 import { CATEGORIES } from "@/lib/constants";
-import { useI18n } from "@/lib/i18n";
+import { UI_COPY } from "@/lib/ui-copy";
 import { cn } from "@/lib/utils";
 import * as Icons from "lucide-react";
 
 type FilterType = "all" | "tool" | "app";
 
 export function SearchPageClient() {
-  const { t, getToolName, getCategoryName, localizePath } = useI18n();
+  const { t, toolName: getToolName, categoryName: getCategoryName } = UI_COPY;
   const searchParams = useSearchParams();
   const router = useRouter();
   const initialQuery = searchParams.get("q") || "";
@@ -76,7 +76,7 @@ export function SearchPageClient() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (query.trim()) {
-      router.push(localizePath(`/search?q=${encodeURIComponent(query.trim())}`));
+      router.push(`/search?q=${encodeURIComponent(query.trim())}`);
     }
   };
 
@@ -92,7 +92,7 @@ export function SearchPageClient() {
       {/* Breadcrumb */}
       <div className="mb-6 animate-fade-in-up">
         <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-          <Link href={localizePath("/")} className="hover:text-foreground transition-colors">Home</Link>
+          <Link href="/" className="hover:text-foreground transition-colors">Home</Link>
           <ChevronRight className="h-3.5 w-3.5" />
           <span className="text-foreground font-medium">{t("search_title", "Search")}</span>
         </div>
@@ -172,7 +172,7 @@ export function SearchPageClient() {
                 const displayName = result.type === "tool" ? getToolName(result.item.slug, result.item.name) : result.item.name;
                 const localizedCat = getCategoryName(result.item.category, result.item.category);
                 return (
-                  <Link key={`${result.type}:${result.item.slug}`} href={localizePath(href)}>
+                  <Link key={`${result.type}:${result.item.slug}`} href={href}>
                     <Card
                       className="group h-full rounded-lg border-border/50 hover:border-primary/30 overflow-hidden"
                       style={{ animationDelay: `${i * 40}ms` }}

@@ -205,10 +205,9 @@ function buildInventory() {
   const metadataRoutes = ['sitemap.ts', 'robots.ts', 'manifest.ts'].filter((filename) => fs.existsSync(path.join(root, 'src/app', filename))).map((filename) => ({ owner: `src/app/${filename}`, kind: 'metadata' }));
   const routingPolicies = {
     owner: 'src/proxy.ts',
-    localePrefixes: literalArray('src/proxy.ts', 'LOCALES'),
     protectedPaths: literalArray('src/proxy.ts', 'PROTECTED_PATHS'),
     authenticatedRedirectPaths: literalArray('src/proxy.ts', 'AUTH_PATHS'),
-    limitation: 'Declared proxy policies, not verification of token/role authorization or localized rendering.',
+    limitation: 'Declared proxy policies, not verification of token/role authorization.',
   };
   return { features, routes, metadataRoutes, routingPolicies, canonicalPages, editorialRoutes, editorialReferences, hubs, hubReferences, relatedReferences, relatedAppReferences, toolLoaders, appLoaders, legacyLoaders, integrity: {
     tools: differences(tools, toolLoaders), apps: differences(apps, appLoaders), legacy: differences(tools, legacyLoaders), missingTargets,

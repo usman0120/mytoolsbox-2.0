@@ -31,7 +31,7 @@ import { addFavorite, getFavorites, removeFavorite, isFavorited, addHistoryEntry
 import { trackEvent } from "@/lib/analytics";
 import { toast } from "sonner";
 import * as Icons from "lucide-react";
-import { useI18n } from "@/lib/i18n";
+import { UI_COPY } from "@/lib/ui-copy";
 
 interface ToolPageClientProps {
   tool: ToolDefinition;
@@ -39,7 +39,7 @@ interface ToolPageClientProps {
 
 export function ToolPageClient({ tool }: ToolPageClientProps) {
   const { user } = useAuth();
-  const { t, getToolName, getCategoryName, localizePath } = useI18n();
+  const { t, toolName: getToolName, categoryName: getCategoryName } = UI_COPY;
   const localizedName = getToolName(tool.slug, tool.name);
   const [favorited, setFavorited] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -191,7 +191,7 @@ export function ToolPageClient({ tool }: ToolPageClientProps) {
       <nav aria-label="Breadcrumb" className="mb-3">
         <ol className="flex items-center gap-1.5 text-sm text-muted-foreground flex-wrap">
           <li>
-            <Link href={localizePath("/")} className="hover:text-foreground transition-colors">
+            <Link href="/" className="hover:text-foreground transition-colors">
               Home
             </Link>
           </li>
@@ -199,7 +199,7 @@ export function ToolPageClient({ tool }: ToolPageClientProps) {
             <ChevronRight className="h-3.5 w-3.5" />
           </li>
           <li>
-            <Link href={localizePath("/tools")} className="hover:text-foreground transition-colors">
+            <Link href="/tools" className="hover:text-foreground transition-colors">
               {t("nav_tools", "Tools")}
             </Link>
           </li>
@@ -208,7 +208,7 @@ export function ToolPageClient({ tool }: ToolPageClientProps) {
           </li>
           <li>
             <Link
-              href={localizePath(`/tools?category=${tool.category}`)}
+              href={`/tools?category=${tool.category}`}
               className="hover:text-foreground capitalize transition-colors"
             >
               {localizedCategoryTitle}
@@ -285,11 +285,11 @@ export function ToolPageClient({ tool }: ToolPageClientProps) {
           <div className="flex flex-wrap items-center gap-x-5 gap-y-3 text-sm">
             <h2 className="font-medium">{t("related_tools_title", "Related tools")}</h2>
             {relatedTools.map((related) => (
-              <Link key={related.id} href={localizePath(`/tools/${related.slug}`)} className="text-primary hover:underline wrap-break-word">
+              <Link key={related.id} href={`/tools/${related.slug}`} className="text-primary hover:underline wrap-break-word">
                 {getToolName(related.slug, related.name)}
               </Link>
             ))}
-            <Link href={localizePath(`/tools?category=${tool.category}`)} className="text-muted-foreground hover:underline">
+            <Link href={`/tools?category=${tool.category}`} className="text-muted-foreground hover:underline">
               {t("action_all_tools", "View All")}
             </Link>
           </div>

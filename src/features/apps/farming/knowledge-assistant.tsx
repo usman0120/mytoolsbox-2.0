@@ -5,34 +5,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Send, Loader2, Sparkles, Lightbulb, BookOpen, AlertTriangle,
-  Globe, MessageCircle, Leaf, ChevronRight,
+   MessageCircle, Leaf, ChevronRight,
 } from "lucide-react";
 import { askFarmingExpert, type FarmingAssistantOutput } from "@/lib/ai/services/farming-assistant";
 import { getAvailableProviders } from "@/lib/ai";
-
-const LANGUAGES = [
-  { value: "english", label: "English" },
-  { value: "hindi", label: "हिंदी (Hindi)" },
-  { value: "punjabi", label: "ਪੰਜਾਬੀ (Punjabi)" },
-  { value: "bengali", label: "বাংলা (Bengali)" },
-  { value: "marathi", label: "मराठी (Marathi)" },
-  { value: "gujarati", label: "ગુજરાતી (Gujarati)" },
-  { value: "tamil", label: "தமிழ் (Tamil)" },
-  { value: "telugu", label: "తెలుగు (Telugu)" },
-  { value: "kannada", label: "ಕನ್ನಡ (Kannada)" },
-  { value: "malayalam", label: "മലയാളം (Malayalam)" },
-];
 
 const SUGGESTED_QUESTIONS = [
   { text: "How do I control aphids on my crops naturally?", lang: "english" },
   { text: "What is the best fertilizer for wheat?", lang: "english" },
   { text: "When should I plant rice this season?", lang: "english" },
   { text: "How to prevent tomato blight disease?", lang: "english" },
-  { text: "मेरी फसल में पीलापन क्यों आ रहा है?", lang: "hindi" },
-  { text: "ਝੋਨੇ ਦੀ ਫ਼ਸਲ ਲਈ ਕਿੰਨੇ ਪਾਣੀ ਦੀ ਲੋੜ ਹੈ?", lang: "punjabi" },
 ];
 
 interface Message {
@@ -45,7 +29,6 @@ interface Message {
 
 export function KnowledgeAssistant() {
   const [query, setQuery] = useState("");
-  const [language, setLanguage] = useState("english");
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [expandedSteps, setExpandedSteps] = useState<Set<number>>(new Set());
@@ -68,7 +51,7 @@ export function KnowledgeAssistant() {
 
     try {
       if (hasAI) {
-        const result = await askFarmingExpert({ query: q, language });
+        const result = await askFarmingExpert({ query: q, language: "english" });
         const assistantMsg: Message = {
           role: "assistant",
           content: result.answer,
@@ -121,19 +104,8 @@ export function KnowledgeAssistant() {
 
   return (
     <div className="space-y-4">
-      {/* Language Selector */}
+      {/* Availability */}
       <div className="flex items-center gap-2">
-        <Globe className="h-4 w-4 text-muted-foreground shrink-0" />
-        <Select value={language} onValueChange={(v) => setLanguage(v ?? "")}>
-          <SelectTrigger className="h-8 text-xs w-45">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {LANGUAGES.map((l) => (
-              <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
         {!hasAI && (
           <Badge variant="secondary" className="text-[10px] h-5">Offline Mode</Badge>
         )}
@@ -226,7 +198,7 @@ export function KnowledgeAssistant() {
                 key={i}
                 variant="secondary"
                 className="cursor-pointer hover:bg-secondary/80 transition-colors py-1.5 px-3"
-                onClick={() => { setLanguage(sq.lang); handleAsk(sq.text); }}
+                onClick={() => handleAsk(sq.text)}
               >
                 {sq.text.length > 50 ? sq.text.slice(0, 50) + "..." : sq.text}
               </Badge>
@@ -241,7 +213,7 @@ export function KnowledgeAssistant() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={language === "hindi" ? "अपना प्रश्न पूछें..." : "Ask any farming question..."}
+          placeholder="Ask any farming question..."
           className="h-10 text-sm"
         />
         <Button

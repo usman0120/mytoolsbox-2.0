@@ -19,7 +19,7 @@ import { searchTools } from "@/content/tools/registry";
 import { getActiveApps } from "@/content/apps/registry";
 import { ToolDefinition } from "@/types";
 import { cn } from "@/lib/utils";
-import { useI18n } from "@/lib/i18n";
+import { UI_COPY } from "@/lib/ui-copy";
 import * as Icons from "lucide-react";
 
 // ---------- Intent-based search helpers ----------
@@ -150,7 +150,7 @@ interface SearchCommandProps {
 
 export function SearchCommand({ className, variant = "hero", onClose }: SearchCommandProps) {
   const router = useRouter();
-  const { t, getToolName, localizePath } = useI18n();
+  const { t, toolName: getToolName } = UI_COPY;
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
@@ -204,12 +204,12 @@ export function SearchCommand({ className, variant = "hero", onClose }: SearchCo
   const navigateToResult = useCallback(
     (result: SearchResult) => {
       const path = result.type === "tool" ? `/tools/${result.item.slug}` : `/apps/${result.item.slug}`;
-      router.push(localizePath(path));
+      router.push(path);
       setIsOpen(false);
       setQuery("");
       onClose?.();
     },
-    [router, onClose, localizePath]
+    [router, onClose]
   );
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -223,7 +223,7 @@ export function SearchCommand({ className, variant = "hero", onClose }: SearchCo
     if (!isOpen || results.length === 0) {
       if (e.key === "Enter" && query.trim()) {
         e.preventDefault();
-        router.push(localizePath(`/search?q=${encodeURIComponent(query.trim())}`));
+        router.push(`/search?q=${encodeURIComponent(query.trim())}`);
         setIsOpen(false);
         setQuery("");
         onClose?.();
@@ -243,7 +243,7 @@ export function SearchCommand({ className, variant = "hero", onClose }: SearchCo
         navigateToResult(results[selectedIndex]);
       } else {
         // "See all results" selected
-        router.push(localizePath(`/search?q=${encodeURIComponent(query.trim())}`));
+        router.push(`/search?q=${encodeURIComponent(query.trim())}`);
         setIsOpen(false);
         setQuery("");
         onClose?.();
@@ -363,7 +363,7 @@ export function SearchCommand({ className, variant = "hero", onClose }: SearchCo
                   selectedIndex === results.length ? "bg-accent" : "hover:bg-accent/50"
                 )}
                 onClick={() => {
-                  router.push(localizePath(`/search?q=${encodeURIComponent(query.trim())}`));
+                  router.push(`/search?q=${encodeURIComponent(query.trim())}`);
                   setIsOpen(false);
                   setQuery("");
                   onClose?.();

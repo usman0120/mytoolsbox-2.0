@@ -16,14 +16,14 @@ import { addFavorite, getFavorites, removeFavorite, isFavorited, addHistoryEntry
 import { trackEvent } from "@/lib/analytics";
 import { toast } from "sonner";
 import * as Icons from "lucide-react";
-import { useI18n } from "@/lib/i18n";
+import { UI_COPY } from "@/lib/ui-copy";
 
 interface AppPageClientProps {
   app: ToolDefinition;
 }
 
 export function AppPageClient({ app }: AppPageClientProps) {
-  const { t, localizePath, getToolName } = useI18n();
+  const { t, toolName: getToolName } = UI_COPY;
   const displayName = getToolName(app.slug, app.name);
   const { user } = useAuth();
   const [favoriteStatus, setFavoriteStatus] = useState<{ uid: string; appId: string; value: boolean } | null>(null);
@@ -185,9 +185,9 @@ export function AppPageClient({ app }: AppPageClientProps) {
       {!isFullscreen && (
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
-            <Link href={localizePath("/")} className="hover:text-foreground transition-colors">Home</Link>
+            <Link href="/" className="hover:text-foreground transition-colors">Home</Link>
             <ChevronRight className="h-3.5 w-3.5" />
-            <Link href={localizePath("/apps")} className="hover:text-foreground transition-colors">{t("nav_apps")}</Link>
+            <Link href="/apps" className="hover:text-foreground transition-colors">{t("nav_apps")}</Link>
             <ChevronRight className="h-3.5 w-3.5" />
             <span className="text-foreground font-medium truncate">{displayName}</span>
           </div>

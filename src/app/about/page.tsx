@@ -4,9 +4,9 @@ import { AboutPageClient } from "./page-client";
 
 export const metadata: Metadata = {
   title: "About",
-  description: `Learn about ${SITE_CONFIG.name} — our mission, team, and why we build free online tools for everyone.`,
+  description: `Learn about ${SITE_CONFIG.name}: focused tools, dedicated apps and private local workflows that connect the steps of everyday work.`,
 };
 
 export default function AboutPage() {
   return <AboutPageClient />;
-}
+}

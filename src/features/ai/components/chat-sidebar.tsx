@@ -5,7 +5,7 @@ import { useChatStore } from "../chat-store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
-import { useI18n } from "@/lib/i18n";
+import { UI_COPY } from "@/lib/ui-copy";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -52,7 +52,7 @@ export function ChatSidebar({
   onNewChat,
   className = "",
 }: ChatSidebarProps) {
-  const { t } = useI18n();
+  const { t } = UI_COPY;
   const isMobile = useSyncExternalStore(subscribeMobile, getMobileSnapshot, getServerSnapshot);
   const {
     conversations,

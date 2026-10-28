@@ -4,14 +4,12 @@ export interface UserPreferences {
   theme: "light" | "dark" | "system";
   defaultCategory: ToolCategory | "all";
   emailNotifications: boolean;
-  language: string;
 }
 
 export const DEFAULT_PREFERENCES: UserPreferences = {
   theme: "system",
   defaultCategory: "all",
   emailNotifications: false,
-  language: "en",
 };
 
 export interface FavoriteItem {

@@ -20,14 +20,12 @@ import {
   BLOG_CATEGORIES,
   getFeaturedBlogPost,
 } from "@/content/blog/blogs-data";
-import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { PageShell, ToolHeader } from "@/components/common/workload-layouts";
 
 const POSTS_PER_PAGE = 9;
 
 export function BlogPageClient() {
-  const { localizePath } = useI18n();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
@@ -170,7 +168,7 @@ export function BlogPageClient() {
                     </div>
 
                     <h2 className="text-xl font-semibold text-foreground group-hover:text-primary transition-colors">
-                      <Link href={localizePath(`/blog/${featuredPost.slug}`)}>
+                      <Link href={`/blog/${featuredPost.slug}`}>
                         {featuredPost.title}
                       </Link>
                     </h2>
@@ -182,7 +180,7 @@ export function BlogPageClient() {
 
                   <div className="pt-2">
                     <Link
-                      href={localizePath(`/blog/${featuredPost.slug}`)}
+                      href={`/blog/${featuredPost.slug}`}
                       className={cn(buttonVariants({ variant: "default" }), "gap-2 group-hover:translate-x-0.5 transition-transform")}
                     >
                       <span>Read article</span>
@@ -235,7 +233,7 @@ export function BlogPageClient() {
                 >
                   {/* Card Cover Image */}
                   <Link
-                    href={localizePath(`/blog/${post.slug}`)}
+                    href={`/blog/${post.slug}`}
                     className="relative aspect-[16/10] overflow-hidden bg-muted block"
                   >
                     <img
@@ -263,7 +261,7 @@ export function BlogPageClient() {
                       </div>
 
                       <h4 className="font-bold text-base sm:text-lg leading-snug tracking-tight text-foreground group-hover:text-primary transition-colors line-clamp-2">
-                        <Link href={localizePath(`/blog/${post.slug}`)}>
+                        <Link href={`/blog/${post.slug}`}>
                           {post.title}
                         </Link>
                       </h4>
@@ -279,7 +277,7 @@ export function BlogPageClient() {
                         {post.author.name}
                       </span>
                       <Link
-                        href={localizePath(`/blog/${post.slug}`)}
+                        href={`/blog/${post.slug}`}
                         className="inline-flex items-center gap-1 font-semibold text-primary hover:underline group-hover:translate-x-0.5 transition-transform"
                       >
                         <span>Read More</span>
@@ -326,7 +324,7 @@ export function BlogPageClient() {
 
             <div className="flex flex-wrap items-center gap-3 shrink-0">
               <Link
-                href={localizePath("/tools")}
+                href="/tools"
                 className={cn(
                   buttonVariants({ size: "lg" }),
                   "gap-2"
@@ -336,7 +334,7 @@ export function BlogPageClient() {
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
-                href={localizePath("/resources")}
+                href="/resources"
                 className={cn(
                   buttonVariants({ variant: "outline", size: "lg" }),
                   "font-medium"

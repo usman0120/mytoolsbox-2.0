@@ -28,20 +28,23 @@ import {
   Microscope,
   ShieldCheck,
   Download,
+  GitBranch,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SearchCommand } from "@/components/common/search-command";
 import { ToolCard } from "@/components/common/tool-card";
-import { useI18n } from "@/lib/i18n";
+import { UI_COPY } from "@/lib/ui-copy";
 import type { ToolDefinition } from "@/types";
 
 interface HomeClientProps {
   popularTools: ToolDefinition[];
   featuredApps: ToolDefinition[];
+  featuredWorkflows?: { id: string; name: string; description: string }[];
+  workflowCount?: number;
 }
 
-export function HomeClient({ popularTools, featuredApps }: HomeClientProps) {
-  const { t, localizePath } = useI18n();
+export function HomeClient({ popularTools, featuredApps, featuredWorkflows = [], workflowCount = 0 }: HomeClientProps) {
+  const { t } = UI_COPY;
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   const quickJobs = [
@@ -58,18 +61,18 @@ export function HomeClient({ popularTools, featuredApps }: HomeClientProps) {
   const valuePillars = [
     {
       num: "01",
-      title: "No account needed",
-      desc: "Start immediately without registration or logins. Jump straight into the utility you need.",
+      title: "The right workspace",
+      desc: "Use a focused tool, open a dedicated app, or connect steps in a workflow.",
     },
     {
       num: "02",
       title: "Your data stays with you",
-      desc: "All files, documents, and calculations are processed directly inside your browser memory.",
+      desc: "Workflow files are processed locally. AI apps use configured online providers—check requirements before sharing sensitive data.",
     },
     {
       num: "03",
-      title: "Pure productivity",
-      desc: "Zero paywalls, zero watermarks, and zero artificial delays. Built for instant, clean output.",
+      title: "Finish the whole job",
+      desc: "Pass actual outputs between local steps. Inspect final formats and file sizes before downloading.",
     },
   ];
 
@@ -86,19 +89,19 @@ export function HomeClient({ popularTools, featuredApps }: HomeClientProps) {
     {
       title: "Documents & PDF",
       desc: "Merge, compress, split, and edit PDFs without server uploads.",
-      tag: "100% Private",
+      tag: "PDF utilities",
       link: "/tools?category=documents",
     },
     {
       title: "Images & Graphics",
-      desc: "Lossless compression, resizing, and format conversions in WebAssembly.",
+      desc: "Resize, convert, crop and compress with explicit quality and size settings.",
       tag: "Instant Canvas",
       link: "/tools?category=images",
     },
     {
       title: "Developer & Code",
       desc: "Format JSON, test regular expressions, and inspect structured payloads.",
-      tag: "High Precision",
+      tag: "Structured data",
       link: "/tools?category=developer",
     },
     {
@@ -112,19 +115,19 @@ export function HomeClient({ popularTools, featuredApps }: HomeClientProps) {
   const faqs = [
     {
       q: "Is MyToolsBox really free to use?",
-      a: "Yes. All core utilities, document converters, and calculators are completely free to use without subscriptions, watermarks, or credit card requirements.",
+      a: "Browser-based workflows and many utilities are available without an account. Online AI requests require sign-in, configured providers, and available credits.",
     },
     {
       q: "Are my documents or files ever uploaded to a server?",
-      a: "No. Whenever you drop a PDF, image, or text file into a client-side tool, it is parsed and processed right inside your browser session using WebAssembly and local JavaScript. Your content never leaves your computer.",
+      a: "Workflow file content stays on your device and passes directly between local processors. Other features can use online services, including AI Chat. Review each feature’s processing requirements.",
     },
     {
       q: "Can I use these tools offline or on mobile devices?",
-      a: "Yes. The platform is responsive and works smoothly on modern desktop, tablet, and mobile browsers. Once loaded, client-side tools run even if your connection drops.",
+      a: "The interface works on modern mobile and desktop browsers. Initial module and PDF worker/font downloads require a connection; later offline availability depends on browser caching. Smaller batches are recommended on mobile.",
     },
     {
       q: "Do I need to create an account or sign in?",
-      a: "No account is required to use any of the tools. Signing in is strictly optional if you want to sync favorites or custom preferences across devices.",
+      a: "Local workflows do not require an account. Sign-in is needed for account synchronization and online AI requests.",
     },
     {
       q: "Where can I report a bug or request a new tool?",
@@ -145,13 +148,13 @@ export function HomeClient({ popularTools, featuredApps }: HomeClientProps) {
               </span>
 
               <h1 className="text-3xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-foreground leading-[1.1] mb-5">
-                Every tool you need. <br />
-                A <span className="font-editorial italic font-normal text-primary">fresh standard.</span>
+                Tools for the task. <br />
+                <span className="font-editorial italic font-normal text-primary">Workflows for the finish.</span>
               </h1>
 
               <p className="text-sm sm:text-base text-muted-foreground leading-relaxed max-w-2xl mb-8">
-                Over 50+ high-performance tools for documents, images, code, and everyday math.
-                Runs securely inside your browser — zero subscriptions, paywalls, or noise.
+                Find tools for documents, images, code and everyday work—or connect them into a local workflow.
+                Upload once, process multiple steps, and download the finished result.
               </p>
 
               {/* Central Search Box */}
@@ -166,7 +169,7 @@ export function HomeClient({ popularTools, featuredApps }: HomeClientProps) {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {quickJobs.map((job) => (
-                    <Link key={job.href} href={localizePath(job.href)}>
+                    <Link key={job.href} href={job.href}>
                       <button className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/80 bg-card hover:border-primary/40 hover:bg-muted/40 transition-colors text-xs font-medium text-foreground">
                         <job.icon className="h-3.5 w-3.5 text-primary" />
                         <span>{t(job.key, job.label)}</span>
@@ -179,15 +182,15 @@ export function HomeClient({ popularTools, featuredApps }: HomeClientProps) {
               {/* Trust Subtext */}
               <div className="mt-8 pt-5 border-t border-border/50 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1.5">
-                  <Check className="h-3.5 w-3.5 text-primary" /> No registration required
+                  <Check className="h-3.5 w-3.5 text-primary" /> Local workflows need no account
                 </span>
                 <span>•</span>
                 <span className="flex items-center gap-1.5">
-                  <Check className="h-3.5 w-3.5 text-primary" /> 100% In-browser privacy
+                  <Check className="h-3.5 w-3.5 text-primary" /> Workflow files stay on your device
                 </span>
                 <span>•</span>
                 <span className="flex items-center gap-1.5">
-                  <Check className="h-3.5 w-3.5 text-primary" /> Free forever
+                  <Check className="h-3.5 w-3.5 text-primary" /> AI Chat is now an app
                 </span>
               </div>
             </div>
@@ -207,7 +210,7 @@ export function HomeClient({ popularTools, featuredApps }: HomeClientProps) {
                         className="h-6 w-auto object-contain rounded"
                       />
                       <span className="text-xs font-semibold tracking-tight text-foreground">
-                        Live Preview Workbench
+                        Example workflow
                       </span>
                     </div>
                     <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">
@@ -219,32 +222,32 @@ export function HomeClient({ popularTools, featuredApps }: HomeClientProps) {
                   <div className="space-y-4">
                     <div>
                       <h4 className="text-lg font-bold tracking-tight text-foreground">
-                        Document Processing, <span className="font-editorial italic font-normal text-primary">refined.</span>
+                        PDF to a ready-to-share <span className="font-editorial italic font-normal text-primary">image pack.</span>
                       </h4>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        Clean layouts, zero server queues, instant export.
+                        One input, connected processors, one final download.
                       </p>
                     </div>
 
                     <div className="rounded-xl border border-border/70 p-3.5 bg-muted/20 space-y-2">
                       <div className="flex items-center justify-between text-xs font-medium">
-                        <span className="text-foreground">Contract_Draft_v2.pdf</span>
-                        <span className="text-muted-foreground font-mono text-[11px]">1.4 MB</span>
+                        <span className="text-foreground">PDF → page images</span>
+                        <span className="text-muted-foreground font-mono text-[11px]">Step 1</span>
                       </div>
                       <div className="h-1.5 w-full bg-border rounded-full overflow-hidden">
                         <div className="h-full bg-primary rounded-full w-full" />
                       </div>
                       <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-1">
-                        <span>Status: Ready to merge</span>
-                        <span className="text-primary font-medium">Processed</span>
+                        <span>Compress each image below 200 KB</span>
+                        <span className="text-primary font-medium">Then ZIP</span>
                       </div>
                     </div>
 
                     <div className="pt-2">
-                      <Link href={localizePath("/tools/pdf-merger")}>
+                      <Link href="/workflows?preset=pdf-images-200kb">
                         <Button className="w-full rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground gap-2 font-medium h-10 text-xs">
                           <Download className="h-3.5 w-3.5" />
-                          <span>Try Live Document Studio</span>
+                          <span>Try this workflow</span>
                         </Button>
                       </Link>
                     </div>
@@ -253,7 +256,7 @@ export function HomeClient({ popularTools, featuredApps }: HomeClientProps) {
 
                 {/* Handcrafted note below preview */}
                 <p className="text-center text-xs font-editorial italic text-muted-foreground mt-4">
-                  Runs client-side in WebAssembly. Zero data uploaded.
+                  Local processing. Actual file-size checks. No intermediate uploads.
                 </p>
               </div>
             </div>
@@ -285,6 +288,12 @@ export function HomeClient({ popularTools, featuredApps }: HomeClientProps) {
       </section>
 
       {/* ===== 3. PLATFORM CAPABILITY SHOWCASE ===== */}
+      <section className="mx-auto w-full max-w-7xl px-4 py-12 sm:px-6" aria-label="Connected workflows">
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-4"><div><p className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-primary"><GitBranch className="size-4" />New: connected workflows</p><h2 className="text-3xl font-semibold tracking-tight">Upload once. <span className="font-editorial italic text-primary">Finish every step.</span></h2><p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground">Connect local processors for documents, images, text and data. Start with {workflowCount} built-in workflows or build your own, save it on this device, and reuse it.</p></div><Link href="/workflows" className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-medium text-primary-foreground">Explore workflows<ArrowRight className="size-4" /></Link></div>
+        <div className="grid gap-4 md:grid-cols-3">{featuredWorkflows.map((workflow) => <Link key={workflow.id} href={`/workflows?preset=${workflow.id}`} className="rounded-2xl border bg-card p-6 transition-colors hover:border-primary/40"><GitBranch className="mb-4 size-6 text-primary" /><h3 className="text-base font-semibold">{workflow.name}</h3><p className="mt-3 text-xs leading-6 text-muted-foreground">{workflow.description}</p><span className="mt-5 inline-flex items-center gap-2 text-xs font-semibold text-primary">Open workflow<ArrowRight className="size-3.5" /></span></Link>)}</div>
+      </section>
+
+      {/* Platform capability showcase */}
       <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
           <div>
@@ -295,9 +304,9 @@ export function HomeClient({ popularTools, featuredApps }: HomeClientProps) {
               One platform. <span className="font-editorial italic font-normal text-primary">Every workflow.</span>
             </h2>
           </div>
-          <Link href={localizePath("/tools")}>
+          <Link href="/tools">
             <Button variant="ghost" className="gap-1.5 text-xs font-medium group">
-              <span>View all 50+ tools</span>
+              <span>Explore all tools</span>
               <ChevronRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
             </Button>
           </Link>
@@ -305,7 +314,7 @@ export function HomeClient({ popularTools, featuredApps }: HomeClientProps) {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {capabilities.map((cap) => (
-            <Link key={cap.title} href={localizePath(cap.link)} className="group">
+            <Link key={cap.title} href={cap.link} className="group">
               <div className="h-full p-5 rounded-2xl border border-border/70 bg-card hover:border-primary/40 hover:bg-card/90 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xs flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between mb-3">
@@ -347,7 +356,7 @@ export function HomeClient({ popularTools, featuredApps }: HomeClientProps) {
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             {workflowHubs.map((hub) => (
-              <Link key={hub.id} href={localizePath(`/hubs/${hub.id}`)} className="group">
+              <Link key={hub.id} href={`/hubs/${hub.id}`} className="group">
                 <div className="h-full p-4 rounded-xl border border-border/70 bg-card hover:border-primary/40 hover:bg-card/90 transition-all duration-200 hover:-translate-y-0.5 flex flex-col justify-between">
                   <div>
                     <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary mb-3 group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-200">
@@ -378,10 +387,10 @@ export function HomeClient({ popularTools, featuredApps }: HomeClientProps) {
               Popular daily tools
             </h2>
             <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-              Reliable, battle-tested utilities used thousands of times every day.
+              Focused utilities for everyday documents, data and creative work.
             </p>
           </div>
-          <Link href={localizePath("/tools")}>
+          <Link href="/tools">
             <Button variant="outline" className="rounded-xl border-border/80 text-xs font-medium h-9 gap-1.5">
               <span>{t("action_all_tools", "All Tools")}</span>
               <ArrowRight className="h-3.5 w-3.5" />
@@ -411,7 +420,7 @@ export function HomeClient({ popularTools, featuredApps }: HomeClientProps) {
                 Beyond single-purpose utilities: full workspaces for documents, formatting, and design.
               </p>
             </div>
-            <Link href={localizePath("/apps")}>
+            <Link href="/apps">
               <Button variant="outline" className="rounded-xl border-border/80 text-xs font-medium h-9 gap-1.5">
                 <span>Browse all apps</span>
                 <ChevronRight className="h-3.5 w-3.5" />
@@ -421,7 +430,7 @@ export function HomeClient({ popularTools, featuredApps }: HomeClientProps) {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {featuredApps.slice(0, 3).map((app) => (
-              <Link key={app.id} href={localizePath(`/apps/${app.slug}`)} className="group">
+              <Link key={app.id} href={`/apps/${app.slug}`} className="group">
                 <div className="h-full p-5 rounded-2xl border border-border/70 bg-card hover:border-primary/40 hover:bg-card/90 transition-all duration-200 hover:-translate-y-0.5 flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between mb-3">
@@ -465,9 +474,9 @@ export function HomeClient({ popularTools, featuredApps }: HomeClientProps) {
                 Your information.
               </h2>
               <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed mb-6">
-                A useful little tool shouldn't need your personal data to work. No account, no trackers, no surprises.
+                Workflows keep file content on your device. Online AI and account features have different processing requirements, explained before use.
               </p>
-              <Link href={localizePath("/tools")}>
+              <Link href="/tools">
                 <Button className="rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-medium h-10 px-5 gap-2">
                   <span>Use tools without an account</span>
                   <ArrowRight className="h-3.5 w-3.5" />
@@ -478,10 +487,10 @@ export function HomeClient({ popularTools, featuredApps }: HomeClientProps) {
             <div className="lg:col-span-7 space-y-6">
               <div className="space-y-1.5">
                 <h4 className="text-sm font-semibold text-foreground">
-                  Local processing, no tracking
+                   Local workflow processing
                 </h4>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Your files are handled on your device in browser memory. We do not inspect, upload, or retain your documents, images, or audio clips.
+                   The workflows module passes file outputs directly between browser processors, without uploading workflow file content to servers.
                 </p>
               </div>
 
@@ -490,7 +499,7 @@ export function HomeClient({ popularTools, featuredApps }: HomeClientProps) {
                   You decide what is saved
                 </h4>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Everything stays in your active browser session. If you choose to remember preferences, they remain strictly on your local device storage.
+                   Save workflow definitions on this device, export them for backup, and download finished files. Account favorites and history use online synchronization.
                 </p>
               </div>
 
@@ -563,7 +572,7 @@ export function HomeClient({ popularTools, featuredApps }: HomeClientProps) {
           <p className="text-xs sm:text-sm text-muted-foreground mb-6">
             Jump into any tool right now. Zero sign-up, zero waiting.
           </p>
-          <Link href={localizePath("/tools")}>
+          <Link href="/tools">
             <Button className="rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 text-sm font-medium h-11 px-6 gap-2">
               <span>Explore All Tools</span>
               <ArrowRight className="h-4 w-4" />

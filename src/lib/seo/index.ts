@@ -1,4 +1,4 @@
-import { SITE_CONFIG, SUPPORTED_LOCALES } from "@/lib/constants";
+import { SITE_CONFIG } from "@/lib/constants";
 import type { Metadata } from "next";
 import type { ToolDefinition } from "@/types";
 
@@ -41,25 +41,12 @@ export function generateMetadata({
       description.slice(0, 160)
     )}${category ? `&category=${encodeURIComponent(category)}` : ""}`;
 
-  // Multi-regional hreflang alternates for global search indexing (e.g. /es/tools/pdf-merger, /ur/tools/pdf-merger)
-  const cleanPath = path ? (path.startsWith("/") ? path : `/${path}`) : "";
-  const languageAlternates: Record<string, string> = {
-    "x-default": `${SITE_CONFIG.url}${cleanPath}`,
-    en: `${SITE_CONFIG.url}${cleanPath}`,
-  };
-  SUPPORTED_LOCALES.forEach((locale) => {
-    if (locale.code !== "en") {
-      languageAlternates[locale.hreflang] = `${SITE_CONFIG.url}/${locale.code}${cleanPath}`;
-    }
-  });
-
   return {
     title: fullTitle,
     description,
     keywords: keywords?.join(", "),
     alternates: {
       canonical: url,
-      languages: languageAlternates,
     },
     openGraph: {
       title: fullTitle,
@@ -67,17 +54,6 @@ export function generateMetadata({
       url,
       siteName: SITE_CONFIG.name,
       locale: "en_US",
-      alternateLocale: [
-        "es_ES",
-        "fr_FR",
-        "de_DE",
-        "pt_BR",
-        "it_IT",
-        "hi_IN",
-        "ar_SA",
-        "ja_JP",
-        "zh_CN",
-      ],
       type: "website",
       images: [
         {
