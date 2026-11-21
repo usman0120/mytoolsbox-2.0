@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { SearchPageClient } from "./page-client";
 
 export const metadata: Metadata = {
-  title: "Search - MyToolsBox",
+  title: "Search",
   description: "Search across all tools and apps on MyToolsBox.",
 };
 

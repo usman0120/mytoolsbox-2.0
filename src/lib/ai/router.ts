@@ -10,15 +10,16 @@ import {
   createGroqAdapter,
   createClaudeAdapter,
 } from "./adapters";
-import { tierToCreditOperation, getCreditCost, type CreditOperation } from "./credits";
+import { getDeviceId } from "./device-id";
 import { getFirebaseAuth } from "@/lib/firebase";
 
+// Only Gemini and Groq are active. OpenAI/Claude adapters stay available for later phases.
 const adapterFactories: Partial<Record<AIProvider, () => AIProviderAdapter>> = {
-  openai: createOpenAIAdapter,
   gemini: createGeminiAdapter,
   groq: createGroqAdapter,
-  claude: createClaudeAdapter,
 };
+void createOpenAIAdapter;
+void createClaudeAdapter;
 
 const adapterCache = new Map<AIProvider, AIProviderAdapter>();
 
@@ -36,6 +37,8 @@ function getAdapter(provider: AIProvider): AIProviderAdapter {
 }
 
 export function getAvailableProviders(): AIProvider[] {
+  // In the browser, AI always goes through the server gateway.
+  if (typeof window !== "undefined") return ["server"];
   return (Object.keys(adapterFactories) as AIProvider[]).filter((provider) => {
     try {
       return getAdapter(provider).isAvailable();
@@ -80,16 +83,8 @@ export function getRecommendedProvider(tier: string): AIProvider | undefined {
   }
 }
 
-/**
- * Get the credit cost for a given AI request.
- */
-export function getRequestCreditCost(request: AIRequest): number {
-  const operation = tierToCreditOperation(request.tier ?? "cheap");
-  return getCreditCost(operation);
-}
-
 export async function complete(request: AIRequest): Promise<AIResponse> {
-  // Browser requests stay on the server's authenticated, credit-accounted path.
+  // Browser requests always go through the server gateway.
   if (typeof window !== "undefined") return completeViaServer(request);
 
   // If a specific provider is requested, use it
@@ -142,63 +137,32 @@ export async function streamComplete(
 }
 
 // ---------------------------------------------------------------------------
-// Server-side API client (routes through /api/ai for credit deduction)
+// Browser client for the /api/ai gateway (quota is enforced on the server)
 // ---------------------------------------------------------------------------
 
-export interface ServerAIResponse extends AIResponse {
-  creditsUsed?: number;
-  creditsRemaining?: number;
+export interface AiQuota {
+  used: number;
+  limit: number;
+  remaining: number;
 }
 
-/**
- * Call the AI API through the server route, which handles credit deduction.
- * This is the preferred method for authenticated users — it ensures credits
- * are properly tracked and deducted.
- */
-export async function completeViaServer(
-  request: AIRequest & { operation?: CreditOperation }
-): Promise<ServerAIResponse> {
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
+export interface ServerAIResponse extends AIResponse {
+  quota?: AiQuota;
+}
 
+export async function completeViaServer(request: AIRequest): Promise<ServerAIResponse> {
+  const headers: Record<string, string> = { "Content-Type": "application/json", "x-device-id": getDeviceId() };
   try {
-    const auth = getFirebaseAuth();
-    const token = await auth?.currentUser?.getIdToken();
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
+    const token = await getFirebaseAuth()?.currentUser?.getIdToken();
+    if (token) headers["Authorization"] = `Bearer ${token}`;
   } catch {}
 
-  const response = await fetch("/api/ai", {
-    method: "POST",
-    headers,
-    body: JSON.stringify(request),
-  });
+  const response = await fetch("/api/ai", { method: "POST", headers, body: JSON.stringify(request) });
+  const data = await response.json().catch(() => ({ error: "Something went wrong. Try again." }));
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: "Unknown error" }));
-    throw new Error(error.error ?? error.message ?? `Server AI API error: ${response.status}`);
+  if (typeof window !== "undefined" && data?.quota) {
+    window.dispatchEvent(new CustomEvent<AiQuota>("ai-quota-updated", { detail: data.quota }));
   }
-
-  const data: ServerAIResponse = await response.json();
-
-  if (typeof window !== "undefined") {
-    try {
-      const auth = getFirebaseAuth();
-      const currentUid = auth?.currentUser?.uid;
-      if (currentUid && typeof data.creditsRemaining === "number") {
-        const { syncCreditsToFirestore } = await import("@/lib/credits/credit-firestore");
-        syncCreditsToFirestore(currentUid, data.creditsRemaining, data.creditsUsed).catch(() => {});
-      }
-    } catch {}
-
-    if (typeof data.creditsRemaining === "number") {
-      window.dispatchEvent(
-        new CustomEvent("credits-updated", {
-          detail: { remaining: data.creditsRemaining, used: data.creditsUsed },
-        })
-      );
-    }
-  }
-
-  return data;
+  if (!response.ok) throw new Error(data.error ?? `AI request failed (${response.status})`);
+  return data as ServerAIResponse;
 }

@@ -226,11 +226,6 @@ export function ToolPageClient({ tool }: ToolPageClientProps) {
       <ToolHeader
         title={localizedName}
         icon={<IconComponent className="h-5 w-5" />}
-        badges={tool.requiresPro ? (
-          <Badge className="gap-1 bg-primary/10 text-primary border-primary/20">
-            <Star className="h-3 w-3" /> Pro
-          </Badge>
-        ) : undefined}
         actions={
           <>
             <Button variant="outline" size="icon" className="h-10 w-10 rounded-xl border-border/70 hover:bg-muted/50" onClick={handleFavorite}

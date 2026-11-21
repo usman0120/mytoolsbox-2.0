@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { sqlAssist, type SQLAssistantOutput } from "@/lib/ai/services/sql-assistant";
 import { formatSQLOffline, SQLDialect } from "@/features/tools/sql-formatter";
-import { useCredits } from "@/lib/credits/use-credits";
+import { useAiQuota } from "@/lib/ai/use-ai-quota";
 import { toast } from "sonner";
 
 function ruleBasedSQLAssist(query: string, action: string, dialect: string = "standard"): SQLAssistantOutput {
@@ -147,7 +147,7 @@ export function AISQLAssistantEngine() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
-  const { refresh } = useCredits();
+  const { refresh } = useAiQuota();
 
   const handleAssist = useCallback(async () => {
     if (!input.trim()) return;

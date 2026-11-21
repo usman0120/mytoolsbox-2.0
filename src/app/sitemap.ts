@@ -11,7 +11,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const page = (path: string, priority = 0.7): MetadataRoute.Sitemap[number] => ({ url: SITE_CONFIG.url + path, lastModified: now, changeFrequency: "weekly", priority });
   return [
     page("", 1), page("/tools", 0.95), page("/apps", 0.95), page("/workflows", 0.95),
-    ...["hubs", "blog", "resources", "search", "about", "contact", "privacy", "terms"].map((path) => page(`/${path}`)),
+    ...["hubs", "blog", "resources", "about", "contact", "privacy", "terms"].map((path) => page(`/${path}`)),
     ...CATEGORIES.map((category) => page(`/tools?category=${category.id}`)),
     ...getActiveTools().map((tool) => page(`/tools/${tool.slug}`, 0.85)),
     ...getActiveApps().map((app) => page(`/apps/${app.slug}`, 0.85)),

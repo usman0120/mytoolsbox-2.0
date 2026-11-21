@@ -213,9 +213,9 @@ export function ChatHeader({
         </div>
       </div>
 
-      {/* Right: Credits Badge, New Chat, Export / Share */}
+      {/* Right: AI allowance, New Chat, Export / Share */}
       <div className="flex items-center gap-1 shrink-0">
-        {creditsRemaining !== null && <span className="hidden sm:inline text-xs text-muted-foreground">{creditsRemaining.toLocaleString()} credits</span>}
+        {creditsRemaining !== null && <span className="hidden sm:inline text-xs text-muted-foreground">{creditsRemaining} AI requests left today</span>}
 
 
 

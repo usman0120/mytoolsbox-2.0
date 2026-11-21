@@ -1,10 +1,4 @@
-export const SITE_CONFIG = {
-  name: "MyToolsBox",
-  tagline: "Useful things for everyone",
-  description: "One place for small jobs, daily work, learning, creation and problem solving.",
-  domain: "mytoolsbox.me",
-  url: "https://mytoolsbox.me",
-} as const;
+export { SITE_CONFIG } from "@/config/site";
 
 export const NAV_ITEMS = [
   { label: "Tools", href: "/tools" },

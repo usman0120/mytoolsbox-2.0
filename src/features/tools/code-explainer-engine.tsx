@@ -11,7 +11,7 @@ import {
   Lightbulb, BookOpen, GraduationCap, User, ChevronRight,
 } from "lucide-react";
 import { explainCode, type CodeExplainOutput } from "@/lib/ai/services/code-explainer";
-import { useCredits } from "@/lib/credits/use-credits";
+import { useAiQuota } from "@/lib/ai/use-ai-quota";
 import { toast } from "sonner";
 
 // ---------------------------------------------------------------------------
@@ -97,7 +97,7 @@ export function CodeExplainerEngine() {
   const [language, setLanguage] = useState("auto");
   const [activeTab, setActiveTab] = useState("summary");
   const [error, setError] = useState<string | null>(null);
-  const { refresh } = useCredits();
+  const { refresh } = useAiQuota();
 
   const handleExplain = useCallback(async () => {
     if (!input.trim()) return;

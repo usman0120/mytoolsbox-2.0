@@ -7,7 +7,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { useCredits } from "@/lib/credits/use-credits";
+import { useAiQuota } from "@/lib/ai/use-ai-quota";
 import { completeViaServer } from "@/lib/ai";
 
 interface Message {
@@ -60,7 +60,7 @@ export function AITextGeneratorEngine() {
   const sendingRef = useRef(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const { refresh } = useCredits();
+  const { refresh } = useAiQuota();
 
   useEffect(() => {
     if (historyChangedRef.current && !savedChat.storageError) saveMessages(messages);
@@ -96,7 +96,6 @@ export function AITextGeneratorEngine() {
         systemPrompt: "You are a helpful, brilliant, concise, and friendly AI assistant. Format explanations clearly with markdown.",
         prompt: fullPrompt,
         tier: "cheap",
-        operation: "chat_message",
         temperature: 0.7,
       });
 
@@ -116,14 +115,12 @@ export function AITextGeneratorEngine() {
       try {
         await refresh();
       } catch {
-        toast.error("Reply received, but the credit balance could not be refreshed.");
+        toast.error("Reply received, but the AI allowance could not be refreshed.");
       }
     } catch (failure) {
       const detail = failure instanceof Error ? failure.message : "The AI request failed. Please try again.";
       const status = typeof failure === "object" && failure !== null && "status" in failure ? Number(failure.status) : undefined;
-      if (status === 401 || /\b401\b|authentication required/i.test(detail)) setError("Sign in to send AI messages (401).");
-      else if (status === 402 || /\b402\b|insufficient credits/i.test(detail)) setError("Insufficient credits for this request (402).");
-      else if (status === 429 || /\b429\b|too many|rate limit/i.test(detail)) setError("Too many requests (429). Please wait before retrying.");
+      if (status === 429 || /429|too many|rate limit|limit/i.test(detail)) setError(detail);
       else if (status === 503 || /\b503\b|no ai providers?|no ai provider available/i.test(detail)) setError("AI service unavailable (503). Please try again later.");
       else setError(detail);
       setFailedMessage(retryMessage ?? userMsg);

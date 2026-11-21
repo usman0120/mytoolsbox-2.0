@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useCredits } from "@/lib/credits/use-credits";
+import { useAiQuota } from "@/lib/ai/use-ai-quota";
 import { completeViaServer } from "@/lib/ai";
 import {
   Select,
@@ -44,7 +44,7 @@ export function SocialMediaContentGeneratorEngine() {
   const [posts, setPosts] = useState<SocialMediaPost[]>([]);
   const [copied, setCopied] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const { refresh } = useCredits();
+  const { refresh } = useAiQuota();
 
   const handleGenerate = async () => {
     if (!topic.trim()) {
@@ -60,7 +60,6 @@ export function SocialMediaContentGeneratorEngine() {
         systemPrompt: `You are an elite social media strategist and copywriter specialized in ${platform}. Write catchy, punchy posts optimized for high engagement and impressions.`,
         prompt,
         tier: "cheap",
-        operation: "simple_rewrite",
         temperature: 0.7,
       });
 

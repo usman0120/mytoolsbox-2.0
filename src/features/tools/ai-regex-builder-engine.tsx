@@ -22,7 +22,7 @@ import {
   Code2,
 } from "lucide-react";
 import { buildRegex, type RegexBuilderOutput } from "@/lib/ai/services/regex-builder";
-import { useCredits } from "@/lib/credits/use-credits";
+import { useAiQuota } from "@/lib/ai/use-ai-quota";
 import { toast } from "sonner";
 
 interface OfflineRegexRule {
@@ -190,7 +190,7 @@ export function AIRegexBuilderEngine() {
   const [error, setError] = useState("");
   const [copied, setCopied] = useState("");
   const [interactiveTest, setInteractiveTest] = useState("Contact us at hello@world.com or visit my site");
-  const { refresh } = useCredits();
+  const { refresh } = useAiQuota();
 
   const handleBuild = useCallback(async () => {
     if (!description.trim()) return;

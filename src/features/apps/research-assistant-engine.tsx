@@ -15,7 +15,7 @@ import {
   Loader2, Sparkles
 } from "lucide-react";
 import { generateCitation, type CitationStyle as AICitationStyle } from "@/lib/ai/services/citation-generator";
-import { useCredits } from "@/lib/credits/use-credits";
+import { useAiQuota } from "@/lib/ai/use-ai-quota";
 import { toast } from "sonner";
 
 interface Source {
@@ -234,7 +234,7 @@ export function ResearchAssistantEngine() {
   // AI citation generation
   const [aiGenerating, setAiGenerating] = useState(false);
   const [aiGeneratedCitations, setAiGeneratedCitations] = useState<string | null>(null);
-  const { refresh } = useCredits();
+  const { refresh } = useAiQuota();
 
   const generateAICitations = async () => {
     const citedSources = sources.filter((s) => s.cited);

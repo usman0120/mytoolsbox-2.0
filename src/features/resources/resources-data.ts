@@ -68,7 +68,7 @@ export const RESOURCE_GUIDES: ResourceGuide[] = [
       "Star your frequent tools to pin them to your personal dashboard"
     ],
     recommendedTools: [
-      { name: "Online Notepad", slug: "online-notepad", description: "Quick text editor with auto-save" },
+      { name: "Notes", slug: "notes-app", description: "Quick text editor with auto-save" },
       { name: "Todo List", slug: "todo-list", description: "Manage daily tasks and checklists" },
       { name: "Unit Converter", slug: "unit-converter", description: "Convert length, mass, and temperature" }
     ],
@@ -139,7 +139,7 @@ export const RESOURCE_GUIDES: ResourceGuide[] = [
       "High-DPI retina assets should be exported at 2x resolution"
     ],
     recommendedTools: [
-      { name: "Canva Studio", slug: "canva", description: "Create social graphics & presentations" },
+      { name: "Design Studio", slug: "design-studio", description: "Create social graphics & presentations" },
       { name: "Color Palette", slug: "color-palette", description: "Generate accessible brand palettes" },
       { name: "Video to GIF", slug: "video-to-gif", description: "Convert video clips into lightweight GIFs" }
     ],

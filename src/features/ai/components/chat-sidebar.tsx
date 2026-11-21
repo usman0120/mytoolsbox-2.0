@@ -357,7 +357,7 @@ export function ChatSidebar({
 
       {/* Footer / Account & Storage Status */}
       <div className="p-3 border-t border-border/50 bg-background/50 space-y-2">
-        {creditsRemaining !== null && <p className="text-xs text-muted-foreground">{creditsRemaining.toLocaleString()} credits</p>}
+        {creditsRemaining !== null && <p className="text-xs text-muted-foreground">{creditsRemaining} AI requests left today</p>}
         
 
         {conversations.length > 0 && (

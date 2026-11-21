@@ -22,7 +22,7 @@ import {
   ArrowRightLeft,
 } from "lucide-react";
 import { paraphrase, type ParaphraseVariant } from "@/lib/ai/services/paraphrase-tool";
-import { useCredits } from "@/lib/credits/use-credits";
+import { useAiQuota } from "@/lib/ai/use-ai-quota";
 import { toast } from "sonner";
 
 // ---------------------------------------------------------------------------
@@ -162,7 +162,7 @@ export function ParaphraseToolEngine() {
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const [mode, setMode] = useState<Mode>("standard");
   const [error, setError] = useState<string | null>(null);
-  const { refresh } = useCredits();
+  const { refresh } = useAiQuota();
 
   const handleParaphrase = useCallback(async () => {
     if (!input.trim()) return;

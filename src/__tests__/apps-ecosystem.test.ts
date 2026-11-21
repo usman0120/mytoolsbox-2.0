@@ -17,10 +17,9 @@ import {
   generateOfflineNutritionAdvice,
 } from "@/features/apps/nutrition/nutrition-engine-logic";
 import { appRegistry, getAppBySlug, getActiveApps } from "@/content/apps/registry";
-import { CREDIT_COSTS } from "@/lib/ai/credits";
 
 const auditRequire = createRequire(import.meta.url);
-const { buildInventory } = auditRequire("../../compare_slugs.js") as {
+const { buildInventory } = auditRequire("../../scripts/catalog-audit.cjs") as {
   buildInventory: () => {
     features: { namespace: string; id: string; slug: string; preRendered: boolean; persistence: { directStorageReferences: { key: string | null }[] } }[];
     toolLoaders: { slug: string; target: string }[];
@@ -43,7 +42,7 @@ const { buildInventory } = auditRequire("../../compare_slugs.js") as {
     };
   };
 };
-const { summarize } = auditRequire("../../count_errors.js") as {
+const { summarize } = auditRequire("../../scripts/lint-summary.cjs") as {
   summarize: (results: { filePath: string; errorCount: number; warningCount: number; messages: { severity: number; ruleId: string | null }[] }[]) => {
     errors: number; warnings: number; rules: { rule: string; errors: number; files: number }[]; files: { file: string; errors: number }[];
   };
@@ -139,7 +138,7 @@ describe("Route/catalog integrity audit", () => {
   });
 
   it("records protected routes and legacy chat storage without calling providers", () => {
-    expect(inventory.routingPolicies.protectedPaths).toEqual(["/dashboard", "/settings", "/favorites", "/history", "/account", "/admin"]);
+    expect(inventory.routingPolicies.protectedPaths).toEqual([]);
     const legacyChat = inventory.features.find((entry) => entry.namespace === "tools" && entry.slug === "ai-text-generator");
     expect(legacyChat?.persistence.directStorageReferences.some((entry) => entry.key === "mytoolsbox-ai-chat")).toBe(true);
   });
@@ -344,23 +343,6 @@ describe("Apps Ecosystem & Logic Engine", () => {
       expect(app?.faq.length).toBeGreaterThan(2);
     });
 
-    it("verifies fitness_coach and nutrition_planner credit pricing", () => {
-      expect(CREDIT_COSTS.fitness_coach).toBe(20);
-      expect(CREDIT_COSTS.nutrition_planner).toBe(20);
-    });
-
-    it("verifies all AI tool operation costs are registered with non-zero costs", () => {
-      expect(CREDIT_COSTS.ai_summary).toBe(15);
-      expect(CREDIT_COSTS.chat_message).toBe(10);
-      expect(CREDIT_COSTS.sql_assistant).toBe(20);
-      expect(CREDIT_COSTS.error_explanation).toBe(20);
-      expect(CREDIT_COSTS.doc_generation).toBe(20);
-      expect(CREDIT_COSTS.regex_builder).toBe(15);
-      expect(CREDIT_COSTS.code_explanation).toBe(20);
-      expect(CREDIT_COSTS.grammar_check).toBe(10);
-      expect(CREDIT_COSTS.paraphrase).toBe(15);
-      expect(CREDIT_COSTS.simple_rewrite).toBe(10);
-    });
   });
 
   describe("50/30/20 Wealth & Runway Mathematical Logic", () => {

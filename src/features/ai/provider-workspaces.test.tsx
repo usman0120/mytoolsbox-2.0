@@ -1,7 +1,6 @@
 import { createElement } from "react";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { AIImageGeneratorEngine } from "@/features/tools/ai-image-generator-engine";
 import { AppPageClient } from "@/app/apps/[slug]/page-client";
 import { getAppBySlug } from "@/content/apps/registry";
 import { addHistoryEntry, isFavorited } from "@/lib/firebase/user-service";
@@ -21,25 +20,6 @@ beforeEach(() => {
 });
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
-describe("image provider failures", () => {
-  it("reports access failures honestly and includes the selected style in the request", async () => {
-    const fetchMock = vi.fn().mockResolvedValue({ ok: false, status: 403 }); vi.stubGlobal("fetch", fetchMock);
-    render(createElement(AIImageGeneratorEngine));
-    fireEvent.change(screen.getByLabelText("Describe the image you want"), { target: { value: "A mountain lake" } });
-    fireEvent.change(screen.getByRole("combobox", { name: "Style" }), { target: { value: "watercolor" } });
-    fireEvent.click(screen.getByRole("button", { name: "Generate Image" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("Image provider failed (403)");
-    expect(decodeURIComponent(fetchMock.mock.calls[0][0])).toContain("Visual style: Watercolor");
-    expect(screen.queryByRole("img")).not.toBeInTheDocument(); expect(screen.queryByRole("button", { name: "Download" })).not.toBeInTheDocument();
-  });
-  it("rejects non-image responses without manufacturing a fallback image", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, blob: async () => new Blob(["Provider error"], { type: "text/plain" }) }));
-    render(createElement(AIImageGeneratorEngine));
-    fireEvent.change(screen.getByLabelText("Describe the image you want"), { target: { value: "A mountain lake" } });
-    fireEvent.click(screen.getByRole("button", { name: "Generate Image" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("did not return an image"); expect(screen.queryByRole("img")).not.toBeInTheDocument();
-  });
-});
 describe("app identity integration", () => {
   it("records history once per account/app identity across rerenders", async () => {
     const first = getAppBySlug("research-assistant")!; const second = getAppBySlug("ai-notes-generator")!;

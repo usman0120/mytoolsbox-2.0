@@ -9,7 +9,7 @@ const CLAUDE_MODELS: Record<string, string> = {
 
 export function createClaudeAdapter(): AIProviderAdapter {
   // Prefer server-side key, fall back to public key for backward compatibility
-  const apiKey = process.env.CLAUDE_API_KEY ?? process.env.NEXT_PUBLIC_CLAUDE_API_KEY;
+  const apiKey = process.env.CLAUDE_API_KEY;
 
   return {
     name: "claude",

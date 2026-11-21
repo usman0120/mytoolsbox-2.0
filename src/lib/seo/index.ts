@@ -42,7 +42,8 @@ export function generateMetadata({
     )}${category ? `&category=${encodeURIComponent(category)}` : ""}`;
 
   return {
-    title: fullTitle,
+    // The root layout template appends the brand once.
+    title,
     description,
     keywords: keywords?.join(", "),
     alternates: {
@@ -152,7 +153,7 @@ export function generateSoftwareAppJsonLd(tool: ToolDefinition) {
     availableOnDevice: "Mobile, Tablet, Desktop",
     offers: {
       "@type": "Offer",
-      price: tool.requiresPro ? "1.00" : "0",
+      price: "0",
       priceCurrency: "USD",
       availability: "https://schema.org/InStock",
     },

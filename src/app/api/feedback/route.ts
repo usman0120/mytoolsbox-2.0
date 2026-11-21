@@ -1,47 +1,7 @@
-// ---------------------------------------------------------------------------
-// Feedback API — Submit & retrieve contact form / feedback submissions
-// ---------------------------------------------------------------------------
-// POST /api/feedback — Submit a new feedback/contact message
-// GET  /api/feedback — Get all feedback (admin only, requires session)
-// PATCH /api/feedback — Update feedback status (admin only)
-// DELETE /api/feedback — Delete feedback (admin only)
-// ---------------------------------------------------------------------------
-
+// POST /api/feedback — submit feedback. Read submissions in the Firebase console (no admin panel).
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { checkAdminAccess } from "@/lib/auth/admin-auth";
-import { getFirebaseFirestore } from "@/lib/firebase/config";
-import {
-  submitFeedback,
-  getFeedback,
-  updateFeedbackStatus,
-  deleteFeedback,
-} from "@/lib/firebase/user-service";
-import type { FeedbackType, FeedbackStatus } from "@/types/user";
-
-// ---------------------------------------------------------------------------
-// Admin check
-// ---------------------------------------------------------------------------
-
-async function authorizeAdmin(request: NextRequest) {
-  const accessError = await checkAdminAccess(request, await cookies());
-  if (accessError === null) {
-    try {
-      if (getFirebaseFirestore()) return null;
-    } catch {
-      return NextResponse.json({ error: "Feedback storage unavailable" }, { status: 503 });
-    }
-    return NextResponse.json({ error: "Feedback storage unavailable" }, { status: 503 });
-  }
-  return NextResponse.json(
-    { error: accessError === 503 ? "Authentication unavailable" : accessError === 403 ? "Admin access required" : "Unauthorized" },
-    { status: accessError }
-  );
-}
-
-// ---------------------------------------------------------------------------
-// POST /api/feedback — Submit feedback (public)
-// ---------------------------------------------------------------------------
+import { submitFeedback } from "@/lib/firebase/user-service";
+import type { FeedbackType } from "@/types/user";
 
 export async function POST(request: NextRequest) {
   try {
@@ -57,6 +17,10 @@ export async function POST(request: NextRequest) {
         { error: "Message is required" },
         { status: 400 }
       );
+    }
+
+    if (body.message.length > 5000 || (body.name?.length ?? 0) > 120 || (body.email?.length ?? 0) > 200) {
+      return NextResponse.json({ error: "Message is too long." }, { status: 400 });
     }
 
     if (!body.type || !["suggestion", "bug", "feedback", "question"].includes(body.type)) {
@@ -77,81 +41,6 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to submit feedback" },
-      { status: 500 }
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// GET /api/feedback — Get all feedback (admin only)
-// ---------------------------------------------------------------------------
-
-export async function GET(request: NextRequest) {
-  const denied = await authorizeAdmin(request);
-  if (denied) return denied;
-
-  try {
-    const feedback = await getFeedback();
-    return NextResponse.json({ feedback });
-  } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to fetch feedback" },
-      { status: 500 }
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// PATCH /api/feedback — Update feedback status (admin only)
-// ---------------------------------------------------------------------------
-
-export async function PATCH(request: NextRequest) {
-  const denied = await authorizeAdmin(request);
-  if (denied) return denied;
-
-  try {
-    const body = await request.json() as {
-      id: string;
-      status: FeedbackStatus;
-    };
-
-    if (typeof body.id !== "string" || !body.id.trim() || !["new", "investigating", "resolved", "closed"].includes(body.status)) {
-      return NextResponse.json(
-        { error: "id and a valid status are required" },
-        { status: 400 }
-      );
-    }
-
-    await updateFeedbackStatus(body.id, body.status);
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to update feedback" },
-      { status: 500 }
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// DELETE /api/feedback — Delete feedback (admin only)
-// ---------------------------------------------------------------------------
-
-export async function DELETE(request: NextRequest) {
-  const denied = await authorizeAdmin(request);
-  if (denied) return denied;
-
-  try {
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get("id");
-    if (!id) {
-      return NextResponse.json({ error: "id is required" }, { status: 400 });
-    }
-
-    await deleteFeedback(id);
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to delete feedback" },
       { status: 500 }
     );
   }

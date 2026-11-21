@@ -24,14 +24,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (!post) {
     return {
-      title: "Article Not Found | MyToolsBox",
+      title: "Article Not Found",
     };
   }
 
   const url = `${SITE_CONFIG.url}/blog/${post.slug}`;
 
   return {
-    title: `${post.title} | MyToolsBox Blog`,
+    title: `${post.title}`,
     description: post.metaDescription,
     keywords: post.keywords,
     alternates: {

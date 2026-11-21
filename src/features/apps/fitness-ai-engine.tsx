@@ -15,7 +15,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { useCredits } from "@/lib/credits/use-credits";
+import { useAiQuota } from "@/lib/ai/use-ai-quota";
 import {
   calculateOneRepMax, calculateTDEE, generateWorkoutProgram, generateOfflineFitnessAdvice,
   type WorkoutSplitType, type ExperienceLevel, type FitnessGoal, type EquipmentType,
@@ -23,7 +23,7 @@ import {
 } from "./fitness/fitness-engine-logic";
 
 export function FitnessAIEngine() {
-  const { refresh } = useCredits();
+  const { refresh } = useAiQuota();
 
   // Tab State
   const [activeTab, setActiveTab] = useState<"program" | "tracker" | "onerm" | "tdee" | "coach">("program");

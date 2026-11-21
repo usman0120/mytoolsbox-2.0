@@ -94,8 +94,8 @@ Production builds use `tsconfig.build.json` to check application/test code and f
 
 ## AI, accounts and privacy
 
-AI Chat is an app and uses configured online providers. AI requests require sign-in, internet access and available credits. AI output can be inaccurate and needs independent verification. Conversation synchronization and account favorites/history use online services; local workflows do not transmit file content to these services.
+AI features use server-side providers (Gemini, with Groq as fallback). They are free within a daily allowance: 10 requests signed out, 40 signed in (see `src/config/limits.ts`). API keys are server-only. AI output can be inaccurate and needs independent verification. Conversation synchronization and account favorites/history use online services; local workflows do not transmit file content to these services.
 
-`/admin` and privileged APIs authorize only the Firebase-verified email **akbarali69048@gmail.com** with verified email ownership. Account inactivity/deletion-request flags currently update stored status only; they do not revoke sessions or automatically erase accounts. Permanent removal requires contacting support.
+There is no admin panel. Feedback is stored in Firestore and read in the Firebase console.
 
 Existing consolidated product links redirect to their canonical workspaces: resume/CV/AI resume tools to `/apps/resume-builder`, quiz tools/AI quiz to `/apps/quiz-maker`, AI presentation to `/apps/presentation-maker`, MP3 cutter to audio cutter, and the duplicate GIF maker to the remaining GIF tool. Existing draft and saved-item IDs are retained.

@@ -203,12 +203,6 @@ export function AppPageClient({ app }: AppPageClientProps) {
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2 mb-1">
               <h1 className="text-xl font-semibold wrap-break-word">{displayName}</h1>
-              {app.requiresPro && (
-                <Badge className="text-[10px] gap-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20">
-                  <Star className="h-3 w-3 fill-current" />
-                  {t("badge_pro")}
-                </Badge>
-              )}
             </div>
           </div>
         </div>

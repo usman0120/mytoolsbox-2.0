@@ -11,7 +11,6 @@ const engineMap: Record<string, React.ComponentType<unknown>> = {
   "invoice-maker": dynamic(() => import("@/features/apps/invoice-maker-engine").then((m) => ({ default: m.InvoiceMakerEngine })), { loading: EngineLoading }),
   "study-planner": dynamic(() => import("@/features/apps/study-planner-engine").then((m) => ({ default: m.StudyPlannerEngine })), { loading: EngineLoading }),
   "presentation-maker": dynamic(() => import("@/features/apps/presentation-maker-engine").then((m) => ({ default: m.PresentationMakerEngine })), { loading: EngineLoading }),
-  "diagram-maker": dynamic(() => import("@/features/apps/diagram-maker-engine").then((m) => ({ default: m.DiagramMakerEngine })), { loading: EngineLoading }),
   "image-editor": dynamic(() => import("@/features/apps/image-editor-engine").then((m) => ({ default: m.ImageEditorEngine })), { loading: EngineLoading }),
   "video-editor": dynamic(() => import("@/features/apps/video-editor-engine").then((m) => ({ default: m.VideoEditorEngine })), { loading: EngineLoading }),
   "research-assistant": dynamic(() => import("@/features/apps/research-assistant-engine").then((m) => ({ default: m.ResearchAssistantEngine })), { loading: EngineLoading }),

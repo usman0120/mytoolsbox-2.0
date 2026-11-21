@@ -4,7 +4,7 @@ import { SettingsPageClient } from "./page-client";
 import { PageSkeleton } from "@/components/common/loading-skeleton";
 
 export const metadata: Metadata = {
-  title: "Settings - MyToolsBox",
+  title: "Settings",
   description: "Manage your account, history, and saved favorites.",
   robots: { index: false, follow: false },
 };

@@ -9,7 +9,7 @@ const OPENAI_MODELS: Record<string, string> = {
 
 export function createOpenAIAdapter(): AIProviderAdapter {
   // Prefer server-side key, fall back to public key for backward compatibility
-  const apiKey = process.env.OPENAI_API_KEY ?? process.env.NEXT_PUBLIC_OPENAI_API_KEY;
+  const apiKey = process.env.OPENAI_API_KEY;
 
   return {
     name: "openai",

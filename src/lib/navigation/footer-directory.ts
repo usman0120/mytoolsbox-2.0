@@ -18,8 +18,8 @@ export const FOOTER_TOOL_SECTIONS: FooterSection[] = [
   tools("Writing & text", "writing", [["Word counter", "word-counter"], ["Case converter", "case-converter"], ["Text cleaner", "text-cleaner"], ["Grammar checker", "grammar-checker"]]),
   tools("Calculators & finance", "calculators", [["Percentage calculator", "percentage-calculator"], ["Loan calculator", "loan-calculator"], ["Unit converter", "unit-converter"], ["BMI calculator", "bmi-calculator"]]),
   tools("Developer utilities", "developer", [["JSON formatter", "json-formatter"], ["Regex tester", "regex-tester"], ["Base64 encoder", "base64-encoder"], ["Diff checker", "diff-checker"]]),
-  tools("Study & research", "academic", [["Citation generator", "citation-generator"], ["GPA calculator", "gpa-calculator"], ["Scientific calculator", "scientific-calculator"], ["Flashcard generator", "flashcard-generator"]]),
-  tools("Productivity", "productivity", [["Pomodoro timer", "pomodoro-timer"], ["To-do list", "todo-list"], ["Daily planner", "daily-planner"], ["Online notepad", "online-notepad"]]),
+  tools("Study & research", "academic", [["Citation generator", "citation-generator"], ["GPA calculator", "gpa-calculator"], ["Scientific calculator", "scientific-calculator"], ["Flashcards", "flashcard-creator"]]),
+  tools("Productivity", "productivity", [["Pomodoro timer", "pomodoro-timer"], ["To-do list", "todo-list"], ["Daily planner", "daily-planner"], ["Notes", "notes-app"]]),
   tools("Design & color", "design", [["Color palettes", "color-palette"], ["Color contrast", "color-contrast"], ["Color converter", "color-converter"], ["Lorem ipsum", "lorem-ipsum"]]),
   tools("Security", "security", [["Password generator", "password-generator"], ["Hash generator", "hash-generator"], ["JWT decoder", "jwt-decoder"]]),
   tools("Everyday utilities", "misc", [["QR code generator", "qr-generator"], ["Barcode generator", "barcode-generator"], ["Random generator", "random-generator"]]),
@@ -28,7 +28,7 @@ export const FOOTER_TOOL_SECTIONS: FooterSection[] = [
 export const FOOTER_PLATFORM_SECTIONS: FooterSection[] = [
   { title: "Creative & business apps", href: "/apps", links: [
     ["Resume Builder", "resume-builder"], ["Invoice Maker", "invoice-maker"], ["Presentation Maker", "presentation-maker"],
-    ["Diagram Maker", "diagram-maker"], ["Image Editor", "image-editor"], ["Video Editor", "video-editor"], ["Budget Planner", "budget-planner"], ["Certificate Maker", "certificate-maker"],
+    ["Diagram Maker", "ai-diagram-generator"], ["Image Editor", "image-editor"], ["Video Editor", "video-editor"], ["Budget Planner", "budget-planner"], ["Certificate Maker", "certificate-maker"],
   ].map(([name, slug]) => ({ name, href: `/apps/${slug}` })) },
   { title: "Learning & everyday apps", href: "/apps", links: [
     ["Math Solver", "math-solver"], ["Study Planner", "study-planner"], ["Research Assistant", "research-assistant"],

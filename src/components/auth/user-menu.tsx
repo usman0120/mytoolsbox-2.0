@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth } from "@/lib/auth";
-import { useCredits } from "@/lib/credits";
+import { useAiQuota } from "@/lib/ai/use-ai-quota";
 import { useRouter } from "next/navigation";
 import {
   DropdownMenu,
@@ -18,15 +18,13 @@ import {
   Heart,
   Clock,
   Sparkles,
-  Shield,
 } from "lucide-react";
 import { toast } from "sonner";
 import { UI_COPY } from "@/lib/ui-copy";
-import { isAdminIdentity } from "@/lib/auth/admin-policy";
 
 export function UserMenu() {
   const { user, isAnonymous, logOut } = useAuth();
-  const { remaining, total, daysRemaining, loading: creditsLoading } = useCredits();
+  const { remaining, limit, loading: quotaLoading } = useAiQuota();
   const router = useRouter();
   const { t } = UI_COPY;
 
@@ -53,7 +51,7 @@ export function UserMenu() {
     }
   };
 
-  const percentage = total > 0 ? Math.min(100, Math.max(0, (remaining / total) * 100)) : 0;
+  const percentage = limit && remaining !== null ? Math.min(100, Math.max(0, (remaining / limit) * 100)) : 0;
 
   return (
     <DropdownMenu>
@@ -75,7 +73,7 @@ export function UserMenu() {
           </div>
         </DropdownMenuLabel>
 
-        {/* AI Credits Card */}
+        {/* Daily AI allowance */}
         <div className="my-1.5 rounded-lg border border-border/60 bg-muted/40 p-2.5">
           {isAnonymous ? (
             <div>
@@ -102,7 +100,7 @@ export function UserMenu() {
                   {t("footer_ai_suite")}
                 </span>
                 <span className="font-semibold text-primary">
-                  {creditsLoading ? "..." : `${remaining.toLocaleString()} / ${total.toLocaleString()}`}
+                  {quotaLoading || remaining === null ? "…" : `${remaining} of ${limit} left today`}
                 </span>
               </div>
               <div className="h-1.5 w-full bg-secondary rounded-full overflow-hidden">
@@ -112,7 +110,7 @@ export function UserMenu() {
                 />
               </div>
               <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground">
-                <span>{t("auth_resets_in").replace("{days}", String(daysRemaining))}</span>
+                <span>Free AI requests reset daily at midnight UTC</span>
               </div>
             </div>
           )}
@@ -132,10 +130,6 @@ export function UserMenu() {
           <Settings className="mr-2 h-4 w-4" />
           {t("auth_settings")}
         </DropdownMenuItem>
-
-        {isAdminIdentity(user) && <DropdownMenuItem onClick={() => router.push("/admin")}>
-          <Shield className="mr-2 h-4 w-4" />Admin panel
-        </DropdownMenuItem>}
 
         <DropdownMenuSeparator />
 

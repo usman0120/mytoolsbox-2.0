@@ -42,7 +42,7 @@ During the past fiscal year, our organization expanded its operational footprint
 ## 2. Key Objectives & Milestones
 Our roadmap is structured into four core pillars:
 1. Architectural stability and modern framework adoption
-2. Centralized security, rate limiting, and credit governance
+2. Centralized security, rate limiting, and usage governance
 3. Global edge distribution and zero-latency client processing
 4. Continuous automated verification and unit testing
 

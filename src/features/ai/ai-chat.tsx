@@ -9,6 +9,7 @@ import { ChatMessages } from "./components/chat-messages";
 import { ChatInput } from "./components/chat-input";
 import { SignInDialog } from "@/components/auth/signin-dialog";
 import { completeViaServer } from "@/lib/ai";
+import { useAiQuota } from "@/lib/ai/use-ai-quota";
 import { toast } from "sonner";
 import { subscribeConversations } from "./chat-persistence";
 import type { ChatMessage } from "./types";
@@ -38,8 +39,7 @@ export function AIChat() {
   } = useChatStore();
 
   const [input, setInput] = useState("");
-  const [creditBalance, setCreditBalance] = useState<{ uid: string; remaining: number } | null>(null);
-  const creditsRemaining = creditBalance?.uid === user?.uid ? creditBalance?.remaining ?? null : null;
+  const { remaining: creditsRemaining } = useAiQuota();
   const [availableProviders, setAvailableProviders] = useState<string[]>([]);
   const [showSignInDialog, setShowSignInDialog] = useState(false);
   const requestRef = useRef<{ cancelled: boolean; conversationId: string; messageId: string } | null>(null);
@@ -48,7 +48,7 @@ export function AIChat() {
     const request = requestRef.current;
     if (request) {
       request.cancelled = true;
-      updateMessage(request.conversationId, request.messageId, { content: "Stopped waiting for the response. The server request may still complete and use credits.", isStreaming: false });
+      updateMessage(request.conversationId, request.messageId, { content: "Stopped waiting for the response. The server request may still complete.", isStreaming: false });
       setStreaming(false);
     }
   }, [setStreaming, updateMessage]);
@@ -103,26 +103,9 @@ export function AIChat() {
     return () => unsubscribe();
   }, [user]);
 
-  // Fetch initial credits & available providers on mount
+  // Fetch available providers on mount
   useEffect(() => {
     let cancelled = false;
-
-    // Check credits
-    const fetchCredits = async () => {
-      try {
-        if (!user) return;
-        const token = await user.getIdToken();
-        const res = await fetch("/api/ai/credits", { headers: { Authorization: `Bearer ${token}` } });
-        if (res.ok) {
-          const data = await res.json();
-          if (!cancelled && typeof data.remaining === "number") {
-            setCreditBalance({ uid: user.uid, remaining: data.remaining });
-          }
-        }
-      } catch {
-        // Silently ignore if not signed in or offline
-      }
-    };
 
     // Check available providers from server health endpoint
     const fetchProviders = async () => {
@@ -139,16 +122,11 @@ export function AIChat() {
       }
     };
 
-    fetchCredits();
     fetchProviders();
-    const refreshCredits = () => { void fetchCredits(); };
-    window.addEventListener("credits-updated", refreshCredits);
-
     return () => {
       cancelled = true;
-      window.removeEventListener("credits-updated", refreshCredits);
     };
-  }, [user]);
+  }, []);
 
 
   // Ensure active conversation exists or initialize one if empty
@@ -185,13 +163,6 @@ export function AIChat() {
     const trimmed = input.trim();
     if (!trimmed || isStreaming) return;
 
-    if (!user) {
-      setShowSignInDialog(true);
-      toast.info("Please sign in to chat with AI.", {
-        duration: 5000,
-      });
-      return;
-    }
 
     let convId = activeConversationId;
     if (!convId || !activeConv) {
@@ -254,18 +225,14 @@ export function AIChat() {
         usage: response.usage,
         isStreaming: false,
       });
-
-      if (response.creditsRemaining !== undefined) {
-        setCreditBalance({ uid: user.uid, remaining: response.creditsRemaining });
-      }
     } catch (error) {
       if (request.cancelled) return;
       const errMsg =
         error instanceof Error ? error.message : "Failed to get AI response";
 
-      // If user is guest and server returned 401/insufficient credits, offer friendly sign in
-      if (!user && (errMsg.includes("Authentication") || errMsg.includes("Sign in"))) {
-        toast.error("Please sign in to chat with AI models.", {
+      // Daily allowance reached as a guest: offer sign-in for a higher limit
+      if (!user && errMsg.includes("Sign in")) {
+        toast.error(errMsg, {
           action: {
             label: "Sign In",
             onClick: () => setShowSignInDialog(true),
@@ -290,7 +257,6 @@ export function AIChat() {
   // Regenerate last assistant response
   const handleRegenerate = async () => {
     if (!activeConv || messages.length === 0 || isStreaming) return;
-    if (!user) { setShowSignInDialog(true); return; }
 
     // Find last user message
     const lastUserIndex = [...messages]
@@ -340,10 +306,6 @@ export function AIChat() {
         usage: response.usage,
         isStreaming: false,
       });
-
-      if (response.creditsRemaining !== undefined) {
-        setCreditBalance({ uid: user.uid, remaining: response.creditsRemaining });
-      }
       toast.success("Response regenerated");
     } catch (error) {
       if (request.cancelled) return;
@@ -366,10 +328,10 @@ export function AIChat() {
     const request = requestRef.current;
     if (!request) return;
     request.cancelled = true;
-    updateMessage(request.conversationId, request.messageId, { content: "Stopped waiting for the response. The server request may still complete and use credits.", isStreaming: false });
+    updateMessage(request.conversationId, request.messageId, { content: "Stopped waiting for the response. The server request may still complete.", isStreaming: false });
     requestRef.current = null;
     setStreaming(false);
-    toast.info("Stopped waiting. The server request may still use credits.");
+    toast.info("Stopped waiting. The request may still count toward today's AI allowance.");
   };
 
   const handleFeedback = (messageId: string, feedback: "like" | "dislike") => {

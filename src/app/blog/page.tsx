@@ -3,7 +3,7 @@ import { BlogPageClient } from "./page-client";
 import { SITE_CONFIG } from "@/lib/constants";
 
 export const metadata: Metadata = {
-  title: "Blog & Guides - Tutorials, Digital Workflows & Web Tools | MyToolsBox",
+  title: "Blog & Guides - Tutorials, Digital Workflows & Web Tools",
   description:
     "Explore practical guides, performance deep-dives, and tutorials for web development, PDF workflows, image optimization, developer utilities, and digital productivity.",
   keywords: [
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     canonical: `${SITE_CONFIG.url}/blog`,
   },
   openGraph: {
-    title: "Blog & Guides - MyToolsBox",
+    title: "Blog & Guides",
     description:
       "Practical tips, deep dives, and how-to guides for tools, web development, and digital workflows.",
     url: `${SITE_CONFIG.url}/blog`,
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Blog & Guides - MyToolsBox",
+    title: "Blog & Guides",
     description:
       "Practical tips, deep dives, and how-to guides for tools, web development, and digital workflows.",
     images: ["https://images.unsplash.com/photo-1542744094-24638eff58bb?auto=format&fit=crop&w=1200&q=80"],

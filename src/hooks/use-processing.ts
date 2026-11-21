@@ -11,7 +11,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   "file too large": "File is too large. Try a smaller file or upgrade to Pro.",
   "unsupported format": "This file format is not supported.",
   "rate limit": "Too many requests. Please wait a moment and try again.",
-  "insufficient credits": "Not enough credits. Upgrade to Pro for more.",
+  "daily_limit": "You've used today's free AI requests. They reset at midnight UTC.",
   "network error": "Network error. Check your connection and try again.",
   "timeout": "Processing timed out. Try again with a smaller file.",
   "aborted": "Processing was cancelled.",

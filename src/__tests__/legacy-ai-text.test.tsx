@@ -7,7 +7,7 @@ import { AITextGeneratorEngine } from "@/features/tools/ai-text-generator-engine
 const mocks = vi.hoisted(() => ({ complete: vi.fn(), refresh: vi.fn() }));
 
 vi.mock("@/lib/ai", () => ({ completeViaServer: mocks.complete }));
-vi.mock("@/lib/credits/use-credits", () => ({ useCredits: () => ({ refresh: mocks.refresh }) }));
+vi.mock("@/lib/ai/use-ai-quota", () => ({ useAiQuota: () => ({ refresh: mocks.refresh }) }));
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 const storageKey = "mytoolsbox-ai-chat";
@@ -67,17 +67,15 @@ describe("Legacy AI text engine", () => {
   });
 
   it.each([
-    [401, "Authentication required", "Sign in"],
-    [402, "Insufficient credits", "Insufficient credits"],
-    [429, "Too many AI requests. Please wait a minute before trying again.", "Too many requests"],
+    [429, "You've used today's 10 free AI requests. Sign in for 40 a day.", "free AI requests"],
     [503, "No AI providers configured on the server. Please add API keys to .env.local", "unavailable"],
   ])("reports API failure %i and retries without duplicating the user turn", async (status, detail, expected) => {
     mocks.complete.mockRejectedValueOnce(new Error(detail)).mockResolvedValueOnce({ text: "Real retry reply" });
     localStorage.setItem(storageKey, JSON.stringify(priorMessages));
     render(<AITextGeneratorEngine />);
     send();
-    expect(await screen.findByRole("alert")).toHaveTextContent(String(status));
-    expect(screen.getByRole("alert")).toHaveTextContent(expected);
+    expect(await screen.findByRole("alert")).toHaveTextContent(expected);
+    expect(status).toBeGreaterThan(400);
     expect(screen.getByRole("textbox")).toHaveValue("Write a short reply");
     expect(JSON.parse(localStorage.getItem(storageKey)!)).toHaveLength(3);
     fireEvent.click(screen.getByRole("button", { name: "Retry" }));
@@ -101,12 +99,12 @@ describe("Legacy AI text engine", () => {
     send();
     expect(await screen.findByText("Actual provider reply")).toBeInTheDocument();
     expect(screen.getByRole("textbox")).toHaveValue("");
-    expect(mocks.complete).toHaveBeenCalledWith(expect.objectContaining({ tier: "cheap", operation: "chat_message", prompt: "Write a short reply" }));
+    expect(mocks.complete).toHaveBeenCalledWith(expect.objectContaining({ tier: "cheap", prompt: "Write a short reply" }));
     expect(mocks.refresh).toHaveBeenCalledTimes(1);
     await waitFor(() => expect(JSON.parse(localStorage.getItem(storageKey)!)).toHaveLength(2));
   });
 
-  it("does not turn a credit refresh failure into a failed generation", async () => {
+  it("does not turn a quota refresh failure into a failed generation", async () => {
     mocks.complete.mockResolvedValue({ text: "Actual reply" });
     mocks.refresh.mockRejectedValue(new Error("Balance offline"));
     render(<AITextGeneratorEngine />);

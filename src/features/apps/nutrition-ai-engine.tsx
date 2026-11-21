@@ -15,7 +15,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { useCredits } from "@/lib/credits/use-credits";
+import { useAiQuota } from "@/lib/ai/use-ai-quota";
 import {
   generateWeeklyMealPlan, aggregateGroceryList, analyzeRecipeIngredients,
   generateOfflineNutritionAdvice,
@@ -24,7 +24,7 @@ import {
 } from "./nutrition/nutrition-engine-logic";
 
 export function NutritionAIEngine() {
-  const { refresh } = useCredits();
+  const { refresh } = useAiQuota();
 
   // Tab State
   const [activeTab, setActiveTab] = useState<"planner" | "grocery" | "analyzer" | "consult">("planner");

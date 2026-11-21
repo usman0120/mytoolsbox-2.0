@@ -39,34 +39,13 @@ const engineMap: Record<string, React.ComponentType<Record<string, unknown>>> = 
     loading: () => <EngineLoading />,
   }),
   // Image & Media tools (Phase 5)
-  "photopea": dynamic(() => import("@/features/images/photopea-engine").then((m) => ({ default: m.PhotopeaEngine })), {
-    loading: () => <EngineLoading />,
-  }),
-  "awesome-screenshot": dynamic(() => import("@/features/images/awesome-screenshot-engine").then((m) => ({ default: m.AwesomeScreenshotEngine })), {
-    loading: () => <EngineLoading />,
-  }),
-  "snagit": dynamic(() => import("@/features/images/snagit-engine").then((m) => ({ default: m.SnagitEngine })), {
-    loading: () => <EngineLoading />,
-  }),
-  "canva": dynamic(() => import("@/features/images/canva-engine").then((m) => ({ default: m.CanvaEngine })), {
+  "design-studio": dynamic(() => import("@/features/images/design-studio-engine").then((m) => ({ default: m.DesignStudioEngine })), {
     loading: () => <EngineLoading />,
   }),
   "image-to-text-ocr": dynamic(() => import("@/features/images/image-to-text-ocr-engine").then((m) => ({ default: m.ImageToTextOCREngine })), {
     loading: () => <EngineLoading />,
   }),
-  "runway": dynamic(() => import("@/features/images/runway-engine").then((m) => ({ default: m.RunwayEngine })), {
-    loading: () => <EngineLoading />,
-  }),
-  "julius-ai": dynamic(() => import("@/features/images/julius-ai-engine").then((m) => ({ default: m.JuliusAIEngine })), {
-    loading: () => <EngineLoading />,
-  }),
-  "softcolor-auto-enhance": dynamic(() => import("@/features/images/softcolor-auto-enhance-engine").then((m) => ({ default: m.SoftColorAutoEnhanceEngine })), {
-    loading: () => <EngineLoading />,
-  }),
-  "photolemur": dynamic(() => import("@/features/images/photolemur-engine").then((m) => ({ default: m.PhotolemurEngine })), {
-    loading: () => <EngineLoading />,
-  }),
-  "perfectly-clear": dynamic(() => import("@/features/images/perfectly-clear-engine").then((m) => ({ default: m.PerfectlyClearEngine })), {
+  "auto-enhance-photo": dynamic(() => import("@/features/images/auto-enhance-photo-engine").then((m) => ({ default: m.AutoEnhancePhotoEngine })), {
     loading: () => <EngineLoading />,
   }),
   // Developer tools
@@ -113,9 +92,6 @@ const engineMap: Record<string, React.ComponentType<Record<string, unknown>>> = 
     loading: () => <EngineLoading />,
   }),
   "api-request-builder": dynamic(() => import("@/features/tools/api-request-builder-engine").then((m) => ({ default: m.APIRequestBuilderEngine })), {
-    loading: () => <EngineLoading />,
-  }),
-  "webhook-tester": dynamic(() => import("@/features/tools/webhook-tester-engine").then((m) => ({ default: m.WebhookTesterEngine })), {
     loading: () => <EngineLoading />,
   }),
   "ai-regex-builder": dynamic(() => import("@/features/tools/ai-regex-builder-engine").then((m) => ({ default: m.AIRegexBuilderEngine })), {
@@ -199,9 +175,6 @@ const engineMap: Record<string, React.ComponentType<Record<string, unknown>>> = 
   "study-timer": dynamic(() => import("@/features/tools/study-timer-engine").then((m) => ({ default: m.StudyTimerEngine })), {
     loading: () => <EngineLoading />,
   }),
-  "flashcard-generator": dynamic(() => import("@/features/tools/flashcard-generator-engine").then((m) => ({ default: m.FlashcardGeneratorEngine })), {
-    loading: () => <EngineLoading />,
-  }),
   "gpa-calculator": dynamic(() => import("@/features/tools/gpa-calculator-engine").then((m) => ({ default: m.GPACalculatorEngine })), {
     loading: () => <EngineLoading />,
   }),
@@ -210,9 +183,6 @@ const engineMap: Record<string, React.ComponentType<Record<string, unknown>>> = 
   }),
 
   // Business Hub
-  "invoice-generator": dynamic(() => import("@/features/tools/invoice-generator-engine").then((m) => ({ default: m.InvoiceGeneratorEngine })), {
-    loading: () => <EngineLoading />,
-  }),
   "quotation-generator": dynamic(() => import("@/features/tools/quotation-generator-engine").then((m) => ({ default: m.QuotationGeneratorEngine })), {
     loading: () => <EngineLoading />,
   }),
@@ -269,9 +239,6 @@ const engineMap: Record<string, React.ComponentType<Record<string, unknown>>> = 
   "random-generator": dynamic(() => import("@/features/tools/random-generator-engine").then((m) => ({ default: m.RandomGeneratorEngine })), {
     loading: () => <EngineLoading />,
   }),
-  "url-shortener": dynamic(() => import("@/features/tools/url-shortener-engine").then((m) => ({ default: m.URLShortenerEngine })), {
-    loading: () => <EngineLoading />,
-  }),
   "text-to-speech": dynamic(() => import("@/features/tools/text-to-speech-engine").then((m) => ({ default: m.TextToSpeechEngine })), {
     loading: () => <EngineLoading />,
   }),
@@ -306,28 +273,7 @@ const engineMap: Record<string, React.ComponentType<Record<string, unknown>>> = 
   "pdf-to-ppt-converter": dynamic(() => import("@/features/documents/pdf-to-ppt-converter-engine").then((m) => ({ default: m.PDFToPPTConverterEngine })), {
     loading: () => <EngineLoading />,
   }),
-  "onlyoffice-editor": dynamic(() => import("@/features/documents/onlyoffice-editor-engine").then((m) => ({ default: m.ONLYOFFICEEditorEngine })), {
-    loading: () => <EngineLoading />,
-  }),
-  "soda-pdf": dynamic(() => import("@/features/documents/soda-pdf-engine").then((m) => ({ default: m.SodaPDFEngine })), {
-    loading: () => <EngineLoading />,
-  }),
-  "pdfelement": dynamic(() => import("@/features/documents/pdfelement-engine").then((m) => ({ default: m.PDFElementEngine })), {
-    loading: () => <EngineLoading />,
-  }),
-  "nitro-pro": dynamic(() => import("@/features/documents/nitro-pro-engine").then((m) => ({ default: m.NitroProEngine })), {
-    loading: () => <EngineLoading />,
-  }),
-  "foxit-pdf": dynamic(() => import("@/features/documents/foxit-pdf-engine").then((m) => ({ default: m.FoxitPDFEngine })), {
-    loading: () => <EngineLoading />,
-  }),
-  "smallpdf": dynamic(() => import("@/features/documents/smallpdf-engine").then((m) => ({ default: m.SmallPDFEngine })), {
-    loading: () => <EngineLoading />,
-  }),
-  "rfp-monkey": dynamic(() => import("@/features/tools/rfp-monkey-engine").then((m) => ({ default: m.RFPMonkeyEngine })), {
-    loading: () => <EngineLoading />,
-  }),
-  "online-notepad": dynamic(() => import("@/features/tools/online-notepad-engine").then((m) => ({ default: m.OnlineNotepadEngine })), {
+  "edit-pdf": dynamic(() => import("@/features/documents/edit-pdf-engine").then((m) => ({ default: m.EditPdfEngine })), {
     loading: () => <EngineLoading />,
   }),
   // Media & Audio tools (Phase 6)
@@ -357,9 +303,6 @@ const engineMap: Record<string, React.ComponentType<Record<string, unknown>>> = 
     loading: () => <EngineLoading />,
   }),
   "speech-to-text": dynamic(() => import("@/features/tools/speech-to-text-engine").then((m) => ({ default: m.SpeechToTextEngine })), {
-    loading: () => <EngineLoading />,
-  }),
-  "plagiarism-checker": dynamic(() => import("@/features/tools/plagiarism-checker-engine").then((m) => ({ default: m.PlagiarismCheckerEngine })), {
     loading: () => <EngineLoading />,
   }),
   "text-annotator": dynamic(() => import("@/features/tools/text-annotator-engine").then((m) => ({ default: m.TextAnnotatorEngine })), {
@@ -411,9 +354,6 @@ const engineMap: Record<string, React.ComponentType<Record<string, unknown>>> = 
   "todo-list": dynamic(() => import("@/features/tools/todo-list-engine").then((m) => ({ default: m.TodoListEngine })), {
     loading: () => <EngineLoading />,
   }),
-  "habit-tracker": dynamic(() => import("@/features/tools/habit-tracker-engine").then((m) => ({ default: m.HabitTrackerEngine })), {
-    loading: () => <EngineLoading />,
-  }),
   "file-organizer": dynamic(() => import("@/features/tools/file-organizer-engine").then((m) => ({ default: m.FileOrganizerEngine })), {
     loading: () => <EngineLoading />,
   }),
@@ -423,22 +363,13 @@ const engineMap: Record<string, React.ComponentType<Record<string, unknown>>> = 
   "countdown-timer": dynamic(() => import("@/features/tools/countdown-timer-engine").then((m) => ({ default: m.CountdownTimerEngine })), {
     loading: () => <EngineLoading />,
   }),
-  "ai-image-generator": dynamic(() => import("@/features/tools/ai-image-generator-engine").then((m) => ({ default: m.AIImageGeneratorEngine })), {
-    loading: () => <EngineLoading />,
-  }),
   "ai-text-generator": dynamic(() => import("@/features/tools/ai-text-generator-engine").then((m) => ({ default: m.AITextGeneratorEngine })), {
-    loading: () => <EngineLoading />,
-  }),
-  "ai-summary-tool": dynamic(() => import("@/features/tools/ai-summary-tool-engine").then((m) => ({ default: m.AISummaryToolEngine })), {
     loading: () => <EngineLoading />,
   }),
   "barcode-scanner": dynamic(() => import("@/features/tools/barcode-scanner-engine").then((m) => ({ default: m.BarcodeScannerEngine })), {
     loading: () => <EngineLoading />,
   }),
   "cover-letter-generator": dynamic(() => import("@/features/tools/cover-letter-generator-engine").then((m) => ({ default: m.CoverLetterGeneratorEngine })), {
-    loading: () => <EngineLoading />,
-  }),
-  "paragraph-rewriter": dynamic(() => import("@/features/tools/paragraph-rewriter-engine").then((m) => ({ default: m.ParagraphRewriterEngine })), {
     loading: () => <EngineLoading />,
   }),
 };

@@ -3,7 +3,7 @@ import {
   DESIGN_TEMPLATES,
   PRESET_GRADIENTS,
   calculateFittedDimensions,
-} from "@/features/images/canva-design";
+} from "@/features/images/design-studio-model";
 import {
   generatePalette,
   hexToRgb,

@@ -115,7 +115,7 @@ export function HomeClient({ popularTools, featuredApps, featuredWorkflows = [],
   const faqs = [
     {
       q: "Is MyToolsBox really free to use?",
-      a: "Browser-based workflows and many utilities are available without an account. Online AI requests require sign-in, configured providers, and available credits.",
+      a: "Browser-based workflows and many utilities are available without an account. AI features are free too, with a daily allowance that is higher when you sign in.",
     },
     {
       q: "Are my documents or files ever uploaded to a server?",

@@ -42,7 +42,6 @@ export interface ToolDefinition {
   outputTypes: string[];
   processingMode: ProcessingMode;
   requiresAuth: boolean;
-  requiresPro: boolean;
   productType: ProductType;
   seoTitle: string;
   seoDescription: string;

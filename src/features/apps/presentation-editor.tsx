@@ -58,7 +58,7 @@ const PRESET_DECKS: { name: string; data: PresentationData }[] = [
       slides: [
         { id: "p1", type: "title", title: "HyperScale AI", content: "Empowering developers to build autonomous systems in minutes" },
         { id: "p2", type: "bullets", title: "The Problem", content: "", bullets: ["Developers spend 60% of time on boilerplate & config", "Fragmented API tooling causes delivery bottlenecks", "High latency across heterogeneous microservices"] },
-        { id: "p3", type: "two-column", title: "Our Solution", content: "Unified AI-driven agent pipeline with automatic error correction and native credit-based billing infrastructure." },
+        { id: "p3", type: "two-column", title: "Our Solution", content: "Unified AI-driven agent pipeline with automatic error correction and built-in usage analytics." },
         { id: "p4", type: "bullets", title: "Traction & Metrics", content: "", bullets: ["120,000+ Active Monthly Developers", "4.9/5 Average Developer Experience Rating", "99.98% System Availability SLA"] },
         { id: "p5", type: "quote", title: "TechCrunch Review", content: "HyperScale AI is revolutionizing how modern distributed teams ship software." },
       ],

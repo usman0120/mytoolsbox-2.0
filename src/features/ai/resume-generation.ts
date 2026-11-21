@@ -10,7 +10,6 @@ const resumeContent = z.object({
 
 export async function generateResumeContent(input: Record<string, string>) {
   const response = await completeViaServer({
-    operation: "doc_generation",
     tier: "cheap",
     maxTokens: 4000,
     temperature: 0.3,

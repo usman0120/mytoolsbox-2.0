@@ -271,7 +271,7 @@ export function ResumeAIAssistant() {
             <Textarea id="resume-job" placeholder="Paste the job description here to tailor your resume..." className="min-h-25" value={data.jobDescription} onChange={(e) => updateField("jobDescription", e.target.value)} />
           </section>
 
-          <p className="text-sm text-muted-foreground">Resume details are sent to the configured AI provider. Sign-in and document-generation credits are required.</p>
+          <p className="text-sm text-muted-foreground">Resume details are sent to the configured AI provider. It counts toward your free daily AI allowance.</p>
           {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
           <Button onClick={handleGenerate} disabled={isGenerating || !data.fullName.trim()} className="w-full gap-2" size="lg">
             {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}

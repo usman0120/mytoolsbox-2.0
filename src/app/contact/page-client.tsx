@@ -143,7 +143,7 @@ export function ContactPageClient() {
             {[
               {
                 q: "Is it really free?",
-                a: "Availability and limits depend on the tool. AI features use credits; review the tool or account details before use.",
+                a: "Availability and limits depend on the tool. AI features have a free daily allowance that resets at midnight UTC.",
               },
               {
                 q: "Do I need an account?",

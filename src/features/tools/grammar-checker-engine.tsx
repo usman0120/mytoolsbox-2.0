@@ -24,7 +24,7 @@ import {
   FileCheck,
 } from "lucide-react";
 import { checkGrammar, type GrammarIssue } from "@/lib/ai/services/grammar-checker";
-import { useCredits } from "@/lib/credits/use-credits";
+import { useAiQuota } from "@/lib/ai/use-ai-quota";
 import { toast } from "sonner";
 
 // ---------------------------------------------------------------------------
@@ -157,7 +157,7 @@ export function GrammarCheckerEngine() {
   const [activeTab, setActiveTab] = useState("corrected");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [error, setError] = useState<string | null>(null);
-  const { refresh } = useCredits();
+  const { refresh } = useAiQuota();
 
   const handleCheck = useCallback(async () => {
     if (!input.trim()) return;

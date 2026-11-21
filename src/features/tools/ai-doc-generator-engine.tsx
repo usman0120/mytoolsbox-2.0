@@ -16,7 +16,7 @@ import {
   Code2,
 } from "lucide-react";
 import { generateDocs, type DocGeneratorOutput } from "@/lib/ai/services/doc-generator";
-import { useCredits } from "@/lib/credits/use-credits";
+import { useAiQuota } from "@/lib/ai/use-ai-quota";
 import { toast } from "sonner";
 
 function ruleBasedDocGenerate(code: string, language = "typescript", style = "jsdoc"): DocGeneratorOutput {
@@ -154,7 +154,7 @@ export function AIDocumentationGeneratorEngine() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
-  const { refresh } = useCredits();
+  const { refresh } = useAiQuota();
 
   const handleGenerate = useCallback(async () => {
     if (!code.trim()) return;

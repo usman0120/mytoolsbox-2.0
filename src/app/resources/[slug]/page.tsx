@@ -19,12 +19,12 @@ export async function generateMetadata({ params }: GuidePageProps): Promise<Meta
 
   if (!guide) {
     return {
-      title: "Guide Not Found - MyToolsBox",
+      title: "Guide Not Found",
     };
   }
 
   return {
-    title: `${guide.title} - MyToolsBox Resources`,
+    title: `${guide.title}`,
     description: guide.description,
   };
 }

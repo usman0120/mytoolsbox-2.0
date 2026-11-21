@@ -75,7 +75,7 @@ const COPY: Record<string, string> = {
   aud_researchers_desc: "Data analysis, references, calculators",
 
   // Homepage AI Suite Section
-  ai_credits_badge: "1,000 Free Credits/Mo",
+  ai_credits_badge: "Free daily AI",
   ai_suite_title: "Multi-Engine AI Copilot Built for Builders",
   ai_suite_desc: "Harness high-speed intelligence powered by Google Gemini 2.0 Flash and Groq Llama 3.3 70B. Chat, benchmark models side-by-side, explore 160+ curated prompts, and activate expert domain personas.",
   ai_workspace_btn: "Open AI Workspace",
@@ -214,7 +214,7 @@ const COPY: Record<string, string> = {
   auth_password: "Password",
   auth_forgot_pwd: "Forgot password?",
   auth_guest_title: "Guest Account",
-  auth_guest_desc: "Sign in to claim 1,000 free AI credits every month!",
+  auth_guest_desc: "Sign in to save favorites and history and get more free AI requests each day.",
   auth_profile: "Profile",
   auth_favorites: "Favorites",
   auth_history: "History",
@@ -244,7 +244,7 @@ const COPY: Record<string, string> = {
   apps_zero_leak_title: "Zero-Leak Local Processing",
   apps_zero_leak_desc: "Calculations, algorithms, and documents are rendered directly in your client browser memory without telemetry.",
   apps_ai_intel_title: "Centralized AI Intelligence",
-  apps_ai_intel_desc: "Optional AI consultations and deep analyses draw from your monthly credits with automatic reset cycles.",
+  apps_ai_intel_desc: "Optional AI consultations and deeper analyses use your free daily AI allowance.",
   apps_audience_title: "Audience & Optimization",
 
   // Hubs Pages
@@ -370,7 +370,7 @@ const COPY: Record<string, string> = {
   ai_subnav_title: "AI Intelligence Studio",
   ai_subnav_subtitle: "High-performance AI chat, real-time model comparisons, and curated prompts powered by Google Gemini and Groq.",
   ai_subnav_badge: "Production Ready",
-  ai_subnav_free_credits: "Get 1,000 free monthly credits",
+  ai_subnav_free_credits: "Free daily AI allowance",
 
   // Legal (Privacy & Terms)
   privacy_page_title: "Privacy Policy",

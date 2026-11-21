@@ -20,7 +20,7 @@ import {
   Code2,
 } from "lucide-react";
 import { explainError, type ErrorExplainerOutput } from "@/lib/ai/services/error-explainer";
-import { useCredits } from "@/lib/credits/use-credits";
+import { useAiQuota } from "@/lib/ai/use-ai-quota";
 import { toast } from "sonner";
 
 interface ErrorRule {
@@ -141,7 +141,7 @@ export function AIErrorExplainerEngine() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
-  const { refresh } = useCredits();
+  const { refresh } = useAiQuota();
 
   const handleExplain = useCallback(async () => {
     if (!errorInput.trim()) return;
