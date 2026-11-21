@@ -14,10 +14,12 @@
     "test:coverage": "vitest run --coverage",
     "test:redirects": "node scripts/test-redirects.mjs",
     "typecheck": "tsc --noEmit",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "check:tools": "vitest run src/tools/check-tools.test.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
+    "@fontsource-variable/bricolage-grotesque": "^5.3.0",
     "@hookform/resolvers": "^5.9.1",
     "class-variance-authority": "^0.7.1",
     "cmdk": "^1.1.1",
@@ -25,6 +27,7 @@
     "diff": "^9.0.0",
     "firebase": "^12.19.0",
     "framer-motion": "^13.4.0",
+    "geist": "^1.9.2",
     "js-base64": "^3.9.3",
     "jszip": "^3.10.2",
     "lucide-react": "^1.47.0",

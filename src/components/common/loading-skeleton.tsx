@@ -23,11 +23,3 @@ export function PageSkeleton({ label = "Loading page" }: { label?: string }) {
   </div>;
 }
 
-export function NavigationSkeleton() {
-  return <div role="status" aria-label="Loading navigation" className="h-[var(--shell-header-height)] border-b">
-    <span className="sr-only">Loading navigation…</span>
-    <div aria-hidden="true" className="mx-auto flex h-full max-w-7xl items-center justify-between px-4 sm:px-6 motion-safe:animate-pulse">
-      <div className="h-8 w-36 rounded-lg bg-muted" /><div className="h-8 w-20 rounded-lg bg-muted" />
-    </div>
-  </div>;
-}

@@ -5,24 +5,17 @@
 @custom-variant dark (&:is(.dark *));
 
 /* ==========================================================================
-   Design Tokens — MyToolsBox
-   ==========================================================================
-   Philosophy (Inspired by Editorial & Refined Workbench Aesthetic):
-   - Refined forest pine primary accent with warm ivory/off-white foundation
-   - Soft organic borders, generous whitespace, crisp card elevations
-   - Editorial serif accents paired with modern sans-serif body
-   - Distraction-free, zero gaudy gradients or excessive AI badges
-   - Seamless high-contrast Dark & Light theme balance
+   MyToolsBox design tokens — "calm workshop" (blueprint section 6)
+   Warm stone neutrals, ink primary, one electric-lime accent used sparingly,
+   and one identity colour per Space (top bar, icon chip, active tab, progress only).
    ========================================================================== */
 
 @theme inline {
-  /* ---- Typography ---- */
-  --font-sans: var(--font-archivo);
+  --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --font-serif: var(--font-serif);
-  --font-heading: var(--font-archivo);
+  --font-heading: var(--font-bricolage);
+  --font-serif: var(--font-bricolage);
 
-  /* ---- Color tokens (mapped to CSS variables) ---- */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -43,10 +36,11 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
 
-  /* ---- Brand colors ---- */
   --color-brand: var(--brand);
   --color-brand-foreground: var(--brand-foreground);
   --color-brand-muted: var(--brand-muted);
+  --color-lime: var(--lime);
+  --color-lime-foreground: var(--lime-foreground);
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
   --color-warning: var(--warning);
@@ -54,14 +48,22 @@
   --color-info: var(--info);
   --color-info-foreground: var(--info-foreground);
 
-  /* ---- Chart colors ---- */
+  /* Space identity colours */
+  --color-space-docs: #f2545b;
+  --color-space-media: #7c5cff;
+  --color-space-create: #ff5fa2;
+  --color-space-dev: #10b981;
+  --color-space-study: #38bdf8;
+  --color-space-calc: #f59e0b;
+  --color-space-work: #6366f1;
+  --color-space-ai: #9be15d;
+
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
 
-  /* ---- Sidebar ---- */
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -71,172 +73,172 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  /* ---- Border radius scale ---- */
-  --radius: 0.625rem;
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.35);
-  --radius-2xl: calc(var(--radius) * 1.75);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  /* Radius: 8 inputs, 12 cards, 16 panels */
+  --radius: 0.75rem;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.25rem;
+  --radius-3xl: 1.5rem;
+  --radius-4xl: 2rem;
 
-  /* ---- Shadows ---- */
-  --shadow-xs: 0 1px 2px 0 oklch(0 0 0 / 0.03);
-  --shadow-sm: 0 1px 3px 0 oklch(0 0 0 / 0.04), 0 1px 2px -1px oklch(0 0 0 / 0.03);
-  --shadow-md: 0 4px 6px -1px oklch(0 0 0 / 0.05), 0 2px 4px -2px oklch(0 0 0 / 0.03);
-  --shadow-lg: 0 10px 15px -3px oklch(0 0 0 / 0.05), 0 4px 6px -4px oklch(0 0 0 / 0.03);
-  --shadow-xl: 0 20px 25px -5px oklch(0 0 0 / 0.05), 0 8px 10px -6px oklch(0 0 0 / 0.03);
+  /* Borders first; one soft shadow for floating layers */
+  --shadow-xs: 0 1px 2px 0 rgb(28 25 23 / 0.04);
+  --shadow-sm: 0 1px 2px 0 rgb(28 25 23 / 0.05);
+  --shadow-md: 0 4px 12px -4px rgb(28 25 23 / 0.08);
+  --shadow-lg: 0 12px 32px -12px rgb(28 25 23 / 0.18);
+  --shadow-xl: 0 20px 48px -16px rgb(28 25 23 / 0.22);
+
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* ==========================================================================
-   Light Mode — Refined Pine & Warm Ivory
-   ========================================================================== */
 :root {
-  --shell-header-height: 3.75rem;
+  --shell-header-height: 3.5rem;
+  --shell-bottom-nav-height: 3.75rem;
 
-  /* Neutral foundation — warm paper/ivory */
-  --background: oklch(0.988 0.003 110);
-  --foreground: oklch(0.20 0.02 155);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.20 0.02 155);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.20 0.02 155);
+  --background: #fafaf9;
+  --foreground: #1c1917;
+  --card: #ffffff;
+  --card-foreground: #1c1917;
+  --popover: #ffffff;
+  --popover-foreground: #1c1917;
 
-  /* Brand accent — deep forest pine / sage */
-  --primary: oklch(0.35 0.085 155);
-  --primary-foreground: oklch(0.99 0 0);
-  --brand: oklch(0.35 0.085 155);
-  --brand-foreground: oklch(0.99 0 0);
-  --brand-muted: oklch(0.94 0.025 155);
+  --primary: #1c1917;
+  --primary-foreground: #fafaf9;
+  --brand: #1c1917;
+  --brand-foreground: #fafaf9;
+  --brand-muted: #f5f5f4;
+  --lime: #c6f432;
+  --lime-foreground: #1c1917;
 
-  /* Surfaces */
-  --secondary: oklch(0.96 0.008 145);
-  --secondary-foreground: oklch(0.22 0.04 155);
-  --muted: oklch(0.962 0.006 145);
-  --muted-foreground: oklch(0.46 0.02 145);
-  --accent: oklch(0.94 0.02 155);
-  --accent-foreground: oklch(0.20 0.05 155);
+  --secondary: #f5f5f4;
+  --secondary-foreground: #1c1917;
+  --muted: #f5f5f4;
+  --muted-foreground: #57534e;
+  --accent: #f5f5f4;
+  --accent-foreground: #1c1917;
 
-  /* Semantic */
-  --destructive: oklch(0.55 0.2 25);
-  --destructive-foreground: oklch(0.99 0 0);
-  --success: oklch(0.48 0.14 150);
-  --success-foreground: oklch(0.99 0 0);
-  --warning: oklch(0.65 0.16 75);
-  --warning-foreground: oklch(0.15 0.02 75);
-  --info: oklch(0.48 0.12 215);
-  --info-foreground: oklch(0.99 0 0);
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --success: #3f6212;
+  --success-foreground: #ffffff;
+  --warning: #b45309;
+  --warning-foreground: #ffffff;
+  --info: #0369a1;
+  --info-foreground: #ffffff;
 
-  /* Borders & inputs */
-  --border: oklch(0.90 0.008 145);
-  --input: oklch(0.90 0.008 145);
-  --ring: oklch(0.35 0.085 155);
+  --border: #e7e5e4;
+  --input: #d6d3d1;
+  --ring: #4d7c0f;
 
-  /* Charts */
-  --chart-1: oklch(0.35 0.085 155);
-  --chart-2: oklch(0.55 0.12 180);
-  --chart-3: oklch(0.65 0.14 75);
-  --chart-4: oklch(0.50 0.12 215);
-  --chart-5: oklch(0.55 0.14 30);
+  --chart-1: #1c1917;
+  --chart-2: #7c5cff;
+  --chart-3: #f59e0b;
+  --chart-4: #10b981;
+  --chart-5: #f2545b;
 
-  /* Sidebar */
-  --sidebar: oklch(0.985 0.003 110);
-  --sidebar-foreground: oklch(0.20 0.02 155);
-  --sidebar-primary: oklch(0.35 0.085 155);
-  --sidebar-primary-foreground: oklch(0.99 0 0);
-  --sidebar-accent: oklch(0.94 0.02 155);
-  --sidebar-accent-foreground: oklch(0.20 0.05 155);
-  --sidebar-border: oklch(0.90 0.008 145);
-  --sidebar-ring: oklch(0.35 0.085 155);
+  --sidebar: #fafaf9;
+  --sidebar-foreground: #1c1917;
+  --sidebar-primary: #1c1917;
+  --sidebar-primary-foreground: #fafaf9;
+  --sidebar-accent: #f5f5f4;
+  --sidebar-accent-foreground: #1c1917;
+  --sidebar-border: #e7e5e4;
+  --sidebar-ring: #4d7c0f;
 }
 
-/* ==========================================================================
-   Dark Mode — Obsidian Pine & Emerald Sage
-   ========================================================================== */
 .dark {
-  --background: oklch(0.145 0.015 160);
-  --foreground: oklch(0.94 0.006 145);
-  --card: oklch(0.185 0.018 160);
-  --card-foreground: oklch(0.94 0.006 145);
-  --popover: oklch(0.185 0.018 160);
-  --popover-foreground: oklch(0.94 0.006 145);
+  --background: #0e0e10;
+  --foreground: #f5f5f4;
+  --card: #17171a;
+  --card-foreground: #f5f5f4;
+  --popover: #17171a;
+  --popover-foreground: #f5f5f4;
 
-  --primary: oklch(0.72 0.13 155);
-  --primary-foreground: oklch(0.12 0.025 160);
-  --brand: oklch(0.72 0.13 155);
-  --brand-foreground: oklch(0.12 0.025 160);
-  --brand-muted: oklch(0.23 0.035 160);
+  --primary: #f5f5f4;
+  --primary-foreground: #0e0e10;
+  --brand: #f5f5f4;
+  --brand-foreground: #0e0e10;
+  --brand-muted: #1f1f23;
+  --lime: #c6f432;
+  --lime-foreground: #0e0e10;
 
-  --secondary: oklch(0.22 0.018 160);
-  --secondary-foreground: oklch(0.94 0.006 145);
-  --muted: oklch(0.22 0.018 160);
-  --muted-foreground: oklch(0.65 0.02 155);
-  --accent: oklch(0.25 0.03 160);
-  --accent-foreground: oklch(0.94 0.006 145);
+  --secondary: #1f1f23;
+  --secondary-foreground: #f5f5f4;
+  --muted: #1f1f23;
+  --muted-foreground: #a8a29e;
+  --accent: #232327;
+  --accent-foreground: #f5f5f4;
 
-  --destructive: oklch(0.60 0.18 25);
-  --destructive-foreground: oklch(0.99 0 0);
-  --success: oklch(0.68 0.14 150);
-  --success-foreground: oklch(0.12 0.025 160);
-  --warning: oklch(0.72 0.14 75);
-  --warning-foreground: oklch(0.12 0.025 160);
-  --info: oklch(0.65 0.12 215);
-  --info-foreground: oklch(0.12 0.025 160);
+  --destructive: #f87171;
+  --destructive-foreground: #0e0e10;
+  --success: #a3e635;
+  --success-foreground: #0e0e10;
+  --warning: #fbbf24;
+  --warning-foreground: #0e0e10;
+  --info: #7dd3fc;
+  --info-foreground: #0e0e10;
 
-  --border: oklch(0.27 0.02 160);
-  --input: oklch(0.27 0.02 160);
-  --ring: oklch(0.72 0.13 155);
+  --border: rgb(255 255 255 / 0.08);
+  --input: rgb(255 255 255 / 0.14);
+  --ring: #c6f432;
 
-  --chart-1: oklch(0.72 0.13 155);
-  --chart-2: oklch(0.65 0.12 180);
-  --chart-3: oklch(0.72 0.14 75);
-  --chart-4: oklch(0.65 0.12 215);
-  --chart-5: oklch(0.65 0.14 30);
+  --chart-1: #f5f5f4;
+  --chart-2: #a78bfa;
+  --chart-3: #fbbf24;
+  --chart-4: #34d399;
+  --chart-5: #fb7185;
 
-  --sidebar: oklch(0.16 0.016 160);
-  --sidebar-foreground: oklch(0.94 0.006 145);
-  --sidebar-primary: oklch(0.72 0.13 155);
-  --sidebar-primary-foreground: oklch(0.12 0.025 160);
-  --sidebar-accent: oklch(0.25 0.03 160);
-  --sidebar-accent-foreground: oklch(0.94 0.006 145);
-  --sidebar-border: oklch(0.27 0.02 160);
-  --sidebar-ring: oklch(0.72 0.13 155);
+  --sidebar: #121214;
+  --sidebar-foreground: #f5f5f4;
+  --sidebar-primary: #f5f5f4;
+  --sidebar-primary-foreground: #0e0e10;
+  --sidebar-accent: #1f1f23;
+  --sidebar-accent-foreground: #f5f5f4;
+  --sidebar-border: rgb(255 255 255 / 0.08);
+  --sidebar-ring: #c6f432;
 }
 
-/* ==========================================================================
-   Base Styles
-   ========================================================================== */
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border outline-ring/60;
+  }
+  html {
+    @apply font-sans;
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
   }
   body {
     @apply bg-background text-foreground antialiased;
-    letter-spacing: 0;
     line-height: 1.5;
     text-rendering: optimizeLegibility;
+    font-feature-settings: "ss01", "cv11";
   }
-  html {
-    @apply font-sans scroll-smooth;
+  :where(h1, h2, h3) {
+    font-family: var(--font-heading);
+    letter-spacing: -0.02em;
+    text-wrap: balance;
   }
-
-  /* Subtle selection color */
+  :where(.tabular, [data-numeric]) {
+    font-variant-numeric: tabular-nums;
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
   ::selection {
-    background: oklch(0.35 0.085 155 / 0.15);
-    color: var(--foreground);
-  }
-  .dark ::selection {
-    background: oklch(0.72 0.13 155 / 0.22);
+    background: rgb(198 244 50 / 0.45);
+    color: #1c1917;
   }
 }
 
 @utility tracking-tight {
-  letter-spacing: 0;
+  letter-spacing: -0.015em;
 }
 
 @utility tracking-tighter {
-  letter-spacing: 0;
+  letter-spacing: -0.03em;
 }
 
 @utility tracking-wide {
@@ -473,7 +475,7 @@
    Editorial Typography & Refined Sheets
    ========================================================================== */
 .font-editorial {
-  font-family: var(--font-serif), Georgia, Cambria, "Times New Roman", Times, serif;
+  font-family: var(--font-heading);
 }
 
 .preview-sheet {
@@ -486,29 +488,9 @@
   box-shadow: 0 4px 20px -2px oklch(0 0 0 / 0.35), 0 2px 6px -1px oklch(0 0 0 / 0.2);
 }
 
-/* ==========================================================================
-   Gradient Text — Restrained pine / emerald accent
-   ========================================================================== */
+/* Gradient text is retired (no template gradients); kept as a no-op for old markup. */
 .gradient-text {
-  background: linear-gradient(
-    135deg,
-    oklch(0.35 0.085 155),
-    oklch(0.48 0.12 175)
-  );
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.dark .gradient-text {
-  background: linear-gradient(
-    135deg,
-    oklch(0.72 0.13 155),
-    oklch(0.82 0.10 175)
-  );
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: inherit;
 }
 
 /* ==========================================================================

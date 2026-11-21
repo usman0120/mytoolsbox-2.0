@@ -33,7 +33,7 @@ describe("consolidated product catalog", () => {
     expect(existsSync("src/app/ai/personas/page.tsx")).toBe(false);
     expect(existsSync("src/features/ai/components/model-compare.tsx")).toBe(false);
     expect(readFileSync("src/features/ai/components/chat-input.tsx", "utf8")).not.toContain("AI_PERSONAS");
-    expect(readFileSync("src/components/navigation/navbar.tsx", "utf8")).not.toMatch(/\/ai\/(compare|personas)/);
+    expect(readFileSync("src/components/shell/site-header.tsx", "utf8")).not.toMatch(/\/ai\/(compare|personas)/);
   });
   it("retains existing resume and CV storage keys without destructive migrations", () => {
     for (const [file, key] of [["resume-editor", "mytoolsbox-resume-data"], ["cv-editor", "mytoolsbox-cv-data"], ["resume-ai-assistant", "mytoolsbox-ai-resume"]]) {

@@ -24,7 +24,7 @@ import * as Icons from "lucide-react";
 
 // ---------- Intent-based search helpers ----------
 
-interface SearchResult {
+export interface SearchResult {
   type: "tool" | "app";
   item: ToolDefinition;
   score: number;
@@ -106,7 +106,7 @@ function computeIntentScore(query: string, item: ToolDefinition): number {
   return score;
 }
 
-function searchAll(query: string): SearchResult[] {
+export function searchAll(query: string): SearchResult[] {
   const tools = searchTools(query);
   const apps = getActiveApps().filter((app) => {
     const q = query.toLowerCase();

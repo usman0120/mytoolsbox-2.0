@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import { existsSync, readFileSync } from "node:fs";
 import { getAppBySlug } from "@/content/apps/registry";
 import { consolidatedPath } from "@/lib/catalog/consolidation";
-import { NAV_MENUS } from "@/lib/navigation/menus";
 import sitemap from "@/app/sitemap";
 
 describe("US English-only platform and AI app", () => {
@@ -16,11 +15,11 @@ describe("US English-only platform and AI app", () => {
     expect(consolidatedPath("/ai/prompts")).toBeUndefined();
     expect(readFileSync("src/features/ai/chat-store.ts", "utf8")).not.toMatch(/favoritePromptIds|pendingPrompt/);
   });
-  it("exposes workflows and the new AI app in navigation, with no prompt-library links", () => {
-    expect(NAV_MENUS.some((menu) => menu.href === "/workflows")).toBe(true);
-    const links = NAV_MENUS.flatMap((menu) => menu.sections.flatMap((section) => section.links));
-    expect(links.some((link) => link.href === "/apps/ai-chat")).toBe(true);
-    expect(links.some((link) => link.href.startsWith("/ai"))).toBe(false);
+  it("exposes Flows and AI Studio in the header, with no prompt-library links", () => {
+    const header = readFileSync("src/components/shell/site-header.tsx", "utf8");
+    expect(header).toContain('href="/workflows"');
+    expect(header).toContain('href="/apps"');
+    expect(header).not.toMatch(/href="\/ai\//);
   });
   it("publishes only canonical US English URLs in the sitemap", () => {
     const entries = sitemap();

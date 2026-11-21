@@ -1,36 +1,26 @@
 import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
-import { Archivo, Geist_Mono, Newsreader } from "next/font/google";
+import localFont from "next/font/local";
+import { GeistSans } from "geist/font/sans";
+import { GeistMono } from "geist/font/mono";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme/theme-provider";
-import { Navbar } from "@/components/navigation";
-import { Footer } from "@/components/navigation";
+import { SiteHeader, SiteFooter, BottomNav, AskPalette, FileTray } from "@/components/shell";
 import { AuthProvider } from "@/lib/auth";
 import { SITE_CONFIG } from "@/lib/constants";
 import { SkipLink } from "@/components/common/accessibility";
 import { GoogleAnalytics } from "@/components/analytics/google-analytics";
 import { Toaster } from "@/components/ui/sonner";
 import { RequestNotice } from "@/components/common/request-notice";
-import { NavigationSkeleton } from "@/components/common/loading-skeleton";
 import "./globals.css";
 
 const GA_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
-const archivo = Archivo({
-  variable: "--font-archivo",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-const newsreader = Newsreader({
-  variable: "--font-serif",
-  subsets: ["latin"],
-  style: ["normal", "italic"],
+// Self-hosted fonts (blueprint section 6): Bricolage Grotesque headings, Geist UI, Geist Mono numbers/code.
+const bricolage = localFont({
+  src: "../../node_modules/@fontsource-variable/bricolage-grotesque/files/bricolage-grotesque-latin-wght-normal.woff2",
+  variable: "--font-bricolage",
+  weight: "200 800",
   display: "swap",
 });
 
@@ -38,18 +28,18 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#fcfcf9" },
-    { media: "(prefers-color-scheme: dark)", color: "#0e1513" },
+    { media: "(prefers-color-scheme: light)", color: "#fafaf9" },
+    { media: "(prefers-color-scheme: dark)", color: "#0e0e10" },
   ],
 };
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_CONFIG.url),
   title: {
-    default: `${SITE_CONFIG.name} - Free Online Tools & Utilities`,
+    default: `${SITE_CONFIG.name} – Get small jobs done. Free, private, no sign-up`,
     template: `%s | ${SITE_CONFIG.name}`,
   },
-  description: "Online tools for documents, images, development, calculations, and more. Processing and access requirements vary by tool.",
+  description: SITE_CONFIG.description,
   keywords: ["online tools", "free tools", "pdf tools", "image tools", "developer tools", "calculators", "utilities"],
   authors: [{ name: SITE_CONFIG.name }],
   alternates: {
@@ -109,7 +99,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="en-US"
-      className={`${archivo.variable} ${geistMono.variable} ${newsreader.variable} h-full antialiased`}
+      className={`${bricolage.variable} ${GeistSans.variable} ${GeistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
@@ -119,15 +109,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <ThemeProvider>
             <AuthProvider>
               <TooltipProvider>
-                <Suspense fallback={<NavigationSkeleton />}>
-                  <Navbar />
+                <Suspense fallback={<div className="h-[var(--shell-header-height)] border-b" />}>
+                  <SiteHeader />
                 </Suspense>
                 <main id="main-content" className="flex-1" role="main">
                   <Suspense fallback={null}><RequestNotice /></Suspense>
                   {children}
                 </main>
-                <Footer />
-                <Toaster richColors closeButton position="bottom-right" />
+                <SiteFooter />
+                <BottomNav />
+                <AskPalette />
+                <FileTray />
+                <Toaster closeButton position="top-center" />
               </TooltipProvider>
             </AuthProvider>
           </ThemeProvider>
