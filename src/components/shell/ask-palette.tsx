@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
-import { ArrowRight, Clock, Heart, Moon, Search, Sun, Workflow } from "lucide-react";
+import { ArrowRight, Clock, Heart, Loader2, Moon, Search, Sparkles, Sun, Workflow } from "lucide-react";
+import { runAiTask } from "@/lib/ai/tasks-client";
 import {
   Command,
   CommandDialog,
@@ -33,6 +34,7 @@ export function AskPalette() {
   const [query, setQuery] = useState("");
   const [index, setIndex] = useState<SearchDoc[]>([]);
   const askQuery = useShell((s) => s.askQuery);
+  const [ai, setAi] = useState<{ query: string; state: "loading" | "done" | "error"; toolId?: string | null; reason?: string; error?: string } | null>(null);
 
   // Load the search index on first open; take any pre-filled query.
   useEffect(() => {
@@ -74,9 +76,24 @@ export function AskPalette() {
     { id: "history", label: "Open history", icon: Clock, run: () => router.push("/me?tab=history"), words: "history recent" },
   ].filter((a) => !q || `${a.label} ${a.words}`.toLowerCase().includes(q));
 
+  /** Step 2 of the Ask bar: only when local search finds nothing and the user asks for it. */
+  const askAi = async () => {
+    const text = query.trim();
+    setAi({ query: text, state: "loading" });
+    try {
+      const { data } = await runAiTask<{ toolId: string | null; reason: string }>("ask.intent", text);
+      setAi({ query: text, state: "done", toolId: data.toolId, reason: data.reason });
+    } catch (e) {
+      setAi({ query: text, state: "error", error: e instanceof Error ? e.message : "AI is unavailable right now." });
+    }
+  };
+  const aiPick = ai?.state === "done" && ai.query === query.trim() && ai.toolId ? index.find((d) => d.id === ai.toolId) : undefined;
+  const showAskAi = q.length >= 4 && results.length === 0;
+
   const close = () => {
     setOpen(false);
     setQuery("");
+    setAi(null);
     useShell.setState({ askQuery: "" });
   };
   const go = (href: string) => {
@@ -104,10 +121,41 @@ export function AskPalette() {
         }}
       />
       <CommandList className="max-h-[min(60vh,440px)]">
-        <CommandEmpty>
-          <span className="block text-sm">Nothing matches “{query}”.</span>
-          <span className="mt-1 block text-xs text-muted-foreground">Press Enter to search everything.</span>
-        </CommandEmpty>
+        {!showAskAi && (
+          <CommandEmpty>
+            <span className="block text-sm">Nothing matches “{query}”.</span>
+            <span className="mt-1 block text-xs text-muted-foreground">Press Enter to search everything.</span>
+          </CommandEmpty>
+        )}
+
+        {showAskAi && (
+          <CommandGroup heading="Not finding it?">
+            {aiPick ? (
+              <CommandItem value={`ai:${aiPick.id}`} onSelect={() => go(aiPick.url)}>
+                <Sparkles className="text-muted-foreground" />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-medium">{aiPick.name}</span>
+                  <span className="block truncate text-xs text-muted-foreground">{ai?.reason || aiPick.tagline}</span>
+                </span>
+                <CommandShortcut>Open</CommandShortcut>
+              </CommandItem>
+            ) : (
+              <CommandItem value="ask-ai" onSelect={askAi} disabled={ai?.state === "loading"}>
+                {ai?.state === "loading" ? <Loader2 className="animate-spin text-muted-foreground" /> : <Sparkles className="text-muted-foreground" />}
+                <span className="min-w-0 flex-1">
+                  <span className="block font-medium">{ai?.state === "loading" ? "Finding the right tool…" : "Ask AI to find the right tool"}</span>
+                  <span className="block truncate text-xs text-muted-foreground">
+                    {ai?.state === "error"
+                      ? ai.error
+                      : ai?.state === "done" && ai.query === query.trim()
+                        ? "No tool fits that yet. Press Enter to search everything."
+                        : "Uses 1 of your free daily AI requests"}
+                  </span>
+                </span>
+              </CommandItem>
+            )}
+          </CommandGroup>
+        )}
 
         {!q && (
           <CommandGroup heading="Try">

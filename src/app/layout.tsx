@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { compactCatalog } from "@/tools/catalog";
 import { WorkspaceSync } from "@/lib/workspace/workspace-sync";
+import { PwaClient } from "@/components/pwa/pwa-client";
 import { SiteHeader, SiteFooter, BottomNav, AskPalette, FileTray } from "@/components/shell";
 import { AuthProvider } from "@/lib/auth";
 import { SITE_CONFIG } from "@/lib/constants";
@@ -48,8 +49,8 @@ export const metadata: Metadata = {
     canonical: SITE_CONFIG.url,
   },
   icons: {
-    icon: "/logo.png",
-    apple: "/logo.png",
+    icon: [{ url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }],
+    apple: "/icons/apple-touch-icon.png",
   },
   openGraph: {
     title: `${SITE_CONFIG.name} - Free Online Tools`,
@@ -123,6 +124,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <AskPalette />
                 <FileTray catalog={compactCatalog()} />
                 <WorkspaceSync />
+                <Suspense fallback={null}>
+                  <PwaClient />
+                </Suspense>
                 <Toaster closeButton position="top-center" />
               </TooltipProvider>
             </AuthProvider>

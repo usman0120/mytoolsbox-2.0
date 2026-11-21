@@ -7,6 +7,7 @@ import { addToTray, getTrayFile, type TrayItem } from "@/runtime/file-store";
 import { acceptsFile, portTypeOf, type CatalogEntry } from "@/runtime/ports";
 import { useShell } from "@/components/shell/shell-store";
 import { cn } from "@/lib/utils";
+import { recordCompletedTask } from "@/components/pwa/pwa-client";
 
 interface Props {
   toolId: string;
@@ -116,7 +117,11 @@ export function ToolSurface({ toolId, next, children }: Props) {
       if (!blob || !a.hasAttribute("download")) return;
       const name = a.getAttribute("download") || "result";
       void addToTray(blob, { origin: toolId, kind: "result", name })
-        .then((item) => item && setResult(item))
+        .then((item) => {
+          if (!item) return;
+          setResult(item);
+          recordCompletedTask();
+        })
         .catch(() => {});
     };
     HTMLAnchorElement.prototype.click = function (this: HTMLAnchorElement) {

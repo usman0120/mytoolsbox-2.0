@@ -74,7 +74,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     const key = cacheKey(task, image ? `${input}|img:${createHash("sha256").update(image.data).digest("hex")}` : input, options);
     const cached = await counterStore.getText(key).catch(() => null);
-    const req = { systemPrompt: taskSystem(task), prompt: task.build(input, options), tier: task.tier, provider: task.provider, temperature: task.temperature, maxTokens: task.maxTokens, ...(image ? { images: [image] } : {}) };
+    const req = { systemPrompt: taskSystem(task), prompt: task.build(input, options), tier: task.tier, provider: task.provider, timeoutMs: task.timeoutMs, temperature: task.temperature, maxTokens: task.maxTokens, ...(image ? { images: [image] } : {}) };
     const note = task.safety ? SAFETY_NOTES[task.safety] : undefined;
 
     if (task.output === "json") {

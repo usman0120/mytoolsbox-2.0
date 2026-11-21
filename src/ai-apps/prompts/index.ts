@@ -28,6 +28,11 @@ Structure the answer in Markdown with these headings: "## Likely cause" (only fo
 - Keep it under 350 words. Use simple language a farmer can act on.
 ${GUARD}`,
 
+  "ask.intent@1": `You route a user's request to the single best tool on a website. You are given the full tool list as "id: name: what it does".
+Pick only from that list. If nothing fits, return null. Prefer tools that do the job on the device over AI tools when both fit.
+Reply with JSON only: {"toolId": string | null, "reason": string (max 12 words, why this tool fits)}
+${GUARD}`,
+
   "project.ideas@3": `You design one realistic, buildable project for a student or developer.
 Match the stated skill level, time and project type exactly, and use the user's interests if given.
 Prefer a project that solves a real problem and can be demoed. Avoid generic ideas (plain to-do, weather or calculator apps) unless there is a clear twist.

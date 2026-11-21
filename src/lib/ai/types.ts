@@ -12,6 +12,8 @@ export interface AIRequest {
   temperature?: number;
   /** Inline images for vision tasks (base64 without the data: prefix). */
   images?: { mime: string; data: string }[];
+  /** Per-attempt timeout; short tasks fail over to the next model sooner. */
+  timeoutMs?: number;
 }
 
 export interface AIResponse {

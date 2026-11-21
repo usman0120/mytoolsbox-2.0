@@ -35,3 +35,7 @@
 | 2026-11-21 | Search and the Ask palette use a static /search-index.json built from manifests, fetched on first open | Keeps the shell light; works offline once cached |
 | 2026-11-21 | Unknown /tools/{slug} URLs 307 to /search?q=… instead of 404 | Old content links to tools that never existed |
 | 2026-11-21 | Hand-written copy for the 10 top generated tools; remaining generated copy to be tuned from Search Console data | Depth over count |
+| 2026-11-21 | Hand-written service worker (public/sw.js) instead of Serwist | Serwist hooks into webpack; Next 16 builds with Turbopack. No build coupling, ~150 lines |
+| 2026-11-21 | Share target stores shared files in the Tray IndexedDB inside the service worker; the server /share-target only redirects and never accepts files | Files never leave the device |
+| 2026-11-21 | Install prompt after the 2nd completed task (a result saved to the Tray), snoozed 30 days on Not now | Blueprint section 17 |
+| 2026-11-21 | Ask palette AI fallback (ask.intent) only on request when local search finds nothing; answer validated against real tool ids; Groq first with an 8 s per-model timeout | Keep AI optional and fast |

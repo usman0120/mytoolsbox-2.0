@@ -2,6 +2,7 @@ import "server-only";
 import { z } from "zod";
 import { PROMPTS, type PromptId } from "@/ai-apps/prompts";
 import type { AIModelTier } from "@/lib/ai/types";
+import { TOOL_MANIFESTS } from "@/tools/registry";
 
 /** A task bundles prompt, model tier, output format, limits and cost (blueprint section 13). */
 export interface AiTaskPreset {
@@ -17,6 +18,8 @@ export interface AiTaskPreset {
   temperature: number;
   /** Quota units charged per successful request. */
   cost: number;
+  /** Per-attempt provider timeout in ms (default 30 s). */
+  timeoutMs?: number;
   /** Accepts one image (data URL) for vision models. */
   acceptsImage?: boolean;
   /** Adds a disclaimer line under the answer. */
@@ -54,6 +57,17 @@ export const projectIdeaSchema = z.object({
 
 export const mathReadSchema = z.object({ problem: z.string(), confidence: z.enum(["high", "medium", "low"]).default("medium") });
 
+const TOOL_IDS = new Set(TOOL_MANIFESTS.map((m) => m.id));
+export const intentSchema = z.object({
+  toolId: z.string().nullable().refine((id) => id === null || TOOL_IDS.has(id), "unknown tool"),
+  reason: z.string().max(200).default(""),
+});
+
+/** Compact catalog for the intent prompt (built once per server instance). */
+let catalogText: string | null = null;
+const intentCatalog = () =>
+  (catalogText ??= TOOL_MANIFESTS.filter((m) => m.status !== "soon").map((m) => `${m.id}: ${m.name}: ${m.tagline}`).join("\n"));
+
 export const quizSchema = z.object({
   questions: z
     .array(z.object({ question: z.string().min(3), options: z.array(z.string()).min(2).max(6), correctIndex: z.number().int().min(0), explanation: z.string().default("") }))
@@ -73,6 +87,20 @@ const TASKS: AiTaskPreset[] = [
     temperature: 0.1,
     cost: 1,
     build: (input) => `Solve this problem.\n${wrap(input)}`,
+  },
+  {
+    id: "ask.intent",
+    prompt: "ask.intent@1",
+    tier: "cheap",
+    provider: "groq",
+    timeoutMs: 8000,
+    output: "json",
+    schema: intentSchema,
+    maxInputChars: 300,
+    maxTokens: 120,
+    temperature: 0,
+    cost: 1,
+    build: (input) => `Tools:\n${intentCatalog()}\n\nRequest:\n${wrap(input)}`,
   },
   {
     id: "math.read",

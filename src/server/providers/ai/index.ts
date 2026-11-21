@@ -31,7 +31,7 @@ export class ProviderError extends Error {
 const callGemini: Caller = async (req, model, key) => {
   const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
     method: "POST",
-    signal: AbortSignal.timeout(CALL_TIMEOUT),
+    signal: AbortSignal.timeout(req.timeoutMs ?? CALL_TIMEOUT),
     headers: { "Content-Type": "application/json", "x-goog-api-key": key },
     body: JSON.stringify({
       ...(req.systemPrompt ? { systemInstruction: { parts: [{ text: req.systemPrompt }] } } : {}),
@@ -59,7 +59,7 @@ const callGemini: Caller = async (req, model, key) => {
 const callGroq: Caller = async (req, model, key) => {
   const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
-    signal: AbortSignal.timeout(CALL_TIMEOUT),
+    signal: AbortSignal.timeout(req.timeoutMs ?? CALL_TIMEOUT),
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
     body: JSON.stringify({
       model,
