@@ -1,4 +1,4 @@
-import { aiService } from "./base";
+import { streamAiTask } from "../tasks-client";
 
 // ---------------------------------------------------------------------------
 // Farming Assistant AI Service
@@ -6,8 +6,8 @@ import { aiService } from "./base";
 
 export interface FarmingAssistantInput {
   query: string;
-  context?: string;       // e.g., crop name, region, language preference
-  language?: string;      // e.g., "hindi", "punjabi", "english"
+  crop?: string;
+  region?: string;
 }
 
 export interface FarmingAssistantOutput {
@@ -17,53 +17,13 @@ export interface FarmingAssistantOutput {
   practicalSteps: string[];
 }
 
-const FARMING_SYSTEM_PROMPT = `You are an expert agricultural assistant helping farmers with practical, actionable advice.
-
-IMPORTANT GUIDELINES:
-- Provide practical, evidence-based farming advice
-- If the user asks in a non-English language, respond in that same language
-- Keep answers simple and actionable — farmers need clear steps
-- Include local context when possible (season, climate zone, soil type)
-- For high-stakes advice (pesticides, disease treatment, livestock health), ALWAYS include a disclaimer to consult local agricultural extension services
-- NEVER recommend banned or restricted pesticides
-- Promote sustainable and organic farming practices when appropriate
-- Include cost-effective solutions suitable for small and medium farms
-
-Return your response as a JSON object with:
-- "answer": the main response (in the user's language)
-- "disclaimer": a brief disclaimer about consulting local experts (in the user's language)
-- "relatedTopics": array of 2-4 related topics the farmer might want to explore
-- "practicalSteps": array of 2-5 concrete actionable steps the farmer can take`;
-
-export async function askFarmingExpert(input: FarmingAssistantInput): Promise<FarmingAssistantOutput> {
-  const langHint = input.language && input.language !== "english"
-    ? ` Please respond in ${input.language} language.`
-    : "";
-
-  const contextHint = input.context
-    ? ` Context: the farmer is growing ${input.context}.`
-    : "";
-
-  const response = await aiService(
-    FARMING_SYSTEM_PROMPT,
-    `Question: ${input.query}${contextHint}${langHint}`,
-    { tier: "reasoning", temperature: 0.3 }
-  );
-
-  try {
-    const parsed = JSON.parse(response.text);
-    return {
-      answer: parsed.answer ?? response.text,
-      disclaimer: parsed.disclaimer ?? "Consult your local agricultural extension officer for region-specific advice.",
-      relatedTopics: parsed.relatedTopics ?? [],
-      practicalSteps: parsed.practicalSteps ?? [],
-    };
-  } catch {
-    return {
-      answer: response.text,
-      disclaimer: "Consult your local agricultural extension officer for region-specific advice.",
-      relatedTopics: [],
-      practicalSteps: [],
-    };
-  }
+/** Streams the server "farm.advise" task; `onText` receives the answer so far (Markdown). */
+export async function askFarmingExpert(input: FarmingAssistantInput, onText?: (text: string) => void): Promise<FarmingAssistantOutput> {
+  const { text, note } = await streamAiTask("farm.advise", input.query, { crop: input.crop ?? "", region: input.region ?? "" }, onText ?? (() => {}));
+  return {
+    answer: text.trim(),
+    disclaimer: note ?? "General guidance only. Check product labels and ask your local agriculture extension office.",
+    relatedTopics: [],
+    practicalSteps: [],
+  };
 }

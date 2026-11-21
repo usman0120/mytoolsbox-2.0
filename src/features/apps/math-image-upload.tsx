@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Image, Upload, X, Camera, Loader2, ScanLine } from "lucide-react";
+import { imageForAi, runAiTask } from "@/lib/ai/tasks-client";
 
 interface MathImageUploadProps {
   onTextExtracted: (text: string) => void;
@@ -15,10 +16,23 @@ export function MathImageUpload({ onTextExtracted, isProcessing }: MathImageUplo
   const [extractedText, setExtractedText] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const simulateOCR = useCallback(async (_dataUrl: string) => {
-    // In production: send to vision model (GPT-4V, Gemini Vision, Claude Vision)
-    // For now, show a prompt for the user to type what they see
+  const [reading, setReading] = useState(false);
+  const [readError, setReadError] = useState<string | null>(null);
+
+  /** Reads the problem from the photo with the vision task; the user confirms before solving. */
+  const readPhoto = useCallback(async (file: File) => {
     setExtractedText(null);
+    setReadError(null);
+    setReading(true);
+    try {
+      const { data } = await runAiTask<{ problem: string; confidence: string }>("math.read", "", {}, await imageForAi(file));
+      if (data.problem.trim()) setExtractedText(data.problem.trim());
+      else setReadError("No maths problem could be read. Try a sharper, closer photo, or type it below.");
+    } catch (error) {
+      setReadError(error instanceof Error ? error.message : "Couldn't read the photo. Type the problem instead.");
+    } finally {
+      setReading(false);
+    }
   }, []);
 
   const handleFile = useCallback((file: File) => {
@@ -28,11 +42,10 @@ export function MathImageUpload({ onTextExtracted, isProcessing }: MathImageUplo
     reader.onload = (e) => {
       const dataUrl = e.target?.result as string;
       setPreview(dataUrl);
-      // Simulate OCR extraction (in production, use a vision AI API)
-      simulateOCR(dataUrl);
     };
     reader.readAsDataURL(file);
-  }, [simulateOCR]);
+    void readPhoto(file);
+  }, [readPhoto]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -122,11 +135,11 @@ export function MathImageUpload({ onTextExtracted, isProcessing }: MathImageUplo
               Remove
             </Button>
           </div>
-          {isProcessing && (
+          {(isProcessing || reading) && (
             <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
               <div className="flex items-center gap-2 bg-white dark:bg-gray-900 rounded-lg px-4 py-2 shadow-lg">
                 <Loader2 className="h-4 w-4 animate-spin text-cyan-500" />
-                <span className="text-sm font-medium">Analyzing image...</span>
+                <span className="text-sm font-medium">{reading ? "Reading the problem…" : "Solving…"}</span>
               </div>
             </div>
           )}
@@ -134,7 +147,7 @@ export function MathImageUpload({ onTextExtracted, isProcessing }: MathImageUplo
             <div className="p-3 bg-cyan-50 dark:bg-cyan-950/20 border-t border-cyan-200 dark:border-cyan-800">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-xs font-medium text-cyan-700 dark:text-cyan-300 mb-1">Detected equation:</p>
+                  <p className="text-xs font-medium text-cyan-700 dark:text-cyan-300 mb-1">Detected problem (check it, then use it):</p>
                   <p className="text-sm font-mono">{extractedText}</p>
                 </div>
                 <Button size="sm" className="h-7 text-xs gap-1 shrink-0" onClick={useExtractedText}>
@@ -148,11 +161,11 @@ export function MathImageUpload({ onTextExtracted, isProcessing }: MathImageUplo
       )}
 
       {/* Manual input hint when image is uploaded */}
-      {preview && !extractedText && !isProcessing && (
+      {preview && !extractedText && !isProcessing && !reading && (
         <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
           <Image className="h-4 w-4 text-amber-600 shrink-0" />
           <p className="text-xs text-amber-700 dark:text-amber-300">
-            Type the equation you see in the image above into the input field, then click Solve.
+            {readError ?? "Type the equation you see in the image above into the input field, then click Solve."}
           </p>
         </div>
       )}

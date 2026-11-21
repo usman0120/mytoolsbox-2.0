@@ -10,6 +10,8 @@ export interface AIRequest {
   tier?: AIModelTier;
   maxTokens?: number;
   temperature?: number;
+  /** Inline images for vision tasks (base64 without the data: prefix). */
+  images?: { mime: string; data: string }[];
 }
 
 export interface AIResponse {

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { generateStudyNotes } from "@/lib/ai/study-generators";
+import { AiMarkdown } from "@/components/ai/ai-markdown";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -206,7 +207,7 @@ export function AINotesGeneratorEngine() {
 
                 {/* Content */}
                 <div className="bg-muted/50 rounded-lg p-3 max-h-75 overflow-y-auto">
-                  <pre className="text-xs font-mono whitespace-pre-wrap">{generatedNote.content}</pre>
+                  <AiMarkdown text={generatedNote.content} className="text-sm" />
                 </div>
               </CardContent>
             </Card>

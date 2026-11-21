@@ -15,6 +15,10 @@ import {
   ScanLine, Maximize2, Minimize2, ChevronDown, ChevronUp,
 } from "lucide-react";
 import { solveMath as aiSolveMath } from "@/lib/ai/services/math-solver";
+import { AiMarkdown } from "@/components/ai/ai-markdown";
+
+/** Wraps a bare LaTeX answer (no $ delimiters) so KaTeX renders it. */
+const asMath = (text: string) => (text.includes("$") || !/[\\^_{}]/.test(text) ? text : `$${text}$`);
 import { getAvailableProviders } from "@/lib/ai";
 import { solveMath, type MathSolution, type GraphData } from "@/lib/math/engine";
 import { MathGraph } from "@/features/apps/math-graph";
@@ -36,6 +40,7 @@ interface Solution {
   relatedConcepts: string[];
   practiceQuestions: { question: string; answer: string; difficulty: "easy" | "medium" | "hard" }[];
   isAI: boolean;
+  verified?: "match" | "mismatch" | "unchecked";
 }
 
 // ---------------------------------------------------------------------------
@@ -122,13 +127,14 @@ export function MathSolverEngine() {
     try {
       if (hasAIProvider) {
         // Use AI service for real math solving
-        const aiResult = await aiSolveMath({ problem: input.trim(), showSteps: true });
+        const aiResult = await aiSolveMath({ problem: input.trim() });
         const solution: Solution = {
           id: Date.now().toString(),
           input: input.trim(),
           result: aiResult.solution,
           steps: aiResult.steps.length > 0 ? aiResult.steps : [aiResult.explanation],
-          topic: "AI Solved",
+          topic: aiResult.topic || "AI solution",
+          verified: aiResult.verified,
           timestamp: Date.now(),
           relatedConcepts: [],
           practiceQuestions: [],
@@ -367,6 +373,16 @@ export function MathSolverEngine() {
                               <Sparkles className="h-2.5 w-2.5 mr-0.5" />AI
                             </Badge>
                           )}
+                          {currentSolution.verified === "match" && (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-success" title="The answer was substituted back into the equation on your device and checks out.">
+                              <Check className="h-3 w-3" /> Checked on your device
+                            </span>
+                          )}
+                          {currentSolution.verified === "mismatch" && (
+                            <span className="text-[11px] font-medium text-destructive" title="Substituting the answer back into the equation did not balance. Check the steps carefully.">
+                              Answer didn&apos;t check out, review the steps
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -417,7 +433,11 @@ export function MathSolverEngine() {
                           <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-cyan-500/10 text-xs font-medium text-cyan-600 dark:text-cyan-400">
                             {i + 1}
                           </div>
-                          <p className="text-sm font-mono leading-relaxed pt-0.5 flex-1">{step}</p>
+                          {currentSolution.isAI ? (
+                            <AiMarkdown text={step} className="flex-1 pt-0.5 text-sm leading-relaxed" />
+                          ) : (
+                            <p className="text-sm font-mono leading-relaxed pt-0.5 flex-1">{step}</p>
+                          )}
                           <Button
                             variant="ghost"
                             size="icon"
@@ -440,9 +460,11 @@ export function MathSolverEngine() {
                   {/* Result */}
                   <div className="rounded-lg bg-green-500/10 border border-green-500/20 p-4">
                     <p className="text-xs text-green-600 dark:text-green-400 mb-1 font-medium">Result</p>
-                    <p className="text-lg font-bold font-mono text-green-700 dark:text-green-300">
-                      {currentSolution.result}
-                    </p>
+                    {currentSolution.isAI ? (
+                      <AiMarkdown text={asMath(currentSolution.result)} className="text-lg font-semibold" />
+                    ) : (
+                      <p className="text-lg font-bold font-mono text-green-700 dark:text-green-300">{currentSolution.result}</p>
+                    )}
                   </div>
                 </CardContent>
               </Card>

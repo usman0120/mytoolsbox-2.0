@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { complete } from "@/lib/ai";
+import { runAiTask } from "@/lib/ai/tasks-client";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -67,58 +67,6 @@ const DIFFICULTY_COLORS: Record<string, string> = {
   Advanced: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
 };
 
-// ---------------------------------------------------------------------------
-// AI helpers
-// ---------------------------------------------------------------------------
-
-function buildAIPrompt(skillLevel: string, timeRange: string, projectType: string, extraContext: string): string {
-  return `Generate a detailed project idea for a ${skillLevel} developer who wants a ${projectType} project that takes about ${timeRange}. ${extraContext ? `Additional context: ${extraContext}` : ""}
-
-Return ONLY valid JSON (no markdown, no code blocks) with this exact structure:
-{
-  "title": "string (catchy project name)",
-  "description": "string (2-3 sentence overview)",
-  "difficulty": "Beginner" | "Intermediate" | "Advanced",
-  "estimatedTime": "string",
-  "skills": ["string (specific skills the developer will practice)"],
-  "features": ["string (5-8 specific features)"],
-  "techStack": {
-    "frontend": "string (recommended frontend tech)",
-    "backend": "string (recommended backend tech)",
-    "database": "string (recommended database)",
-    "deployment": "string (recommended deployment platform)"
-  },
-  "architecture": "string (brief architecture description, 2-3 sentences)",
-  "milestones": [
-    { "title": "string", "tasks": ["string"] }
-  ],
-  "stretchFeatures": ["string (3-4 advanced features to try after completing the basics)"]
-}
-
-Rules:
-- Make the project realistic and achievable within the timeframe
-- Skills should be specific (e.g., "React hooks", "REST API design", not just "React")
-- Features should be concrete and implementable
-- Milestones should have 3-5 tasks each, spread across the timeframe
-- Stretch features should genuinely extend the project's scope
-- Be creative but practical — suggest projects a real developer would want to build`;
-}
-
-function parseAIResponse(text: string): ProjectIdea | null {
-  try {
-    let cleaned = text.trim();
-    if (cleaned.startsWith("```")) {
-      cleaned = cleaned.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
-    }
-    const parsed = JSON.parse(cleaned);
-    if (parsed.title && parsed.features && parsed.milestones) {
-      return parsed as ProjectIdea;
-    }
-    return null;
-  } catch {
-    return null;
-  }
-}
 
 function getFallbackProject(skillLevel: string, timeRange: string, projectType: string): ProjectIdea {
   const projects: Record<string, ProjectIdea> = {
@@ -196,13 +144,12 @@ export function AIProjectIdeasEngine() {
     setIsGenerating(true);
     setError(null);
     try {
-      const response = await complete({
-        prompt: `Skill: ${skillLevel}, Time: ${timeRange}, Type: ${projectType}${extraContext ? `, Context: ${extraContext}` : ""}`,
-        systemPrompt: buildAIPrompt(skillLevel, timeRange, projectType, extraContext),
-        temperature: 0.7,
-        maxTokens: 3000,
+      const { data } = await runAiTask<ProjectIdea>("project.ideas", extraContext.trim() || "No extra preferences", {
+        level: skillLevel,
+        time: timeRange,
+        type: projectType,
       });
-      const parsed = parseAIResponse(response.text);
+      const parsed = data;
       if (parsed) {
         setProject(parsed);
         setUsedAI(true);
@@ -211,10 +158,10 @@ export function AIProjectIdeasEngine() {
         setUsedAI(false);
         setError("AI response couldn't be parsed. Using a smart template instead.");
       }
-    } catch {
+    } catch (err) {
       setProject(getFallbackProject(skillLevel, timeRange, projectType));
       setUsedAI(false);
-      setError("AI is unavailable (offline or API error). Using a smart template.");
+      setError(`${err instanceof Error ? err.message : "AI is unavailable."} Showing a starter template instead.`);
     } finally {
       setIsGenerating(false);
     }

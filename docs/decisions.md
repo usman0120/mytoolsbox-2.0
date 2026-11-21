@@ -21,3 +21,8 @@
 | 2026-11-21 | ToolSurface bridge connects all existing tool UIs to the Tray: captures picked files and blob downloads, feeds files via the tool own file input (?tray=id, drop, paste), shows Continue with | Gives every tool Tray/Continue-with now; per-tool rewrites to the engine template can follow gradually |
 | 2026-11-21 | Worker pool and engine contract execution deferred | No engine uses the contract yet; adding the pool now would be dead code |
 | 2026-11-21 | /workflows → /flows, presets get SEO pages at /flows/{id}; saved Flows keep the same localStorage key, so no importer was needed | Existing saved definitions load unchanged |
+| 2026-11-21 | Priority AI apps use server-side task presets (/api/ai/{task}): prompts in src/ai-apps/prompts, JSON tasks schema-validated with one retry, Markdown tasks streamed, 24 h response cache | Blueprint section 13; prompts never come from the browser for these apps |
+| 2026-11-21 | Generic /api/ai stays for the remaining AI tools but always prepends a server guard and caps client prompts at 6k chars | Avoids an open general-purpose proxy until those tools move to tasks |
+| 2026-11-21 | Math answers are checked on-device by substituting claimed roots (src/lib/math/verify.ts) | Blueprint CAS check without a heavy CAS dependency |
+| 2026-11-21 | Model routes verified against the account model list; writing tasks prefer Groq, maths/farm/vision prefer Gemini; every provider call has a timeout | Old fallback models were retired; Gemini free quota and 503 overloads seen in testing |
+| 2026-11-21 | Fake crop-photo analysis and non-functional maths photo OCR replaced with Gemini vision tasks | No simulated AI |

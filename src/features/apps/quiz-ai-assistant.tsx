@@ -54,7 +54,6 @@ function generateQuestionId(): string {
   return `q_${Math.random().toString(36).slice(2, 10)}`;
 }
 
-// Simulated AI generation with templates
 export function QuizAIAssistant() {
   const [topic, setTopic] = useState("");
   const [customTopic, setCustomTopic] = useState("");

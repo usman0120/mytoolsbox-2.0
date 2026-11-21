@@ -5,6 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Image, Upload, Camera, ScanLine, AlertTriangle, Loader2, X, Leaf, Bug } from "lucide-react";
+import { toast } from "sonner";
+import { imageForAi, streamAiTask } from "@/lib/ai/tasks-client";
+import { AiMarkdown } from "@/components/ai/ai-markdown";
 
 interface CropImageAssistantProps {
   onResult?: (text: string) => void;
@@ -15,12 +18,15 @@ export function CropImageAssistant({ onResult }: CropImageAssistantProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState<string | null>(null);
+  const [file, setFile] = useState<File | null>(null);
+  const [note, setNote] = useState<string | null>(null);
 
   const handleFile = useCallback((file: File) => {
     if (!file.type.startsWith("image/")) return;
     const reader = new FileReader();
     reader.onload = (e) => setImage(e.target?.result as string);
     reader.readAsDataURL(file);
+    setFile(file);
     setResult(null);
   }, []);
 
@@ -32,22 +38,26 @@ export function CropImageAssistant({ onResult }: CropImageAssistantProps) {
   }, [handleFile]);
 
   const handleAnalyze = async () => {
-    if (!image) return;
+    if (!file) return;
     setIsProcessing(true);
-    // Simulate analysis — in production, send to vision AI (GPT-4V / Gemini Vision)
-    await new Promise((r) => setTimeout(r, 2000));
-    setResult(
-      "Based on the image, this appears to be a crop leaf with signs of nutrient deficiency (yellowing between veins suggests magnesium deficiency). " +
-      "Consider applying Epsom salt (magnesium sulfate) at 10 kg/ha as a foliar spray. " +
-      "Also check for aphids on the underside of leaves."
-    );
-    setIsProcessing(false);
-    onResult?.(result || "");
+    setResult("");
+    try {
+      const out = await streamAiTask("farm.photo", "", {}, (text) => setResult(text), undefined, await imageForAi(file));
+      setNote(out.note ?? null);
+      onResult?.(out.text);
+    } catch (error) {
+      setResult(null);
+      toast.error(error instanceof Error ? error.message : "Couldn't analyze the photo. Try again.");
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const clearImage = () => {
     setImage(null);
+    setFile(null);
     setResult(null);
+    setNote(null);
   };
 
   return (
@@ -119,7 +129,8 @@ export function CropImageAssistant({ onResult }: CropImageAssistantProps) {
                 <p className="text-xs font-medium mb-2 text-amber-700 flex items-center gap-1">
                   <AlertTriangle className="h-3 w-3" /> Analysis Result
                 </p>
-                <p className="text-sm text-muted-foreground leading-relaxed">{result}</p>
+                <AiMarkdown text={result || "Looking at your photo…"} className="text-sm leading-relaxed" />
+                {note && <p className="mt-2 text-xs text-muted-foreground">{note}</p>}
               </div>
               <div className="rounded-lg bg-red-500/5 border border-red-500/20 p-2">
                 <p className="text-[10px] text-red-600 leading-relaxed">

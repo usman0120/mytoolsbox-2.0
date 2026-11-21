@@ -9,7 +9,8 @@ import {
   Send, Loader2, Sparkles, Lightbulb, BookOpen, AlertTriangle,
    MessageCircle, Leaf, ChevronRight,
 } from "lucide-react";
-import { askFarmingExpert, type FarmingAssistantOutput } from "@/lib/ai/services/farming-assistant";
+import { askFarmingExpert } from "@/lib/ai/services/farming-assistant";
+import { AiMarkdown } from "@/components/ai/ai-markdown";
 import { getAvailableProviders } from "@/lib/ai";
 
 const SUGGESTED_QUESTIONS = [
@@ -51,18 +52,13 @@ export function KnowledgeAssistant() {
 
     try {
       if (hasAI) {
-        const result = await askFarmingExpert({ query: q, language: "english" });
-        const assistantMsg: Message = {
-          role: "assistant",
-          content: result.answer,
-          disclaimer: result.disclaimer,
-          relatedTopics: result.relatedTopics,
-          practicalSteps: result.practicalSteps,
-        };
-        setMessages((prev) => [...prev, assistantMsg]);
+        setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
+        const updateLast = (patch: Partial<Message>) =>
+          setMessages((prev) => prev.map((m, i) => (i === prev.length - 1 ? { ...m, ...patch } : m)));
+        const result = await askFarmingExpert({ query: q }, (text) => updateLast({ content: text }));
+        updateLast({ content: result.answer, disclaimer: result.disclaimer });
       } else {
-        // Offline fallback
-        await new Promise((r) => setTimeout(r, 800));
+        // Offline fallback: general tips, clearly labelled as not AI.
         const assistantMsg: Message = {
           role: "assistant",
           content: getOfflineResponse(q),
@@ -72,15 +68,20 @@ export function KnowledgeAssistant() {
         };
         setMessages((prev) => [...prev, assistantMsg]);
       }
-    } catch {
+    } catch (err) {
       const assistantMsg: Message = {
         role: "assistant",
-        content: getOfflineResponse(q),
+        content: `${err instanceof Error ? err.message : "AI is unavailable."}
+
+Meanwhile, general guidance:
+
+${getOfflineResponse(q)}`,
         disclaimer: "For region-specific advice, consult your local agricultural extension officer.",
         relatedTopics: [],
         practicalSteps: [],
       };
-      setMessages((prev) => [...prev, assistantMsg]);
+      // Replace the empty streaming placeholder if there is one.
+      setMessages((prev) => (prev[prev.length - 1]?.role === "assistant" && !prev[prev.length - 1].content ? [...prev.slice(0, -1), assistantMsg] : [...prev, assistantMsg]));
     } finally {
       setIsLoading(false);
     }
@@ -126,7 +127,11 @@ export function KnowledgeAssistant() {
                   ? "bg-green-600 text-white"
                   : "bg-muted/50 border border-border/30"
               }`}>
-                <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                {msg.role === "assistant" ? (
+                  msg.content ? <AiMarkdown text={msg.content} className="text-sm leading-relaxed" /> : <p className="text-sm text-muted-foreground">Thinking…</p>
+                ) : (
+                  <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                )}
 
                 {/* Practical Steps */}
                 {msg.practicalSteps && msg.practicalSteps.length > 0 && (

@@ -33,7 +33,7 @@ export const FOOTER_PLATFORM_SECTIONS: FooterSection[] = [
   ].map(([name, slug]) => ({ name, href: appPath(slug) })) },
   { title: "Learning & everyday apps", href: "/apps", links: [
     ["Math Solver", "math-solver"], ["Study Planner", "study-planner"], ["Research Assistant", "research-assistant"],
-    ["Quiz Maker", "quiz-maker"], ["Farmer AI", "farmer-ai"], ["Fitness AI", "fitness-ai"], ["Nutrition AI", "nutrition-ai"], ["Habit Tracker", "habit-tracker"],
+    ["Quiz Maker", "quiz-maker"], ["Farm Advisor", "farmer-ai"], ["Fitness AI", "fitness-ai"], ["Nutrition AI", "nutrition-ai"], ["Habit Tracker", "habit-tracker"],
   ].map(([name, slug]) => ({ name, href: appPath(slug) })) },
   { title: "AI apps", href: appPath("ai-chat"), links: [
     { name: "AI Chat", href: appPath("ai-chat") },

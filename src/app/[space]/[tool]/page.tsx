@@ -83,7 +83,7 @@ export default async function ToolPage({ params }: Props) {
       <div className="mx-auto mt-16 max-w-[1200px] space-y-14 px-4 pb-16 md:px-6 lg:px-8">
         {tool.howTo && (
           <section>
-            <h2 className="mb-5 text-2xl font-semibold">How to {tool.seo.h1.charAt(0).toLowerCase() + tool.seo.h1.slice(1)}</h2>
+            <h2 className="mb-5 text-2xl font-semibold">{tool.seo.h1 === tool.name ? `How to use ${tool.name}` : `How to ${tool.seo.h1.charAt(0).toLowerCase()}${tool.seo.h1.slice(1)}`}</h2>
             <ol className="grid gap-4 md:grid-cols-3">
               {tool.howTo.map((step, i) => (
                 <li key={step} className="flex gap-3 rounded-xl border bg-card p-4">

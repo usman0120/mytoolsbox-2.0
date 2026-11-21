@@ -5,8 +5,8 @@ const manifest: ToolManifest = {
   "space": "ai",
   "category": "grow",
   "slug": "farm-advisor",
-  "name": "Farmer AI",
-  "tagline": "Farming calculators, AI crop assistant & weather planning.",
+  "name": "Farm Advisor",
+  "tagline": "Crop, fertilizer and pest advice from AI, plus farm calculators.",
   "keywords": [
     "farming calculator",
     "crop yield",
@@ -32,9 +32,9 @@ const manifest: ToolManifest = {
   "output": [],
   "engine": "ai",
   "seo": {
-    "title": "Farmer AI",
+    "title": "Farm Advisor AI – Crop, Fertilizer & Pest Advice",
     "description": "Farming calculators for fertilizer, seed rate, yield, land and irrigation, plus an AI crop advisor. Local formulas; advice is guidance, not a guarantee.",
-    "h1": "Farmer AI"
+    "h1": "Farm Advisor"
   },
   "howTo": [
     "Start from a template or a blank page.",
