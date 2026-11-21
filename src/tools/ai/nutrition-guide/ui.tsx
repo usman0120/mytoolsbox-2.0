@@ -1,4 +1,5 @@
 "use client";
+import { completeViaServer } from "@/lib/ai";
 
 import { useState } from "react";
 import {
@@ -128,23 +129,7 @@ export function NutritionAIEngine() {
     setNutriResponse("");
 
     try {
-      const res = await fetch("/api/ai", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prompt: textToAsk,
-          operation: "nutrition_planner",
-          tier: "reasoning",
-          systemPrompt:
-            "You are a Registered Clinical Dietitian and Sports Nutrition Specialist. Provide precise, evidence-based nutrition science, macro adjustments, meal timing, and gut-health recommendations.",
-        }),
-      });
-
-      if (!res.ok) {
-        throw new Error("Live AI connection failed, using clinical knowledge base.");
-      }
-
-      const data = await res.json();
+      const data = await completeViaServer({ promptKey: "nutrition-guide", prompt: textToAsk, tier: "cheap" });
       setNutriResponse(data.text);
       refresh();
       toast.success("Nutrition advice generated!");

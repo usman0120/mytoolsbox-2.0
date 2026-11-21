@@ -18,15 +18,6 @@ export interface SummarizeOutput {
   keyPoints: string[];
 }
 
-const SUMMARIZE_SYSTEM_PROMPT = `You are an expert text summarizer. Create concise, accurate summaries.
-Return a JSON object with:
-- "summary": the summarized text
-- "keyPoints": an array of 3-5 key takeaways
-- "originalLength": the approximate word count of the original
-- "summaryLength": the word count of the summary
-- "compressionRatio": summaryLength / originalLength as a decimal
-
-Preserve the core message. Remove redundancy. Keep important facts and figures.`;
 
 export async function summarize(input: SummarizeInput): Promise<SummarizeOutput> {
   const lengthHint = input.maxLength ? ` Keep the summary under ${input.maxLength} words.` : "";
@@ -38,7 +29,7 @@ export async function summarize(input: SummarizeInput): Promise<SummarizeOutput>
         : "";
 
   const response = await aiService(
-    SUMMARIZE_SYSTEM_PROMPT,
+    "text-summarizer",
     `Summarize this text.${lengthHint}${formatHint}\n\nText:\n${input.text}`,
     { tier: "cheap", temperature: 0.3 }
   );

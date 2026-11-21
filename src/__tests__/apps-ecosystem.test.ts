@@ -1,6 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { toolRegistry, getToolBySlug, getActiveTools, searchTools } from "@/content/tools/registry";
-import { hubRegistry } from "@/content/hubs/registry";
+import { getManifest } from "@/tools/registry";
 import { BLOG_POSTS } from "@/content/guides/articles";
 import { RESOURCE_GUIDES } from "@/content/guides/reference";
 import {
@@ -15,42 +14,14 @@ import {
   analyzeRecipeIngredients,
   generateOfflineNutritionAdvice,
 } from "@/features/apps/nutrition/nutrition-engine-logic";
-import { appRegistry, getAppBySlug, getActiveApps } from "@/content/apps/registry";
 
-describe("PDF Office/PPT catalog truthfulness", () => {
-  it.each([
-    ["pdf-to-office-converter", 5, [
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-    ]],
-    ["pdf-to-ppt-converter", 4, ["application/vnd.openxmlformats-officedocument.presentationml.presentation"]],
-  ] as const)("describes text-only exports for %s without changing its contract", (slug, featureCount, outputTypes) => {
-    const tool = getToolBySlug(slug)!;
-    expect(tool.id).toBe(slug);
-    expect(tool.slug).toBe(slug);
-    expect(tool.features).toHaveLength(featureCount);
-    expect(tool.inputTypes).toEqual(["application/pdf"]);
-    expect(tool.outputTypes).toEqual(outputTypes);
-    expect(tool.processingMode).toBe("client");
-    expect(tool.shortDescription).toMatch(/PDF text/);
-    expect(tool.seoTitle).toMatch(/PDF Text/);
-    expect(tool.description).toMatch(/text-only|text slides/);
-    expect(tool.description).toContain("not preserved");
-    expect(tool.description).toContain("OCR is not included");
-    expect(tool.seoDescription).toMatch(/no source/i);
-    expect(tool.seoDescription).toContain("OCR");
-    expect(tool.features.join(" ")).not.toMatch(/preserve layouts|download instantly/i);
-    expect(tool.faq?.some(({ answer }) => answer.includes("OCR is not included") && /not preserved|does not preserve/.test(answer))).toBe(true);
-    expect(tool.faq?.some(({ answer }) => answer.includes("a PDF page may produce multiple slides"))).toBe(true);
-  });
-
-  it("identifies line-based XLSX rows rather than source table reconstruction", () => {
-    const tool = getToolBySlug("pdf-to-office-converter")!;
-    expect(tool.features).toContain("PDF text to page/line/content rows (XLSX)");
-    expect(tool.description).toContain("Word (DOCX) paragraphs");
-    expect(tool.seoDescription).toContain("XLSX rows");
-    expect(tool.faq?.some(({ answer }) => answer.includes("Excel output does not reconstruct source tables"))).toBe(true);
+describe("PDF to Office copy stays truthful", () => {
+  it("says exports are text-only and layout is not preserved", () => {
+    const word = getManifest("docs", "pdf-to-word")!;
+    expect(word.seo.description).toMatch(/layout is simplified/i);
+    expect(word.faq.some((f) => /images, columns and exact formatting are not kept/i.test(f.a))).toBe(true);
+    const ppt = getManifest("docs", "pdf-to-powerpoint")!;
+    expect(ppt.seo.description).toMatch(/text-only/i);
   });
 });
 
@@ -172,27 +143,6 @@ describe("Apps Ecosystem & Logic Engine", () => {
       expect(advice).toContain("Protein");
       expect(advice).toContain("mTOR");
     });
-  });
-
-  describe("Apps Registry & Centralized Credits Integration", () => {
-    it("includes fitness-ai in app registry with complete metadata", () => {
-      const app = getAppBySlug("fitness-ai");
-      expect(app).toBeDefined();
-      expect(app?.name).toBe("AI Fitness & Gym Coach");
-      expect(app?.status).toBe("active");
-      expect(app?.features.length).toBeGreaterThan(5);
-      expect(app?.faq.length).toBeGreaterThan(2);
-    });
-
-    it("includes nutrition-ai in app registry with complete metadata", () => {
-      const app = getAppBySlug("nutrition-ai");
-      expect(app).toBeDefined();
-      expect(app?.name).toBe("AI Nutrition & Meal Planner");
-      expect(app?.status).toBe("active");
-      expect(app?.features.length).toBeGreaterThan(5);
-      expect(app?.faq.length).toBeGreaterThan(2);
-    });
-
   });
 
   describe("50/30/20 Wealth & Runway Mathematical Logic", () => {

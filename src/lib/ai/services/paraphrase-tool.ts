@@ -21,15 +21,6 @@ export interface ParaphraseOutput {
   bestPick: number; // index of recommended variant
 }
 
-const PARAPHRASE_SYSTEM_PROMPT = `You are an expert writing assistant specializing in paraphrasing.
-Return a JSON object with:
-- "variants": an array of 3 paraphrased versions, each with:
-  - "text": the paraphrased text
-  - "style": a label like "Standard", "Fluent", "Academic", "Creative", "Shortened", "Expanded"
-  - "description": a one-line description of what changed
-- "bestPick": the index (0-based) of the best variant
-
-Preserve the original meaning. Vary sentence structure and vocabulary.`;
 
 export async function paraphrase(input: ParaphraseInput): Promise<ParaphraseOutput> {
   const modeHint = input.mode ? ` Style preference: ${input.mode}.` : "";
@@ -38,7 +29,7 @@ export async function paraphrase(input: ParaphraseInput): Promise<ParaphraseOutp
     : "";
 
   const response = await aiService(
-    PARAPHRASE_SYSTEM_PROMPT,
+    "paraphrase-tool",
     `Paraphrase this text.${modeHint}${kwHint}\n\nText:\n${input.text}`,
     { tier: "cheap", temperature: 0.8 }
   );

@@ -93,7 +93,7 @@ export function AITextGeneratorEngine() {
       const fullPrompt = contextHistory ? `${contextHistory}\nUser: ${text}\nAssistant:` : text;
 
       const aiRes = await completeViaServer({
-        systemPrompt: "You are a helpful, brilliant, concise, and friendly AI assistant. Format explanations clearly with markdown.",
+        promptKey: "writer",
         prompt: fullPrompt,
         tier: "cheap",
         temperature: 0.7,

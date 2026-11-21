@@ -116,6 +116,18 @@ const TASKS: AiTaskPreset[] = [
     build: () => "Transcribe the maths problem in this photo.",
   },
   {
+    id: "ocr.read",
+    prompt: "ocr.read@1",
+    tier: "vision",
+    output: "markdown",
+    acceptsImage: true,
+    maxInputChars: 100,
+    maxTokens: 4000,
+    temperature: 0,
+    cost: 2,
+    build: (input) => `Transcribe all text in this image.${input ? ` Expected language: ${input.slice(0, 40)}.` : ""}`,
+  },
+  {
     id: "farm.photo",
     prompt: "farm.photo@1",
     tier: "vision",

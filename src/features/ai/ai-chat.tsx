@@ -15,7 +15,6 @@ import { subscribeConversations } from "./chat-persistence";
 import type { ChatMessage } from "./types";
 import type { AIProvider } from "@/lib/ai";
 
-const DEFAULT_SYSTEM_PROMPT = "You are a helpful AI assistant. Provide accurate, clear responses in US English, formatted with markdown.";
 
 export function AIChat() {
   const { user } = useAuth();
@@ -193,7 +192,6 @@ export function AIChat() {
 
     addMessage(convId, initialAssistantMessage);
 
-    const systemPrompt = DEFAULT_SYSTEM_PROMPT;
 
     // Build context history
     const contextMessages = [
@@ -210,7 +208,7 @@ export function AIChat() {
 
       const response = await completeViaServer({
         prompt: JSON.stringify(contextMessages),
-        systemPrompt,
+        promptKey: "chat-app",
         provider: providerArg,
         model: selectedModel === "auto" ? undefined : selectedModel || undefined,
         tier: "cheap",
@@ -291,7 +289,7 @@ export function AIChat() {
 
       const response = await completeViaServer({
         prompt: JSON.stringify(messages.slice(0, actualIndex + 1).map(({ role, content }) => ({ role, content }))),
-        systemPrompt: DEFAULT_SYSTEM_PROMPT,
+        promptKey: "chat-app",
         provider: providerArg,
         model: selectedModel === "auto" ? undefined : selectedModel || undefined,
         tier: "cheap",

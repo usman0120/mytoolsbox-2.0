@@ -258,7 +258,7 @@ export function ResearchAssistantEngine() {
           });
         })
       );
-      setAiGeneratedCitations(results.map((r: any) => r.citation).join("\n\n"));
+      setAiGeneratedCitations(results.map((r) => r.citation).join("\n\n"));
       toast.success("AI citations formatted!");
       await refresh();
     } catch {

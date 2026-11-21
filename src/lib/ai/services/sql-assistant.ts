@@ -18,19 +18,6 @@ export interface SQLAssistantOutput {
   optimizedQuery?: string;
 }
 
-const SQL_ASSISTANT_SYSTEM_PROMPT = `You are an expert SQL developer and DBA. Help users with SQL queries.
-Return a JSON object with:
-- "result": the main output (explanation, optimized query, formatted query, or generated query)
-- "explanation": detailed explanation of what was done
-- "suggestions": array of improvement suggestions (for explain/optimize actions)
-- "optimizedQuery": the optimized version (for optimize action)
-
-For "explain": break down what the query does, table by table, clause by clause.
-For "optimize": suggest indexes, rewrite inefficient patterns, explain the changes.
-For "format": return a well-formatted version with consistent style.
-For "generate": generate a SQL query from a natural language description.
-
-Be precise about SQL syntax. Consider performance implications.`;
 
 export async function sqlAssist(input: SQLAssistantInput): Promise<SQLAssistantOutput> {
   let prompt = `Action: ${input.action}`;
@@ -39,7 +26,7 @@ export async function sqlAssist(input: SQLAssistantInput): Promise<SQLAssistantO
   prompt += `\n\nQuery/Description:\n${input.query}`;
 
   const response = await aiService(
-    SQL_ASSISTANT_SYSTEM_PROMPT,
+    "sql-assistant",
     prompt,
     { tier: "reasoning", temperature: 0.2 }
   );

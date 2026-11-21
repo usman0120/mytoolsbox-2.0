@@ -1,4 +1,5 @@
 "use client";
+import { completeViaServer } from "@/lib/ai";
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
@@ -113,18 +114,15 @@ export function FitnessAIEngine() {
   ]);
 
   useEffect(() => {
-    let interval: NodeJS.Timeout | null = null;
-    if (isTimerRunning && timerSeconds > 0) {
-      interval = setInterval(() => {
-        setTimerSeconds((prev) => prev - 1);
-      }, 1000);
-    } else if (timerSeconds === 0 && isTimerRunning) {
-      setIsTimerRunning(false);
-      toast.success("Rest period finished! Time for your next set.", { icon: "🔔" });
-    }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
+    if (!isTimerRunning || timerSeconds <= 0) return;
+    const timeout = setTimeout(() => {
+      setTimerSeconds(timerSeconds - 1);
+      if (timerSeconds === 1) {
+        setIsTimerRunning(false);
+        toast.success("Rest period finished! Time for your next set.", { icon: "🔔" });
+      }
+    }, 1000);
+    return () => clearTimeout(timeout);
   }, [isTimerRunning, timerSeconds]);
 
   const startTimer = (seconds: number) => {
@@ -165,23 +163,7 @@ export function FitnessAIEngine() {
     setCoachResponse("");
 
     try {
-      const res = await fetch("/api/ai", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prompt: textToAsk,
-          operation: "fitness_coach",
-          tier: "reasoning",
-          systemPrompt:
-            "You are an elite Sports Scientist and Master Strength Coach. Provide precise, evidence-based biomechanical cues, programming sets/reps, fatigue management, and injury mitigation.",
-        }),
-      });
-
-      if (!res.ok) {
-        throw new Error("Live AI connection failed, switching to expert engine.");
-      }
-
-      const data = await res.json();
+      const data = await completeViaServer({ promptKey: "fitness-coach", prompt: textToAsk, tier: "cheap" });
       setCoachResponse(data.text);
       refresh();
       toast.success("Coaching advice generated!");

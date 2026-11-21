@@ -39,3 +39,10 @@
 | 2026-11-21 | Share target stores shared files in the Tray IndexedDB inside the service worker; the server /share-target only redirects and never accepts files | Files never leave the device |
 | 2026-11-21 | Install prompt after the 2nd completed task (a result saved to the Tray), snoozed 30 days on Not now | Blueprint section 17 |
 | 2026-11-21 | Ask palette AI fallback (ask.intent) only on request when local search finds nothing; answer validated against real tool ids; Groq first with an 8 s per-model timeout | Keep AI optional and fast |
+| 2026-11-22 | Security headers (HSTS, nosniff, frame DENY, Referrer-Policy, Permissions-Policy, COOP) on every route; CSP shipped Report-Only | Switch CSP to enforcing after a week of clean reports |
+| 2026-11-22 | /api/ai only runs server-owned prompts chosen by promptKey (src/ai-apps/prompts/tools.ts) behind a server guard; client systemPrompt is ignored | Stops the browser from turning the gateway into a free general LLM |
+| 2026-11-22 | Browser AI router talks only to the server gateway; provider adapters in src/lib/ai/adapters deleted | Keys never reach the client |
+| 2026-11-22 | pdf.js loaded from local /pdfjs with isEvalSupported false instead of the CDN build | Fixes the pdf.js font-eval CVE and removes a CDN dependency |
+| 2026-11-22 | Image to Text AI mode sends the image to the ocr.read vision task | Previous mode sent no image |
+| 2026-11-22 | Legacy catalogs (content/tools, apps, hubs), old search/tool-card/offline components removed; 404 page shows search, popular tools and Spaces | Manifests are the single source |
+| 2026-11-22 | next 16.4.6 (next/og RCE advisory), shadcn moved to devDependencies, npm audit fix applied | Dependency audit |

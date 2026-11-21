@@ -1,4 +1,5 @@
 "use client";
+import { imageForAi, streamAiTask } from "@/lib/ai/tasks-client";
 
 import { useState, useRef, useCallback } from "react";
 import {
@@ -112,22 +113,15 @@ export function ImageToTextOCREngine() {
         const langObj = LANGUAGES.find((l) => l.value === language);
         const langName = langObj ? langObj.label : "English";
 
-        const res = await fetch("/api/ai", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            prompt: `Transcribe and extract ALL text, numbers, labels, tables, and handwritten/printed content from this image verbatim.
-Language expected: ${langName}.
-Maintain original layout, paragraph breaks, and table structure where applicable. Output ONLY the extracted text with no conversational preamble.`,
-          }),
-        });
+        // Vision model reads the actual image (downsized on this device first).
+        const photo = await imageForAi(await (await fetch(imageToScan)).blob(), 2000);
+        const { text } = await streamAiTask("ocr.read", langName, {}, () => setProgressPercent(70), undefined, photo);
 
         setProgressPercent(80);
 
-        if (res.ok) {
-          const json = await res.json();
-          if (json.text) {
-            setExtractedText(json.text.trim());
+        {
+          if (text.trim()) {
+            setExtractedText(text.trim());
             setIsProcessing(false);
             setProgressPercent(100);
             return;

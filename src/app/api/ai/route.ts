@@ -6,6 +6,7 @@ import { availableProviders, ProviderError, runAi } from "@/server/providers/ai"
 import { checkQuota, consumeQuota } from "@/server/quota";
 import { clientIp, resolveIdentity } from "@/server/ai-identity";
 import { AuthVerificationUnavailableError } from "@/lib/auth/server-auth";
+import { TOOL_PROMPTS } from "@/ai-apps/prompts/tools";
 
 export const runtime = "nodejs";
 
@@ -27,6 +28,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (typeof body.promptKey !== "string" || !Object.hasOwn(TOOL_PROMPTS, body.promptKey)) {
+      return NextResponse.json({ error: "Unknown AI tool." }, { status: 400 });
+    }
+
     const identity = await resolveIdentity(request);
     if (!identity.signedIn && !FEATURES.anonymousAi) {
       return NextResponse.json({ error: "Sign in to use AI.", code: "AUTH_REQUIRED" }, { status: 401 });
@@ -42,10 +47,8 @@ export async function POST(request: NextRequest) {
 
     const response = await runAi({
       prompt: body.prompt,
-      // Tool-specific instructions come from the browser, so a fixed server guard always leads them.
-      systemPrompt: `${SERVER_GUARD}
-
-${typeof body.systemPrompt === "string" ? body.systemPrompt.slice(0, 6000) : "You are a helpful assistant."}`,
+      // Instructions are chosen on the server by key; the browser can never supply them.
+      systemPrompt: `${SERVER_GUARD}\n\n${TOOL_PROMPTS[body.promptKey!]}`,
       tier: body.tier === "reasoning" || body.tier === "vision" ? body.tier : "cheap",
       provider: body.provider,
       temperature: typeof body.temperature === "number" ? Math.min(Math.max(body.temperature, 0), 1.5) : undefined,

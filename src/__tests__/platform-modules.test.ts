@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { existsSync, readFileSync } from "node:fs";
-import { getAppBySlug } from "@/content/apps/registry";
+import { getManifest } from "@/tools/registry";
 import { consolidatedPath } from "@/lib/catalog/consolidation";
 import sitemap from "@/app/sitemap";
 
@@ -11,7 +11,7 @@ describe("US English-only platform and AI app", () => {
     expect(readFileSync("src/proxy.ts", "utf8")).not.toContain("LOCALES");
   });
   it("makes AI Chat a real app at /ai/chat and redirects the old entry points", () => {
-    expect(getAppBySlug("ai-chat")?.productType).toBe("app"); expect(consolidatedPath("/ai")).toBeUndefined(); expect(consolidatedPath("/apps/ai-chat")).toBe("/ai/chat");
+    expect(getManifest("ai", "chat")?.engine).toBe("ai"); expect(consolidatedPath("/ai")).toBeUndefined(); expect(consolidatedPath("/apps/ai-chat")).toBe("/ai/chat");
     expect(consolidatedPath("/ai/prompts")).toBe("/ai/chat");
     expect(readFileSync("src/features/ai/chat-store.ts", "utf8")).not.toMatch(/favoritePromptIds|pendingPrompt/);
   });

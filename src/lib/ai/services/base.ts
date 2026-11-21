@@ -13,13 +13,14 @@ export interface AIServiceOptions {
   onChunk?: (chunk: string) => void;
 }
 
+/** Calls /api/ai with a server-owned prompt (src/ai-apps/prompts/tools.ts) chosen by key. */
 export async function aiService(
-  systemPrompt: string,
+  promptKey: string,
   userPrompt: string,
   options: AIServiceOptions = {}
 ): Promise<AIResponse> {
   const request: AIRequest = {
-    systemPrompt,
+    promptKey,
     prompt: userPrompt,
     tier: options.tier ?? "cheap",
     temperature: options.temperature,

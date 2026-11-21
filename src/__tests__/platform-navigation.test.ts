@@ -6,21 +6,22 @@ import { getSpace } from "@/spaces";
 import { describe, expect, it } from "vitest";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { CATEGORIES } from "@/lib/constants";
 import { FOOTER_TOOL_SECTIONS, FOOTER_PLATFORM_SECTIONS } from "@/lib/navigation/footer-directory";
-import { getToolBySlug } from "@/content/tools/registry";
-import { getAppBySlug, getActiveApps } from "@/content/apps/registry";
-import { getHubBySlug } from "@/content/hubs/registry";
+import { SPACES } from "@/spaces";
+import { manifestsInSpace } from "@/tools/registry";
 import { getAuthErrorMessage } from "@/lib/auth/auth-errors";
 import { safeReturnPath } from "@/lib/auth/auth-navigation";
 
 describe("footer directory", () => {
-  it("covers every major tool category", () => {
-    expect(FOOTER_TOOL_SECTIONS.map((section) => section.href).sort()).toEqual(CATEGORIES.map((category) => `/tools?category=${category.id}`).sort());
+  it("links to every Space", () => {
+    const hrefs = new Set([...FOOTER_TOOL_SECTIONS, ...FOOTER_PLATFORM_SECTIONS].map((s) => s.href));
+    for (const space of SPACES.filter((s) => s.id !== "ai")) expect(hrefs.has(`/${space.slug}`), space.name).toBe(true);
   });
-  it("makes every active app directly discoverable", () => {
-    const appLinks = new Set(FOOTER_PLATFORM_SECTIONS.flatMap((section) => section.links.map((link) => link.href)));
-    for (const app of getActiveApps()) expect(appLinks.has(appPath(app.slug)), app.name).toBe(true);
+  it("lists the main AI Studio apps", () => {
+    const links = new Set(FOOTER_PLATFORM_SECTIONS.flatMap((section) => section.links.map((link) => link.href)));
+    for (const id of ["math-solver", "farm-advisor", "chat", "project-ideas"]) expect(links.has(`/ai/${id}`), id).toBe(true);
+    expect(manifestsInSpace("ai").length).toBeGreaterThan(5);
+    void appPath;
   });
   it("links only to real active tools, apps, hubs, and platform routes", () => {
     for (const section of [...FOOTER_TOOL_SECTIONS, ...FOOTER_PLATFORM_SECTIONS]) {
@@ -30,10 +31,7 @@ describe("footer directory", () => {
         if (getManifest(module, slug ?? "") || (getSpace(module) && !slug)) continue;
         if (module === "guides" && slug) { expect(getGuide(slug), href).toBeDefined(); continue; }
         if (module === "flows" && slug) { expect(WORKFLOW_PRESETS.some((f) => f.id === slug), href).toBe(true); continue; }
-        if (module === "tools" && slug) expect(getToolBySlug(slug)?.status, href).toBe("active");
-        else if (module === "apps" && slug) expect(getAppBySlug(slug)?.status, href).toBe("active");
-        else if (module === "hubs" && slug) expect(getHubBySlug(slug), href).toBeDefined();
-        else expect(existsSync(join(process.cwd(), "src/app", path, "page.tsx")), href).toBe(true);
+        expect(existsSync(join(process.cwd(), "src/app", path, "page.tsx")), href).toBe(true);
       }
     }
   });

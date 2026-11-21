@@ -371,7 +371,7 @@ export function AIDiagramGeneratorEngine() {
       const prompt = buildAIPrompt(description.trim(), diagramType);
       const response = await complete({
         prompt,
-        systemPrompt: "You are a diagram generation expert. Always respond with valid JSON only. Never include markdown formatting or explanations.",
+        promptKey: "diagram",
         temperature: 0.3,
         maxTokens: 4000,
       });

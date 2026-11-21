@@ -4,7 +4,10 @@ export type AIModelTier = "cheap" | "reasoning" | "vision" | "image";
 
 export interface AIRequest {
   prompt: string;
+  /** Server-side only; browsers send `promptKey` and the server supplies the instructions. */
   systemPrompt?: string;
+  /** Key into the server prompt library for /api/ai. */
+  promptKey?: string;
   provider?: AIProvider;
   model?: string;
   tier?: AIModelTier;

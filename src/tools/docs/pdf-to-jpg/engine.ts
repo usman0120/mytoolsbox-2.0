@@ -1,44 +1,26 @@
 import { PDFDocument } from "pdf-lib";
 import JSZip from "jszip";
 import { ProcessingResult } from "@/lib/processing/types";
+import { loadPdfJs, SAFE_PDF_OPTIONS } from "@/lib/documents/pdfjs";
 
-// Load PDF.js with multiple fallback CDNs
+/**
+ * Makes pdf.js available as window.pdfjsLib for older callers. Loads the site's own pinned build
+ * (never a CDN) and opens every document with eval disabled.
+ */
 export async function ensurePdfJsLoaded(): Promise<boolean> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  if ((window as unknown as { pdfjsLib?: any }).pdfjsLib) return true;
-
-  const cdns = [
-    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js",
-    "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js",
-    "https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.min.js",
-  ];
-
-  for (const src of cdns) {
-    try {
-      await new Promise<void>((resolve, reject) => {
-        const script = document.createElement("script");
-        script.src = src;
-        script.async = true;
-        script.onload = () => {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const pdfjs = (window as unknown as { pdfjsLib?: any }).pdfjsLib;
-          if (pdfjs) {
-            pdfjs.GlobalWorkerOptions.workerSrc = src.replace("pdf.min.js", "pdf.worker.min.js");
-            resolve();
-          } else {
-            reject(new Error("pdfjsLib not defined"));
-          }
-        };
-        script.onerror = () => reject(new Error("Failed to load script"));
-        document.head.appendChild(script);
-      });
-      return true;
-    } catch {
-      // Try next CDN
-    }
+  const w = window as unknown as { pdfjsLib?: unknown };
+  if (w.pdfjsLib) return true;
+  try {
+    const pdfjs = await loadPdfJs();
+    w.pdfjsLib = {
+      ...pdfjs,
+      getDocument: (src: string | Record<string, unknown>) =>
+        pdfjs.getDocument(typeof src === "string" ? { url: src, ...SAFE_PDF_OPTIONS } : { ...src, ...SAFE_PDF_OPTIONS }),
+    };
+    return true;
+  } catch {
+    return false;
   }
-
-  return false;
 }
 
 export async function renderPageToImage(
@@ -66,7 +48,7 @@ export async function renderPageToImage(
     const ctx = canvas.getContext("2d");
     if (!ctx) return null;
 
-    await page.render({ canvasContext: ctx, viewport }).promise;
+    await page.render({ canvas, canvasContext: ctx, viewport }).promise;
 
     const mimeType = format === "image/jpeg" ? "image/jpeg" : "image/png";
     const quality = format === "image/jpeg" ? 0.92 : undefined;

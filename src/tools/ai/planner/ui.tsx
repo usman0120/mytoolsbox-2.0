@@ -162,8 +162,8 @@ export function AIPlanningEngine() {
     setError(null);
     try {
       const response = await complete({
-        prompt: goal,
-        systemPrompt: buildAIPrompt(goal, planType, timeframe),
+        prompt: buildAIPrompt(goal, planType, timeframe),
+        promptKey: "planner",
         temperature: 0.5,
         maxTokens: 4000,
       });

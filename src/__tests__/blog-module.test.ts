@@ -6,7 +6,6 @@ import {
   getFeaturedBlogPost,
   getRelatedBlogPosts,
 } from "@/content/guides/articles";
-import { toolRegistry } from "@/content/tools/registry";
 
 describe("Blog & Guides Module Data Integrity", () => {
   it("contains at least 20 comprehensive production-ready articles", () => {
@@ -66,7 +65,6 @@ describe("Blog & Guides Module Data Integrity", () => {
   });
 
   it("ensures all related tools map to active or valid tools", () => {
-    const allToolSlugs = new Set(toolRegistry.map((t) => t.slug));
     BLOG_POSTS.forEach((post) => {
       post.relatedTools.forEach((tool) => {
         expect(tool.name).toBeTruthy();

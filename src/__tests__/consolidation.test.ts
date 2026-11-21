@@ -5,9 +5,6 @@ const resolveLegacy = (t: string) => { const m = /^\/(tools|apps)\/([a-z0-9-]+)(
 import { describe, expect, it } from "vitest";
 import { readFileSync, existsSync } from "node:fs";
 import { RETIRED_TOOLS, RETIRED_APPS, consolidatedPath } from "@/lib/catalog/consolidation";
-import { toolRegistry, getToolBySlug } from "@/content/tools/registry";
-import { appRegistry, getAppBySlug } from "@/content/apps/registry";
-import { hubRegistry } from "@/content/hubs/registry";
 import { escapeDocumentStrings } from "@/lib/documents/escape-document";
 
 describe("consolidated product catalog", () => {
@@ -17,20 +14,14 @@ describe("consolidated product catalog", () => {
   });
   it("removes duplicate discoverable products and resolves old links to real products", () => {
     for (const [slug, target] of Object.entries(RETIRED_TOOLS)) {
-      expect(getToolBySlug(slug)).toBeUndefined(); expect(consolidatedPath(`/tools/${slug}`)).toBe(resolveLegacy(target));
-      const [, module, canonical] = target.split("?")[0].split("/");
-      const resolved = getManifest(module, canonical ?? "") ?? (canonical ? undefined : getSpace(module));
-      expect(resolved ?? (module === "apps" ? getAppBySlug(canonical) : getToolBySlug(canonical)), target).toBeDefined();
+      const final = resolveLegacy(target);
+      expect(consolidatedPath(`/tools/${slug}`)).toBe(final);
+      const [, module, canonical] = final.split("?")[0].split("/");
+      expect(getManifest(module, canonical ?? "") ?? (canonical ? undefined : getSpace(module)), `${slug} → ${final}`).toBeDefined();
     }
-    for (const slug of Object.keys(RETIRED_APPS)) expect(getAppBySlug(slug)).toBeUndefined();
-    expect(toolRegistry.some((item) => item.slug === "resume-builder")).toBe(false);
-    expect(appRegistry.filter((item) => item.slug === "resume-builder")).toHaveLength(1);
-  });
-  it("keeps hubs valid after moving tools into apps", () => {
-    const tools = new Set(toolRegistry.map((item) => item.id)); const apps = new Set(appRegistry.map((item) => item.id));
-    for (const hub of hubRegistry) {
-      hub.toolIds.forEach((id) => expect(tools.has(id), id).toBe(true));
-      hub.appIds?.forEach((id) => expect(apps.has(id), id).toBe(true));
+    for (const [slug, target] of Object.entries(RETIRED_APPS)) {
+      const [, module, canonical] = resolveLegacy(target).split("?")[0].split("/");
+      expect(getManifest(module, canonical ?? ""), slug).toBeDefined();
     }
   });
   it("removes the comparison and persona features rather than just hiding their tabs", () => {

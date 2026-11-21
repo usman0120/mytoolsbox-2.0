@@ -5,8 +5,13 @@ export interface FooterSection {
   links: { name: string; href: string }[];
 }
 
+const CATEGORY_SPACE: Record<string, string> = {
+  documents: "/docs", images: "/media", video: "/media", audio: "/media", writing: "/work", calculators: "/calc",
+  developer: "/dev", security: "/dev", misc: "/create", academic: "/study", productivity: "/work", design: "/create",
+};
+
 function tools(title: string, category: string, entries: [string, string][]): FooterSection {
-  return { title, href: `/tools?category=${category}`, links: entries.map(([name, slug]) => ({ name, href: toolPath(slug) })) };
+  return { title, href: CATEGORY_SPACE[category] ?? "/tools", links: entries.map(([name, slug]) => ({ name, href: toolPath(slug) })) };
 }
 
 // Keep this compact: importing the full registries into the shared footer would

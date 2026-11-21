@@ -57,7 +57,7 @@ export function SocialMediaContentGeneratorEngine() {
       const prompt = `Create a viral, high-converting ${platform} post about: "${topic}".\nContent Angle: ${contentType}\nIndustry: ${industry}${callToAction ? `\nCall to action: ${callToAction}` : ""}\nFormat with engaging line breaks, emojis, and include 3-5 relevant hashtags at the end.`;
 
       const aiRes = await completeViaServer({
-        systemPrompt: `You are an elite social media strategist and copywriter specialized in ${platform}. Write catchy, punchy posts optimized for high engagement and impressions.`,
+        promptKey: "social-post",
         prompt,
         tier: "cheap",
         temperature: 0.7,
