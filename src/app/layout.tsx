@@ -5,6 +5,7 @@ import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme/theme-provider";
+import { compactCatalog } from "@/tools/catalog";
 import { SiteHeader, SiteFooter, BottomNav, AskPalette, FileTray } from "@/components/shell";
 import { AuthProvider } from "@/lib/auth";
 import { SITE_CONFIG } from "@/lib/constants";
@@ -119,7 +120,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <SiteFooter />
                 <BottomNav />
                 <AskPalette />
-                <FileTray />
+                <FileTray catalog={compactCatalog()} />
                 <Toaster closeButton position="top-center" />
               </TooltipProvider>
             </AuthProvider>

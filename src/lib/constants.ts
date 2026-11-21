@@ -3,7 +3,7 @@ export { SITE_CONFIG } from "@/config/site";
 export const NAV_ITEMS = [
   { label: "Tools", href: "/tools" },
   { label: "Apps", href: "/apps" },
-  { label: "Workflows", href: "/workflows" },
+  { label: "Workflows", href: "/flows" },
   { label: "Hubs", href: "/hubs" },
   { label: "Blog", href: "/blog" },
   { label: "Resources", href: "/resources" },

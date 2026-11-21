@@ -245,7 +245,7 @@ export function HomeClient({ popularTools, featuredApps, featuredWorkflows = [],
                     </div>
 
                     <div className="pt-2">
-                      <Link href="/workflows?preset=pdf-images-200kb">
+                      <Link href="/flows/pdf-images-200kb">
                         <Button className="w-full rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground gap-2 font-medium h-10 text-xs">
                           <Download className="h-3.5 w-3.5" />
                           <span>Try this workflow</span>
@@ -290,8 +290,8 @@ export function HomeClient({ popularTools, featuredApps, featuredWorkflows = [],
 
       {/* ===== 3. PLATFORM CAPABILITY SHOWCASE ===== */}
       <section className="mx-auto w-full max-w-7xl px-4 py-12 sm:px-6" aria-label="Connected workflows">
-        <div className="mb-6 flex flex-wrap items-end justify-between gap-4"><div><p className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-primary"><GitBranch className="size-4" />New: connected workflows</p><h2 className="text-3xl font-semibold tracking-tight">Upload once. <span className="font-editorial italic text-primary">Finish every step.</span></h2><p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground">Connect local processors for documents, images, text and data. Start with {workflowCount} built-in workflows or build your own, save it on this device, and reuse it.</p></div><Link href="/workflows" className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-medium text-primary-foreground">Explore workflows<ArrowRight className="size-4" /></Link></div>
-        <div className="grid gap-4 md:grid-cols-3">{featuredWorkflows.map((workflow) => <Link key={workflow.id} href={`/workflows?preset=${workflow.id}`} className="rounded-2xl border bg-card p-6 transition-colors hover:border-primary/40"><GitBranch className="mb-4 size-6 text-primary" /><h3 className="text-base font-semibold">{workflow.name}</h3><p className="mt-3 text-xs leading-6 text-muted-foreground">{workflow.description}</p><span className="mt-5 inline-flex items-center gap-2 text-xs font-semibold text-primary">Open workflow<ArrowRight className="size-3.5" /></span></Link>)}</div>
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-4"><div><p className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-primary"><GitBranch className="size-4" />New: connected workflows</p><h2 className="text-3xl font-semibold tracking-tight">Upload once. <span className="font-editorial italic text-primary">Finish every step.</span></h2><p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground">Connect local processors for documents, images, text and data. Start with {workflowCount} built-in workflows or build your own, save it on this device, and reuse it.</p></div><Link href="/flows" className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-medium text-primary-foreground">Explore workflows<ArrowRight className="size-4" /></Link></div>
+        <div className="grid gap-4 md:grid-cols-3">{featuredWorkflows.map((workflow) => <Link key={workflow.id} href={`/flows?preset=${workflow.id}`} className="rounded-2xl border bg-card p-6 transition-colors hover:border-primary/40"><GitBranch className="mb-4 size-6 text-primary" /><h3 className="text-base font-semibold">{workflow.name}</h3><p className="mt-3 text-xs leading-6 text-muted-foreground">{workflow.description}</p><span className="mt-5 inline-flex items-center gap-2 text-xs font-semibold text-primary">Open workflow<ArrowRight className="size-3.5" /></span></Link>)}</div>
       </section>
 
       {/* Platform capability showcase */}

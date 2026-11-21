@@ -9,6 +9,8 @@ import { Breadcrumbs } from "@/components/tools/breadcrumbs";
 import { FaqList } from "@/components/tools/faq-list";
 import { ManifestCard } from "@/components/tools/manifest-card";
 import { ToolActions } from "@/components/tools/tool-actions";
+import { SurfaceHint, ToolSurface } from "@/components/tools/tool-surface";
+import { compactCatalog } from "@/tools/catalog";
 import { getToolBySlug } from "@/content/tools/registry";
 import { breadcrumbLd, faqLd, jsonLd, toolLd, toolMetadata } from "@/lib/seo/manifest";
 
@@ -72,7 +74,10 @@ export default async function ToolPage({ params }: Props) {
       </div>
 
       <section aria-label={tool.name} className="tool-surface mx-auto mt-5 max-w-[1400px] px-4 md:px-6 lg:px-8">
-        <ToolUi id={tool.id} name={tool.name} />
+        <ToolSurface toolId={tool.id} next={compactCatalog()}>
+          <ToolUi id={tool.id} name={tool.name} />
+        </ToolSurface>
+        {tool.template === "file" && <SurfaceHint />}
       </section>
 
       <div className="mx-auto mt-16 max-w-[1200px] space-y-14 px-4 pb-16 md:px-6 lg:px-8">

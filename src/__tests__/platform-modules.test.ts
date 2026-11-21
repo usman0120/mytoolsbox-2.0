@@ -17,13 +17,13 @@ describe("US English-only platform and AI app", () => {
   });
   it("exposes Flows and AI Studio in the header, with no prompt-library links", () => {
     const header = readFileSync("src/components/shell/site-header.tsx", "utf8");
-    expect(header).toContain('href="/workflows"');
+    expect(header).toContain('href="/flows"');
     expect(header).toContain('href="/apps"');
     expect(header).not.toMatch(/href="\/ai\//);
   });
   it("publishes only canonical US English URLs in the sitemap", () => {
     const entries = sitemap();
-    expect(entries.some((entry) => entry.url.endsWith("/workflows"))).toBe(true);
+    expect(entries.some((entry) => entry.url.endsWith("/flows"))).toBe(true);
     expect(entries.some((entry) => entry.url.endsWith("/ai/chat"))).toBe(true);
     expect(entries.some((entry) => /\/(es|ur|fr|de|pt|hi|ar)\//.test(entry.url))).toBe(false);
     expect(entries.some((entry) => entry.alternates?.languages)).toBe(false);

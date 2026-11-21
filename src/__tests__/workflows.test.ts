@@ -2,11 +2,11 @@ import { Blob as NodeBlob, File as NodeFile } from "node:buffer";
 import { webcrypto } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PDFDocument } from "pdf-lib";
-import { OPERATIONS, validateWorkflow, type Workflow, type WorkflowStep } from "@/features/workflows/model";
-import { WORKFLOW_PRESETS } from "@/features/workflows/presets";
-import { runWorkflow, parseCsv, parsePages, safeName, uniqueArtifacts } from "@/features/workflows/runner";
-import { processWorkflowImage } from "@/features/workflows/image";
-import { importWorkflow, readSavedWorkflows, saveWorkflow, removeSavedWorkflow } from "@/features/workflows/storage";
+import { OPERATIONS, validateWorkflow, type Workflow, type WorkflowStep } from "@/flows/model";
+import { WORKFLOW_PRESETS } from "@/flows/presets";
+import { runWorkflow, parseCsv, parsePages, safeName, uniqueArtifacts } from "@/flows/runner";
+import { processWorkflowImage } from "@/flows/image";
+import { importWorkflow, readSavedWorkflows, saveWorkflow, removeSavedWorkflow } from "@/flows/storage";
 
 const step = (operation: string, options: WorkflowStep["options"] = {}): WorkflowStep => ({ id: operation, operation, options: { ...Object.fromEntries(OPERATIONS.find((item) => item.id === operation)!.fields.map((field) => [field.key, field.value])), ...options } });
 const workflow = (input: Workflow["input"], steps: WorkflowStep[]): Workflow => ({ version: 1, id: "test", name: "Test workflow", description: "", category: "Files", input, steps });

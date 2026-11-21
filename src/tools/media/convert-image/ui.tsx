@@ -294,7 +294,7 @@ export function ImageConverterEngine() {
 
                   <div className="relative rounded-xl border border-border/50 bg-black/5 dark:bg-black/30 overflow-hidden min-h-[340px] flex items-center justify-center p-2">
                     <img
-                      src={outputUrl || preview || ""}
+                      src={outputUrl || preview || undefined}
                       alt="Preview"
                       className="max-h-[460px] w-auto max-w-full object-contain rounded-lg shadow-sm"
                     />

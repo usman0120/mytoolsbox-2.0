@@ -55,7 +55,7 @@ export function AskPalette() {
       words: "dark light mode theme",
     },
     { id: "tray", label: "Open File Tray", icon: Workflow, run: () => setTray(true), words: "tray files" },
-    { id: "flows", label: "Open Workflows", icon: Workflow, run: () => router.push("/workflows"), words: "flows workflows chain" },
+    { id: "flows", label: "Open Workflows", icon: Workflow, run: () => router.push("/flows"), words: "flows workflows chain" },
     { id: "favorites", label: "Open favorites", icon: Heart, run: () => router.push("/settings?tab=favorites"), words: "favorites favourites saved" },
     { id: "history", label: "Open history", icon: Clock, run: () => router.push("/settings?tab=history"), words: "history recent" },
   ].filter((a) => !q || `${a.label} ${a.words}`.toLowerCase().includes(q));

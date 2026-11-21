@@ -41,10 +41,10 @@ export const FOOTER_PLATFORM_SECTIONS: FooterSection[] = [
     { name: "AI Diagram Generator", href: appPath("ai-diagram-generator") },
     { name: "AI Project Ideas", href: appPath("ai-project-ideas") },
   ] },
-  { title: "Workflows", href: "/workflows", links: [
-    { name: "Workflow builder", href: "/workflows#builder" }, { name: "PDF images under 200 KB", href: "/workflows?preset=pdf-images-200kb" },
-    { name: "Email-ready images", href: "/workflows?preset=image-email-pack" }, { name: "Photos to PDF", href: "/workflows?preset=photos-letter-pdf" },
-    { name: "Text analysis reports", href: "/workflows?preset=text-analysis" }, { name: "CSV to JSON", href: "/workflows?preset=csv-json-pack" },
+  { title: "Workflows", href: "/flows", links: [
+    { name: "Workflow builder", href: "/flows#builder" }, { name: "PDF images under 200 KB", href: "/flows/pdf-images-200kb" },
+    { name: "Email-ready images", href: "/flows/image-email-pack" }, { name: "Photos to PDF", href: "/flows/photos-letter-pdf" },
+    { name: "Text analysis reports", href: "/flows/text-analysis" }, { name: "CSV to JSON", href: "/flows/csv-json-pack" },
   ] },
   { title: "Role-based hubs", href: "/hubs", links: ["Students", "Developers", "Business", "Designers", "Writers", "Researchers", "Farmers", "Everyone"].map((name) => ({ name, href: `/hubs/${name.toLowerCase()}` })) },
   { title: "Your workspace", href: "/settings", links: [

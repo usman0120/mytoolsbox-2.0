@@ -17,3 +17,7 @@
 | 2026-11-21 | Remaining 121 tools/apps moved by scripts/codemod-registry.mjs; manifest copy derived from the old catalog (titles, descriptions, FAQs) plus standard privacy/cost/device answers, then validated; 16 descriptions hand-written | Fast, honest baseline; top tools get hand-tuned copy in M7 |
 | 2026-11-21 | /ai is now the AI Studio home; /apps/{slug} 308s to /{space}/{slug} via LEGACY_APP_PATHS | Blueprint URL scheme |
 | 2026-11-21 | AI Notes Generator and Quiz AI assistant were template fillers with a fake delay; now call the AI gateway (src/lib/ai/study-generators.ts) | No fake AI |
+| 2026-11-21 | File Tray stores blobs in IndexedDB (not OPFS) with 24 h expiry unless pinned | Works in every browser today; OPFS can replace it behind src/runtime/file-store.ts |
+| 2026-11-21 | ToolSurface bridge connects all existing tool UIs to the Tray: captures picked files and blob downloads, feeds files via the tool own file input (?tray=id, drop, paste), shows Continue with | Gives every tool Tray/Continue-with now; per-tool rewrites to the engine template can follow gradually |
+| 2026-11-21 | Worker pool and engine contract execution deferred | No engine uses the contract yet; adding the pool now would be dead code |
+| 2026-11-21 | /workflows → /flows, presets get SEO pages at /flows/{id}; saved Flows keep the same localStorage key, so no importer was needed | Existing saved definitions load unchanged |

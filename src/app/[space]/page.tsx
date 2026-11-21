@@ -27,12 +27,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 const FLOWS: Record<string, { title: string; steps: string[]; href: string }[]> = {
   media: [
-    { title: "Email-ready images", steps: ["Photos", "Resize", "Compress", "ZIP"], href: "/workflows?preset=image-email-pack" },
-    { title: "Photos to one PDF", steps: ["Photos", "Resize", "PDF"], href: "/workflows?preset=photos-letter-pdf" },
+    { title: "Email-ready images", steps: ["Photos", "Resize", "Compress", "ZIP"], href: "/flows/image-email-pack" },
+    { title: "Photos to one PDF", steps: ["Photos", "Resize", "PDF"], href: "/flows/photos-letter-pdf" },
   ],
   docs: [
-    { title: "PDF to JPG under 200 KB", steps: ["PDF", "Images", "Compress", "ZIP"], href: "/workflows?preset=pdf-images-200kb" },
-    { title: "Photos to one PDF", steps: ["Photos", "Resize", "PDF"], href: "/workflows?preset=photos-letter-pdf" },
+    { title: "PDF to JPG under 200 KB", steps: ["PDF", "Images", "Compress", "ZIP"], href: "/flows/pdf-images-200kb" },
+    { title: "Photos to one PDF", steps: ["Photos", "Resize", "PDF"], href: "/flows/photos-letter-pdf" },
   ],
 };
 

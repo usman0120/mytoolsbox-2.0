@@ -7,7 +7,7 @@ import {
   generateOrganizationJsonLd,
 } from "@/lib/seo";
 import { HomeClient } from "./home-client";
-import { WORKFLOW_PRESETS } from "@/features/workflows/presets";
+import { WORKFLOW_PRESETS } from "@/flows/presets";
 
 export const metadata: Metadata = generateSEOMetadata({
   title: "Tools, Apps & Connected Workflows",
