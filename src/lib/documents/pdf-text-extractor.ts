@@ -5,7 +5,7 @@
 // using PDF.js.
 // ---------------------------------------------------------------------------
 
-import { ensurePdfJsLoaded } from "@/features/documents/pdf-to-images";
+import { ensurePdfJsLoaded } from "@/tools/docs/pdf-to-jpg/engine";
 
 export interface PDFPageContent {
   pageNumber: number;

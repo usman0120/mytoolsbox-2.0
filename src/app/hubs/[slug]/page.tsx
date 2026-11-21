@@ -1,3 +1,4 @@
+import { toolPath } from "@/config/legacy-tool-paths";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getHubBySlug, getActiveHubs } from "@/content/hubs/registry";
@@ -69,7 +70,7 @@ export default async function HubPage({ params }: HubPageProps) {
     description: hub.description,
     url: `/hubs/${hub.slug}`,
     items: [
-      ...tools.map((t) => ({ name: t.name, url: `/tools/${t.slug}`, description: t.shortDescription })),
+      ...tools.map((t) => ({ name: t.name, url: toolPath(t.slug), description: t.shortDescription })),
       ...apps.map((a) => ({ name: a.name, url: `/apps/${a.slug}`, description: a.shortDescription })),
     ],
   });

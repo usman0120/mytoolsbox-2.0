@@ -23,7 +23,7 @@ import {
   pdfToImages,
   renderPageToImage,
   exportImagesZip,
-} from "@/features/documents/pdf-to-images";
+} from "@/tools/docs/pdf-to-jpg/engine";
 
 export function PDFToImagesEngine() {
   const [file, setFile] = useState<File | null>(null);

@@ -3,7 +3,7 @@ import type { SpaceId } from "@/spaces";
 // Space pages arrive in M3. Until then each Space links to its closest existing listing,
 // so no link in the shell can 404.
 const CURRENT_SPACE_HREF: Record<SpaceId, string> = {
-  docs: "/tools?category=documents",
+  docs: "/docs",
   media: "/tools?category=images",
   create: "/tools?category=design",
   dev: "/tools?category=developer",

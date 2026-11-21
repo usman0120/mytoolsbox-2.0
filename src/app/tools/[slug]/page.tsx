@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
 import { consolidatedPath } from "@/lib/catalog/consolidation";
+import { LEGACY_TOOL_PATHS } from "@/config/legacy-tool-paths";
 import { getToolBySlug, getActiveTools } from "@/content/tools/registry";
 import {
   generateToolMetadata,
@@ -19,7 +20,8 @@ interface ToolPageProps {
 // ---------------------------------------------------------------------------
 
 export function generateStaticParams() {
-  return getActiveTools().map((tool) => ({ slug: tool.slug }));
+  // Migrated tools live at /{space}/{slug}; their old URLs are redirected by the proxy.
+  return getActiveTools().filter((tool) => !Object.hasOwn(LEGACY_TOOL_PATHS, tool.slug)).map((tool) => ({ slug: tool.slug }));
 }
 
 // ---------------------------------------------------------------------------

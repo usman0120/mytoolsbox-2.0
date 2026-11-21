@@ -18,8 +18,13 @@ export interface Space {
   tagline: string;
   description: string;
   categories: SpaceCategory[];
-  /** Tool slugs to feature as large tiles on the Space home (filled in M3). */
+  /** Tool slugs to feature as large tiles on the Space home. */
   featured: string[];
+  /** Space home H1 and meta title (≤ 60 chars, brand added by the layout). */
+  headline?: string;
+  /** 200–400 words of plain-language copy for the Space home. */
+  about?: string[];
+  faq?: { q: string; a: string }[];
 }
 
 const c = (...items: [string, string][]): SpaceCategory[] => items.map(([id, name]) => ({ id, name }));
@@ -33,7 +38,19 @@ export const SPACES: Space[] = [
     tagline: "PDFs and office files",
     description: "Merge, split, compress, convert, sign and protect PDFs and office documents on your device.",
     categories: c(["organize", "Organize"], ["convert", "Convert"], ["edit-sign", "Edit & sign"], ["secure", "Secure"], ["ocr", "OCR"]),
-    featured: [],
+    featured: ["compress-pdf", "merge-pdf", "pdf-to-jpg"],
+    headline: "PDF tools that run on your device",
+    about: [
+      "Docs collects everyday PDF and office jobs in one place: merging and splitting, making a PDF small enough for an email or an upload portal, turning pages into images and photos into a PDF, and moving text between PDF, Word, Excel and PowerPoint.",
+      "Every Docs tool runs inside your browser. Your files are opened and processed on your own device and are never uploaded to a server, so contracts, IDs and school work stay private. Because nothing travels over the network, most jobs finish in a few seconds, even on a phone.",
+      "There is no sign-up, no watermark and no daily limit. Signing in is optional and only adds favorites and history. If a conversion cannot keep something, such as the exact layout when exporting PDF text to Word, the tool says so up front instead of surprising you after the download.",
+    ],
+    faq: [
+      { q: "Are my documents uploaded anywhere?", a: "No. Docs tools read and write files in your browser. Nothing is sent to a server, which is why they also work offline once loaded." },
+      { q: "Is there a file size limit?", a: "There is no fixed limit. Very large files depend on your device memory; a modern phone or laptop handles typical documents easily." },
+      { q: "Do the tools add a watermark?", a: "Never. Downloads are clean copies of your result." },
+      { q: "Can I edit a scanned PDF?", a: "Scans are images of pages. You can merge, split, compress, rotate and sign them; extracting their text needs OCR, which is coming to this Space." },
+    ],
   },
   {
     id: "media",

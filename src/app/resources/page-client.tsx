@@ -1,4 +1,5 @@
 "use client";
+import { toolPath } from "@/config/legacy-tool-paths";
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
@@ -322,7 +323,7 @@ export function ResourcesPageClient() {
 
                     <div className="flex items-center gap-1.5">
                       {template.toolIntegration && (
-                        <Link href={`/tools/${template.toolIntegration.toolSlug}`}>
+                        <Link href={toolPath(template.toolIntegration.toolSlug)}>
                           <Button variant="ghost" size="sm" className="h-7 text-[11px] text-primary gap-1">
                             <ExternalLink className="h-3 w-3" /> {template.toolIntegration.toolName}
                           </Button>
@@ -449,7 +450,7 @@ export function ResourcesPageClient() {
                             <div className="mt-3 pt-2 border-t flex items-center gap-2">
                               <span className="text-[10px]">Related tool:</span>
                               <Link
-                                href={`/tools/${faq.relatedToolSlug}`}
+                                href={toolPath(faq.relatedToolSlug)}
                                 className="text-[11px] font-semibold text-primary hover:underline flex items-center gap-1"
                               >
                                 Launch {faq.relatedToolSlug} <ArrowRight className="h-2.5 w-2.5" />

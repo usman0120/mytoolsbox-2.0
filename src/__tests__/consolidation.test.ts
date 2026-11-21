@@ -1,3 +1,6 @@
+import { getManifest } from "@/tools/registry";
+import { getSpace } from "@/spaces";
+import { LEGACY_TOOL_PATHS } from "@/config/legacy-tool-paths";
 import { describe, expect, it } from "vitest";
 import { readFileSync, existsSync } from "node:fs";
 import { RETIRED_TOOLS, RETIRED_APPS, consolidatedPath } from "@/lib/catalog/consolidation";
@@ -13,9 +16,10 @@ describe("consolidated product catalog", () => {
   });
   it("removes duplicate discoverable products and resolves old links to real products", () => {
     for (const [slug, target] of Object.entries(RETIRED_TOOLS)) {
-      expect(getToolBySlug(slug)).toBeUndefined(); expect(consolidatedPath(`/tools/${slug}`)).toBe(target);
+      expect(getToolBySlug(slug)).toBeUndefined(); expect(consolidatedPath(`/tools/${slug}`)).toBe(target.startsWith("/tools/") ? (LEGACY_TOOL_PATHS[target.slice(7)] ?? target) : target);
       const [, module, canonical] = target.split("?")[0].split("/");
-      expect(module === "apps" ? getAppBySlug(canonical) : getToolBySlug(canonical), target).toBeDefined();
+      const resolved = getManifest(module, canonical ?? "") ?? (canonical ? undefined : getSpace(module));
+      expect(resolved ?? (module === "apps" ? getAppBySlug(canonical) : getToolBySlug(canonical)), target).toBeDefined();
     }
     for (const slug of Object.keys(RETIRED_APPS)) expect(getAppBySlug(slug)).toBeUndefined();
     expect(toolRegistry.some((item) => item.slug === "resume-builder")).toBe(false);

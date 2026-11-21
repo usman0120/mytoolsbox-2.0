@@ -1,4 +1,5 @@
 "use client";
+import { toolPath } from "@/config/legacy-tool-paths";
 
 import { useState } from "react";
 import Link from "next/link";
@@ -135,7 +136,7 @@ export function ResourceGuidePageClient({ guide }: Props) {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {guide.recommendedTools.map((tool) => (
-              <Link key={tool.slug} href={`/tools/${tool.slug}`}>
+              <Link key={tool.slug} href={toolPath(tool.slug)}>
                 <Card className="h-full border hover:border-primary/50 transition-all hover:scale-[1.02] shadow-xs cursor-pointer">
                   <CardContent className="p-3.5 space-y-1.5 flex flex-col justify-between h-full">
                     <div>

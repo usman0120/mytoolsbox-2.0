@@ -87,6 +87,8 @@ export interface ToolManifest<O extends z.ZodType = z.ZodType> {
   load?: () => Promise<ToolEngine<O>>;
   ui?: () => Promise<{ default: React.ComponentType }>;
   seo: ToolSeo;
+  /** Three short "How it works" steps shown under the tool. */
+  howTo?: [string, string, string];
   faq: { q: string; a: string }[];
   /** Related tool ids. */
   related: string[];

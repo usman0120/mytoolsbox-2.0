@@ -7,19 +7,19 @@ import { EngineBoundary, EngineLoading, EngineUnavailable } from "@/components/c
 // Dynamic imports for all tool engines
 const engineMap: Record<string, React.ComponentType<Record<string, unknown>>> = {
   // Document tools
-  "pdf-merger": dynamic(() => import("@/features/documents/pdf-merger-engine").then((m) => ({ default: m.PDFMergerEngine })), {
+  "pdf-merger": dynamic(() => import("@/tools/docs/merge-pdf/ui").then((m) => ({ default: m.PDFMergerEngine })), {
     loading: () => <EngineLoading />,
   }),
-  "pdf-splitter": dynamic(() => import("@/features/documents/pdf-splitter-engine").then((m) => ({ default: m.PDFSplitterEngine })), {
+  "pdf-splitter": dynamic(() => import("@/tools/docs/split-pdf/ui").then((m) => ({ default: m.PDFSplitterEngine })), {
     loading: () => <EngineLoading />,
   }),
-  "pdf-compressor": dynamic(() => import("@/features/documents/pdf-compressor-engine").then((m) => ({ default: m.PDFCompressorEngine })), {
+  "pdf-compressor": dynamic(() => import("@/tools/docs/compress-pdf/ui").then((m) => ({ default: m.PDFCompressorEngine })), {
     loading: () => <EngineLoading />,
   }),
-  "pdf-to-images": dynamic(() => import("@/features/documents/pdf-to-images-engine").then((m) => ({ default: m.PDFToImagesEngine })), {
+  "pdf-to-images": dynamic(() => import("@/tools/docs/pdf-to-jpg/ui").then((m) => ({ default: m.PDFToImagesEngine })), {
     loading: () => <EngineLoading />,
   }),
-  "images-to-pdf": dynamic(() => import("@/features/documents/images-to-pdf-engine").then((m) => ({ default: m.ImagesToPDFEngine })), {
+  "images-to-pdf": dynamic(() => import("@/tools/docs/jpg-to-pdf/ui").then((m) => ({ default: m.ImagesToPDFEngine })), {
     loading: () => <EngineLoading />,
   }),
   // Image tools
@@ -261,19 +261,13 @@ const engineMap: Record<string, React.ComponentType<Record<string, unknown>>> = 
     loading: () => <EngineLoading />,
   }),
   // File Conversion & Document Tools (Phase 4)
-  "pdf-to-office-converter": dynamic(() => import("@/features/documents/pdf-to-office-converter-engine").then((m) => ({ default: m.PDFToOfficeConverterEngine })), {
+  "pdf-to-office-converter": dynamic(() => import("@/tools/docs/pdf-to-word/ui").then((m) => ({ default: m.PDFToOfficeConverterEngine })), {
     loading: () => <EngineLoading />,
   }),
-  "word-to-pdf-converter": dynamic(() => import("@/features/documents/word-to-pdf-converter-engine").then((m) => ({ default: m.WordToPDFConverterEngine })), {
+  "word-to-pdf-converter": dynamic(() => import("@/tools/docs/word-to-pdf/ui").then((m) => ({ default: m.WordToPDFConverterEngine })), {
     loading: () => <EngineLoading />,
   }),
-  "jpg-to-pdf-merger": dynamic(() => import("@/features/documents/jpg-to-pdf-merger-engine").then((m) => ({ default: m.JPGToPDFMergerEngine })), {
-    loading: () => <EngineLoading />,
-  }),
-  "pdf-to-ppt-converter": dynamic(() => import("@/features/documents/pdf-to-ppt-converter-engine").then((m) => ({ default: m.PDFToPPTConverterEngine })), {
-    loading: () => <EngineLoading />,
-  }),
-  "edit-pdf": dynamic(() => import("@/features/documents/edit-pdf-engine").then((m) => ({ default: m.EditPdfEngine })), {
+  "pdf-to-ppt-converter": dynamic(() => import("@/tools/docs/pdf-to-powerpoint/ui").then((m) => ({ default: m.PDFToPPTConverterEngine })), {
     loading: () => <EngineLoading />,
   }),
   // Media & Audio tools (Phase 6)
@@ -338,16 +332,16 @@ const engineMap: Record<string, React.ComponentType<Record<string, unknown>>> = 
     loading: () => <EngineLoading />,
   }),
   // Document Conversion Tools (Phase 2)
-  "text-to-pdf": dynamic(() => import("@/features/documents/text-to-pdf-engine").then((m) => ({ default: m.TextToPDFEngine })), {
+  "text-to-pdf": dynamic(() => import("@/tools/docs/text-to-pdf/ui").then((m) => ({ default: m.TextToPDFEngine })), {
     loading: () => <EngineLoading />,
   }),
-  "csv-to-excel": dynamic(() => import("@/features/documents/csv-to-excel-engine").then((m) => ({ default: m.CSVToExcelEngine })), {
+  "csv-to-excel": dynamic(() => import("@/tools/docs/csv-to-excel/ui").then((m) => ({ default: m.CSVToExcelEngine })), {
     loading: () => <EngineLoading />,
   }),
-  "txt-to-docx": dynamic(() => import("@/features/documents/txt-to-docx-engine").then((m) => ({ default: m.TxtToDocxEngine })), {
+  "txt-to-docx": dynamic(() => import("@/tools/docs/text-to-word/ui").then((m) => ({ default: m.TxtToDocxEngine })), {
     loading: () => <EngineLoading />,
   }),
-  "ppt-to-pdf": dynamic(() => import("@/features/documents/ppt-to-pdf-engine").then((m) => ({ default: m.PPTToPDFEngine })), {
+  "ppt-to-pdf": dynamic(() => import("@/tools/docs/powerpoint-to-pdf/ui").then((m) => ({ default: m.PPTToPDFEngine })), {
     loading: () => <EngineLoading />,
   }),
   // New Productivity & AI Tools

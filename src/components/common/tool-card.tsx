@@ -1,4 +1,5 @@
 "use client";
+import { productPath } from "@/config/legacy-tool-paths";
 
 import Link from "next/link";
 import { ToolDefinition } from "@/types";
@@ -15,7 +16,7 @@ export function ToolCard({ tool, className }: ToolCardProps) {
   const { t, toolName: getToolName } = UI_COPY;
   const IconComponent = (Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[tool.icon] || Icons.Wrench;
   const displayName = getToolName(tool.slug, tool.name);
-  const href = `/${tool.productType}s/${tool.slug}`;
+  const href = productPath(tool);
 
   return (
     <Link href={href} className="block group h-full">

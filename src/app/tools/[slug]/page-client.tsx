@@ -1,4 +1,5 @@
 "use client";
+import { toolPath } from "@/config/legacy-tool-paths";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
@@ -280,7 +281,7 @@ export function ToolPageClient({ tool }: ToolPageClientProps) {
           <div className="flex flex-wrap items-center gap-x-5 gap-y-3 text-sm">
             <h2 className="font-medium">{t("related_tools_title", "Related tools")}</h2>
             {relatedTools.map((related) => (
-              <Link key={related.id} href={`/tools/${related.slug}`} className="text-primary hover:underline wrap-break-word">
+              <Link key={related.id} href={toolPath(related.slug)} className="text-primary hover:underline wrap-break-word">
                 {getToolName(related.slug, related.name)}
               </Link>
             ))}

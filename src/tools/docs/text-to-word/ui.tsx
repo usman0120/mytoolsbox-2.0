@@ -20,7 +20,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { HelpDisclosure } from "@/components/common/workload-layouts";
 import { Badge } from "@/components/ui/badge";
-import { convertRawTextToDocx } from "@/features/documents/txt-to-docx";
+import { convertRawTextToDocx } from "@/tools/docs/text-to-word/engine";
 
 const SAMPLE_TEXT = `# Project Scope of Work
 Client: Global Logistics Inc. • Version: 2.1

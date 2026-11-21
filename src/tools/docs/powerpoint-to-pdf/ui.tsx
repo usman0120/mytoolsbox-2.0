@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { pptToPDF, PptToPdfOptions } from "@/features/documents/ppt-to-pdf";
+import { pptToPDF, PptToPdfOptions } from "@/tools/docs/powerpoint-to-pdf/engine";
 import { parsePptxSlides, PptxSlide } from "@/lib/documents/openxml-builder";
 
 export function PPTToPDFEngine() {

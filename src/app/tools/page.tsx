@@ -1,3 +1,4 @@
+import { toolPath } from "@/config/legacy-tool-paths";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { ToolsPageClient } from "./page-client";
@@ -35,7 +36,7 @@ export default function ToolsPage() {
     url: "/tools",
     items: tools.map((t) => ({
       name: t.name,
-      url: `/tools/${t.slug}`,
+      url: toolPath(t.slug),
       description: t.shortDescription || t.description,
     })),
   });

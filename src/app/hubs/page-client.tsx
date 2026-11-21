@@ -1,4 +1,5 @@
 "use client";
+import { toolPath } from "@/config/legacy-tool-paths";
 
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
@@ -189,7 +190,7 @@ export function HubsPageClient() {
                     </p>
                     <div className="flex flex-wrap gap-1.5">
                       {tools.slice(0, 5).map((tool) => (
-                        <Link key={tool.slug} href={`/tools/${tool.slug}`}>
+                        <Link key={tool.slug} href={toolPath(tool.slug)}>
                           <span className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors border border-border/60">
                             {getToolName(tool.slug, tool.name)}
                           </span>

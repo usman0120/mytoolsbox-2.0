@@ -5,11 +5,11 @@ export function getToolEngine(slug: string): string {
   // Returns the import path for the tool's engine component
   const engineMap: Record<string, string> = {
     // Document tools
-    "pdf-merger": "documents/pdf-merger-engine",
-    "pdf-splitter": "documents/pdf-splitter-engine",
-    "pdf-compressor": "documents/pdf-compressor-engine",
-    "pdf-to-images": "documents/pdf-to-images-engine",
-    "images-to-pdf": "documents/images-to-pdf-engine",
+    "pdf-merger": "@/tools/docs/merge-pdf/ui",
+    "pdf-splitter": "@/tools/docs/split-pdf/ui",
+    "pdf-compressor": "@/tools/docs/compress-pdf/ui",
+    "pdf-to-images": "@/tools/docs/pdf-to-jpg/ui",
+    "images-to-pdf": "@/tools/docs/jpg-to-pdf/ui",
     // Image tools
     "image-compressor": "images/image-compressor-engine",
     "image-resizer": "images/image-resizer-engine",
@@ -120,15 +120,13 @@ export function getToolEngine(slug: string): string {
     // AI tools
     "ai-text-generator": "tools/ai-text-generator-engine",
     // File Conversion & Document Tools
-    "pdf-to-office-converter": "documents/pdf-to-office-converter-engine",
-    "word-to-pdf-converter": "documents/word-to-pdf-converter-engine",
-    "jpg-to-pdf-merger": "documents/jpg-to-pdf-merger-engine",
-    "pdf-to-ppt-converter": "documents/pdf-to-ppt-converter-engine",
-    "edit-pdf": "documents/edit-pdf-engine",
-    "text-to-pdf": "documents/text-to-pdf-engine",
-    "csv-to-excel": "documents/csv-to-excel-engine",
-    "txt-to-docx": "documents/txt-to-docx-engine",
-    "ppt-to-pdf": "documents/ppt-to-pdf-engine",
+    "pdf-to-office-converter": "@/tools/docs/pdf-to-word/ui",
+    "word-to-pdf-converter": "@/tools/docs/word-to-pdf/ui",
+    "pdf-to-ppt-converter": "@/tools/docs/pdf-to-powerpoint/ui",
+    "text-to-pdf": "@/tools/docs/text-to-pdf/ui",
+    "csv-to-excel": "@/tools/docs/csv-to-excel/ui",
+    "txt-to-docx": "@/tools/docs/text-to-word/ui",
+    "ppt-to-pdf": "@/tools/docs/powerpoint-to-pdf/ui",
     // Image Manipulation Tools
     "image-rotator": "images/image-rotator-engine",
     "image-watermarker": "images/image-watermarker-engine",

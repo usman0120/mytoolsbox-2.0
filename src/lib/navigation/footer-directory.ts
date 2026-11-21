@@ -1,3 +1,4 @@
+import { toolPath } from "@/config/legacy-tool-paths";
 export interface FooterSection {
   title: string;
   href: string;
@@ -5,7 +6,7 @@ export interface FooterSection {
 }
 
 function tools(title: string, category: string, entries: [string, string][]): FooterSection {
-  return { title, href: `/tools?category=${category}`, links: entries.map(([name, slug]) => ({ name, href: `/tools/${slug}` })) };
+  return { title, href: `/tools?category=${category}`, links: entries.map(([name, slug]) => ({ name, href: toolPath(slug) })) };
 }
 
 // Keep this compact: importing the full registries into the shared footer would

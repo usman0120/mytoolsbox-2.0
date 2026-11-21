@@ -19,7 +19,7 @@ function loadCatalog(relativePath, exportName) {
   const exports = {};
   const module = { exports };
   const catalogRequire = (specifier) => {
-    if (!specifier.startsWith('@/content/') && specifier !== '@/lib/catalog/consolidation') throw new Error(`Unexpected catalog dependency: ${specifier}`);
+    if (!specifier.startsWith('@/content/') && specifier !== '@/lib/catalog/consolidation' && specifier !== '@/config/legacy-tool-paths') throw new Error(`Unexpected catalog dependency: ${specifier}`);
     return loadCatalog(`src/${specifier.slice(2)}.ts`);
   };
   vm.runInNewContext(compiled, { exports, module, require: catalogRequire }, { filename, timeout: 5000 });
@@ -46,7 +46,7 @@ function loaderEntries(relativePath, mapName) {
           ts.forEachChild(child, inspect);
         }
         inspect(property.initializer);
-        const target = ts.isStringLiteral(property.initializer) ? `@/features/${property.initializer.text}` : imports[0];
+        const target = ts.isStringLiteral(property.initializer) ? (property.initializer.text.startsWith("@/") ? property.initializer.text : `@/features/${property.initializer.text}`) : imports[0];
         if (!target || imports.length > 1) throw new Error(`Ambiguous loader: ${property.name.text}`);
         entries.push({ slug: property.name.text, target });
       }

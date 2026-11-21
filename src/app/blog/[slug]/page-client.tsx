@@ -1,4 +1,5 @@
 "use client";
+import { toolPath } from "@/config/legacy-tool-paths";
 
 import { useState } from "react";
 import Link from "next/link";
@@ -314,7 +315,7 @@ export function BlogPostClient({ post }: Props) {
                         </div>
 
                         <Link
-                          href={`/tools/${section.toolCallout.slug}`}
+                          href={toolPath(section.toolCallout.slug)}
                           className={cn(
                             buttonVariants({ variant: "default" }),
                             "shrink-0 w-full sm:w-auto gap-2 shadow-xs"
@@ -448,7 +449,7 @@ export function BlogPostClient({ post }: Props) {
                     {post.relatedTools.map((tool) => (
                       <Link
                         key={tool.slug}
-                        href={`/tools/${tool.slug}`}
+                        href={toolPath(tool.slug)}
                         className="flex items-center justify-between p-3 rounded-lg border border-border/60 bg-muted/20 hover:border-primary/50 hover:bg-muted/50 transition-all group"
                       >
                         <div className="space-y-0.5">

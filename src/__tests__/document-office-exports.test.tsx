@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { PDFToOfficeConverterEngine } from "@/features/documents/pdf-to-office-converter-engine";
-import { PDFToPPTConverterEngine } from "@/features/documents/pdf-to-ppt-converter-engine";
+import { PDFToOfficeConverterEngine } from "@/tools/docs/pdf-to-word/ui";
+import { PDFToPPTConverterEngine } from "@/tools/docs/pdf-to-powerpoint/ui";
 import { createTextSlides, parsePptxSlides } from "@/lib/documents/openxml-builder";
 import JSZip from "jszip";
 

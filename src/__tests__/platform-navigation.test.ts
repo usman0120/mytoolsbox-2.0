@@ -1,3 +1,5 @@
+import { getManifest } from "@/tools/registry";
+import { getSpace } from "@/spaces";
 import { describe, expect, it } from "vitest";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
@@ -22,6 +24,7 @@ describe("footer directory", () => {
       for (const href of [section.href, ...section.links.map((link) => link.href)]) {
         const [path] = href.split(/[?#]/);
         const [, module, slug] = path.split("/");
+        if (getManifest(module, slug ?? "") || (getSpace(module) && !slug)) continue;
         if (module === "tools" && slug) expect(getToolBySlug(slug)?.status, href).toBe("active");
         else if (module === "apps" && slug) expect(getAppBySlug(slug)?.status, href).toBe("active");
         else if (module === "hubs" && slug) expect(getHubBySlug(slug), href).toBeDefined();

@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ensurePdfJsLoaded } from "@/features/documents/pdf-to-images";
+import { ensurePdfJsLoaded } from "@/tools/docs/pdf-to-jpg/engine";
 import { extractPdfPages } from "@/lib/documents/pdf-text-extractor";
 
-vi.mock("@/features/documents/pdf-to-images", () => ({
+vi.mock("@/tools/docs/pdf-to-jpg/engine", () => ({
   ensurePdfJsLoaded: vi.fn(),
 }));
 

@@ -21,7 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { HelpDisclosure } from "@/components/common/workload-layouts";
 import { toast } from "sonner";
 import { PDFDocument } from "pdf-lib";
-import { splitPDF, extractAllPages, SplitRange } from "@/features/documents/pdf-splitter";
+import { splitPDF, extractAllPages, SplitRange } from "@/tools/docs/split-pdf/engine";
 
 export function PDFSplitterEngine() {
   const [file, setFile] = useState<File | null>(null);

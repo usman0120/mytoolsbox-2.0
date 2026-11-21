@@ -22,7 +22,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { convertRawTextToPdf, TextToPDFOptions } from "@/features/documents/text-to-pdf";
+import { convertRawTextToPdf, TextToPDFOptions } from "@/tools/docs/text-to-pdf/engine";
 
 const SAMPLE_TEXT = `# Annual Operations & Strategy Report
 Prepared for Executive Leadership • Confidential

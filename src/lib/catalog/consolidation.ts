@@ -1,3 +1,5 @@
+import { LEGACY_TOOL_PATHS } from "@/config/legacy-tool-paths";
+
 // One discoverable product per workflow. Old bookmarks and saved records keep
 // working through redirects; no user's stored IDs or draft storage are deleted.
 export const RETIRED_TOOLS: Record<string, string> = {
@@ -19,12 +21,14 @@ export const RETIRED_TOOLS: Record<string, string> = {
   photolemur: "/tools/auto-enhance-photo",
   "perfectly-clear": "/tools/auto-enhance-photo",
   "softcolor-auto-enhance": "/tools/auto-enhance-photo",
-  smallpdf: "/tools/edit-pdf",
-  "foxit-pdf": "/tools/edit-pdf",
-  "nitro-pro": "/tools/edit-pdf",
-  "soda-pdf": "/tools/edit-pdf",
-  pdfelement: "/tools/edit-pdf",
-  "onlyoffice-editor": "/tools/word-to-pdf-converter",
+  smallpdf: "/docs",
+  "foxit-pdf": "/docs",
+  "nitro-pro": "/docs",
+  "soda-pdf": "/docs",
+  pdfelement: "/docs",
+  "onlyoffice-editor": "/docs/word-to-pdf",
+  "edit-pdf": "/docs",
+  "jpg-to-pdf-merger": "/docs/jpg-to-pdf",
   "rfp-monkey": "/tools/proposal-generator",
   // Duplicates → one canonical product each
   "invoice-generator": "/apps/invoice-maker",
@@ -45,10 +49,18 @@ export const RETIRED_APPS: Record<string, string> = {
 };
 export const REMOVED_AI_PATHS = ["/ai/compare", "/ai/personas"];
 
+/** Follows a retired target through the migrated-tool map so every old URL is one hop. */
+function resolveTarget(target: string): string {
+  const match = /^\/tools\/([a-z0-9-]+)(\?.*)?$/.exec(target);
+  const moved = match && Object.hasOwn(LEGACY_TOOL_PATHS, match[1]) ? LEGACY_TOOL_PATHS[match[1]] : undefined;
+  return moved ? moved + (match?.[2] ?? "") : target;
+}
+
 export function consolidatedPath(pathname: string): string | undefined {
   if (pathname === "/ai") return "/apps/ai-chat";
   const [, , slug] = pathname.split("/");
-  if (pathname === `/tools/${slug}` && Object.hasOwn(RETIRED_TOOLS, slug)) return RETIRED_TOOLS[slug];
+  if (pathname === `/tools/${slug}` && Object.hasOwn(LEGACY_TOOL_PATHS, slug)) return LEGACY_TOOL_PATHS[slug];
+  if (pathname === `/tools/${slug}` && Object.hasOwn(RETIRED_TOOLS, slug)) return resolveTarget(RETIRED_TOOLS[slug]);
   if (pathname === `/apps/${slug}` && Object.hasOwn(RETIRED_APPS, slug)) return RETIRED_APPS[slug];
   if (REMOVED_AI_PATHS.includes(pathname)) return "/apps/ai-chat";
 }

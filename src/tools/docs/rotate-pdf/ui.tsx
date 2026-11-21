@@ -28,10 +28,10 @@ import { createDocxBlob } from "@/lib/documents/openxml-builder";
 
 type QuickTool = "compress" | "watermark" | "rotate" | "word" | "text";
 
-export function EditPdfEngine() {
+export function RotatePdfEngine({ initialTool = "rotate" }: { initialTool?: QuickTool } = {}) {
   const [file, setFile] = useState<File | null>(null);
   const [pageCount, setPageCount] = useState(0);
-  const [activeTool, setActiveTool] = useState<QuickTool>("compress");
+  const [activeTool, setActiveTool] = useState<QuickTool>(initialTool);
 
   const [loading, setLoading] = useState(false);
   const [processing, setProcessing] = useState(false);

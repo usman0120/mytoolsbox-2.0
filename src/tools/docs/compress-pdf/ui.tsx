@@ -21,7 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { PDFDocument } from "pdf-lib";
-import { compressPDF, CompressionLevel } from "@/features/documents/pdf-compressor";
+import { compressPDF, CompressionLevel } from "@/tools/docs/compress-pdf/engine";
 
 export function PDFCompressorEngine() {
   const [file, setFile] = useState<File | null>(null);

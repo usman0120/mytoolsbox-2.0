@@ -1,4 +1,5 @@
 "use client";
+import { toolPath } from "@/config/legacy-tool-paths";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -88,7 +89,7 @@ export function HubDetailClient({ slug, hub, tools, apps }: HubDetailClientProps
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {tools.map((tool) => (
-              <Link key={tool.slug} href={`/tools/${tool.slug}`} className="group">
+              <Link key={tool.slug} href={toolPath(tool.slug)} className="group">
                 <div className="h-full p-4 rounded-xl border border-border/70 bg-card hover:border-primary/40 hover:bg-card/90 transition-all duration-200 hover:-translate-y-0.5 flex items-start gap-3.5">
                   <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-200 shrink-0">
                     <Zap className="h-4.5 w-4.5" />

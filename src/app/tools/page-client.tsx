@@ -1,4 +1,5 @@
 "use client";
+import { productPath } from "@/config/legacy-tool-paths";
 
 import { useState, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
@@ -197,7 +198,7 @@ export function ToolsPageClient() {
             return (
               <Link
                 key={tool.id}
-                href={`/${tool.productType}s/${tool.slug}`}
+                href={productPath(tool)}
                 className="group flex flex-wrap items-center gap-4 p-4 rounded-xl border border-border/70 bg-card hover:border-primary/40 hover:bg-card/90 transition-all duration-200"
               >
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-200 shrink-0">

@@ -21,7 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { PDFDocument } from "pdf-lib";
-import { mergePDFs } from "@/features/documents/pdf-merger";
+import { mergePDFs } from "@/tools/docs/merge-pdf/engine";
 
 interface PDFFileInfo {
   file: File;

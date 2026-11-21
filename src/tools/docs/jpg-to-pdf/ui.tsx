@@ -26,7 +26,7 @@ import {
   PDFPageSize,
   PDFOrientation,
   PDFMargin,
-} from "@/features/documents/images-to-pdf";
+} from "@/tools/docs/jpg-to-pdf/engine";
 
 interface ImageItem {
   file: File;

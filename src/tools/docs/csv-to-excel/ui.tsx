@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { csvToExcel, detectDelimiter, parseCsvText } from "@/features/documents/csv-to-excel";
+import { csvToExcel, detectDelimiter, parseCsvText } from "@/tools/docs/csv-to-excel/engine";
 
 export function CSVToExcelEngine() {
   const [file, setFile] = useState<File | null>(null);
