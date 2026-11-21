@@ -1,18 +1,18 @@
 import { afterEach, describe, it, expect } from "vitest";
 import { createElement } from "react";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { PercentageCalculatorEngine } from "../features/tools/percentage-calculator-engine";
+import { PercentageCalculatorEngine } from "@/tools/calc/percentage-calculator/ui";
 import { DiscountCalculatorEngine } from "../features/tools/discount-calculator-engine";
 import { EMICalculatorEngine } from "../features/tools/emi-calculator-engine";
-import { LoanCalculatorEngine } from "../features/tools/loan-calculator-engine";
+import { LoanCalculatorEngine } from "@/tools/calc/loan-calculator/ui";
 import { MortgageCalculatorEngine } from "../features/tools/mortgage-calculator-engine";
 import { TipCalculatorEngine } from "../features/tools/tip-calculator-engine";
-import { calculatePercentageComprehensive } from "../features/tools/percentage-calculator";
-import { calculateComprehensiveAge, dateDifference } from "../features/tools/age-calculator";
-import { calculateBMI, calculateDetailedBMI } from "../features/tools/bmi-calculator";
-import { calculateLoan, calculateDetailedLoan } from "../features/tools/loan-calculator";
-import { convertUnit } from "../features/tools/unit-converter";
-import { evaluateExpression } from "../features/tools/scientific-calculator";
+import { calculatePercentageComprehensive } from "@/tools/calc/percentage-calculator/engine";
+import { calculateComprehensiveAge, dateDifference } from "@/tools/calc/age-calculator/engine";
+import { calculateBMI, calculateDetailedBMI } from "@/tools/calc/bmi-calculator/engine";
+import { calculateLoan, calculateDetailedLoan } from "@/tools/calc/loan-calculator/engine";
+import { convertUnit } from "@/tools/calc/unit-converter/engine";
+import { evaluateExpression } from "@/tools/calc/scientific-calculator/engine";
 import {
   parseMatrix,
   addMatrices,
@@ -22,20 +22,20 @@ import {
   matrixPower,
   trace,
   matrixRank,
-} from "../features/tools/matrix-calculator";
-import { solveEquation, solveSystem2, solveSystem3 } from "../features/tools/equation-solver";
-import { calculateStatistics } from "../features/tools/statistics-calculator";
-import { calculateProfit } from "../features/tools/profit-calculator";
+} from "@/tools/calc/matrix-calculator/engine";
+import { solveEquation, solveSystem2, solveSystem3 } from "@/tools/study/equation-solver/engine";
+import { calculateStatistics } from "@/tools/calc/statistics-calculator/engine";
+import { calculateProfit } from "@/tools/calc/profit-calculator/engine";
 import {
   calculateMargin,
   calculateSellingPriceFromMargin,
   calculateSellingPriceFromMarkup,
   calculateCostFromPrice,
-} from "../features/tools/margin-calculator";
-import { calculateTax } from "../features/tools/tax-calculator";
-import { calculateSalary } from "../features/tools/salary-calculator";
-import { calculateROI } from "../features/tools/roi-calculator";
-import { calculateBreakEven } from "../features/tools/break-even-calculator";
+} from "@/tools/calc/margin-calculator/engine";
+import { calculateTax } from "@/tools/calc/tax-calculator/engine";
+import { calculateSalary } from "@/tools/calc/salary-calculator/engine";
+import { calculateROI } from "@/tools/calc/roi-calculator/engine";
+import { calculateBreakEven } from "@/tools/calc/break-even-calculator/engine";
 
 afterEach(cleanup);
 

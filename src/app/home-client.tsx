@@ -1,4 +1,5 @@
 "use client";
+import { appPath } from "@/config/legacy-tool-paths";
 
 import { useState } from "react";
 import Link from "next/link";
@@ -48,14 +49,14 @@ export function HomeClient({ popularTools, featuredApps, featuredWorkflows = [],
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   const quickJobs = [
-    { key: "job_merge_pdf" as const, label: "Merge PDFs", href: "/tools/pdf-merger", icon: FilePlus },
-    { key: "job_compress_image" as const, label: "Compress Image", href: "/tools/image-compressor", icon: ImageDown },
-    { key: "job_format_json" as const, label: "Format JSON", href: "/tools/json-formatter", icon: Braces },
-    { key: "job_generate_qr" as const, label: "Generate QR", href: "/tools/qr-generator", icon: QrCode },
-    { key: "job_count_words" as const, label: "Count Words", href: "/tools/word-counter", icon: TextQuote },
-    { key: "job_calculate_percent" as const, label: "Calculate %", href: "/tools/percentage-calculator", icon: Percent },
-    { key: "job_convert_case" as const, label: "Convert Case", href: "/tools/case-converter", icon: CaseSensitive },
-    { key: "job_resize_image" as const, label: "Resize Image", href: "/tools/image-resizer", icon: Maximize },
+    { key: "job_merge_pdf" as const, label: "Merge PDFs", href: "/docs/merge-pdf", icon: FilePlus },
+    { key: "job_compress_image" as const, label: "Compress Image", href: "/media/compress-image", icon: ImageDown },
+    { key: "job_format_json" as const, label: "Format JSON", href: "/dev/json-formatter", icon: Braces },
+    { key: "job_generate_qr" as const, label: "Generate QR", href: "/create/qr-code-generator", icon: QrCode },
+    { key: "job_count_words" as const, label: "Count Words", href: "/work/word-counter", icon: TextQuote },
+    { key: "job_calculate_percent" as const, label: "Calculate %", href: "/calc/percentage-calculator", icon: Percent },
+    { key: "job_convert_case" as const, label: "Convert Case", href: "/work/case-converter", icon: CaseSensitive },
+    { key: "job_resize_image" as const, label: "Resize Image", href: "/media/resize-image", icon: Maximize },
   ];
 
   const valuePillars = [
@@ -430,7 +431,7 @@ export function HomeClient({ popularTools, featuredApps, featuredWorkflows = [],
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {featuredApps.slice(0, 3).map((app) => (
-              <Link key={app.id} href={`/apps/${app.slug}`} className="group">
+              <Link key={app.id} href={appPath(app.slug)} className="group">
                 <div className="h-full p-5 rounded-2xl border border-border/70 bg-card hover:border-primary/40 hover:bg-card/90 transition-all duration-200 hover:-translate-y-0.5 flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between mb-3">

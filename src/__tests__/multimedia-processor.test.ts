@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { createElement } from "react";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { AudioCutterEngine } from "@/features/tools/audio-cutter-engine";
+import { AudioCutterEngine } from "@/tools/media/audio-cutter/ui";
 import { GifEncoder, encodeGif } from "@/lib/processing/client/gif-encoder";
 import { extractWaveformPeaks, audioBufferToWav } from "@/lib/processing/client/audio-processor";
 

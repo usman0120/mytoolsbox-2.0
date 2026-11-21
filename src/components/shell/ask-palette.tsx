@@ -1,5 +1,5 @@
 "use client";
-import { toolPath } from "@/config/legacy-tool-paths";
+import { appPath, toolPath } from "@/config/legacy-tool-paths";
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -111,7 +111,7 @@ export function AskPalette() {
               <CommandItem
                 key={`${r.type}:${r.item.slug}`}
                 value={`${r.type}:${r.item.slug}`}
-                onSelect={() => go(r.type === "tool" ? toolPath(r.item.slug) : `/apps/${r.item.slug}`)}
+                onSelect={() => go(r.type === "tool" ? toolPath(r.item.slug) : appPath(r.item.slug))}
               >
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-medium">{r.item.name}</span>

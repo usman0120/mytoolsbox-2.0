@@ -1,4 +1,4 @@
-import { LEGACY_TOOL_PATHS } from "@/config/legacy-tool-paths";
+import { LEGACY_APP_PATHS, LEGACY_TOOL_PATHS } from "@/config/legacy-tool-paths";
 
 // One discoverable product per workflow. Old bookmarks and saved records keep
 // working through redirects; no user's stored IDs or draft storage are deleted.
@@ -47,22 +47,23 @@ export const RETIRED_APPS: Record<string, string> = {
   "ai-quiz-generator": "/apps/quiz-maker?mode=ai",
   "diagram-maker": "/apps/ai-diagram-generator",
 };
-export const REMOVED_AI_PATHS = ["/ai/compare", "/ai/personas"];
+export const REMOVED_AI_PATHS = ["/ai/compare", "/ai/personas", "/ai/prompts"];
 
 /** Follows a retired target through the migrated-tool map so every old URL is one hop. */
 function resolveTarget(target: string): string {
-  const match = /^\/tools\/([a-z0-9-]+)(\?.*)?$/.exec(target);
-  const moved = match && Object.hasOwn(LEGACY_TOOL_PATHS, match[1]) ? LEGACY_TOOL_PATHS[match[1]] : undefined;
-  return moved ? moved + (match?.[2] ?? "") : target;
+  const match = /^\/(tools|apps)\/([a-z0-9-]+)(\?.*)?$/.exec(target);
+  if (!match) return target;
+  const map = match[1] === "tools" ? LEGACY_TOOL_PATHS : LEGACY_APP_PATHS;
+  return Object.hasOwn(map, match[2]) ? map[match[2]] + (match[3] ?? "") : target;
 }
 
 export function consolidatedPath(pathname: string): string | undefined {
-  if (pathname === "/ai") return "/apps/ai-chat";
   const [, , slug] = pathname.split("/");
   if (pathname === `/tools/${slug}` && Object.hasOwn(LEGACY_TOOL_PATHS, slug)) return LEGACY_TOOL_PATHS[slug];
   if (pathname === `/tools/${slug}` && Object.hasOwn(RETIRED_TOOLS, slug)) return resolveTarget(RETIRED_TOOLS[slug]);
-  if (pathname === `/apps/${slug}` && Object.hasOwn(RETIRED_APPS, slug)) return RETIRED_APPS[slug];
-  if (REMOVED_AI_PATHS.includes(pathname)) return "/apps/ai-chat";
+  if (pathname === `/apps/${slug}` && Object.hasOwn(LEGACY_APP_PATHS, slug)) return LEGACY_APP_PATHS[slug];
+  if (pathname === `/apps/${slug}` && Object.hasOwn(RETIRED_APPS, slug)) return resolveTarget(RETIRED_APPS[slug]);
+  if (REMOVED_AI_PATHS.includes(pathname)) return "/ai/chat";
 }
 
 export function canonicalAppId(id: string): string {

@@ -1,5 +1,5 @@
 "use client";
-import { toolPath } from "@/config/legacy-tool-paths";
+import { appPath, toolPath } from "@/config/legacy-tool-paths";
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
@@ -204,7 +204,7 @@ export function SearchCommand({ className, variant = "hero", onClose }: SearchCo
 
   const navigateToResult = useCallback(
     (result: SearchResult) => {
-      const path = result.type === "tool" ? toolPath(result.item.slug) : `/apps/${result.item.slug}`;
+      const path = result.type === "tool" ? toolPath(result.item.slug) : appPath(result.item.slug);
       router.push(path);
       setIsOpen(false);
       setQuery("");

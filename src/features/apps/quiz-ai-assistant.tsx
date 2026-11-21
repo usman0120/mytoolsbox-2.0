@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
+import { generateQuizQuestions } from "@/lib/ai/study-generators";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -52,55 +55,6 @@ function generateQuestionId(): string {
 }
 
 // Simulated AI generation with templates
-function generateQuestions(topic: string, difficulty: string, count: number): QuizQuestion[] {
-  const questions: QuizQuestion[] = [];
-  const templates: Record<string, string[]> = {
-    Easy: [
-      "What is the primary purpose of {topic}?",
-      "Define the term '{topic}' in your own words.",
-      "Which of the following best describes {topic}?",
-      "What is a basic example of {topic}?",
-      "Who is associated with the discovery of {topic}?",
-    ],
-    Medium: [
-      "Explain how {topic} is applied in real-world scenarios.",
-      "Compare and contrast two approaches within {topic}.",
-      "What are the key principles underlying {topic}?",
-      "How does {topic} relate to other concepts in the field?",
-      "Analyze the importance of {topic} in modern contexts.",
-    ],
-    Hard: [
-      "Critically evaluate the limitations of {topic}.",
-      "Propose an advanced application of {topic} to solve a complex problem.",
-      "Synthesize knowledge of {topic} with other disciplines.",
-      "What are the cutting-edge developments in {topic}?",
-      "Design an experiment to test a hypothesis related to {topic}.",
-    ],
-  };
-
-  const pool = templates[difficulty] || [...templates.Easy, ...templates.Medium];
-  const actualCount = Math.min(count, pool.length);
-
-  for (let i = 0; i < actualCount; i++) {
-    const questionText = pool[i].replace(/{topic}/g, topic);
-    const correctIndex = Math.floor(Math.random() * 4);
-    questions.push({
-      id: generateQuestionId(),
-      question: questionText,
-      options: [
-        `Option A for ${topic}`,
-        `Option B for ${topic}`,
-        `Option C for ${topic}`,
-        `Option D for ${topic}`,
-      ],
-      correctIndex,
-      explanation: `This is the correct answer because it best addresses the question about ${topic}.`,
-    });
-  }
-
-  return questions;
-}
-
 export function QuizAIAssistant() {
   const [topic, setTopic] = useState("");
   const [customTopic, setCustomTopic] = useState("");
@@ -117,10 +71,14 @@ export function QuizAIAssistant() {
     if (!activeTopic) return;
     setIsGenerating(true);
 
-    // Simulate AI generation delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
-    const questions = generateQuestions(activeTopic, difficulty, parseInt(questionCount));
+    let questions: QuizQuestion[];
+    try {
+      questions = await generateQuizQuestions(activeTopic, difficulty, parseInt(questionCount));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Couldn't generate the quiz. Try again.");
+      setIsGenerating(false);
+      return;
+    }
     const quiz: GeneratedQuiz = {
       id: generateId(),
       title: `${activeTopic} Quiz`,

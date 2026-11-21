@@ -6,7 +6,7 @@ import { describe, it, expect } from "vitest";
 import {
   fillTemplate, generateContractDocument, CONTRACT_TEMPLATES,
   type ContractClause
-} from "../features/tools/contract-generator";
+} from "@/tools/work/contract-generator/engine";
 
 describe("Contract Generator", () => {
   it("correctly replaces template variables with spaces like {Party A} and {Effective Date}", () => {
@@ -122,7 +122,7 @@ describe("Invoice Generator", () => {
 // ─────────────────────────────────────────────────────────────
 import {
   isQuoteExpired, exportQuotationCSV, type QuotationData
-} from "../features/tools/quotation-generator";
+} from "@/tools/work/quotation-generator/engine";
 
 describe("Quotation Generator", () => {
   it("determines if quotation is expired based on validUntil date", () => {
@@ -158,7 +158,7 @@ describe("Quotation Generator", () => {
 // ─────────────────────────────────────────────────────────────
 import {
   fillProposalVariables, exportProposalDocument, type ProposalData
-} from "../features/tools/proposal-generator";
+} from "@/tools/work/proposal-generator/engine";
 
 describe("Proposal Generator", () => {
   it("substitutes proposal variables in section text", () => {
@@ -199,7 +199,7 @@ describe("Proposal Generator", () => {
 // ─────────────────────────────────────────────────────────────
 import {
   getStreak, getSubjectTotals, getProgressPercent, type StudySession
-} from "../features/tools/study-timer";
+} from "@/tools/study/study-timer/engine";
 
 describe("Study Timer", () => {
   it("computes active study streak correctly", () => {
@@ -246,7 +246,7 @@ describe("Study Timer", () => {
 import {
   moveCard, isWipLimitExceeded, filterCards, exportBoardToCSV,
   type KanbanBoard, type KanbanCard
-} from "../features/tools/kanban-board";
+} from "@/tools/work/kanban-board/engine";
 
 describe("Kanban Board", () => {
   const sampleCard: KanbanCard = {
@@ -303,7 +303,7 @@ describe("Kanban Board", () => {
 import {
   getNextState, getTodayFocusMinutes, DEFAULT_POMODORO_SETTINGS,
   type PomodoroSessionRecord
-} from "../features/tools/pomodoro-timer";
+} from "@/tools/study/pomodoro-timer/engine";
 
 describe("Pomodoro Timer", () => {
   it("transitions from working to short-break normally", () => {
@@ -340,7 +340,7 @@ describe("Pomodoro Timer", () => {
 // ─────────────────────────────────────────────────────────────
 import {
   calculateNoteStats, filterAndSortNotes, extractAllTags, type Note
-} from "../features/tools/notes-app";
+} from "@/tools/work/notepad/engine";
 
 describe("Notes App", () => {
   it("calculates note metrics accurately", () => {
@@ -375,7 +375,7 @@ describe("Notes App", () => {
 // ─────────────────────────────────────────────────────────────
 import {
   formatStopwatchTime, analyzeLaps, exportLapsCSV
-} from "../features/tools/stopwatch";
+} from "@/tools/work/stopwatch/engine";
 
 describe("Stopwatch", () => {
   it("formats milliseconds into MM:SS.hundredths", () => {
@@ -448,7 +448,7 @@ describe("Online Notepad", () => {
 // ─────────────────────────────────────────────────────────────
 import {
   isTodoOverdue, getTodoMetrics, filterAndSortTodos, type TodoItem
-} from "../features/tools/todo-list";
+} from "@/tools/work/todo-list/engine";
 
 describe("Todo List", () => {
   const todos: TodoItem[] = [
@@ -514,7 +514,7 @@ describe("Habit Tracker", () => {
 // ─────────────────────────────────────────────────────────────
 import {
   classifyFile, formatFileSize, generateNewFilename
-} from "../features/tools/file-organizer";
+} from "@/tools/work/file-organizer/engine";
 
 describe("File Organizer", () => {
   it("classifies file extensions into appropriate media/doc categories", () => {
@@ -547,7 +547,7 @@ describe("File Organizer", () => {
 // ─────────────────────────────────────────────────────────────
 import {
   calculateProductivityScore, exportPlanMarkdown, type DayPlan
-} from "../features/tools/daily-planner";
+} from "@/tools/work/daily-planner/engine";
 
 describe("Daily Planner", () => {
   it("calculates productivity score based on completed slots and priorities", () => {
@@ -591,7 +591,7 @@ describe("Daily Planner", () => {
 // ─────────────────────────────────────────────────────────────
 import {
   calculateTimeLeft, getUpcomingPresetEvents
-} from "../features/tools/countdown-timer";
+} from "@/tools/work/countdown-timer/engine";
 
 describe("Countdown Timer", () => {
   it("calculates days, hours, minutes, and seconds difference accurately", () => {
@@ -626,7 +626,7 @@ describe("Countdown Timer", () => {
 // ─────────────────────────────────────────────────────────────
 import {
   validateEAN13, validateUPCA, parseQRData, parseBarcode
-} from "../features/tools/barcode-scanner";
+} from "@/tools/create/barcode-scanner/engine";
 
 describe("Barcode Scanner", () => {
   it("validates authentic EAN-13 barcodes with checksum algorithm", () => {

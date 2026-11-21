@@ -100,10 +100,12 @@ export default async function ToolPage({ params }: Props) {
           <aside className="space-y-3 text-sm text-muted-foreground lg:pt-12">
             <p className="flex gap-2">
               <ShieldCheck className="mt-0.5 size-4 shrink-0 text-success" />
-              Your files are opened and processed in this browser tab. They are not uploaded, stored or seen by anyone.
+              {tool.engine === "ai"
+                ? "Your request is sent to our AI provider to write the answer. Don't include passwords or sensitive personal details."
+                : "Your files are opened and processed in this browser tab. They are not uploaded, stored or seen by anyone."}
             </p>
             <p>
-              Free with no sign-up, no watermark and no daily limit.{" "}
+              {tool.engine === "ai" ? "Free within a daily AI allowance, no sign-up needed." : "Free with no sign-up, no watermark and no daily limit."}{" "}
               <Link href={`/${space.slug}`} className="font-medium text-foreground underline-offset-4 hover:underline">
                 More {space.name} tools
               </Link>

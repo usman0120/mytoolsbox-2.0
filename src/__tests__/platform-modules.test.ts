@@ -10,9 +10,9 @@ describe("US English-only platform and AI app", () => {
     expect(readFileSync("src/app/layout.tsx", "utf8")).toContain('lang="en-US"');
     expect(readFileSync("src/proxy.ts", "utf8")).not.toContain("LOCALES");
   });
-  it("makes AI Chat a real app and preserves only the old AI entry redirect", () => {
-    expect(getAppBySlug("ai-chat")?.productType).toBe("app"); expect(consolidatedPath("/ai")).toBe("/apps/ai-chat");
-    expect(consolidatedPath("/ai/prompts")).toBeUndefined();
+  it("makes AI Chat a real app at /ai/chat and redirects the old entry points", () => {
+    expect(getAppBySlug("ai-chat")?.productType).toBe("app"); expect(consolidatedPath("/ai")).toBeUndefined(); expect(consolidatedPath("/apps/ai-chat")).toBe("/ai/chat");
+    expect(consolidatedPath("/ai/prompts")).toBe("/ai/chat");
     expect(readFileSync("src/features/ai/chat-store.ts", "utf8")).not.toMatch(/favoritePromptIds|pendingPrompt/);
   });
   it("exposes Flows and AI Studio in the header, with no prompt-library links", () => {
@@ -24,7 +24,7 @@ describe("US English-only platform and AI app", () => {
   it("publishes only canonical US English URLs in the sitemap", () => {
     const entries = sitemap();
     expect(entries.some((entry) => entry.url.endsWith("/workflows"))).toBe(true);
-    expect(entries.some((entry) => entry.url.endsWith("/apps/ai-chat"))).toBe(true);
+    expect(entries.some((entry) => entry.url.endsWith("/ai/chat"))).toBe(true);
     expect(entries.some((entry) => /\/(es|ur|fr|de|pt|hi|ar)\//.test(entry.url))).toBe(false);
     expect(entries.some((entry) => entry.alternates?.languages)).toBe(false);
   });

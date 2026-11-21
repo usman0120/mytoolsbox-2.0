@@ -14,3 +14,6 @@
 | 2026-11-21 | New tool pages load UIs from src/tools/ui-registry.tsx (manifest id). Old features/tool-engine.tsx keeps repointed entries only for the legacy audit until all Spaces move | Transitional; delete both old maps after M3 |
 | 2026-11-21 | Former "Edit PDF" engine (compress/watermark/rotate/to Word/text) published as Rotate PDF; brand PDF slugs redirect to /docs until a real edit/sign-text tool exists | Copy must match what the tool does |
 | 2026-11-21 | Five unused engines published: Sign PDF, Watermark PDF, PDF to Text, Compare PDFs, PDF to Markdown; Repair PDF deleted | Working code with no route; repair claims were not credible |
+| 2026-11-21 | Remaining 121 tools/apps moved by scripts/codemod-registry.mjs; manifest copy derived from the old catalog (titles, descriptions, FAQs) plus standard privacy/cost/device answers, then validated; 16 descriptions hand-written | Fast, honest baseline; top tools get hand-tuned copy in M7 |
+| 2026-11-21 | /ai is now the AI Studio home; /apps/{slug} 308s to /{space}/{slug} via LEGACY_APP_PATHS | Blueprint URL scheme |
+| 2026-11-21 | AI Notes Generator and Quiz AI assistant were template fillers with a fake delay; now call the AI gateway (src/lib/ai/study-generators.ts) | No fake AI |

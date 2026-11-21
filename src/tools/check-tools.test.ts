@@ -4,7 +4,7 @@ import { SPACES } from "@/spaces";
 import { TOOL_MANIFESTS } from "./registry";
 import { validateManifests, type Issue } from "./validate";
 import type { ToolManifest } from "./types";
-import { LEGACY_TOOL_PATHS } from "@/config/legacy-tool-paths";
+import { LEGACY_APP_PATHS, LEGACY_TOOL_PATHS } from "@/config/legacy-tool-paths";
 import { getToolBySlug } from "@/content/tools/registry";
 
 const fmt = (list: Issue[]) => list.map((i) => `${i.level.toUpperCase()} ${i.id}: ${i.message}`).join("\n");
@@ -26,7 +26,7 @@ describe("check:tools", () => {
   it("keeps src/config/legacy-tool-paths.ts in sync with manifest legacySlugs", () => {
     const expected: Record<string, string> = {};
     for (const m of TOOL_MANIFESTS) for (const l of m.legacySlugs ?? []) expected[l] = `/${m.space}/${m.slug}`;
-    expect(LEGACY_TOOL_PATHS).toEqual(expected);
+    expect({ ...LEGACY_TOOL_PATHS, ...LEGACY_APP_PATHS }).toEqual(expected);
   });
 
   it("every migrated legacy slug still has catalog data or a redirect", () => {

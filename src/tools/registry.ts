@@ -2,8 +2,24 @@
 // Each Space folder exports its manifests: src/tools/{space}/{slug}/manifest.ts
 import type { ToolManifest } from "./types";
 import { DOCS_TOOLS } from "./docs";
+import { MEDIA_TOOLS } from "./media";
+import { CREATE_TOOLS } from "./create";
+import { DEV_TOOLS } from "./dev";
+import { STUDY_TOOLS } from "./study";
+import { CALC_TOOLS } from "./calc";
+import { WORK_TOOLS } from "./work";
+import { AI_TOOLS } from "./ai";
 
-export const TOOL_MANIFESTS: ToolManifest[] = [...DOCS_TOOLS];
+export const TOOL_MANIFESTS: ToolManifest[] = [
+  ...DOCS_TOOLS,
+  ...MEDIA_TOOLS,
+  ...CREATE_TOOLS,
+  ...DEV_TOOLS,
+  ...STUDY_TOOLS,
+  ...CALC_TOOLS,
+  ...WORK_TOOLS,
+  ...AI_TOOLS,
+];
 
 export function getManifestById(id: string): ToolManifest | undefined {
   return TOOL_MANIFESTS.find((m) => m.id === id);

@@ -6,7 +6,7 @@ import { SPACES, getSpace } from "@/spaces";
 import { manifestsInSpace, toolUrl } from "@/tools/registry";
 import { SpaceChip } from "@/components/shell/space-glyph";
 import { ManifestCard } from "@/components/tools/manifest-card";
-import { PortArt } from "@/components/tools/port-art";
+import { ToolArt } from "@/components/tools/port-art";
 import { FaqList } from "@/components/tools/faq-list";
 import { breadcrumbLd, faqLd, jsonLd, pageMetadata } from "@/lib/seo/manifest";
 
@@ -26,6 +26,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 const FLOWS: Record<string, { title: string; steps: string[]; href: string }[]> = {
+  media: [
+    { title: "Email-ready images", steps: ["Photos", "Resize", "Compress", "ZIP"], href: "/workflows?preset=image-email-pack" },
+    { title: "Photos to one PDF", steps: ["Photos", "Resize", "PDF"], href: "/workflows?preset=photos-letter-pdf" },
+  ],
   docs: [
     { title: "PDF to JPG under 200 KB", steps: ["PDF", "Images", "Compress", "ZIP"], href: "/workflows?preset=pdf-images-200kb" },
     { title: "Photos to one PDF", steps: ["Photos", "Resize", "PDF"], href: "/workflows?preset=photos-letter-pdf" },
@@ -53,11 +57,12 @@ export default async function SpacePage({ params }: Props) {
         <h1 className="mt-4 max-w-2xl text-[32px] leading-[1.1] font-bold md:text-[44px]">{space.headline ?? space.name}</h1>
         <p className="mt-3 max-w-xl text-base text-muted-foreground md:text-lg">{space.description}</p>
         <p className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-          <span className="inline-flex items-center gap-1.5">
-            <ShieldCheck className="size-4 text-success" /> Files stay on your device
-          </span>
-          <span>No sign-up</span>
-          <span>No watermark</span>
+          {(space.id === "ai" ? ["Free daily allowance", "No sign-up", "Focused assistants"] : ["Files stay on your device", "No sign-up", "No watermark"]).map((item, i) => (
+            <span key={item} className="inline-flex items-center gap-1.5">
+              {i === 0 && <ShieldCheck className="size-4 text-success" />}
+              {item}
+            </span>
+          ))}
         </p>
 
         {featured.length > 0 && (
@@ -68,7 +73,7 @@ export default async function SpacePage({ params }: Props) {
                 href={toolUrl(t)}
                 className="group relative flex items-center gap-4 overflow-hidden rounded-2xl border bg-card p-4 sm:flex-col sm:items-start sm:gap-5 sm:p-5 transition-[border-color,box-shadow] hover:border-foreground/20 hover:shadow-md"
               >
-                <PortArt input={t.input} output={t.output} className="h-12 w-[120px] shrink-0 sm:h-16 sm:w-40" />
+                <ToolArt tool={t} className="h-12 w-[120px] shrink-0 sm:h-16 sm:w-40" />
                 <span className="min-w-0 flex-1 sm:w-full">
                   <span className="flex items-center justify-between font-heading text-lg font-semibold sm:text-xl">
                     {t.name}

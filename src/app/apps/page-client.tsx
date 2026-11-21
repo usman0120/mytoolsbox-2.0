@@ -1,4 +1,5 @@
 "use client";
+import { appPath } from "@/config/legacy-tool-paths";
 
 import { useState } from "react";
 import Link from "next/link";
@@ -111,7 +112,7 @@ export function AppsPageClient() {
           {filteredApps.map((app) => {
             const IconComponent = (Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[app.icon] || Icons.Layout;
             return (
-              <Link key={app.id} href={`/apps/${app.slug}`} className="group">
+              <Link key={app.id} href={appPath(app.slug)} className="group">
                 <div className="h-full p-5 rounded-2xl border border-border/70 bg-card hover:border-primary/40 hover:bg-card/90 transition-all duration-200 hover:-translate-y-0.5 flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between mb-3">
@@ -155,7 +156,7 @@ export function AppsPageClient() {
             return (
               <Link
                 key={app.id}
-                href={`/apps/${app.slug}`}
+                href={appPath(app.slug)}
                 className="group flex flex-wrap items-center gap-4 p-4 rounded-xl border border-border/70 bg-card hover:border-primary/40 hover:bg-card/90 transition-all duration-200"
               >
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-200 shrink-0">

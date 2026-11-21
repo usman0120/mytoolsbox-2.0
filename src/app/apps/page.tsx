@@ -1,3 +1,4 @@
+import { appPath } from "@/config/legacy-tool-paths";
 import type { Metadata } from "next";
 import { AppsPageClient } from "./page-client";
 import { getActiveApps } from "@/content/apps/registry";
@@ -31,7 +32,7 @@ export default function AppsPage() {
     url: "/apps",
     items: apps.map((a) => ({
       name: a.name,
-      url: `/apps/${a.slug}`,
+      url: appPath(a.slug),
       description: a.shortDescription || a.description,
     })),
   });

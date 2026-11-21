@@ -7,7 +7,7 @@ import { BLOG_POSTS } from "@/content/blog/blogs-data";
 import { RESOURCE_GUIDES } from "@/features/resources/resources-data";
 import { SPACES } from "@/spaces";
 import { TOOL_MANIFESTS, manifestsInSpace, toolUrl } from "@/tools/registry";
-import { LEGACY_TOOL_PATHS } from "@/config/legacy-tool-paths";
+import { LEGACY_APP_PATHS, LEGACY_TOOL_PATHS } from "@/config/legacy-tool-paths";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
@@ -22,7 +22,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     ]),
     ...TOOL_MANIFESTS.filter((m) => m.status !== "soon").map((m) => page(toolUrl(m), 0.9)),
     ...getActiveTools().filter((tool) => !Object.hasOwn(LEGACY_TOOL_PATHS, tool.slug)).map((tool) => page(`/tools/${tool.slug}`, 0.85)),
-    ...getActiveApps().map((app) => page(`/apps/${app.slug}`, 0.85)),
+    ...getActiveApps().filter((app) => !Object.hasOwn(LEGACY_APP_PATHS, app.slug)).map((app) => page(`/apps/${app.slug}`, 0.85)),
     ...getActiveHubs().map((hub) => page(`/hubs/${hub.slug}`)),
     ...RESOURCE_GUIDES.map((guide) => page(`/resources/${guide.slug}`)),
     ...BLOG_POSTS.map((post) => ({ ...page(`/blog/${post.slug}`), lastModified: new Date(post.isoDate) })),

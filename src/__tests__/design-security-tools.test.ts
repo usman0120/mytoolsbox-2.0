@@ -15,14 +15,14 @@ import {
   generateShades,
   exportCssVariables,
   exportTailwindConfig,
-} from "@/features/tools/color-palette";
+} from "@/tools/create/color-palette-generator/engine";
 import {
   generatePassword,
   generatePassphrase,
   generatePin,
   calculatePasswordEntropy,
   estimateCrackTime,
-} from "@/features/tools/password-generator";
+} from "@/tools/dev/password-generator/engine";
 import {
   computeHash,
   crc32,
@@ -30,13 +30,13 @@ import {
   computeHMAC,
   compareHashes,
   computeAllHashes,
-} from "@/features/tools/hash-generator";
+} from "@/tools/dev/hash-generator/engine";
 import {
   decodeJWT,
   getTokenStatus,
   formatDuration,
   verifyJwtHmacSignature,
-} from "@/features/tools/jwt-decoder";
+} from "@/tools/dev/jwt-decoder/engine";
 import {
   generateShortCode,
   normalizeUrl,
@@ -51,13 +51,13 @@ import {
   calculateEANChecksum,
   encodeEAN13,
   generateBarcodeSvg,
-} from "@/features/tools/barcode-generator";
+} from "@/tools/create/barcode-generator/engine";
 import {
   CURRENCY_REGISTRY,
   convertCurrency,
   formatCurrencyValue,
   generateComparisonMatrix,
-} from "@/features/tools/currency-converter";
+} from "@/tools/calc/currency-converter/engine";
 import {
   getRandomInt,
   getRandomFloat,
@@ -68,7 +68,7 @@ import {
   generateRandomString,
   generateCryptoUUID,
   generateRandomColor,
-} from "@/features/tools/random-generator";
+} from "@/tools/dev/random-generator/engine";
 
 describe("1. Canva Design Studio Engine", () => {
   it("provides templates for all social, print, and presentation formats", () => {

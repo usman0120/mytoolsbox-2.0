@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { VideoToGifEngine } from "./video-to-gif-engine";
+import { VideoToGifEngine } from "@/tools/media/video-to-gif/ui";
 import { planGifFrames } from "./video-to-gif-sampling";
 import { GifEncoder } from "@/lib/processing/client/gif-encoder";
 

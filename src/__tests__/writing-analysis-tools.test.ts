@@ -1,10 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { applyCaseConversion } from "@/features/tools/case-converter";
-import { cleanText } from "@/features/tools/text-cleaner";
-import { generateLoremIpsum } from "@/features/tools/lorem-ipsum";
-import { computeDiff } from "@/features/tools/diff-checker";
-import { generateBusinessName } from "@/features/tools/business-name-generator";
-import { generatePostContent } from "@/features/tools/social-media-content-generator";
+import { applyCaseConversion } from "@/tools/work/case-converter/engine";
+import { cleanText } from "@/tools/work/text-cleaner/engine";
+import { generateLoremIpsum } from "@/tools/dev/lorem-ipsum/engine";
+import { computeDiff } from "@/tools/dev/diff-checker/engine";
+import { generateBusinessName } from "@/tools/work/business-name-generator/engine";
+import { generatePostContent } from "@/tools/work/social-media-post-generator/engine";
 
 describe("Writing & Text Analysis Tool Engines", () => {
   describe("Case Converter", () => {

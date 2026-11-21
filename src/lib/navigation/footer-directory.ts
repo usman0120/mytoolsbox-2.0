@@ -1,4 +1,4 @@
-import { toolPath } from "@/config/legacy-tool-paths";
+import { appPath, toolPath } from "@/config/legacy-tool-paths";
 export interface FooterSection {
   title: string;
   href: string;
@@ -30,16 +30,16 @@ export const FOOTER_PLATFORM_SECTIONS: FooterSection[] = [
   { title: "Creative & business apps", href: "/apps", links: [
     ["Resume Builder", "resume-builder"], ["Invoice Maker", "invoice-maker"], ["Presentation Maker", "presentation-maker"],
     ["Diagram Maker", "ai-diagram-generator"], ["Image Editor", "image-editor"], ["Video Editor", "video-editor"], ["Budget Planner", "budget-planner"], ["Certificate Maker", "certificate-maker"],
-  ].map(([name, slug]) => ({ name, href: `/apps/${slug}` })) },
+  ].map(([name, slug]) => ({ name, href: appPath(slug) })) },
   { title: "Learning & everyday apps", href: "/apps", links: [
     ["Math Solver", "math-solver"], ["Study Planner", "study-planner"], ["Research Assistant", "research-assistant"],
     ["Quiz Maker", "quiz-maker"], ["Farmer AI", "farmer-ai"], ["Fitness AI", "fitness-ai"], ["Nutrition AI", "nutrition-ai"], ["Habit Tracker", "habit-tracker"],
-  ].map(([name, slug]) => ({ name, href: `/apps/${slug}` })) },
-  { title: "AI apps", href: "/apps/ai-chat", links: [
-    { name: "AI Chat", href: "/apps/ai-chat" },
-    { name: "AI Notes Generator", href: "/apps/ai-notes-generator" }, { name: "AI Planning", href: "/apps/ai-planning" },
-    { name: "AI Diagram Generator", href: "/apps/ai-diagram-generator" },
-    { name: "AI Project Ideas", href: "/apps/ai-project-ideas" },
+  ].map(([name, slug]) => ({ name, href: appPath(slug) })) },
+  { title: "AI apps", href: appPath("ai-chat"), links: [
+    { name: "AI Chat", href: appPath("ai-chat") },
+    { name: "AI Notes Generator", href: appPath("ai-notes-generator") }, { name: "AI Planning", href: appPath("ai-planning") },
+    { name: "AI Diagram Generator", href: appPath("ai-diagram-generator") },
+    { name: "AI Project Ideas", href: appPath("ai-project-ideas") },
   ] },
   { title: "Workflows", href: "/workflows", links: [
     { name: "Workflow builder", href: "/workflows#builder" }, { name: "PDF images under 200 KB", href: "/workflows?preset=pdf-images-200kb" },

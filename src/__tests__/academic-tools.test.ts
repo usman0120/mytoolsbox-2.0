@@ -6,7 +6,7 @@ import { describe, it, expect } from "vitest";
 import {
   formatBibliography, formatInTextCitation, parseAuthorsString,
   type CitationItem,
-} from "../features/tools/citation-generator";
+} from "@/tools/study/citation-generator/engine";
 
 const journalItem: CitationItem = {
   id: "t1",
@@ -153,7 +153,7 @@ import {
   calculateCoursesGPA, calculateCumulativeCGPA, forecastTargetGPA,
   getAcademicStanding, getLatinHonors,
   type CourseEntry,
-} from "../features/tools/gpa-calculator";
+} from "@/tools/study/gpa-calculator/engine";
 
 const sampleCourses: CourseEntry[] = [
   { id: "1", name: "Math",    grade: "A",  credits: 3, weight: "regular" },
@@ -492,7 +492,7 @@ describe("Flashcard Generator", () => {
 // ─────────────────────────────────────────────────────────────
 import {
   convertToLatex, getFormulasByCategory, FORMULA_CATALOG,
-} from "../features/tools/equation-to-latex-converter";
+} from "@/tools/study/latex-equation-editor/engine";
 
 describe("Equation to LaTeX Converter", () => {
   describe("convertToLatex", () => {
@@ -589,7 +589,7 @@ import {
   exportToMarkdown, searchHighlights, sortHighlightsByPosition,
   HIGHLIGHT_COLORS, NOTE_TAGS,
   type Highlight,
-} from "../features/tools/pdf-highlighter-notes";
+} from "@/tools/study/pdf-highlighter/engine";
 
 describe("PDF Highlighter Notes", () => {
   const highlights: Highlight[] = [

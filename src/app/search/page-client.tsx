@@ -1,5 +1,5 @@
 "use client";
-import { toolPath } from "@/config/legacy-tool-paths";
+import { appPath, toolPath } from "@/config/legacy-tool-paths";
 
 import { useState, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -169,7 +169,7 @@ export function SearchPageClient() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {results.map((result, i) => {
                 const IconComponent = (Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[result.item.icon] || Wrench;
-                const href = result.type === "tool" ? toolPath(result.item.slug) : `/apps/${result.item.slug}`;
+                const href = result.type === "tool" ? toolPath(result.item.slug) : appPath(result.item.slug);
                 const displayName = result.type === "tool" ? getToolName(result.item.slug, result.item.name) : result.item.name;
                 const localizedCat = getCategoryName(result.item.category, result.item.category);
                 return (

@@ -70,14 +70,23 @@ function stack(port: Port, x: number, override?: string) {
   );
 }
 
-export function PortArt({ input, output, className, outputLabel }: { input: Port[]; output: Port[]; className?: string; outputLabel?: string }) {
+export function PortArt({ input, output, className, inputLabel, outputLabel }: { input: Port[]; output: Port[]; className?: string; inputLabel?: string; outputLabel?: string }) {
   const from = input[0] ?? { type: "any-file" as const };
   const to = output[0] ?? { type: "any-file" as const };
   return (
     <svg viewBox="0 0 120 48" className={cn("h-12 w-[120px] text-foreground", className)} aria-hidden="true">
-      {stack(from, 8)}
+      {stack(from, 8, inputLabel)}
       <path d="M50 24h18m-4-4 4 4-4 4" fill="none" stroke="currentColor" strokeOpacity=".45" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
       {stack(to, 76, outputLabel)}
     </svg>
   );
+}
+
+/** Picture for any manifest: real ports for file/text tools, a template-specific pair otherwise. */
+export function ToolArt({ tool, className }: { tool: { template: string; input: Port[]; output: Port[] }; className?: string }) {
+  if (tool.template === "ai") return <PortArt input={[{ type: "text" }]} output={[{ type: "markdown" }]} inputLabel="ASK" outputLabel="AI" className={className} />;
+  if (tool.template === "calculator") return <PortArt input={[{ type: "number" }]} output={[{ type: "table" }]} inputLabel="123" outputLabel="=" className={className} />;
+  if (tool.template === "editor") return <PortArt input={[{ type: "design-scene" }]} output={tool.output.length ? tool.output : [{ type: "pdf" }]} inputLabel="EDIT" className={className} />;
+  if (!tool.input.length) return <PortArt input={[{ type: "text" }]} output={tool.output.length ? tool.output : [{ type: "text" }]} className={className} />;
+  return <PortArt input={tool.input} output={tool.output} className={className} />;
 }

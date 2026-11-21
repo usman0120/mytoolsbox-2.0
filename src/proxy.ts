@@ -16,5 +16,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/tools/:slug", "/apps/:slug", "/ai", "/ai/:path"],
+  matcher: ["/tools/:slug", "/apps/:slug", "/ai/compare", "/ai/personas", "/ai/prompts"],
 };

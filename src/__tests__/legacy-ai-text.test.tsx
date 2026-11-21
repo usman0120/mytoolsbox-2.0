@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { renderToString } from "react-dom/server";
 import { hydrateRoot } from "react-dom/client";
-import { AITextGeneratorEngine } from "@/features/tools/ai-text-generator-engine";
+import { AITextGeneratorEngine } from "@/tools/ai/writer/ui";
 
 const mocks = vi.hoisted(() => ({ complete: vi.fn(), refresh: vi.fn() }));
 

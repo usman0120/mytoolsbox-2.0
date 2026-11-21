@@ -1,3 +1,4 @@
+import { appPath } from "@/config/legacy-tool-paths";
 import { getManifest } from "@/tools/registry";
 import { getSpace } from "@/spaces";
 import { describe, expect, it } from "vitest";
@@ -17,7 +18,7 @@ describe("footer directory", () => {
   });
   it("makes every active app directly discoverable", () => {
     const appLinks = new Set(FOOTER_PLATFORM_SECTIONS.flatMap((section) => section.links.map((link) => link.href)));
-    for (const app of getActiveApps()) expect(appLinks.has(`/apps/${app.slug}`), app.name).toBe(true);
+    for (const app of getActiveApps()) expect(appLinks.has(appPath(app.slug)), app.name).toBe(true);
   });
   it("links only to real active tools, apps, hubs, and platform routes", () => {
     for (const section of [...FOOTER_TOOL_SECTIONS, ...FOOTER_PLATFORM_SECTIONS]) {

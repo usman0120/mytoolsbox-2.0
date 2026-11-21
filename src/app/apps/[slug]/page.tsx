@@ -1,3 +1,4 @@
+import { LEGACY_APP_PATHS } from "@/config/legacy-tool-paths";
 import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
 import { consolidatedPath } from "@/lib/catalog/consolidation";
@@ -19,7 +20,8 @@ interface AppPageProps {
 // ---------------------------------------------------------------------------
 
 export function generateStaticParams() {
-  return getActiveApps().map((app) => ({ slug: app.slug }));
+  // Migrated apps live at /{space}/{slug}; their old URLs are redirected by the proxy.
+  return getActiveApps().filter((app) => !Object.hasOwn(LEGACY_APP_PATHS, app.slug)).map((app) => ({ slug: app.slug }));
 }
 
 // ---------------------------------------------------------------------------
