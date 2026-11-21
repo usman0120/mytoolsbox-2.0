@@ -26,3 +26,8 @@
 | 2026-11-21 | Math answers are checked on-device by substituting claimed roots (src/lib/math/verify.ts) | Blueprint CAS check without a heavy CAS dependency |
 | 2026-11-21 | Model routes verified against the account model list; writing tasks prefer Groq, maths/farm/vision prefer Gemini; every provider call has a timeout | Old fallback models were retired; Gemini free quota and 503 overloads seen in testing |
 | 2026-11-21 | Fake crop-photo analysis and non-functional maths photo OCR replaced with Gemini vision tasks | No simulated AI |
+| 2026-11-21 | Workspace data: users/{uid} holds profile, prefs and favorites (manifest ids); history/items/flows/collections are subcollections; signed-out favorites and history in localStorage, merged on sign-in | Blueprint section 14 (one read per session) |
+| 2026-11-21 | Schema-2 data migrated client-side on first sign-in (favorites, preferences, saved → items); old docs stay readable/deletable until 2027-02-19 | No admin SDK or service account needed |
+| 2026-11-21 | Account deletion runs in the browser (owner deletes own docs, then deleteUser) and requires a sign-in within the last 5 minutes before anything is removed | Avoids half-deleted accounts without firebase-admin |
+| 2026-11-21 | Old /tools/[slug] and /apps/[slug] routes, loader maps and the catalog audit removed; /settings, /favorites, /history, /account, /dashboard redirect to /me | Every tool lives on manifest routes now |
+| 2026-11-21 | Saved Flows stay in browser storage for now (shown in /me) | Account sync for Flows can follow; rules already allow it |

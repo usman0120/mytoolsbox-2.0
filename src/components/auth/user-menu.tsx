@@ -86,7 +86,7 @@ export function UserMenu() {
               </p>
               <button
                 type="button"
-                onClick={() => router.push("/settings?tab=account")}
+                onClick={() => router.push("/me?tab=settings")}
                 className="mt-2 inline-flex w-full items-center justify-center rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground shadow-sm transition hover:bg-primary/90"
               >
                 {t("auth_signin")} / {t("auth_signup")}
@@ -118,15 +118,15 @@ export function UserMenu() {
 
         <DropdownMenuSeparator />
 
-        <DropdownMenuItem onClick={() => router.push("/settings?tab=favorites")}>
+        <DropdownMenuItem onClick={() => router.push("/me?tab=favorites")}>
           <Heart className="mr-2 h-4 w-4" />
           {t("auth_favorites")}
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => router.push("/settings?tab=history")}>
+        <DropdownMenuItem onClick={() => router.push("/me?tab=history")}>
           <Clock className="mr-2 h-4 w-4" />
           {t("auth_history")}
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => router.push("/settings")}>
+        <DropdownMenuItem onClick={() => router.push("/me")}>
           <Settings className="mr-2 h-4 w-4" />
           {t("auth_settings")}
         </DropdownMenuItem>

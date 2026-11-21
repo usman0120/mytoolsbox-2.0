@@ -47,9 +47,9 @@ export const FOOTER_PLATFORM_SECTIONS: FooterSection[] = [
     { name: "Text analysis reports", href: "/flows/text-analysis" }, { name: "CSV to JSON", href: "/flows/csv-json-pack" },
   ] },
   { title: "Role-based hubs", href: "/hubs", links: ["Students", "Developers", "Business", "Designers", "Writers", "Researchers", "Farmers", "Everyone"].map((name) => ({ name, href: `/hubs/${name.toLowerCase()}` })) },
-  { title: "Your workspace", href: "/settings", links: [
-    { name: "Account & settings", href: "/settings?tab=account" }, { name: "Saved favorites", href: "/settings?tab=favorites" },
-    { name: "Activity history", href: "/settings?tab=history" }, { name: "Resources & templates", href: "/resources" },
+  { title: "Your workspace", href: "/me", links: [
+    { name: "Account & settings", href: "/me?tab=settings" }, { name: "Saved favorites", href: "/me?tab=favorites" },
+    { name: "Activity history", href: "/me?tab=history" }, { name: "Resources & templates", href: "/resources" },
     { name: "Blog & guides", href: "/blog" },
   ] },
   { title: "About & support", href: "/about", links: [

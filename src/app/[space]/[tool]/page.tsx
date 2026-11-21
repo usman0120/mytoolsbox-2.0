@@ -11,7 +11,6 @@ import { ManifestCard } from "@/components/tools/manifest-card";
 import { ToolActions } from "@/components/tools/tool-actions";
 import { SurfaceHint, ToolSurface } from "@/components/tools/tool-surface";
 import { compactCatalog } from "@/tools/catalog";
-import { getToolBySlug } from "@/content/tools/registry";
 import { breadcrumbLd, faqLd, jsonLd, toolLd, toolMetadata } from "@/lib/seo/manifest";
 
 export const dynamicParams = false;
@@ -36,7 +35,6 @@ export default async function ToolPage({ params }: Props) {
   const space = getSpace(spaceSlug);
   if (!tool || !space) notFound();
 
-  const storageId = tool.legacySlugs?.[0] ?? tool.id;
   const category = space.categories.find((c) => c.id === tool.category);
   const related = tool.related.map(getManifestById).filter((m) => m !== undefined);
   const crumbs = [
@@ -68,7 +66,7 @@ export default async function ToolPage({ params }: Props) {
                 Processed on your device
               </span>
             )}
-            <ToolActions storageId={storageId} name={tool.name} category={getToolBySlug(storageId)?.category ?? "misc"} />
+            <ToolActions toolId={tool.id} name={tool.name} />
           </div>
         </header>
       </div>

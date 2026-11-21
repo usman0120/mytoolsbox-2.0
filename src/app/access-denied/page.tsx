@@ -15,7 +15,7 @@ export default function AccessDenied() {
     <p className="mt-4 text-sm leading-7 text-muted-foreground">Your account does not have access to the admin panel. You can still explore tools, apps, and your own workspace.</p>
     <div className="mt-8 flex flex-wrap justify-center gap-3">
       <Link href="/tools" className={buttonVariants({ className: "h-11 px-5" })}>Explore tools</Link>
-      <Link href="/settings" className={buttonVariants({ variant: "outline", className: "h-11 px-5" })}>My settings</Link>
+      <Link href="/me" className={buttonVariants({ variant: "outline", className: "h-11 px-5" })}>My settings</Link>
     </div>
   </section>;
 }

@@ -6,6 +6,7 @@ import { GeistMono } from "geist/font/mono";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { compactCatalog } from "@/tools/catalog";
+import { WorkspaceSync } from "@/lib/workspace/workspace-sync";
 import { SiteHeader, SiteFooter, BottomNav, AskPalette, FileTray } from "@/components/shell";
 import { AuthProvider } from "@/lib/auth";
 import { SITE_CONFIG } from "@/lib/constants";
@@ -121,6 +122,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <BottomNav />
                 <AskPalette />
                 <FileTray catalog={compactCatalog()} />
+                <WorkspaceSync />
                 <Toaster closeButton position="top-center" />
               </TooltipProvider>
             </AuthProvider>

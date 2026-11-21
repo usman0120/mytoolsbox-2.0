@@ -1,101 +1,94 @@
 rules_version = '2';
 
+// Blueprint section 14. Deny by default; every user document is owner-only.
+// Rules can't measure bytes, so the client enforces the 500 KB item cap and these rules check
+// field types, string lengths and list sizes.
 service cloud.firestore {
-  match /databases/{database}/documents {
+  match /databases/{db}/documents {
+    function signedIn() { return request.auth != null; }
+    function isOwner(uid) { return signedIn() && request.auth.uid == uid; }
+    function str(v, max) { return v is string && v.size() <= max; }
+    function num(v) { return v is int || v is float; }
 
-    // -----------------------------------------------------------------------
-    // User data — only the owning user can read/write their own data
-    // -----------------------------------------------------------------------
-    match /users/{userId} {
+    match /users/{uid} {
+      allow read, delete: if isOwner(uid);
+      allow create, update: if isOwner(uid)
+        && !request.resource.data.diff(resource == null ? {} : resource.data).affectedKeys().hasAny(['plan', 'entitlements'])
+        && request.resource.data.keys().hasOnly(['schemaVersion', 'displayName', 'photoURL', 'createdAt', 'prefs', 'favorites', 'pinnedFlows', 'brandKit'])
+        && (!('favorites' in request.resource.data) || (request.resource.data.favorites is list && request.resource.data.favorites.size() <= 100))
+        && (!('pinnedFlows' in request.resource.data) || (request.resource.data.pinnedFlows is list && request.resource.data.pinnedFlows.size() <= 20))
+        && (!('displayName' in request.resource.data) || str(request.resource.data.displayName, 80))
+        && (!('photoURL' in request.resource.data) || str(request.resource.data.photoURL, 500));
 
-      // Only the authenticated user matching the userId can access their data
-      function isOwner() {
-        return request.auth != null && request.auth.uid == userId;
+      // Recent activity: tool id and time only (never file contents).
+      match /history/{id} {
+        allow read, delete: if isOwner(uid);
+        allow create: if isOwner(uid)
+          && request.resource.data.keys().hasOnly(['toolId', 'at'])
+          && str(request.resource.data.toolId, 80) && num(request.resource.data.at);
       }
 
-      // Profile: owner read/write
-      match /profile/{doc} {
-        allow read, write: if isOwner();
+      // Saved outputs: text/JSON under 500 KB (size enforced by the client).
+      match /items/{id} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && request.resource.data.keys().hasOnly(['kind', 'title', 'toolId', 'content', 'collectionIds', 'createdAt', 'updatedAt'])
+          && request.resource.data.kind in ['ai', 'text', 'calc', 'design', 'diagram']
+          && str(request.resource.data.title, 200) && str(request.resource.data.toolId, 80)
+          && request.resource.data.content is string;
       }
 
-      // Preferences: owner read/write
-      match /preferences/{doc} {
-        allow read, write: if isOwner();
+      match /flows/{id} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && str(request.resource.data.name, 120)
+          && request.resource.data.steps is list && request.resource.data.steps.size() <= 10;
       }
 
-      // Favorites: owner read/write, create with valid data
-      match /favorites/{doc} {
-        allow read, delete: if isOwner();
-        allow create: if isOwner()
-          && request.resource.data.keys().hasAll(['toolId', 'toolName', 'toolSlug', 'category', 'addedAt']);
+      match /collections/{id} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid) && str(request.resource.data.name, 80);
       }
 
-      // History: owner read/write, create with valid data
-      match /history/{doc} {
-        allow read, delete: if isOwner();
-        allow create: if isOwner()
-          && request.resource.data.keys().hasAll(['toolId', 'toolName', 'toolSlug', 'category', 'action', 'timestamp']);
+      // AI conversations written by the chat app.
+      match /ai_conversations/{id} {
+        allow read, write: if isOwner(uid);
       }
 
-      // Legacy usage/credits docs: read-only for one release, then removed (blueprint section 25).
-      // AI quota now lives server-side; clients can never write these.
-      match /usage/{doc} {
-        allow read: if isOwner();
-        allow write: if false;
-      }
-      match /credits/{doc} {
-        allow read: if isOwner();
-        allow write: if false;
-      }
-
-      // Saved items: owner read/write
-      match /saved/{doc} {
-        allow read, delete: if isOwner();
-        allow create: if isOwner()
-          && request.resource.data.keys().hasAll(['toolId', 'toolName', 'toolSlug', 'category', 'title', 'resultData', 'createdAt']);
-      }
-
-      // AI Conversations: owner read/write
-      match /ai_conversations/{doc} {
-        allow read, write: if isOwner();
+      // Schema-2 data: readable for migration and deletable by the owner until 2027-02-19
+      // (90 days), then remove this block. No new writes.
+      match /{legacy}/{id} {
+        allow read, delete: if isOwner(uid) && legacy in ['favorites', 'profile', 'preferences', 'saved', 'usage', 'credits'];
       }
     }
 
-    // Top-level AI Conversations fallback
-    match /ai_conversations/{doc} {
-      allow read, update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
-      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+    // Old top-level conversations: owner-only.
+    match /ai_conversations/{id} {
+      allow read, update, delete: if signedIn() && resource.data.userId == request.auth.uid;
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
     }
 
-    // -----------------------------------------------------------------------
-    // Public collections — read-only for authenticated users
-    // -----------------------------------------------------------------------
-    match /publicTemplates/{doc} {
-      allow read: if request.auth != null;
-      allow write: if false; // managed in the Firebase console only
+    match /shares/{id} {
+      allow get: if true;
+      allow list: if false;
+      allow create: if signedIn() && request.resource.data.ownerUid == request.auth.uid;
+      allow delete: if signedIn() && resource.data.ownerUid == request.auth.uid;
     }
 
-    match /publicTools/{doc} {
-      allow read: if request.auth != null;
-      allow write: if false; // managed in the Firebase console only
-    }
-
-    // -----------------------------------------------------------------------
-    // Feedback — anyone can submit (validated); read only in the Firebase console
-    // -----------------------------------------------------------------------
-    match /feedback/{doc} {
+    // Anyone can submit feedback; read it in the Firebase console.
+    match /feedback/{id} {
       allow read, update, delete: if false;
       allow create: if request.resource.data.keys().hasOnly(['type', 'message', 'name', 'email', 'status', 'createdAt', 'updatedAt'])
         && request.resource.data.type in ['suggestion', 'bug', 'feedback', 'question']
-        && request.resource.data.message is string
-        && request.resource.data.message.size() > 0
-        && request.resource.data.message.size() <= 5000
+        && str(request.resource.data.message, 5000) && request.resource.data.message.size() > 0
         && request.resource.data.status == 'new';
     }
 
-    // -----------------------------------------------------------------------
-    // Default deny
-    // -----------------------------------------------------------------------
+    match /toolRequests/{id} {
+      allow read: if true;
+      allow create: if signedIn() && str(request.resource.data.title, 120);
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

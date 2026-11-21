@@ -22,3 +22,16 @@ export function compactCatalog(): CatalogEntry[] {
       return (pa < 0 ? 99 : pa) - (pb < 0 ? 99 : pb);
     });
 }
+
+export interface ToolIndexEntry {
+  id: string;
+  name: string;
+  url: string;
+  space: string;
+  tagline: string;
+}
+
+/** Name/URL lookup for every live tool (Workspace lists, history). */
+export function toolIndex(): ToolIndexEntry[] {
+  return TOOL_MANIFESTS.filter((m) => m.status !== "soon").map((m) => ({ id: m.id, name: m.name, url: toolUrl(m), space: m.space, tagline: m.tagline }));
+}

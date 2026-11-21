@@ -47,8 +47,8 @@ export function BottomNav() {
           </button>
           <button
             type="button"
-            className={cn(item, pathname.startsWith("/settings") && "text-foreground")}
-            onClick={() => (user ? router.push("/settings") : setSignIn(true))}
+            className={cn(item, pathname.startsWith("/me") && "text-foreground")}
+            onClick={() => router.push("/me")}
           >
             <UserRound className="size-5" />
             Me
