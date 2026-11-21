@@ -6,7 +6,7 @@ const manifest: ToolManifest = {
   "category": "text",
   "slug": "word-counter",
   "name": "Word Counter",
-  "tagline": "Count words and characters.",
+  "tagline": "Words, characters, sentences, reading time and keyword density as you type.",
   "keywords": [
     "word counter",
     "count words",
@@ -28,31 +28,31 @@ const manifest: ToolManifest = {
   "output": [],
   "engine": "client",
   "seo": {
-    "title": "Word Counter – Count Words & Characters Online",
-    "description": "Count words, characters, sentences and paragraphs, and estimate reading and speaking time as you type. Free, private, no sign-up. Works offline.",
-    "h1": "Word Counter"
+    "title": "Word Counter – Characters, Reading Time & Keywords",
+    "description": "Count words, characters, sentences and paragraphs as you type. See reading and speaking time, keyword density and social post limits. Free and private.",
+    "h1": "Word and character counter"
   },
   "howTo": [
-    "Paste or type your input.",
-    "Pick the options you need.",
-    "Copy or download the result."
+    "Paste or type your text.",
+    "Watch the counts update instantly.",
+    "Check limits for social posts and copy your text."
   ],
   "faq": [
     {
-      "q": "Is my data uploaded?",
-      "a": "No. Word Counter runs in your browser, so your files and text stay on your device."
+      "q": "Does it count characters with spaces?",
+      "a": "Yes. It shows characters with and without spaces, which most forms and essay limits specify."
     },
     {
-      "q": "Is it free?",
-      "a": "Yes. There is no sign-up, no watermark and no daily limit."
+      "q": "How is reading time estimated?",
+      "a": "At about 200 words per minute for reading and 130 for speaking, the averages used by most publishers."
     },
     {
-      "q": "Does it work on my phone?",
-      "a": "Yes. It works in any modern browser on phones, tablets and computers."
+      "q": "Is my text saved or sent anywhere?",
+      "a": "No. Counting happens in your browser and nothing is uploaded."
     },
     {
-      "q": "Does it work offline?",
-      "a": "Once the page has loaded, the tool keeps working without an internet connection."
+      "q": "Can I check social media limits?",
+      "a": "Yes. The counter shows how your text fits common limits such as captions and short posts."
     }
   ],
   "related": [

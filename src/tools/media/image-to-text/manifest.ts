@@ -5,8 +5,8 @@ const manifest: ToolManifest = {
   "space": "media",
   "category": "image-convert",
   "slug": "image-to-text",
-  "name": "Image to Text OCR",
-  "tagline": "Extract text from images with OCR.",
+  "name": "Image to Text (OCR)",
+  "tagline": "Copy text out of photos, screenshots and scans with on-device OCR.",
   "keywords": [
     "ocr",
     "image to text",
@@ -38,31 +38,31 @@ const manifest: ToolManifest = {
   "engine": "ai",
   "aiTask": "general",
   "seo": {
-    "title": "Image to Text OCR – Extract Text from Images Online",
-    "description": "Extract text from images and PDFs with free OCR. Supports multiple languages, handwriting, and exports to TXT, DOCX, or PDF. Works on any device.",
-    "h1": "Image to Text OCR"
+    "title": "Image to Text – Free OCR for Photos & Screenshots",
+    "description": "Pull editable text out of photos, screenshots and scanned pages with OCR that runs on your device. Choose the language, then copy or download the text.",
+    "h1": "Extract text from an image"
   },
   "howTo": [
-    "Describe what you need, or start from an example.",
-    "Generate the answer.",
-    "Copy it, refine your request or regenerate."
+    "Add a photo, screenshot or scan.",
+    "Choose the text language.",
+    "Copy the recognized text or download it as a .txt file."
   ],
   "faq": [
     {
-      "q": "Does it support handwriting?",
-      "a": "Yes! The OCR engine can recognize both printed text and handwriting in multiple languages."
+      "q": "How accurate is it?",
+      "a": "Clear printed text is usually recognized very well. Handwriting, low light, blur and unusual fonts reduce accuracy, so check the result."
     },
     {
-      "q": "What languages are supported?",
-      "a": "English, Spanish, French, German, Chinese, Japanese, Korean, Arabic, Hindi, and 50+ more languages."
+      "q": "Which languages are supported?",
+      "a": "English and several other languages, including Hindi. The language pack downloads the first time you use it."
     },
     {
-      "q": "Where is my text sent?",
-      "a": "Image to Text OCR sends your request to our AI provider to write the answer. Do not include passwords or sensitive personal details."
+      "q": "Is my image uploaded?",
+      "a": "No. Recognition runs in your browser with Tesseract, so the image stays on your device."
     },
     {
-      "q": "Is it free?",
-      "a": "Yes. AI features are free within a daily allowance: 10 requests a day without an account and 40 when you sign in."
+      "q": "How can I get better results?",
+      "a": "Use a sharp, well-lit image taken straight on, and crop to the text you need."
     }
   ],
   "related": [

@@ -18,7 +18,7 @@ describe("US English-only platform and AI app", () => {
   it("exposes Flows and AI Studio in the header, with no prompt-library links", () => {
     const header = readFileSync("src/components/shell/site-header.tsx", "utf8");
     expect(header).toContain('href="/flows"');
-    expect(header).toContain('href="/apps"');
+    expect(header).toContain('href="/ai"');
     expect(header).not.toMatch(/href="\/ai\//);
   });
   it("publishes only canonical US English URLs in the sitemap", () => {

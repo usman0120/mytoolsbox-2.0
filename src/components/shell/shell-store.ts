@@ -4,6 +4,9 @@ import { create } from "zustand";
 
 interface ShellState {
   askOpen: boolean;
+  /** Text to pre-fill when the Ask palette opens (e.g. from the home page hero). */
+  askQuery: string;
+  openAsk: (query?: string) => void;
   trayOpen: boolean;
   spacesOpen: boolean;
   signInOpen: boolean;
@@ -15,6 +18,8 @@ interface ShellState {
 
 export const useShell = create<ShellState>((set) => ({
   askOpen: false,
+  askQuery: "",
+  openAsk: (query = "") => set({ askOpen: true, askQuery: query }),
   trayOpen: false,
   spacesOpen: false,
   signInOpen: false,

@@ -27,11 +27,11 @@ export const FOOTER_TOOL_SECTIONS: FooterSection[] = [
 ];
 
 export const FOOTER_PLATFORM_SECTIONS: FooterSection[] = [
-  { title: "Creative & business apps", href: "/apps", links: [
+  { title: "Editors", href: "/create", links: [
     ["Resume Builder", "resume-builder"], ["Invoice Maker", "invoice-maker"], ["Presentation Maker", "presentation-maker"],
     ["Diagram Maker", "ai-diagram-generator"], ["Image Editor", "image-editor"], ["Video Editor", "video-editor"], ["Budget Planner", "budget-planner"], ["Certificate Maker", "certificate-maker"],
   ].map(([name, slug]) => ({ name, href: appPath(slug) })) },
-  { title: "Learning & everyday apps", href: "/apps", links: [
+  { title: "AI Studio", href: "/ai", links: [
     ["Math Solver", "math-solver"], ["Study Planner", "study-planner"], ["Research Assistant", "research-assistant"],
     ["Quiz Maker", "quiz-maker"], ["Farm Advisor", "farmer-ai"], ["Fitness AI", "fitness-ai"], ["Nutrition AI", "nutrition-ai"], ["Habit Tracker", "habit-tracker"],
   ].map(([name, slug]) => ({ name, href: appPath(slug) })) },
@@ -46,11 +46,15 @@ export const FOOTER_PLATFORM_SECTIONS: FooterSection[] = [
     { name: "Email-ready images", href: "/flows/image-email-pack" }, { name: "Photos to PDF", href: "/flows/photos-letter-pdf" },
     { name: "Text analysis reports", href: "/flows/text-analysis" }, { name: "CSV to JSON", href: "/flows/csv-json-pack" },
   ] },
-  { title: "Role-based hubs", href: "/hubs", links: ["Students", "Developers", "Business", "Designers", "Writers", "Researchers", "Farmers", "Everyone"].map((name) => ({ name, href: `/hubs/${name.toLowerCase()}` })) },
+  { title: "Guides", href: "/guides", links: [
+    { name: "All guides", href: "/guides" }, { name: "PDF tools guide", href: "/guides/pdf-tools-guide" },
+    { name: "Resize images without losing quality", href: "/guides/how-to-resize-images-without-losing-quality" },
+    { name: "Regex for beginners", href: "/guides/regular-expressions-for-beginners-regex-guide" },
+    { name: "Compound interest explained", href: "/guides/the-math-of-compound-interest-wealth-guide" },
+  ] },
   { title: "Your workspace", href: "/me", links: [
     { name: "Account & settings", href: "/me?tab=settings" }, { name: "Saved favorites", href: "/me?tab=favorites" },
-    { name: "Activity history", href: "/me?tab=history" }, { name: "Resources & templates", href: "/resources" },
-    { name: "Blog & guides", href: "/blog" },
+    { name: "Activity history", href: "/me?tab=history" }, { name: "Saved results", href: "/me?tab=saved" },
   ] },
   { title: "About & support", href: "/about", links: [
     { name: "About MyToolsBox", href: "/about" }, { name: "Contact & feedback", href: "/contact" },

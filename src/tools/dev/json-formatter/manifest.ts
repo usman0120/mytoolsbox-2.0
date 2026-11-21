@@ -6,7 +6,7 @@ const manifest: ToolManifest = {
   "category": "format-validate",
   "slug": "json-formatter",
   "name": "JSON Formatter",
-  "tagline": "Format and validate JSON.",
+  "tagline": "Pretty-print, validate, minify and repair JSON, or convert it to YAML or CSV.",
   "keywords": [
     "json formatter",
     "format json",
@@ -42,31 +42,31 @@ const manifest: ToolManifest = {
   ],
   "engine": "client",
   "seo": {
-    "title": "JSON Formatter – Format & Validate JSON Online",
-    "description": "Format, validate, and beautify JSON data. Tree view, error highlighting, and minification. Free, private, no sign-up. Runs in your browser. Works on any device.",
-    "h1": "JSON Formatter"
+    "title": "JSON Formatter & Validator – Beautify, Minify & Repair",
+    "description": "Format, validate and minify JSON with clear error messages. Sort keys, repair common mistakes, or convert to YAML or CSV. Free, private; data stays local.",
+    "h1": "Format and validate JSON"
   },
   "howTo": [
-    "Add your file, or drop it on the page.",
-    "Adjust the options if you need to.",
-    "Download the result."
+    "Paste JSON or open a .json file.",
+    "Choose format, minify, sort keys or repair.",
+    "Copy or download the result."
   ],
   "faq": [
     {
-      "q": "Is my data uploaded?",
-      "a": "No. JSON Formatter runs in your browser, so your files and text stay on your device."
+      "q": "Where does the error message point?",
+      "a": "Invalid JSON shows the parser's message with the position of the problem, so you can find the missing comma or quote quickly."
     },
     {
-      "q": "Is it free?",
-      "a": "Yes. There is no sign-up, no watermark and no daily limit."
+      "q": "What does Repair fix?",
+      "a": "Common slips such as trailing commas, single quotes and unquoted keys. Always review repaired output before using it."
     },
     {
-      "q": "Does it work on my phone?",
-      "a": "Yes. It works in any modern browser on phones, tablets and computers."
+      "q": "Is it safe to paste API responses or tokens?",
+      "a": "Yes. Nothing you paste is sent anywhere; formatting happens in your browser."
     },
     {
-      "q": "Does it work offline?",
-      "a": "Once the page has loaded, the tool keeps working without an internet connection."
+      "q": "Can I convert JSON to CSV?",
+      "a": "Yes, for arrays of flat objects. Nested values are written as JSON text in the cell."
     }
   ],
   "related": [

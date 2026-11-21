@@ -5,8 +5,8 @@ const manifest: ToolManifest = {
   "space": "media",
   "category": "image-edit",
   "slug": "compress-image",
-  "name": "Image Compressor",
-  "tagline": "Compress images without quality loss.",
+  "name": "Compress Image",
+  "tagline": "Make JPG, PNG and WebP photos smaller without visible quality loss.",
   "keywords": [
     "compress image",
     "compress jpg",
@@ -48,31 +48,35 @@ const manifest: ToolManifest = {
   ],
   "engine": "client",
   "seo": {
-    "title": "Image Compressor – Compress JPG, PNG, WebP Online",
-    "description": "Compress images without quality loss. JPG, PNG, WebP supported. 100% private in-browser compression with zero uploads. Free, private, no sign-up.",
-    "h1": "Image Compressor"
+    "title": "Compress Image Online – Make JPG, PNG & WebP Smaller",
+    "description": "Shrink JPG, PNG and WebP images for email, forms and websites. Pick a quality level, compare before and after, and download. Free, private, no upload.",
+    "h1": "Compress images"
   },
   "howTo": [
-    "Add your file, or drop it on the page.",
-    "Adjust the options if you need to.",
-    "Download the result."
+    "Add one or more photos, or paste a screenshot.",
+    "Choose a quality level and output format (JPG, PNG, WebP or AVIF).",
+    "Compare the size saved, then download each image or all as a ZIP."
   ],
   "faq": [
     {
-      "q": "Will compression reduce image quality?",
-      "a": "Our compressor uses smart perceptual algorithms to minimize quality loss while maximizing size reduction. You can adjust the quality slider to find your preferred balance."
+      "q": "How much smaller will my photo get?",
+      "a": "Phone photos usually shrink by 60–90% at the recommended quality, with no difference you can see on screen. PNG screenshots shrink most when converted to WebP."
     },
     {
-      "q": "How does browser-based image compression work?",
-      "a": "Using HTML5 Canvas and modern WebAssembly codecs, your images are compressed and re-encoded locally without sending files to remote servers."
+      "q": "Can I get a photo under a specific size, like 100 KB?",
+      "a": "Lower the quality and try WebP until the size shown is under your limit. For many images at once, the “Email-ready images” Flow checks that every file is under 200 KB."
     },
     {
-      "q": "Can I compress images in batch mode?",
-      "a": "Yes, you can drop multiple JPG, PNG, and WebP files to compress all of them simultaneously directly in your browser."
+      "q": "Are my photos uploaded?",
+      "a": "No. Compression runs in your browser, so the photos never leave your device."
     },
     {
-      "q": "Are watermarks added to compressed pictures?",
-      "a": "Never. All tools on MyToolsBox are 100% free with zero watermarks or image restrictions."
+      "q": "Which format should I choose?",
+      "a": "JPG works everywhere. WebP is 25–35% smaller at the same quality and is supported by all modern browsers. Keep PNG for images that need transparency."
+    },
+    {
+      "q": "Does compression remove location data?",
+      "a": "Re-encoding the image drops most camera metadata, including GPS location, from the downloaded copy."
     }
   ],
   "related": [

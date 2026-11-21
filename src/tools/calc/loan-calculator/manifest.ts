@@ -6,7 +6,7 @@ const manifest: ToolManifest = {
   "category": "finance",
   "slug": "loan-calculator",
   "name": "Loan Calculator",
-  "tagline": "Calculate loan payments.",
+  "tagline": "Monthly payment, total interest and a full amortization schedule.",
   "keywords": [
     "loan calculator",
     "mortgage calculator",
@@ -28,31 +28,31 @@ const manifest: ToolManifest = {
   "output": [],
   "engine": "client",
   "seo": {
-    "title": "Loan Calculator – Calculate Loan Payments Online",
-    "description": "Calculate monthly loan payments, total interest, and amortization schedule. Free, private, no sign-up. Runs in your browser. Works on any device.",
-    "h1": "Loan Calculator"
+    "title": "Loan Calculator – EMI, Interest & Amortization Schedule",
+    "description": "Work out your monthly loan payment (EMI), total interest and payoff schedule. See how extra payments shorten the loan and export to CSV. Free, no sign-up.",
+    "h1": "Loan and EMI calculator"
   },
   "howTo": [
-    "Enter your values.",
-    "Read the result and how it was worked out.",
-    "Change any value to compare."
+    "Enter the loan amount, interest rate and term.",
+    "Add an optional extra monthly payment.",
+    "Read the payment, total interest and year-by-year schedule."
   ],
   "faq": [
     {
-      "q": "Is my data uploaded?",
-      "a": "No. Loan Calculator runs in your browser, so your files and text stay on your device."
+      "q": "How is the monthly payment calculated?",
+      "a": "With the standard amortization formula: payment = P × r × (1 + r)^n ÷ ((1 + r)^n − 1), where P is the loan amount, r the monthly rate and n the number of months."
     },
     {
-      "q": "Is it free?",
-      "a": "Yes. There is no sign-up, no watermark and no daily limit."
+      "q": "How much do extra payments save?",
+      "a": "Every extra amount goes straight to the principal, so you pay less interest and finish sooner. The calculator shows the new total and payoff time."
     },
     {
-      "q": "Does it work on my phone?",
-      "a": "Yes. It works in any modern browser on phones, tablets and computers."
+      "q": "Is this the same as EMI?",
+      "a": "Yes. EMI (equated monthly instalment) is the fixed monthly payment this calculator shows."
     },
     {
-      "q": "Does it work offline?",
-      "a": "Once the page has loaded, the tool keeps working without an internet connection."
+      "q": "Why is my bank's figure different?",
+      "a": "Banks may add fees, insurance or a different compounding rule. Use this as an estimate and confirm with your lender."
     }
   ],
   "related": [

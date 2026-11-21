@@ -5,8 +5,8 @@ const manifest: ToolManifest = {
   "space": "media",
   "category": "image-edit",
   "slug": "resize-image",
-  "name": "Image Resizer",
-  "tagline": "Resize images to any dimensions.",
+  "name": "Resize Image",
+  "tagline": "Change image dimensions in pixels or percent, or use social media presets.",
   "keywords": [
     "resize image",
     "image resizer",
@@ -47,31 +47,31 @@ const manifest: ToolManifest = {
   ],
   "engine": "client",
   "seo": {
-    "title": "Image Resizer – Resize Images Online (Pixels & Percentage)",
-    "description": "Resize images online. Set exact pixel dimensions or percentage with aspect ratio lock. 100% client-side privacy. Free, private, no sign-up. Works on any device.",
-    "h1": "Image Resizer"
+    "title": "Resize Image Online – Pixels, Percent & Social Sizes",
+    "description": "Resize photos to exact pixels or a percentage, or use presets for Instagram and other social sizes. Keeps proportions by default. Free, private, no upload.",
+    "h1": "Resize images"
   },
   "howTo": [
-    "Add your file, or drop it on the page.",
-    "Adjust the options if you need to.",
-    "Download the result."
+    "Add your image.",
+    "Enter a width and height, a percentage, or pick a preset.",
+    "Preview the result and download it."
   ],
   "faq": [
     {
-      "q": "Can I resize images by exact pixel dimensions?",
-      "a": "Yes, you can specify custom width and height in pixels or scale by percentage, with an optional aspect ratio lock."
+      "q": "Will resizing stretch my photo?",
+      "a": "Not by default. The aspect ratio is locked, so changing the width updates the height to match. Unlock it only if you want to stretch."
     },
     {
-      "q": "Will resizing an image reduce its clarity?",
-      "a": "High-quality bicubic interpolation is used to ensure sharp results when scaling down or adjusting aspect ratios."
+      "q": "What size should I use for Instagram?",
+      "a": "Use the Instagram presets: 1080 × 1080 for square posts and 1080 × 1350 for portrait posts."
     },
     {
-      "q": "Can I resize photos for social media headers and posts?",
-      "a": "Yes, you can input exact dimensions for YouTube thumbnails, Instagram posts, Twitter banners, or LinkedIn headers."
+      "q": "Does making an image bigger add detail?",
+      "a": "No. Enlarging can't add detail that isn't there, so large increases look soft. Resizing down keeps images sharp."
     },
     {
-      "q": "Do my photos get uploaded to a server when resizing?",
-      "a": "No. The entire resizing process happens directly inside your web browser using HTML5 Canvas."
+      "q": "Are my images uploaded?",
+      "a": "No. Resizing happens in your browser."
     }
   ],
   "related": [

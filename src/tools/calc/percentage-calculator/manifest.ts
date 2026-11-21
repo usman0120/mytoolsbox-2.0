@@ -6,7 +6,7 @@ const manifest: ToolManifest = {
   "category": "maths",
   "slug": "percentage-calculator",
   "name": "Percentage Calculator",
-  "tagline": "Calculate percentages easily.",
+  "tagline": "Percent of a number, percentage change, increases, discounts and more.",
   "keywords": [
     "percentage calculator",
     "percent",
@@ -28,31 +28,31 @@ const manifest: ToolManifest = {
   "output": [],
   "engine": "client",
   "seo": {
-    "title": "Percentage Calculator – Calculate Percentages Online",
-    "description": "Work out a percentage of a number, percentage change, tips and discounts, with the formula shown. Free, private, no sign-up. Runs in your browser.",
-    "h1": "Percentage Calculator"
+    "title": "Percentage Calculator – Percent Of, Change & Discount",
+    "description": "Find a percentage of a number, what percent one number is of another, percentage increase or decrease, and discounts. Formula shown. Free, no sign-up.",
+    "h1": "Percentage calculator"
   },
   "howTo": [
-    "Enter your values.",
-    "Read the result and how it was worked out.",
-    "Change any value to compare."
+    "Pick the kind of percentage question.",
+    "Enter your two numbers.",
+    "Read the answer and the formula used."
   ],
   "faq": [
     {
-      "q": "Is my data uploaded?",
-      "a": "No. Percentage Calculator runs in your browser, so your files and text stay on your device."
+      "q": "How do I work out a percentage of a number?",
+      "a": "Multiply the number by the percentage and divide by 100. For example, 15% of 240 is 240 × 15 ÷ 100 = 36."
     },
     {
-      "q": "Is it free?",
-      "a": "Yes. There is no sign-up, no watermark and no daily limit."
+      "q": "How is percentage change calculated?",
+      "a": "(New − Old) ÷ Old × 100. Going from 80 to 100 is a 25% increase; from 100 to 80 is a 20% decrease."
     },
     {
-      "q": "Does it work on my phone?",
-      "a": "Yes. It works in any modern browser on phones, tablets and computers."
+      "q": "How do I find the price after a discount?",
+      "a": "Multiply the price by (100 − discount) ÷ 100. A 20% discount on 50 gives 40."
     },
     {
-      "q": "Does it work offline?",
-      "a": "Once the page has loaded, the tool keeps working without an internet connection."
+      "q": "Why can't I divide by zero?",
+      "a": "A percentage of zero, or a change from zero, isn't defined. Enter a non-zero starting value."
     }
   ],
   "related": [

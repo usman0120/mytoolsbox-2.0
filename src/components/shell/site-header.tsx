@@ -94,7 +94,7 @@ export function SiteHeader() {
           <Link href="/flows" className="inline-flex h-9 items-center rounded-md px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
             Flows
           </Link>
-          <Link href="/apps" className="inline-flex h-9 items-center rounded-md px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+          <Link href="/ai" className="inline-flex h-9 items-center rounded-md px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
             AI Studio
           </Link>
         </nav>

@@ -6,7 +6,7 @@ const manifest: ToolManifest = {
   "category": "qr-barcodes",
   "slug": "qr-code-generator",
   "name": "QR Code Generator",
-  "tagline": "Generate customizable QR codes.",
+  "tagline": "QR codes for links, text, Wi-Fi and contacts, with colors and a logo.",
   "keywords": [
     "qr code",
     "qr generator",
@@ -35,31 +35,31 @@ const manifest: ToolManifest = {
   ],
   "engine": "client",
   "seo": {
-    "title": "QR Code Generator – Create QR Codes Online",
-    "description": "Generate free QR codes for URLs, text, WiFi, and more. Customize colors and download as PNG. Free, private, no sign-up. Runs in your browser.",
-    "h1": "QR Code Generator"
+    "title": "QR Code Generator – Links, Wi-Fi & vCard, PNG or SVG",
+    "description": "Create QR codes for links, text, Wi-Fi networks and contact cards. Add colors and a logo, then download PNG, JPG or SVG. Free, never expires, no sign-up.",
+    "h1": "QR code generator"
   },
   "howTo": [
-    "Paste or type your input.",
-    "Pick the options you need.",
-    "Copy or download the result."
+    "Choose what the code is for and enter the details.",
+    "Pick colors, add a logo and set error correction.",
+    "Download PNG or SVG and test it with your phone camera."
   ],
   "faq": [
     {
-      "q": "Is my data uploaded?",
-      "a": "No. QR Code Generator runs in your browser, so your files and text stay on your device."
+      "q": "Do these QR codes expire?",
+      "a": "No. The code stores your link or text directly, so it works as long as the link itself works. There is no redirect service in between."
     },
     {
-      "q": "Is it free?",
-      "a": "Yes. There is no sign-up, no watermark and no daily limit."
+      "q": "Can I add my logo?",
+      "a": "Yes. Use a higher error-correction level when adding a logo so the code still scans with part of it covered."
     },
     {
-      "q": "Does it work on my phone?",
-      "a": "Yes. It works in any modern browser on phones, tablets and computers."
+      "q": "PNG or SVG?",
+      "a": "SVG stays sharp at any size, so it's best for print. PNG is easiest for sharing online."
     },
     {
-      "q": "Does it work offline?",
-      "a": "Once the page has loaded, the tool keeps working without an internet connection."
+      "q": "How do Wi-Fi QR codes work?",
+      "a": "Scanning the code offers to join the network with the name and password you entered, without typing the password."
     }
   ],
   "related": [

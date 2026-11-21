@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { toolRegistry, getToolBySlug, getActiveTools, searchTools } from "@/content/tools/registry";
 import { hubRegistry } from "@/content/hubs/registry";
-import { BLOG_POSTS } from "@/content/blog/blogs-data";
-import { RESOURCE_GUIDES } from "@/features/resources/resources-data";
+import { BLOG_POSTS } from "@/content/guides/articles";
+import { RESOURCE_GUIDES } from "@/content/guides/reference";
 import {
   calculateOneRepMax,
   calculateTDEE,

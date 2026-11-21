@@ -6,7 +6,7 @@ const manifest: ToolManifest = {
   "category": "video",
   "slug": "video-to-gif",
   "name": "Video to GIF",
-  "tagline": "Convert video clips to GIFs.",
+  "tagline": "Turn a short clip into an animated GIF, with trimming and captions.",
   "keywords": [
     "video to gif",
     "gif maker",
@@ -43,31 +43,31 @@ const manifest: ToolManifest = {
   ],
   "engine": "client",
   "seo": {
-    "title": "Video to GIF Converter – Make Animated GIFs Online",
-    "description": "Turn a video clip into an animated GIF. Trim it, resize it and add a caption before you export. Free, private, no sign-up. Runs in your browser.",
-    "h1": "Video to GIF"
+    "title": "Video to GIF Converter – Trim, Caption & Resize",
+    "description": "Turn MP4, WebM or MOV clips into animated GIFs. Trim the part you want, set the frame rate and size, and add a caption. Free, private, nothing uploaded.",
+    "h1": "Convert video to GIF"
   },
   "howTo": [
-    "Add your file, or drop it on the page.",
-    "Adjust the options if you need to.",
-    "Download the result."
+    "Add a short video clip.",
+    "Trim it, set frame rate and width, and add a caption if you like.",
+    "Create the GIF, check the size and download it."
   ],
   "faq": [
     {
-      "q": "Is my data uploaded?",
-      "a": "No. Video to GIF runs in your browser, so your files and text stay on your device."
+      "q": "How do I keep the GIF small?",
+      "a": "Keep it short (a few seconds), use a lower frame rate such as 10–12 fps and a width around 480 px. GIFs grow quickly with length and size."
     },
     {
-      "q": "Is it free?",
-      "a": "Yes. There is no sign-up, no watermark and no daily limit."
+      "q": "Is there a length limit?",
+      "a": "There's no fixed limit, but long clips make very large GIFs and take longer on phones. Trim to the moment you need."
     },
     {
-      "q": "Does it work on my phone?",
-      "a": "Yes. It works in any modern browser on phones, tablets and computers."
+      "q": "Are my videos uploaded?",
+      "a": "No. Conversion runs in your browser."
     },
     {
-      "q": "Does it work offline?",
-      "a": "Once the page has loaded, the tool keeps working without an internet connection."
+      "q": "Will the GIF have sound?",
+      "a": "No. The GIF format doesn't support audio."
     }
   ],
   "related": [

@@ -6,7 +6,7 @@ const manifest: ToolManifest = {
   "category": "health",
   "slug": "bmi-calculator",
   "name": "BMI Calculator",
-  "tagline": "Calculate your BMI.",
+  "tagline": "Body Mass Index in metric or imperial units, with the WHO category.",
   "keywords": [
     "bmi calculator",
     "body mass index",
@@ -28,31 +28,31 @@ const manifest: ToolManifest = {
   "output": [],
   "engine": "client",
   "seo": {
-    "title": "BMI Calculator – Calculate Your Body Mass Index",
-    "description": "Calculate your BMI. Understand your health category with metric and imperial units. Free, private, no sign-up. Runs in your browser. Works on any device.",
-    "h1": "BMI Calculator"
+    "title": "BMI Calculator – Body Mass Index, Metric & Imperial",
+    "description": "Calculate your Body Mass Index from height and weight in metric or imperial units and see the WHO weight category. Educational, not medical advice. Free.",
+    "h1": "BMI calculator"
   },
   "howTo": [
-    "Enter your values.",
-    "Read the result and how it was worked out.",
-    "Change any value to compare."
+    "Choose metric or imperial units.",
+    "Enter your height and weight.",
+    "See your BMI and what the category means."
   ],
   "faq": [
     {
-      "q": "Is my data uploaded?",
-      "a": "No. BMI Calculator runs in your browser, so your files and text stay on your device."
+      "q": "How is BMI calculated?",
+      "a": "Weight in kilograms divided by height in metres squared. In imperial units: 703 × weight (lb) ÷ height (in)²."
     },
     {
-      "q": "Is it free?",
-      "a": "Yes. There is no sign-up, no watermark and no daily limit."
+      "q": "What are the BMI categories?",
+      "a": "WHO adult categories: under 18.5 underweight, 18.5–24.9 healthy, 25–29.9 overweight, 30 and above obesity."
     },
     {
-      "q": "Does it work on my phone?",
-      "a": "Yes. It works in any modern browser on phones, tablets and computers."
+      "q": "Is BMI accurate for everyone?",
+      "a": "No. It doesn't separate muscle from fat and isn't designed for children, pregnancy or very muscular people. Talk to a health professional about your situation."
     },
     {
-      "q": "Does it work offline?",
-      "a": "Once the page has loaded, the tool keeps working without an internet connection."
+      "q": "Is my data stored?",
+      "a": "No. The calculation happens in your browser."
     }
   ],
   "related": [

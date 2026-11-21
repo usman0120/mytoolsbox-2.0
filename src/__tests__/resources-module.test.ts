@@ -6,7 +6,7 @@ import {
   RESOURCE_FAQS,
   getGuideBySlug,
   searchResources,
-} from "@/features/resources/resources-data";
+} from "@/content/guides/reference";
 
 describe("Resources Module — Knowledge Hub, Templates & Cheat Sheets", () => {
   describe("1. Guides Catalog", () => {

@@ -31,3 +31,7 @@
 | 2026-11-21 | Account deletion runs in the browser (owner deletes own docs, then deleteUser) and requires a sign-in within the last 5 minutes before anything is removed | Avoids half-deleted accounts without firebase-admin |
 | 2026-11-21 | Old /tools/[slug] and /apps/[slug] routes, loader maps and the catalog audit removed; /settings, /favorites, /history, /account, /dashboard redirect to /me | Every tool lives on manifest routes now |
 | 2026-11-21 | Saved Flows stay in browser storage for now (shown in /me) | Account sync for Flows can follow; rules already allow it |
+| 2026-11-21 | Blog posts and resource guides served as /guides (data moved to src/content/guides); hubs redirect to Spaces; /apps to /ai; /tools?category= to the Space | Blueprint section 25 URL rules |
+| 2026-11-21 | Search and the Ask palette use a static /search-index.json built from manifests, fetched on first open | Keeps the shell light; works offline once cached |
+| 2026-11-21 | Unknown /tools/{slug} URLs 307 to /search?q=… instead of 404 | Old content links to tools that never existed |
+| 2026-11-21 | Hand-written copy for the 10 top generated tools; remaining generated copy to be tuned from Search Console data | Depth over count |

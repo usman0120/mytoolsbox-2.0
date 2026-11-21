@@ -1,5 +1,4 @@
 "use client";
-import { appPath, toolPath } from "@/config/legacy-tool-paths";
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -15,9 +14,10 @@ import {
   CommandList,
   CommandShortcut,
 } from "@/components/ui/command";
-import { searchAll } from "@/components/common/search-command";
+import { loadSearchIndex, searchTools, type SearchDoc } from "@/tools/search";
 import { SPACES } from "@/spaces";
 import { SpaceGlyph } from "./space-glyph";
+import type { SpaceId } from "@/spaces";
 import { useShell } from "./shell-store";
 import { spaceHref } from "./space-links";
 
@@ -31,6 +31,19 @@ export function AskPalette() {
   const setOpen = useShell((s) => s.setAsk);
   const setTray = useShell((s) => s.setTray);
   const [query, setQuery] = useState("");
+  const [index, setIndex] = useState<SearchDoc[]>([]);
+  const askQuery = useShell((s) => s.askQuery);
+
+  // Load the search index on first open; take any pre-filled query.
+  useEffect(() => {
+    if (!open) return;
+    let active = true;
+    void loadSearchIndex().then((docs) => active && setIndex(docs));
+    if (askQuery) queueMicrotask(() => setQuery(askQuery));
+    return () => {
+      active = false;
+    };
+  }, [open, askQuery]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -44,7 +57,7 @@ export function AskPalette() {
   }, [setOpen]);
 
   const q = query.trim().toLowerCase();
-  const results = useMemo(() => (q.length >= 2 ? searchAll(q) : []), [q]);
+  const results = useMemo(() => (q.length >= 2 ? searchTools(index, q, 8) : []), [index, q]);
   const spaces = SPACES.filter((s) => !q || `${s.name} ${s.tagline}`.toLowerCase().includes(q));
   const actions = [
     {
@@ -56,6 +69,7 @@ export function AskPalette() {
     },
     { id: "tray", label: "Open File Tray", icon: Workflow, run: () => setTray(true), words: "tray files" },
     { id: "flows", label: "Open Workflows", icon: Workflow, run: () => router.push("/flows"), words: "flows workflows chain" },
+    { id: "workspace", label: "Open your workspace", icon: Clock, run: () => router.push("/me"), words: "workspace me account settings" },
     { id: "favorites", label: "Open favorites", icon: Heart, run: () => router.push("/me?tab=favorites"), words: "favorites favourites saved" },
     { id: "history", label: "Open history", icon: Clock, run: () => router.push("/me?tab=history"), words: "history recent" },
   ].filter((a) => !q || `${a.label} ${a.words}`.toLowerCase().includes(q));
@@ -63,6 +77,7 @@ export function AskPalette() {
   const close = () => {
     setOpen(false);
     setQuery("");
+    useShell.setState({ askQuery: "" });
   };
   const go = (href: string) => {
     close();
@@ -106,18 +121,17 @@ export function AskPalette() {
         )}
 
         {results.length > 0 && (
-          <CommandGroup heading="Tools and apps">
+          <CommandGroup heading="Tools">
             {results.map((r) => (
-              <CommandItem
-                key={`${r.type}:${r.item.slug}`}
-                value={`${r.type}:${r.item.slug}`}
-                onSelect={() => go(r.type === "tool" ? toolPath(r.item.slug) : appPath(r.item.slug))}
-              >
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate font-medium">{r.item.name}</span>
-                  <span className="block truncate text-xs text-muted-foreground">{r.item.shortDescription}</span>
+              <CommandItem key={r.id} value={r.id} onSelect={() => go(r.url)}>
+                <span style={{ color: SPACES.find((s) => s.id === r.space)?.color }}>
+                  <SpaceGlyph space={r.space as SpaceId} className="size-4" />
                 </span>
-                <CommandShortcut>{r.type === "app" ? "App" : "Tool"}</CommandShortcut>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-medium">{r.name}</span>
+                  <span className="block truncate text-xs text-muted-foreground">{r.tagline}</span>
+                </span>
+                {r.ai && <CommandShortcut>AI</CommandShortcut>}
               </CommandItem>
             ))}
             <CommandItem value="see-all" onSelect={() => go(`/search?q=${encodeURIComponent(query.trim())}`)}>

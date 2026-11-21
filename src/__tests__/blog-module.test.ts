@@ -5,7 +5,7 @@ import {
   getBlogPostBySlug,
   getFeaturedBlogPost,
   getRelatedBlogPosts,
-} from "@/content/blog/blogs-data";
+} from "@/content/guides/articles";
 import { toolRegistry } from "@/content/tools/registry";
 
 describe("Blog & Guides Module Data Integrity", () => {

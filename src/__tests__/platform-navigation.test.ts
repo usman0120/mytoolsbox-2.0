@@ -1,3 +1,4 @@
+import { getGuide } from "@/content/guides";
 import { WORKFLOW_PRESETS } from "@/flows/presets";
 import { appPath } from "@/config/legacy-tool-paths";
 import { getManifest } from "@/tools/registry";
@@ -27,6 +28,7 @@ describe("footer directory", () => {
         const [path] = href.split(/[?#]/);
         const [, module, slug] = path.split("/");
         if (getManifest(module, slug ?? "") || (getSpace(module) && !slug)) continue;
+        if (module === "guides" && slug) { expect(getGuide(slug), href).toBeDefined(); continue; }
         if (module === "flows" && slug) { expect(WORKFLOW_PRESETS.some((f) => f.id === slug), href).toBe(true); continue; }
         if (module === "tools" && slug) expect(getToolBySlug(slug)?.status, href).toBe("active");
         else if (module === "apps" && slug) expect(getAppBySlug(slug)?.status, href).toBe("active");
