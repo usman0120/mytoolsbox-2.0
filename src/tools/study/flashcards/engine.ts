@@ -76,12 +76,15 @@ export function parseCards(text: string): { front: string; back: string }[] {
     const line = raw.trim();
     if (!line) continue;
     let parts: string[] | null = null;
+    // Order matters: tab, " - ", quoted CSV, ":"/";", then plain CSV last,
+    // so "term: definition, with commas" stays one definition.
+    const dash = /^(.+?)\s+[-–—]\s+(.+)$/.exec(line);
+    const colon = /^([^",]+?)\s*[:;]\s+(.+)$/.exec(line);
     if (line.includes("\t")) parts = line.split("\t");
-    else if (/^".*",|^[^,"]+,/.test(line) && !/ [-–] /.test(line)) parts = csvRow(line);
-    else {
-      const m = /^(.+?)\s+[-–—]\s+(.+)$/.exec(line) ?? /^(.+?)\s*[:;]\s+(.+)$/.exec(line);
-      if (m) parts = [m[1], m[2]];
-    }
+    else if (dash) parts = [dash[1], dash[2]];
+    else if (line.startsWith('"')) parts = csvRow(line);
+    else if (colon) parts = [colon[1], colon[2]];
+    else if (line.includes(",")) parts = csvRow(line);
     if (parts && parts.length >= 2 && parts[0].trim() && parts.slice(1).join(", ").trim()) out.push({ front: parts[0].trim(), back: parts.slice(1).join(", ").trim() });
   }
   return out;

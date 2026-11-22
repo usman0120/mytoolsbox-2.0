@@ -81,7 +81,7 @@ export function flipCoin(times = 1, currentSession?: CoinFlipSession): CoinFlipS
   const headsPercentage = Math.round((heads / allResults.length) * 1000) / 10;
 
   // Calculate current streak from the end
-  let streakFace: CoinFace = allResults[allResults.length - 1];
+  const streakFace: CoinFace = allResults[allResults.length - 1];
   let streakCount = 0;
   for (let i = allResults.length - 1; i >= 0; i--) {
     if (allResults[i] === streakFace) {

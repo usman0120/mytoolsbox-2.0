@@ -156,18 +156,7 @@ export function QuizEditor() {
     }
   }, [quiz]);
 
-  // Countdown timer in Test mode
-  useEffect(() => {
-    if (!isTimerRunning || activeTab !== "take") return;
-    if (secondsRemaining <= 0) {
-      finishQuiz();
-      return;
-    }
-    const interval = setInterval(() => {
-      setSecondsRemaining((prev) => prev - 1);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [isTimerRunning, secondsRemaining, activeTab]);
+
 
   const loadSample = (key: string) => {
     const s = SAMPLE_QUIZZES[key];
@@ -264,6 +253,18 @@ export function QuizEditor() {
     toast.success("Quiz JSON exported!");
   };
 
+  // Countdown timer in Test mode
+  useEffect(() => {
+    if (!isTimerRunning || activeTab !== "take") return;
+    if (secondsRemaining <= 0) {
+      const t = setTimeout(finishQuiz, 0);
+      return () => clearTimeout(t);
+    }
+    const interval = setInterval(() => {
+      setSecondsRemaining((prev) => prev - 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isTimerRunning, secondsRemaining, activeTab]);
   return (
     <div className="space-y-6">
       {/* Top Command Bar */}
@@ -287,7 +288,7 @@ export function QuizEditor() {
 
         {/* Action Controls */}
         <div className="flex flex-wrap items-center gap-2">
-          <Select onValueChange={(v: any) => v && loadSample(String(v))}>
+          <Select onValueChange={(v: unknown) => v && loadSample(String(v))}>
             <SelectTrigger className="h-8 w-44 text-xs font-medium">
               <Sparkles className="h-3.5 w-3.5 mr-1 text-purple-500" />
               <span>Load Sample Quiz</span>
@@ -327,7 +328,7 @@ export function QuizEditor() {
       </div>
 
       {/* Mode Navigation Tabs */}
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)}>
         <TabsList className="grid grid-cols-3 max-w-md h-9 text-xs mb-4">
           <TabsTrigger value="edit" className="text-xs">
             1. Quiz Editor ({quiz.questions.length})

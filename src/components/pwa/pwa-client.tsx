@@ -42,7 +42,7 @@ export function PwaClient() {
   useEffect(() => {
     const open = params.get("open");
     if (!open) return;
-    if (open === "ask") openAsk(params.get("q") ?? "");
+    if (open === "ask") openAsk(new URLSearchParams(window.location.hash.slice(1)).get("q") ?? params.get("q") ?? "");
     if (open === "tray") setTray(true);
     const shared = Number(params.get("shared") ?? 0);
     if (shared > 0) toast.success(`${shared} shared ${shared === 1 ? "file is" : "files are"} in your Tray. Pick one and choose Send to…`);

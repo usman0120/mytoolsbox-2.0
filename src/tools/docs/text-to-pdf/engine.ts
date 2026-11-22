@@ -69,7 +69,7 @@ export async function convertRawTextToPdf(
     const lineHeight = fontSize * 1.5;
 
     const lines = rawText.split(/\r?\n/);
-    const pagesList: any[] = [];
+    const pagesList: ReturnType<PDFDocument["addPage"]>[] = [];
 
     const addNewPage = () => {
       const page = pdf.addPage([pageWidth, pageHeight]);
@@ -197,7 +197,7 @@ export async function convertRawTextToPdf(
 
       let activeFont = font;
       let activeSize = fontSize;
-      let textColor = rgb(0.1, 0.1, 0.15);
+      const textColor = rgb(0.1, 0.1, 0.15);
       let lineMarginLeft = marginSize;
 
       if (isHeading1) {

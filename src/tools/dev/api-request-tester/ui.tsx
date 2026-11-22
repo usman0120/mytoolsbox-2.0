@@ -227,7 +227,7 @@ export function APIRequestBuilderEngine() {
 
       {/* Request Configuration Tabs */}
       <div className="space-y-3">
-        <Tabs value={activeReqTab} onValueChange={(v) => setActiveReqTab(v as any)}>
+        <Tabs value={activeReqTab} onValueChange={(v) => setActiveReqTab(v as typeof activeReqTab)}>
           <TabsList className="grid grid-cols-4 h-9">
             <TabsTrigger value="headers" className="text-xs gap-1">
               <Sliders className="h-3.5 w-3.5" /> Headers ({headerRows.filter((r) => r.enabled && r.key).length})

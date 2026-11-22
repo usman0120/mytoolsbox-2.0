@@ -97,6 +97,13 @@ describe("maths and science", () => {
     expect(r2.rows!.find((x) => x.label === "u")!.value).toBe("10 m/s");
   });
 
+  it("picks the physical root when an object lands below its start", () => {
+    // Thrown up at 10 m/s, lands 20 m lower: v = −22.2 m/s, t ≈ 3.28 s.
+    const r = run(kinematics, { s: -20, u: 10, v: null, a: -9.8, t: null });
+    expect(parseFloat(r.rows!.find((x) => x.label === "t")!.value)).toBeCloseTo(3.285, 2);
+    expect(r.rows!.find((x) => x.label === "v")!.value.startsWith("-")).toBe(true);
+  });
+
   it("computes projectile range", () => {
     // 20 m/s at 45° on Earth: R = v²/g ≈ 40.79 m
     expect(run(projectile, { v0: 20, angle: 45, h0: 0, g: "9.80665" }).primary.value).toBe("40.79 m");
@@ -105,6 +112,9 @@ describe("maths and science", () => {
   it("parses formulas with groups and hydrates", () => {
     expect(parseFormula("Ca(OH)2")).toEqual({ Ca: 1, O: 2, H: 2 });
     expect(parseFormula("CuSO4·5H2O")).toEqual({ Cu: 1, S: 1, O: 9, H: 10 });
+    expect(parseFormula("SO4^2-")).toEqual({ S: 1, O: 4 });
+    expect(parseFormula("[Fe(CN)6]3-")).toEqual({ Fe: 1, C: 6, N: 6 });
+    expect(parseFormula("NH4+")).toEqual({ N: 1, H: 4 });
     expect(run(molarMass, { formula: "H2O", mass: null }).primary.value).toBe("18.015 g/mol");
     expect(isErr(molarMass, { formula: "Xx2", mass: null })).toBe(true);
   });

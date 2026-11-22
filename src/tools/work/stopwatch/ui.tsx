@@ -23,8 +23,11 @@ export function StopwatchEngine() {
   const rafRef = useRef<number | null>(null);
 
   const update = useCallback(() => {
-    setElapsed(accumulatedRef.current + (Date.now() - startRef.current));
-    rafRef.current = requestAnimationFrame(update);
+    const tick = () => {
+      setElapsed(accumulatedRef.current + (Date.now() - startRef.current));
+      rafRef.current = requestAnimationFrame(tick);
+    };
+    tick();
   }, []);
 
   const handleStart = () => {

@@ -3,7 +3,7 @@
  * - Hashed build assets, pdf.js and fonts are cache-first (they never change under the same URL).
  * - Files shared from the phone's share sheet go straight into the File Tray (IndexedDB) on this device.
  * Bump VERSION to drop old caches on deploy. */
-const VERSION = "v2";
+const VERSION = "v3";
 const SHELL = `mtb-shell-${VERSION}`;
 const PAGES = `mtb-pages-${VERSION}`;
 const ASSETS = `mtb-assets-${VERSION}`;
@@ -110,7 +110,8 @@ async function handleShare(request) {
       tx.onerror = () => reject(tx.error);
     });
     const text = [form.get("title"), form.get("text"), form.get("url")].filter(Boolean).join(" ").slice(0, 200);
-    if (!count && text) return Response.redirect(`/?open=ask&q=${encodeURIComponent(text)}`, 303);
+    // Shared text goes in the fragment, which the browser never sends to the server (keeps it out of logs).
+    if (!count && text) return Response.redirect(`/?open=ask#q=${encodeURIComponent(text)}`, 303);
   } catch {
     // fall through: open the app anyway
   }

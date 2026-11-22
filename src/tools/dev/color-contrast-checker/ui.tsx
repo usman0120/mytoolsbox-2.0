@@ -79,7 +79,7 @@ function findAccessibleColor(fgHex: string, bgHex: string, targetRatio = 4.5): s
   const shouldLighten = bgLum < 0.5;
 
   let bestHex = fgHex;
-  let [r, g, b] = fgRgb;
+  const [r, g, b] = fgRgb;
 
   for (let step = 0; step <= 100; step++) {
     const factor = step / 100;

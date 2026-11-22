@@ -208,7 +208,7 @@ export function PDFHighlighterNotesEngine() {
             {selectedText && (
               <div className="rounded p-2 text-xs border" style={{ background: HIGHLIGHT_COLORS[activeColor] + "44" }}>
                 <p className="text-[10px] text-muted-foreground mb-1">Selected:</p>
-                <p className="font-medium line-clamp-3">"{selectedText}"</p>
+                <p className="font-medium line-clamp-3">&ldquo;{selectedText}&rdquo;</p>
               </div>
             )}
 
@@ -270,7 +270,7 @@ export function PDFHighlighterNotesEngine() {
                             {tagMeta.emoji} {tagMeta.label}
                           </Badge>
                         </div>
-                        <p className="text-xs font-medium line-clamp-2">"{h.text}"</p>
+                        <p className="text-xs font-medium line-clamp-2">&ldquo;{h.text}&rdquo;</p>
                         {h.note && <p className="text-[10px] text-muted-foreground mt-0.5 italic">📝 {h.note}</p>}
                       </div>
                       <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => removeHighlight(h.id)}>

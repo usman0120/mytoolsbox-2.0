@@ -37,6 +37,10 @@ describe("spaced repetition", () => {
     expect(nextLabel(NEW_STATE, 4, now)).toBe("4 d");
   });
 
+  it("keeps commas inside colon definitions", () => {
+    expect(parseCards("Mitochondria: powerhouse, of the cell")).toEqual([{ front: "Mitochondria", back: "powerhouse, of the cell" }]);
+  });
+
   it("parses pasted lists and CSV", () => {
     expect(parseCards("cell - basic unit of life\nATP: energy currency\nDNA\tgenetic material\n\"a, b\",c")).toEqual([
       { front: "cell", back: "basic unit of life" },

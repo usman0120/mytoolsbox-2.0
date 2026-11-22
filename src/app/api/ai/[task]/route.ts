@@ -90,6 +90,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     // Markdown: stream plain text. Cached answers are replayed without using quota.
+    // Open the stream first so a request that no provider can answer is never charged.
+    const opened = cached ? null : await streamAi(req);
     const quota = cached ? await getQuota(identity) : await consumeQuota(identity, task.cost);
     const headers = {
       "Content-Type": "text/plain; charset=utf-8",
@@ -98,9 +100,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       ...(note ? { "X-AI-Note": encodeURIComponent(note) } : {}),
       ...(cached ? { "X-AI-Cached": "1" } : {}),
     };
-    if (cached) return new Response(cached, { headers });
+    if (cached || !opened) return new Response(cached ?? "", { headers });
 
-    const { stream } = await streamAi(req);
+    const { stream } = opened;
     let full = "";
     const encoder = new TextEncoder();
     const out = stream.pipeThrough(

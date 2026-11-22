@@ -41,14 +41,7 @@ export function ScreenRecorderEngine() {
   const chunksRef = useRef<Blob[]>([]);
   const previewRef = useRef<HTMLVideoElement>(null);
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      stopAllMedia();
-      if (timerRef.current) clearInterval(timerRef.current);
-      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-    };
-  }, []);
+
 
   const stopAllMedia = () => {
     if (screenStreamRef.current) {
@@ -315,6 +308,14 @@ export function ScreenRecorderEngine() {
     return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
   };
 
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      stopAllMedia();
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+    };
+  }, []);
   return (
     <div className="space-y-6">
       {/* Configuration Header */}

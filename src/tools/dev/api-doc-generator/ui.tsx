@@ -131,7 +131,7 @@ function ruleBasedAPIDocGenerate(code: string, format = "markdown"): APIDocGener
         }, {} as Record<number, { description: string }>),
       };
       return acc;
-    }, {} as Record<string, any>),
+    }, {} as Record<string, Record<string, unknown>>),
   };
 
   // Generate Markdown
@@ -211,7 +211,7 @@ export function AIAPIDocumentationGeneratorEngine() {
         const r = await generateAPIDocs({
           code: code.trim(),
           language: language === "auto" ? undefined : language,
-          format: format as any,
+          format,
         });
         setResult(r);
       } else {
@@ -276,7 +276,7 @@ export function AIAPIDocumentationGeneratorEngine() {
             <span className="text-muted-foreground font-medium">Output Format:</span>
             <select
               value={format}
-              onChange={(e) => setFormat(e.target.value as any)}
+              onChange={(e) => setFormat(e.target.value as typeof format)}
               className="text-xs border rounded-md px-2 py-1 bg-background font-medium"
             >
               <option value="markdown">Markdown Table Documentation</option>
@@ -297,7 +297,7 @@ export function AIAPIDocumentationGeneratorEngine() {
       {result && (
         <div className="space-y-4 pt-2">
           <div className="flex items-center justify-between border-b pb-2">
-            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
+            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)}>
               <TabsList className="h-8">
                 <TabsTrigger value="visual" className="text-xs gap-1.5">
                   <Layers className="h-3.5 w-3.5" /> Endpoints View ({result.endpoints.length})

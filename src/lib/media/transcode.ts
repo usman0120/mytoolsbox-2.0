@@ -90,6 +90,7 @@ export async function transcode(file: Blob, opts: TranscodeOptions, onProgress?:
   let scale = 1;
   let best: Blob | null = null;
   for (let pass = 1; pass <= (opts.targetBytes ? 3 : 1); pass++) {
+    signal?.throwIfAborted();
     const blob = await transcodeOnce(file, opts, scale, pass, (p) => onProgress?.(p, pass), signal);
     if (!best || blob.size < best.size) best = blob;
     if (!opts.targetBytes || blob.size <= opts.targetBytes * 1.03) return blob;
@@ -139,6 +140,7 @@ async function transcodeOnce(file: Blob, opts: TranscodeOptions, scale: number, 
       audio: opts.mute ? { discard: true } : { bitrate: bitrates?.audio ?? opts.audioBitrate ?? QUALITY[opts.quality ?? "medium"] },
     });
     if (!conversion.isValid) throw new Error(explain(conversion.discardedTracks.map((d) => d.reason)));
+    signal?.throwIfAborted();
     conversion.onProgress = (p) => onProgress?.(p);
     const abort = () => void conversion.cancel();
     signal?.addEventListener("abort", abort);

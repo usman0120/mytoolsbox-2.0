@@ -141,7 +141,8 @@ export function QRGeneratorEngine() {
   ]);
 
   useEffect(() => {
-    refreshQR();
+    const t = setTimeout(() => refreshQR(), 120);
+    return () => clearTimeout(t);
   }, [refreshQR]);
 
   const handleDownload = () => {

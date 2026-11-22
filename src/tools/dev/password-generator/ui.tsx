@@ -68,7 +68,8 @@ export function PasswordGeneratorEngine() {
   }, [activeTab, length, uppercase, lowercase, numbers, symbols, avoidAmbiguous, wordCount, separator, pinLength]);
 
   useEffect(() => {
-    generate();
+    const t = setTimeout(() => generate(), 120);
+    return () => clearTimeout(t);
   }, [generate]);
 
   const handleCopy = async (text: string) => {

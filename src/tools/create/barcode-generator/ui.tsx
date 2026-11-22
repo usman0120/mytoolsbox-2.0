@@ -91,7 +91,8 @@ export function BarcodeGeneratorEngine() {
   }, [format, data, barWidth, barHeight]);
 
   useEffect(() => {
-    renderBarcode();
+    const t = setTimeout(() => renderBarcode(), 120);
+    return () => clearTimeout(t);
   }, [renderBarcode]);
 
   const handleFormatChange = (newFormat: BarcodeType) => {

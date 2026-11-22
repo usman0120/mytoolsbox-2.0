@@ -29,13 +29,26 @@ export function useSavedItem(kind: SavedItem["kind"], toolId: string, onOpen: (c
       .catch(() => toast.error("Couldn't open the saved item."));
   }, [user, kind]);
 
+  /**
+   * Saves to the account. By default it updates the item that was opened or saved earlier in this session;
+   * `asNew` always creates a new item (calculator results, a different document).
+   */
   const save = useCallback(
-    async (title: string, content: string) => {
+    async (title: string, content: string, opts: { asNew?: boolean } = {}) => {
       if (!user) return toast("Sign in to save to your account", { description: "Your work is already kept in this browser." });
       setSaving(true);
       try {
-        if (itemId) await updateItem(user.uid, itemId, { title, content });
-        else setItemId(await saveItem(user.uid, { kind, title, toolId, content }));
+        let updated = false;
+        if (itemId && !opts.asNew) {
+          try {
+            await updateItem(user.uid, itemId, { title, content });
+            updated = true;
+          } catch (e) {
+            // Deleted on another device: save it as a new item instead.
+            if ((e as { code?: string }).code !== "not-found") throw e;
+          }
+        }
+        if (!updated) setItemId(await saveItem(user.uid, { kind, title, toolId, content }));
         toast.success("Saved to your account");
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "Couldn't save.");
@@ -46,5 +59,8 @@ export function useSavedItem(kind: SavedItem["kind"], toolId: string, onOpen: (c
     [user, itemId, kind, toolId],
   );
 
-  return { save, saving, signedIn: !!user };
+  /** Forget the opened item, so the next save creates a new one (new design, opened file, template). */
+  const reset = useCallback(() => setItemId(null), []);
+
+  return { save, reset, saving, signedIn: !!user };
 }

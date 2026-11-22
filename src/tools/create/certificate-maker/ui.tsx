@@ -354,7 +354,7 @@ export function CertificateMakerEngine() {
 
         {/* Preset Selector & Downloads */}
         <div className="flex flex-wrap items-center gap-2">
-          <Select onValueChange={(v: any) => v && loadPreset(String(v))}>
+          <Select onValueChange={(v: unknown) => v && loadPreset(String(v))}>
             <SelectTrigger className="h-8 w-44 text-xs font-medium">
               <Sparkles className="h-3.5 w-3.5 mr-1 text-blue-500" />
               <span>Load Certificate Preset</span>

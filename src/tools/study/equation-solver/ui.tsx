@@ -174,7 +174,7 @@ export function EquationSolverEngine() {
               </div>
             </div>
             <Button onClick={handleSolve} className="w-full gap-2">
-              <Equal className="h-4 w-4" /> Solve 2x2 System (Cramer's Rule)
+              <Equal className="h-4 w-4" /> Solve 2x2 System (Cramer&apos;s Rule)
             </Button>
           </div>
         ) : (

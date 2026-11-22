@@ -137,7 +137,7 @@ export function EssayOutline() {
               <Button size="sm" variant="ghost" disabled={busy} onClick={() => download(new Blob([out], { type: "text/markdown" }), "essay-outline.md")}>
                 Download
               </Button>
-              <Button size="sm" variant="ghost" disabled={busy || saving} onClick={() => save(`Outline: ${topic.slice(0, 80)}`, out)}>
+              <Button size="sm" variant="ghost" disabled={busy || saving} onClick={() => save(`Outline: ${topic.slice(0, 80)}`, out, { asNew: true })}>
                 Save
               </Button>
               <Button size="sm" variant="ghost" disabled={busy} onClick={run}>

@@ -51,7 +51,8 @@ export function JWTDecoderEngine() {
   }, []);
 
   useEffect(() => {
-    handleDecode(token);
+    const t = setTimeout(() => handleDecode(token), 120);
+    return () => clearTimeout(t);
   }, [token, handleDecode]);
 
   const handleCopy = async (text: string, key: string) => {

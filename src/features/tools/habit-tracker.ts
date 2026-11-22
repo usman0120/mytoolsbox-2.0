@@ -61,10 +61,10 @@ export function calculateHabitStreak(habitId: string, entries: HabitEntry[]): {
   yesterday.setDate(yesterday.getDate() - 1);
   const yesterdayStr = yesterday.toISOString().split("T")[0];
 
-  let checkDate = completedDates.has(todayStr) ? today : (completedDates.has(yesterdayStr) ? yesterday : null);
+  const checkDate = completedDates.has(todayStr) ? today : (completedDates.has(yesterdayStr) ? yesterday : null);
 
   if (checkDate) {
-    let d = new Date(checkDate);
+    const d = new Date(checkDate);
     while (true) {
       const dStr = d.toISOString().split("T")[0];
       if (completedDates.has(dStr)) {

@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Third-party assets copied at build time (pdf.js, Excalidraw fonts).
+    "public/pdfjs/**",
+    "public/excalidraw/**",
   ]),
 ]);
 

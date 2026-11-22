@@ -28,7 +28,8 @@ const CODE_KEY = "diagram:code";
 const TAB_KEY = "diagram:tab";
 const KINDS = ["auto", "flowchart", "sequence", "class", "er", "state", "gantt", "mindmap", "timeline"] as const;
 
-type Pending = { elements: unknown[]; files?: Record<string, unknown> };
+/** Elements waiting for the whiteboard. `replace` swaps the whole scene (opening a saved item); otherwise they are added beside it. */
+type Pending = { elements: unknown[]; files?: Record<string, unknown>; replace?: boolean };
 
 export function DiagramStudio() {
   const { resolvedTheme } = useTheme();
@@ -67,13 +68,19 @@ export function DiagramStudio() {
     if (!p) return;
     pending.current = null;
     const { CaptureUpdateAction } = await import("@excalidraw/excalidraw");
+    if (p.files) a.addFiles(Object.values(p.files) as Parameters<typeof a.addFiles>[0]);
+    if (p.replace) {
+      const els = p.elements as ReturnType<typeof a.getSceneElements>;
+      a.updateScene({ elements: els, captureUpdate: CaptureUpdateAction.IMMEDIATELY });
+      if (els.length) a.scrollToContent(els, { fitToContent: true });
+      return;
+    }
     const existing = a.getSceneElements();
     const els = p.elements as { x: number; y: number; width: number }[];
     const right = existing.reduce((m, e) => Math.max(m, e.x + e.width), -Infinity);
     const left = els.reduce((m, e) => Math.min(m, e.x), Infinity);
     const dx = Number.isFinite(right) ? right + 120 - left : 0;
     const shifted = els.map((e) => ({ ...e, x: e.x + dx })) as unknown as typeof existing;
-    if (p.files) a.addFiles(Object.values(p.files) as Parameters<typeof a.addFiles>[0]);
     a.updateScene({ elements: [...existing, ...shifted], captureUpdate: CaptureUpdateAction.IMMEDIATELY });
     a.scrollToContent(shifted, { fitToContent: true, animate: true });
   }, []);
@@ -99,16 +106,21 @@ export function DiagramStudio() {
     }
   };
 
+  // Format of the account item this session is tied to; saving the other format creates a new item.
+  const itemFormat = useRef<"mermaid" | "excalidraw" | null>(null);
   const { save, saving } = useSavedItem("diagram", "create.diagram", (content) => {
     try {
       const data = JSON.parse(content) as { format: string; code?: string; scene?: string };
       if (data.format === "mermaid" && data.code) {
         setCode(data.code);
+        itemFormat.current = "mermaid";
         show("code");
       } else if (data.format === "excalidraw" && data.scene) {
         const scene = JSON.parse(data.scene);
-        pending.current = { elements: scene.elements ?? [], files: scene.files };
+        pending.current = { elements: scene.elements ?? [], files: scene.files, replace: true };
+        itemFormat.current = "excalidraw";
         show("whiteboard");
+        if (api) void applyPending(api);
       }
     } catch {
       toast.error("That saved diagram couldn't be read.");
@@ -116,10 +128,13 @@ export function DiagramStudio() {
   });
 
   const saveToAccount = async () => {
-    if (tab === "code") return save(code.split("\n").find((l) => l.trim() && !/^(flowchart|graph|sequenceDiagram)/.test(l.trim()))?.trim().slice(0, 60) || "Diagram", JSON.stringify({ format: "mermaid", code }));
+    const format = tab === "code" ? "mermaid" : "excalidraw";
+    const asNew = itemFormat.current !== null && itemFormat.current !== format;
+    itemFormat.current = format;
+    if (tab === "code") return save(code.split("\n").find((l) => l.trim() && !/^(flowchart|graph|sequenceDiagram)/.test(l.trim()))?.trim().slice(0, 60) || "Diagram", JSON.stringify({ format: "mermaid", code }), { asNew });
     if (!api) return;
     const { serializeAsJSON } = await import("@excalidraw/excalidraw");
-    await save("Whiteboard", JSON.stringify({ format: "excalidraw", scene: serializeAsJSON(api.getSceneElements(), api.getAppState(), api.getFiles(), "local") }));
+    await save("Whiteboard", JSON.stringify({ format: "excalidraw", scene: serializeAsJSON(api.getSceneElements(), api.getAppState(), api.getFiles(), "local") }), { asNew });
   };
 
   const toggleFull = () => {

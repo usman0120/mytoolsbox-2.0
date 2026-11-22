@@ -169,12 +169,45 @@ function calculateStreaks(completions: Record<string, boolean>): { streak: numbe
   return { streak: current, bestStreak: Math.max(best, current) };
 }
 
+/**
+ * The old /tools/habit-tracker kept habits and check-ins under separate keys. Convert them once so people who used
+ * it (its URL now redirects here) keep their habits. The old keys are left in place as a backup.
+ */
+function migrateLegacyHabits(): Habit[] | null {
+  try {
+    const old = JSON.parse(localStorage.getItem("mytoolsbox-habits-v2") ?? "null") as
+      | { id: string; name: string; emoji?: string; color?: string; targetDaysPerWeek?: number; createdAt?: number }[]
+      | null;
+    if (!Array.isArray(old) || !old.length) return null;
+    const entries = (JSON.parse(localStorage.getItem("mytoolsbox-habit-entries-v2") ?? "[]") as { habitId: string; date: string; done: boolean }[]) ?? [];
+    return old.map((h) => {
+      const completions: Record<string, boolean> = {};
+      for (const e of entries) if (e.habitId === h.id && e.done) completions[e.date] = true;
+      return {
+        id: h.id,
+        name: h.emoji && !h.name.startsWith(h.emoji) ? `${h.emoji} ${h.name}`.trim() : h.name,
+        description: "",
+        category: CATEGORIES[0],
+        color: h.color ?? "#3b82f6",
+        targetPerWeek: h.targetDaysPerWeek ?? 7,
+        createdAt: new Date(h.createdAt ?? Date.now()).toISOString(),
+        completions,
+        ...calculateStreaks(completions),
+      };
+    });
+  } catch {
+    return null;
+  }
+}
+
 export function HabitTrackerEngine() {
   const [habits, setHabits] = useState<Habit[]>(() => {
     if (typeof window !== "undefined") {
       try {
         const raw = localStorage.getItem(STORAGE_KEY);
         if (raw) return JSON.parse(raw);
+        const migrated = migrateLegacyHabits();
+        if (migrated) return migrated;
       } catch {
         // Fall back
       }
@@ -255,7 +288,7 @@ export function HabitTrackerEngine() {
     const todayCompleted = habits.filter((h) => h.completions[todayStr]).length;
 
     // Check last 7 days completion rate
-    let totalChecksPossible = habits.length * 7;
+    const totalChecksPossible = habits.length * 7;
     let totalChecksMade = 0;
     const last7Days = calendarDays.slice(-7);
 
@@ -388,7 +421,7 @@ export function HabitTrackerEngine() {
 
         {/* Action Buttons */}
         <div className="flex flex-wrap items-center gap-2">
-          <Select onValueChange={(v: any) => v && loadStack(String(v))}>
+          <Select onValueChange={(v: unknown) => v && loadStack(String(v))}>
             <SelectTrigger className="h-8 w-44 text-xs font-medium">
               <Sparkles className="h-3.5 w-3.5 mr-1 text-orange-500" />
               <span>Load Habit Stack</span>
@@ -415,7 +448,7 @@ export function HabitTrackerEngine() {
         <Card className="border-border/60 shadow-xs">
           <CardContent className="p-4 space-y-1">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-muted-foreground">Today's Execution</span>
+              <span className="text-xs font-medium text-muted-foreground">Today&apos;s Execution</span>
               <CheckCircle2 className="h-4 w-4 text-emerald-500" />
             </div>
             <p className="text-2xl font-bold tracking-tight text-foreground">

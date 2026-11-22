@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useRef, useId } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { BrandLogo } from "@/components/common/brand-logo";
@@ -440,9 +441,9 @@ export function SignInDialog({ open, onOpenChange }: SignInDialogProps) {
           <div className="px-6 pb-5 text-center">
             <p className="text-[11px] text-muted-foreground leading-relaxed">
               By continuing, you agree to our{" "}
-              <a href="/terms" className="text-foreground hover:underline">Terms</a>
+              <Link href="/terms" className="text-foreground hover:underline">Terms</Link>
               {" "}and{" "}
-              <a href="/privacy" className="text-foreground hover:underline">Privacy Policy</a>.
+              <Link href="/privacy" className="text-foreground hover:underline">Privacy Policy</Link>.
             </p>
           </div>
         )}

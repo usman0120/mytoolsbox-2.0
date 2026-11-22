@@ -361,7 +361,7 @@ export function BudgetPlannerEngine() {
             </Select>
           </div>
 
-          <Select onValueChange={(v: any) => v && loadProfile(String(v))}>
+          <Select onValueChange={(v: unknown) => v && loadProfile(String(v))}>
             <SelectTrigger className="h-8 w-44 text-xs">
               <Sparkles className="h-3.5 w-3.5 mr-1 text-emerald-600" />
               <span>Load Sample Profile</span>

@@ -265,7 +265,9 @@ export function DesignStudio() {
       const saved = await kvGet<Saved>(AUTOSAVE);
       if (cancelled) return;
       setCanvas(c);
-      if (saved?.json) {
+      // When opening a saved item from the Workspace, don't also restore the local draft (they would race).
+      const openingItem = new URLSearchParams(window.location.search).has("item");
+      if (saved?.json && !openingItem) {
         pageRef.current = saved.page;
         setPageState(saved.page);
         rename(saved.name || "Untitled design");
@@ -416,6 +418,7 @@ export function DesignStudio() {
     hist.current.mute++;
     await applyTemplate(c, tpl);
     hist.current.mute--;
+    resetItem();
     rename(tpl.name);
     record();
   };
@@ -492,12 +495,13 @@ export function DesignStudio() {
       rename(data.name || f.name.replace(/\.design\.json$|\.json$/i, ""));
       await restore(data.json);
       resetHistory();
+      resetItem();
     } catch {
       toast.error("That file isn't a Design Studio project.");
     }
   };
 
-  const { save, saving } = useSavedItem(
+  const { save, reset: resetItem, saving } = useSavedItem(
     "design",
     "create.design",
     (content, title) => {

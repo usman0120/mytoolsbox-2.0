@@ -67,3 +67,10 @@
 | 2026-11-22 | Flashcards rebuilt with SM-2 spaced repetition, decks, paste/CSV import and AI cards from notes (study.cards task); cards stay in the browser | Previous version had no scheduling and lost cards on reload |
 | 2026-11-22 | study.quiz accepts up to 6,000 characters so quizzes can be made from pasted notes | "Quiz from notes" in the blueprint |
 | 2026-11-22 | Streaming AI calls skip a model that hasn't started answering within 12 s (total stream limit stays 90 s) | A hung Gemini model made users wait 90 s before the fallback |
+| 2026-11-22 | M8 review: saved items now save as new for calculators and AI outlines; editors reset the opened item on new/opened documents; Diagram Studio ties an item to its format; opened whiteboard items replace the scene | Independent review found save-back paths that could overwrite an account item |
+| 2026-11-22 | updateItem uses updateDoc (fails on a deleted item instead of creating a half-empty doc); saving then falls back to a new item | Same review |
+| 2026-11-22 | Markdown AI tasks charge quota only after a provider starts streaming; open timeout 12 s for cheap, 30 s for vision/reasoning | A failed request no longer costs the user |
+| 2026-11-22 | Shared text from the share sheet is passed in the URL fragment (never sent to the server) | Keeps user text out of request logs |
+| 2026-11-22 | Lint passes repo-wide: vendored public/pdfjs and public/excalidraw ignored; 67 legacy errors fixed | Definition of done |
+| 2026-11-22 | e2e suite rewritten for the new URLs: every sitemap page (200, h1, no runtime/hydration errors), phone fit, 404, sign-in, persistence, share links, flashcards; the old inventory-based specs removed | The old specs depended on a deleted audit script and pre-restructure URLs |
+| 2026-11-22 | Habit tracker migrates data from the old /tools/habit-tracker format (separate habit and entry keys) on first open; old keys kept as backup | The two live trackers were consolidated; without this, users of the old one would lose their habits |

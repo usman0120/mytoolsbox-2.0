@@ -9,8 +9,9 @@ type Caller = (req: AIRequest, model: string, key: string) => Promise<AIResponse
 /** A stalled provider must fail over instead of hanging the request. */
 const CALL_TIMEOUT = 30_000;
 const STREAM_TIMEOUT = 90_000;
-/** A model that hasn't started answering within this time is skipped for the next fallback. */
-const STREAM_OPEN_TIMEOUT = 12_000;
+/** A model that hasn't started answering within this time is skipped for the next fallback.
+ * Vision and reasoning models think before the first token, so they get longer. */
+const STREAM_OPEN_TIMEOUT: Record<Tier, number> = { cheap: 12_000, vision: 30_000, reasoning: 30_000, image: 30_000 };
 
 interface Provider {
   id: "gemini" | "groq";
@@ -238,7 +239,8 @@ export async function streamAi(req: AIRequest): Promise<{ stream: ReadableStream
     for (const model of p.models[tier]) {
       try {
         const opening = new AbortController();
-        const timer = setTimeout(() => opening.abort(new Error(`no response within ${STREAM_OPEN_TIMEOUT / 1000} s`)), STREAM_OPEN_TIMEOUT);
+        const openMs = STREAM_OPEN_TIMEOUT[tier] ?? 12_000;
+        const timer = setTimeout(() => opening.abort(new Error(`no response within ${openMs / 1000} s`)), openMs);
         let res: Response;
         try {
           res = await OPENERS[p.id](req, model, key, AbortSignal.any([opening.signal, AbortSignal.timeout(STREAM_TIMEOUT)]));

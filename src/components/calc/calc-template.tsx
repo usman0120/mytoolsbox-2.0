@@ -118,7 +118,7 @@ export function CalcTemplate({ def, toolId, title }: { def: CalcDef; toolId: str
             <Button variant="ghost" size="sm" disabled={!ok} onClick={() => navigator.clipboard.writeText(summary()).then(() => toast.success("Result copied"))}>
               Copy result
             </Button>
-            <Button variant="ghost" size="sm" disabled={!ok || saving} onClick={() => save(`${title}: ${(result as CalcResult).primary.value}`, summary())}>
+            <Button variant="ghost" size="sm" disabled={!ok || saving} onClick={() => save(`${title}: ${(result as CalcResult).primary.value}`, summary(), { asNew: true })}>
               Save
             </Button>
           </div>

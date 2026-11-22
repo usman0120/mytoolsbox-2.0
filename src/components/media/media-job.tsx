@@ -117,6 +117,7 @@ export function MediaJob({ config }: { config: MediaJobConfig }) {
     setProgress(0);
     try {
       const blob = await transcode(file, options(), (p, n) => (setProgress(p), setPass(n)), ctl.signal);
+      if (ctl.signal.aborted) return;
       const name = `${baseName(file.name)}-${config.suffix}.${FORMAT_INFO[format].ext}`;
       setResult({ blob, url: URL.createObjectURL(blob), name });
     } catch (e) {

@@ -68,7 +68,7 @@ class MathParser {
   }
 
   private tokenize(raw: string): string[] {
-    let s = raw
+    const s = raw
       .replace(/×/g, "*")
       .replace(/÷/g, "/")
       .replace(/π/g, "pi")
@@ -183,7 +183,7 @@ class MathParser {
 
   // power = unary ( "^" unary )* (right-associative)
   private power(): number {
-    let base = this.unary();
+    const base = this.unary();
     if (this.peek() === "^") {
       this.consume();
       const exp = this.power();

@@ -85,7 +85,7 @@ function beautifyHTMLAdvanced(html: string, indentSize: number, useTabs: boolean
     "link", "meta", "param", "source", "track", "wbr", "!doctype",
   ]);
 
-  let clean = html.trim().replace(/>\s*</g, "><");
+  const clean = html.trim().replace(/>\s*</g, "><");
   const tokens = clean.split(/(<[^>]*>)/g).filter(Boolean);
 
   let result = "";

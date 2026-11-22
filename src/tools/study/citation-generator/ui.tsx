@@ -87,8 +87,7 @@ export function CitationGeneratorEngine() {
 
   const downloadBibTeX = useCallback(() => {
     if (saved.length === 0) { toast.error("Save at least one citation first."); return; }
-    const { formatBibliography: fb } = require("@/tools/study/citation-generator/engine");
-    const content = saved.map(s => fb(s, "bibtex")).join("\n\n");
+    const content = saved.map(s => formatBibliography(s, "bibtex")).join("\n\n");
     const blob = new Blob([content], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a"); a.href = url; a.download = "references.bib"; a.click();
@@ -98,9 +97,8 @@ export function CitationGeneratorEngine() {
 
   const downloadText = useCallback(() => {
     if (saved.length === 0) { toast.error("Save at least one citation first."); return; }
-    const { formatBibliography: fb } = require("@/tools/study/citation-generator/engine");
     const content = `${STYLES.find(s => s.value === style)?.label} References\n\n` +
-      saved.map((s, i) => `${i + 1}. ${fb(s, style)}`).join("\n");
+      saved.map((s, i) => `${i + 1}. ${formatBibliography(s, style)}`).join("\n");
     const blob = new Blob([content], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a"); a.href = url; a.download = `references-${style}.txt`; a.click();
@@ -149,7 +147,7 @@ export function CitationGeneratorEngine() {
                 placeholder='e.g. John Smith and Jane Doe  OR  Smith, J., Doe, J.'
                 className="h-8 text-sm"
               />
-              <p className="text-[10px] text-muted-foreground mt-1">Separate multiple authors with "and"</p>
+              <p className="text-[10px] text-muted-foreground mt-1">Separate multiple authors with &quot;and&quot;</p>
             </div>
 
             {/* Title */}

@@ -100,7 +100,7 @@ function beautifyCSSAdvanced(
   const indentChar = useTabs ? "\t" : " ".repeat(indentSize);
 
   // Normalize spaces
-  let formatted = css
+  const formatted = css
     .replace(/\s*\{\s*/g, " {\n")
     .replace(/\s*;\s*/g, ";\n")
     .replace(/\s*\}\s*/g, "\n}\n\n");
@@ -111,7 +111,7 @@ function beautifyCSSAdvanced(
   let currentBlockProps: string[] = [];
   let inBlock = false;
 
-  for (let rawLine of lines) {
+  for (const rawLine of lines) {
     const line = rawLine.trim();
     if (!line) continue;
 

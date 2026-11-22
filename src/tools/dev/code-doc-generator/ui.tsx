@@ -15,7 +15,7 @@ import {
   BookOpen,
   Code2,
 } from "lucide-react";
-import { generateDocs, type DocGeneratorOutput } from "@/lib/ai/services/doc-generator";
+import { generateDocs, type DocGeneratorInput, type DocGeneratorOutput } from "@/lib/ai/services/doc-generator";
 import { useAiQuota } from "@/lib/ai/use-ai-quota";
 import { toast } from "sonner";
 
@@ -164,8 +164,8 @@ export function AIDocumentationGeneratorEngine() {
       const r = await generateDocs({
         code: code.trim(),
         language: language === "auto" ? undefined : language,
-        style: style === "auto" ? undefined : (style as any),
-        detail: detail as any,
+        style: style === "auto" ? undefined : (style as DocGeneratorInput["style"]),
+        detail: detail as DocGeneratorInput["detail"],
       });
       setResult(r);
       toast.success("Documentation generated!");

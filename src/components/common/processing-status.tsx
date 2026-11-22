@@ -108,7 +108,7 @@ export function ProcessingStatusBadge({ status }: ProcessingStatusBadgeProps) {
     "limit-exceeded": "status_limit_exceeded",
   };
 
-  const label = statusKeyMap[status] ? t(statusKeyMap[status] as any, config.label) : config.label;
+  const label = statusKeyMap[status] ? t(statusKeyMap[status] as Parameters<typeof t>[0], config.label) : config.label;
 
   return (
     <Badge variant={config.variant} className={cn("gap-1", config.className)}>

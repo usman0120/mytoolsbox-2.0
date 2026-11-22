@@ -129,13 +129,20 @@ export const kinematics: CalcDef = {
     else if (s !== null && u !== null && a !== null) {
       const d = u * u + 2 * a * s;
       if (d < 0) return err("No real solution: the object never reaches that displacement.");
-      v = Math.sqrt(d);
-      t = a ? (v - u) / a : s / u;
+      // Both signs of v are possible (e.g. thrown up, landing lower); keep the earliest non-negative time.
+      const u0 = u, s0 = s;
+      const best = [Math.sqrt(d), -Math.sqrt(d)].map((vv) => ({ vv, tt: a ? (vv - u0) / a : s0 / u0 })).filter((c) => c.tt >= 0).sort((x, y) => x.tt - y.tt)[0];
+      if (!best) return err("These values give a negative time. Check the signs.");
+      v = best.vv;
+      t = best.tt;
     } else if (s !== null && v !== null && a !== null) {
       const d = v * v - 2 * a * s;
       if (d < 0) return err("No real solution for these values.");
-      u = Math.sqrt(d);
-      t = a ? (v - u) / a : s / v;
+      const vEnd = v, s0 = s;
+      const best = [Math.sqrt(d), -Math.sqrt(d)].map((uu) => ({ uu, tt: a ? (vEnd - uu) / a : s0 / vEnd })).filter((c) => c.tt >= 0).sort((x, y) => x.tt - y.tt)[0];
+      if (!best) return err("These values give a negative time. Check the signs.");
+      u = best.uu;
+      t = best.tt;
     } else if (v !== null && a !== null && t !== null) { u = v - a * t; s = v * t - 0.5 * a * t * t; }
     if (t !== null && t < 0) return err("These values give a negative time. Check the signs.");
     return {
@@ -196,7 +203,16 @@ export const ATOMIC: Record<string, number> = Object.fromEntries(W.match(/[A-Z][
 
 /** Parses formulas like H2O, Ca(OH)2, CuSO4·5H2O, [Fe(CN)6]3- (charge ignored) into element counts. */
 export function parseFormula(formula: string): Record<string, number> {
-  const parts = formula.replace(/\s+/g, "").replace(/[+-]\d*$|\d*[+-]$/, "").split(/[·.*]/);
+  // Strip an ion charge only when it is written unambiguously: "^2-", after a bracket ("[Fe(CN)6]3-"),
+  // after a space ("SO4 2-"), or a bare sign ("NH4+"). "SO42-" can't be told apart from a subscript.
+  const parts = formula
+    .trim()
+    .replace(/\^\d*[+-]$/, "")
+    .replace(/([\])])\d*[+-]$/, "$1")
+    .replace(/\s+\d*[+-]$/, "")
+    .replace(/[+-]$/, "")
+    .replace(/\s+/g, "")
+    .split(/[·.*]/);
   const total: Record<string, number> = {};
   for (const part of parts) {
     const lead = /^(\d+)(.*)$/.exec(part);
@@ -236,7 +252,7 @@ export function parseFormula(formula: string): Record<string, number> {
 
 export const molarMass: CalcDef = {
   fields: [
-    { key: "formula", label: "Chemical formula", type: "text", default: "CuSO4·5H2O", placeholder: "e.g. H2SO4, Ca(OH)2", help: "Case matters: Co is cobalt, CO is carbon monoxide. Use · or . for hydrates." },
+    { key: "formula", label: "Chemical formula", type: "text", default: "CuSO4·5H2O", placeholder: "e.g. H2SO4, Ca(OH)2", help: "Case matters: Co is cobalt, CO is carbon monoxide. Use · or . for hydrates, and ^ for charges (SO4^2-)." },
     { key: "mass", label: "Mass (to convert to moles)", type: "number", optional: true, units: [{ id: "g", label: "g", factor: 1 }, { id: "mg", label: "mg", factor: 1e-3 }, { id: "kg", label: "kg", factor: 1e3 }] },
   ],
   compute: (v) => {

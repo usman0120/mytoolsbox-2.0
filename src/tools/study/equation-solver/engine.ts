@@ -52,7 +52,7 @@ function parsePolynomialCoeffs(left: string, right: string, degree: 1 | 2 | 3): 
   const expr = `(${left})-(${right})`;
 
   const evalAt = (x: number): number => {
-    let e = expr
+    const e = expr
       .replace(/(\d)x/gi, "$1*x")
       .replace(/x\^3/gi, `(${x}*${x}*${x})`)
       .replace(/x\^2/gi, `(${x}*${x})`)
@@ -274,7 +274,7 @@ export function solveSystem2(eq1: string, eq2: string): EquationSolution {
     const right = parts[1] || "0";
 
     const evalAt = (x: number, y: number) => {
-      let e = `(${left})-(${right})`
+      const e = `(${left})-(${right})`
         .replace(/(\d)x/gi, "$1*x")
         .replace(/(\d)y/gi, "$1*y")
         .replace(/(?<![a-zA-Z_])x(?![a-zA-Z_])/gi, `(${x})`)
@@ -343,7 +343,7 @@ export function solveSystem3(eq1: string, eq2: string, eq3: string): EquationSol
     const right = parts[1] || "0";
 
     const evalAt = (x: number, y: number, z: number) => {
-      let e = `(${left})-(${right})`
+      const e = `(${left})-(${right})`
         .replace(/(\d)x/gi, "$1*x")
         .replace(/(\d)y/gi, "$1*y")
         .replace(/(\d)z/gi, "$1*z")

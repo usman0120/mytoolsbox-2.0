@@ -9,7 +9,7 @@ test("runs PDF → images under 200 KB → ZIP entirely through connected browse
   const bytes = await doc.save();
   const workflowRequests: string[] = [];
   page.on("request", (request) => { if (request.url().includes("/api/") && request.method() === "POST") workflowRequests.push(request.url()); });
-  await page.goto("/workflows?preset=pdf-images-200kb");
+  await page.goto("/flows?preset=pdf-images-200kb");
   await expect(page.getByRole("heading", { name: "Workflow builder", exact: true })).toBeVisible();
   await page.locator('input[type="file"][multiple]').setInputFiles({ name: "sample.pdf", mimeType: "application/pdf", buffer: Buffer.from(bytes) });
   await page.getByRole("button", { name: "Run workflow", exact: true }).click();
@@ -26,7 +26,7 @@ test("runs PDF → images under 200 KB → ZIP entirely through connected browse
 });
 test("supports editable workflow definitions and US English navigation on mobile", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/workflows");
+  await page.goto("/flows");
   await expect(page.locator("html")).toHaveAttribute("lang", "en-US");
   await page.getByLabel("Workflow name", { exact: true }).fill("My local image pipeline");
   await page.getByRole("button", { name: "Save workflow", exact: true }).click();

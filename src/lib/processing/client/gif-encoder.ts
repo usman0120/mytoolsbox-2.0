@@ -167,7 +167,7 @@ export class GifEncoder {
 
   private medianCut(colors: [number, number, number][], targetCount: number): [number, number, number][] {
     if (colors.length === 0) return [[0, 0, 0]];
-    let boxes: [number, number, number][][] = [colors];
+    const boxes: [number, number, number][][] = [colors];
 
     while (boxes.length < targetCount) {
       let maxRange = -1;

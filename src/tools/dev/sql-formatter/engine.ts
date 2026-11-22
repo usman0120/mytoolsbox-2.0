@@ -110,8 +110,8 @@ export function formatSQLOffline(sql: string, options: SQLFormatOptions = {}): S
     const formattedLines: string[] = [];
     let currentIndent = 0;
 
-    for (let line of rawLines) {
-      let trimmed = line.trim();
+    for (const line of rawLines) {
+      const trimmed = line.trim();
       if (!trimmed) continue;
 
       const startsWithClause = /^(SELECT|FROM|WHERE|GROUP BY|HAVING|ORDER BY|LIMIT|OFFSET|JOIN|LEFT JOIN|RIGHT JOIN|INNER JOIN|FULL JOIN|UNION|INSERT INTO|VALUES|UPDATE|SET|DELETE FROM|WITH)\b/i.test(

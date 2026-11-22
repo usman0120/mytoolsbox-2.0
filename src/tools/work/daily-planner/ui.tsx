@@ -48,25 +48,14 @@ export function DailyPlannerEngine() {
 
   const [newPriorityText, setNewPriorityText] = useState("");
 
-  // Load plan when date changes
-  useEffect(() => {
+  // Plan for a date from storage, or a clean day.
+  const planFor = (date: string): DayPlan => {
     try {
-      const raw = localStorage.getItem(`${STORAGE_PREFIX}${selectedDate}`);
-      if (raw) {
-        setPlan(JSON.parse(raw));
-        return;
-      }
+      const raw = localStorage.getItem(`${STORAGE_PREFIX}${date}`);
+      if (raw) return JSON.parse(raw);
     } catch {}
-    // If no plan exists for this date, start clean
-    setPlan({
-      date: selectedDate,
-      focusGoal: "",
-      gratitude: "",
-      priorities: [],
-      slots: generateDefaultTimeSlots(),
-      notes: "",
-    });
-  }, [selectedDate]);
+    return { date, focusGoal: "", gratitude: "", priorities: [], slots: generateDefaultTimeSlots(), notes: "" };
+  };
 
   // Persist plan changes
   useEffect(() => {
@@ -140,7 +129,10 @@ export function DailyPlannerEngine() {
           <Input
             type="date"
             value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
+            onChange={(e) => {
+              setSelectedDate(e.target.value);
+              setPlan(planFor(e.target.value));
+            }}
             className="w-36 h-8 text-xs font-mono"
           />
           <Button variant="outline" size="sm" onClick={handleExportMarkdown} className="text-xs gap-1.5 h-8">

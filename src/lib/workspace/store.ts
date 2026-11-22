@@ -14,6 +14,7 @@ import {
   orderBy,
   query,
   setDoc,
+  updateDoc,
   writeBatch,
   type Firestore,
 } from "firebase/firestore";
@@ -296,7 +297,8 @@ export async function getItem(uid: string, id: string): Promise<SavedItem | null
 /** Overwrites the content of an item saved earlier (editors save to the same item again). */
 export async function updateItem(uid: string, id: string, patch: Pick<SavedItem, "title" | "content">): Promise<void> {
   if (new Blob([patch.content]).size > MAX_ITEM_BYTES) throw new Error("That result is too large to save to your account (500 KB max).");
-  await setDoc(doc(db(), "users", uid, "items", id), { title: patch.title.slice(0, 200), content: patch.content, updatedAt: Date.now() }, { merge: true });
+  // updateDoc fails with "not-found" if the item was deleted elsewhere (never creates a half-empty doc).
+  await updateDoc(doc(db(), "users", uid, "items", id), { title: patch.title.slice(0, 200), content: patch.content, updatedAt: Date.now() });
 }
 
 export async function deleteItem(uid: string, id: string): Promise<void> {
