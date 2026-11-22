@@ -328,9 +328,15 @@ export function WorkspaceClient({ tools, spaces }: { tools: ToolIndexEntry[]; sp
                           {t?.name ?? "Saved result"} · {when(it.updatedAt)}
                         </span>
                       </button>
-                      <Button variant="ghost" size="icon" aria-label="Copy" onClick={() => navigator.clipboard.writeText(it.content).then(() => toast.success("Copied"))}>
-                        <Copy className="size-4" />
-                      </Button>
+                      {(it.kind === "design" || it.kind === "diagram") && t ? (
+                        <Link href={`${t.url}?item=${encodeURIComponent(it.id)}`} className="rounded-md px-2.5 py-1.5 text-sm font-medium hover:bg-muted">
+                          Open
+                        </Link>
+                      ) : (
+                        <Button variant="ghost" size="icon" aria-label="Copy" onClick={() => navigator.clipboard.writeText(it.content).then(() => toast.success("Copied"))}>
+                          <Copy className="size-4" />
+                        </Button>
+                      )}
                       <Button
                         variant="ghost"
                         size="icon"
@@ -340,7 +346,7 @@ export function WorkspaceClient({ tools, spaces }: { tools: ToolIndexEntry[]; sp
                         <Trash2 className="size-4" />
                       </Button>
                     </div>
-                    {openItem === it.id && <pre className="mt-3 max-h-80 overflow-auto rounded-lg bg-muted p-3 text-xs whitespace-pre-wrap">{it.content}</pre>}
+                    {openItem === it.id && it.kind !== "design" && it.kind !== "diagram" && <pre className="mt-3 max-h-80 overflow-auto rounded-lg bg-muted p-3 text-xs whitespace-pre-wrap">{it.content}</pre>}
                   </li>
                 );
               })}

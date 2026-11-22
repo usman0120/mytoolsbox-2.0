@@ -5,6 +5,9 @@ import type { NextConfig } from "next";
 // once a week of reports is clean.
 const CONNECT = [
   "'self'",
+  // Reading the page's own files and generated results (object URLs, data URLs).
+  "blob:",
+  "data:",
   "https://*.googleapis.com",
   "https://*.firebaseio.com",
   "https://*.firebaseapp.com",
@@ -15,6 +18,10 @@ const CONNECT = [
   "https://cdn.jsdelivr.net",
   "https://unpkg.com",
   "https://tessdata.projectnaptha.com",
+  // On-device ML models (background removal), downloaded once and cached by the browser:
+  "https://huggingface.co",
+  "https://*.huggingface.co",
+  "https://*.hf.co",
   // IP lookup tool
   "https://ipapi.co",
   "https://api.ipify.org",

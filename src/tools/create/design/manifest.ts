@@ -6,7 +6,7 @@ const manifest: ToolManifest = {
   "category": "design",
   "slug": "design",
   "name": "Design Studio",
-  "tagline": "Design social posts, posters and slides.",
+  "tagline": "Make social posts, thumbnails, posters and certificates from templates.",
   "keywords": [
     "online design tool",
     "graphic design",
@@ -22,10 +22,10 @@ const manifest: ToolManifest = {
   ],
   "jobs": [
     "layered canvas editor",
-    "ready-made templates",
-    "social media sizes"
+    "20 ready-made templates",
+    "export PNG, JPG, SVG or PDF"
   ],
-  "template": "file",
+  "template": "editor",
   "input": [
     {
       "type": "image",
@@ -42,44 +42,65 @@ const manifest: ToolManifest = {
       "accept": [
         "image/png",
         "image/jpeg",
+        "image/webp",
         "image/svg+xml"
+      ]
+    },
+    {
+      "type": "pdf",
+      "accept": [
+        "application/pdf"
+      ]
+    },
+    {
+      "type": "design-scene",
+      "accept": [
+        "application/json"
       ]
     }
   ],
   "engine": "client",
   "seo": {
-    "title": "Online Design Studio – Social Posts, Posters & Slides",
-    "description": "Design social media posts, posters, thumbnails and slides online. Templates, text and shapes, export to PNG or PDF. Free, private, no sign-up.",
+    "title": "Design Studio – Free Online Graphic Design Editor",
+    "description": "Design social posts, thumbnails, posters and certificates with templates, text, shapes and photos. Export PNG, JPG, SVG or PDF. Free, private, no sign-up.",
     "h1": "Design Studio"
   },
   "howTo": [
-    "Add your file, or drop it on the page.",
-    "Adjust the options if you need to.",
-    "Download the result."
+    "Pick a size or a template.",
+    "Edit text, add photos, shapes and colours. Everything saves automatically in this browser.",
+    "Export as PNG, JPG, WebP, SVG or PDF."
   ],
   "faq": [
     {
-      "q": "Is the Design Studio free?",
-      "a": "Yes. Every template and export format is free, with no watermark and no account required."
+      "q": "Is Design Studio free?",
+      "a": "Yes. All templates and export formats are free, with no watermark and no account."
     },
     {
       "q": "What can I design?",
-      "a": "Social media posts, stories, YouTube thumbnails, posters, flyers, certificates and simple presentation slides."
+      "a": "Social posts and stories, video thumbnails, banners, posters, flyers, certificates and presentation slides, or any custom size."
     },
     {
       "q": "Are my images uploaded?",
-      "a": "No. Images you add stay in your browser and the design is rendered on your device."
+      "a": "No. Photos you add stay in your browser and the design is drawn on your device."
     },
     {
-      "q": "Which export formats are supported?",
-      "a": "PNG, JPG, SVG and PDF. PNG keeps transparent backgrounds."
+      "q": "Will I lose my work if I close the tab?",
+      "a": "No. The current design autosaves in this browser. You can also download the project file, or save it to your account when signed in."
+    },
+    {
+      "q": "Can I remove a photo's background?",
+      "a": "Yes. Select a photo and choose Remove background. The model runs on your device."
+    },
+    {
+      "q": "Which format should I export?",
+      "a": "PNG for sharp graphics and transparency, JPG for photos and small files, PDF for printing at the real paper size."
     }
   ],
   "related": [
+    "media.remove-background",
+    "create.diagram",
     "create.color-palette-generator",
-    "media.resize-image",
-    "media.crop-image",
-    "media.compress-image"
+    "create.certificate-maker"
   ],
   "legacySlugs": [
     "design-studio"

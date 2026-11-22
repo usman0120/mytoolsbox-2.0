@@ -82,6 +82,8 @@ export const LEGACY_TOOL_PATHS: Record<string, string> = {
   "pomodoro-timer": "/study/pomodoro-timer",
   "ppt-to-pdf": "/docs/powerpoint-to-pdf",
   "profit-calculator": "/calc/profit-calculator",
+  "passport-photo-maker": "/media/passport-photo",
+  "passport-size-photo": "/media/passport-photo",
   "proposal-generator": "/work/proposal-generator",
   "qr-generator": "/create/qr-code-generator",
   "quotation-generator": "/work/quotation-generator",

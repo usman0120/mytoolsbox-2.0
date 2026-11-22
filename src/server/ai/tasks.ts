@@ -216,6 +216,22 @@ const TASKS: AiTaskPreset[] = [
       return `Write ${n} ${level.toLowerCase()} questions about this topic.\n${wrap(input)}`;
     },
   },
+  {
+    id: "diagram.mermaid",
+    prompt: "diagram.mermaid@1",
+    tier: "cheap",
+    output: "markdown",
+    maxInputChars: 3000,
+    maxTokens: 2000,
+    temperature: 0.2,
+    cost: 1,
+    build: (input, o) => {
+      const kind = opt(o, "kind", ["auto", "flowchart", "sequence", "class", "er", "state", "gantt", "mindmap", "timeline"], "auto");
+      // Second attempt after a parse failure carries the parser's message (blueprint: retry once).
+      const fix = o.error ? `\nThe previous attempt failed to parse: "${o.error}". Return corrected Mermaid.` : "";
+      return `Diagram type: ${kind === "auto" ? "choose the best fit" : kind}.${fix}\n${wrap(input)}`;
+    },
+  },
 ];
 
 export function getTask(id: string): AiTaskPreset | undefined {

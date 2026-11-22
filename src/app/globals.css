@@ -548,3 +548,20 @@
 .dark .hero-glow {
   opacity: 0.2;
 }
+
+/* Transparency checkerboard for image previews and swatches */
+@utility checker {
+  background-color: #fff;
+  background-image: conic-gradient(#e7e5e4 25%, transparent 0 50%, #e7e5e4 0 75%, transparent 0);
+  background-size: 16px 16px;
+}
+
+@keyframes indeterminate {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(300%); }
+}
+
+/* Editor pasteboard behind the design page */
+@utility checker-soft {
+  background-color: var(--muted);
+}

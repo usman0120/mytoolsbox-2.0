@@ -47,3 +47,4 @@ next-env.d.ts
 
 # Generated from the pinned PDF.js dependency by predev/prebuild
 /public/pdfjs/
+/public/excalidraw/

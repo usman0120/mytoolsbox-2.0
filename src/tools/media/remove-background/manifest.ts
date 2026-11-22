@@ -6,7 +6,7 @@ const manifest: ToolManifest = {
   "category": "ai-image",
   "slug": "remove-background",
   "name": "Background Remover",
-  "tagline": "Remove image backgrounds instantly.",
+  "tagline": "Cut out people and objects with an AI model that runs on your device.",
   "keywords": [
     "remove background",
     "background remover",
@@ -20,9 +20,9 @@ const manifest: ToolManifest = {
     "bg remover"
   ],
   "jobs": [
-    "one-click removal",
-    "replace with color",
-    "transparent background"
+    "transparent PNG",
+    "replace background with a colour",
+    "cut out a product photo"
   ],
   "template": "file",
   "input": [
@@ -47,38 +47,46 @@ const manifest: ToolManifest = {
   ],
   "engine": "client",
   "seo": {
-    "title": "Background Remover – Remove Image Backgrounds Online",
-    "description": "Remove image backgrounds with one click. Replace with solid color, transparency, or another image. Free, private, no sign-up. Runs in your browser.",
-    "h1": "Background Remover"
+    "title": "Remove Background from Image – Free, Private, On-Device",
+    "description": "Remove the background from any photo with an AI model that runs in your browser. Transparent PNG or a solid colour. Free, no upload, no sign-up.",
+    "h1": "Remove Background from Image"
   },
   "howTo": [
-    "Add your file, or drop it on the page.",
-    "Adjust the options if you need to.",
-    "Download the result."
+    "Add a photo, or drop it on the page.",
+    "Pick Person or Any object. The model downloads once, then works offline.",
+    "Choose transparent or a colour, then download."
   ],
   "faq": [
     {
-      "q": "How does background removal work?",
-      "a": "We use color threshold analysis to detect and remove backgrounds. Works best on images with clear subject/background separation."
+      "q": "How does it work?",
+      "a": "An image segmentation model runs inside your browser and estimates which pixels belong to the subject. Your photo is never uploaded."
     },
     {
-      "q": "Can I replace the background with another image?",
-      "a": "Yes! You can replace the removed background with a solid color, transparency, or upload another image."
+      "q": "Why does it download a model first?",
+      "a": "The model is 7 MB for people and 44 MB for any object. It downloads once, is kept by your browser, and later runs offline."
     },
     {
-      "q": "Is my data uploaded?",
-      "a": "No. Background Remover runs in your browser, so your files and text stay on your device."
+      "q": "Which mode should I use?",
+      "a": "Person is faster and best for portraits and selfies. Any object works for products, pets, cars and other subjects."
+    },
+    {
+      "q": "The edges look rough. What can I do?",
+      "a": "Raise Edge cleanup to remove faint halos, or add Softness to blend hair and fur into a new background."
+    },
+    {
+      "q": "Can I use the result commercially?",
+      "a": "Yes. The models are licensed Apache-2.0 and the output is your image. There is no watermark."
     },
     {
       "q": "Is it free?",
-      "a": "Yes. There is no sign-up, no watermark and no daily limit."
+      "a": "Yes. No sign-up, no watermark and no daily limit."
     }
   ],
   "related": [
-    "media.convert-image",
+    "media.passport-photo",
+    "create.design",
     "media.resize-image",
-    "media.watermark-image",
-    "media.add-text-to-image"
+    "media.compress-image"
   ],
   "legacySlugs": [
     "background-remover"

@@ -8,6 +8,10 @@ import { EngineBoundary, EngineLoading, EngineUnavailable } from "@/components/c
 const ui = <P extends object>(loader: () => Promise<ComponentType<P>>) =>
   dynamic(loader, { loading: () => <EngineLoading /> }) as ComponentType<Record<string, unknown>>;
 
+/** Canvas/ML editors: nothing useful to server-render, and they read browser-only state on first render. */
+const clientUi = <P extends object>(loader: () => Promise<ComponentType<P>>) =>
+  dynamic(loader, { ssr: false, loading: () => <EngineLoading /> }) as ComponentType<Record<string, unknown>>;
+
 const UI: Record<string, ComponentType<Record<string, unknown>>> = {
   "docs.compare-pdf": ui(() => import("./docs/compare-pdf/ui").then((m) => m.PDFCompareEngine)),
   "docs.compress-pdf": ui(() => import("./docs/compress-pdf/ui").then((m) => m.PDFCompressorEngine)),
@@ -38,7 +42,8 @@ const UI: Record<string, ComponentType<Record<string, unknown>>> = {
   "media.auto-enhance-photo": ui(() => import("./media/auto-enhance-photo/ui").then((m) => m.AutoEnhancePhotoEngine)),
   "media.convert-image": ui(() => import("./media/convert-image/ui").then((m) => m.ImageConverterEngine)),
   "media.image-to-text": ui(() => import("./media/image-to-text/ui").then((m) => m.ImageToTextOCREngine)),
-  "media.remove-background": ui(() => import("./media/remove-background/ui").then((m) => m.BackgroundRemoverEngine)),
+  "media.remove-background": clientUi(() => import("./media/remove-background/ui").then((m) => m.BackgroundRemover)),
+  "media.passport-photo": clientUi(() => import("./media/passport-photo/ui").then((m) => m.PassportPhotoMaker)),
   "media.video-to-gif": ui(() => import("./media/video-to-gif/ui").then((m) => m.VideoToGifEngine)),
   "media.compress-video": ui(() => import("./media/compress-video/ui").then((m) => m.VideoCompressorEngine)),
   "media.resize-video": ui(() => import("./media/resize-video/ui").then((m) => m.VideoResizerEngine)),
@@ -52,11 +57,11 @@ const UI: Record<string, ComponentType<Record<string, unknown>>> = {
   "media.speech-to-text": ui(() => import("./media/speech-to-text/ui").then((m) => m.SpeechToTextEngine)),
   "media.photo-editor": ui(() => import("./media/photo-editor/ui").then((m) => m.ImageEditorEngine)),
   "media.video-editor": ui(() => import("./media/video-editor/ui").then((m) => m.VideoEditorEngine)),
-  "create.design": ui(() => import("./create/design/ui").then((m) => m.DesignStudioEngine)),
+  "create.design": clientUi(() => import("./create/design/ui").then((m) => m.DesignStudio)),
   "create.color-palette-generator": ui(() => import("./create/color-palette-generator/ui").then((m) => m.ColorPaletteEngine)),
   "create.presentation-maker": ui(() => import("./create/presentation-maker/ui").then((m) => m.PresentationMakerEngine)),
   "create.certificate-maker": ui(() => import("./create/certificate-maker/ui").then((m) => m.CertificateMakerEngine)),
-  "create.diagram": ui(() => import("./create/diagram/ui").then((m) => m.AIDiagramGeneratorEngine)),
+  "create.diagram": clientUi(() => import("./create/diagram/ui").then((m) => m.DiagramStudio)),
   "create.qr-code-generator": ui(() => import("./create/qr-code-generator/ui").then((m) => m.QRGeneratorEngine)),
   "create.barcode-generator": ui(() => import("./create/barcode-generator/ui").then((m) => m.BarcodeGeneratorEngine)),
   "create.barcode-scanner": ui(() => import("./create/barcode-scanner/ui").then((m) => m.BarcodeScannerEngine)),

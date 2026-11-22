@@ -11,6 +11,7 @@ import AutoEnhancePhoto from "./auto-enhance-photo/manifest";
 import ConvertImage from "./convert-image/manifest";
 import ImageToText from "./image-to-text/manifest";
 import RemoveBackground from "./remove-background/manifest";
+import PassportPhoto from "./passport-photo/manifest";
 import VideoToGif from "./video-to-gif/manifest";
 import CompressVideo from "./compress-video/manifest";
 import ResizeVideo from "./resize-video/manifest";
@@ -38,6 +39,7 @@ export const MEDIA_TOOLS = [
   ConvertImage,
   ImageToText,
   RemoveBackground,
+  PassportPhoto,
   VideoToGif,
   CompressVideo,
   ResizeVideo,

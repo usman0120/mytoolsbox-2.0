@@ -1,198 +1,98 @@
-import { ProcessingResult } from "@/lib/processing/types";
+// Pure mask helpers for background removal. The model (see src/lib/ml) produces an alpha mask;
+// these functions refine it and composite the result. No DOM: runs in workers and Vitest.
 
-export interface BackgroundRemoverOptions {
-  targetColor?: { r: number; g: number; b: number };
-  tolerance?: number; // 5 to 120
-  feather?: number; // 0 to 30
-  replacement?: "transparent" | "color";
-  replacementColor?: string; // hex
-  floodFillOnly?: boolean;
+export type Rgb = [number, number, number];
+
+export interface MaskRefine {
+  /** 0-100. Higher keeps only confident subject pixels (cleaner edges, may eat hair). */
+  strength: number;
+  /** Edge softening radius in pixels (0 = hard edge). */
+  feather: number;
 }
 
-export async function removeBackground(
-  file: File,
-  options: BackgroundRemoverOptions = {}
-): Promise<ProcessingResult> {
-  const {
-    targetColor,
-    tolerance = 50,
-    feather = 10,
-    replacement = "transparent",
-    replacementColor = "#ffffff",
-    floodFillOnly = false,
-  } = options;
-
-  if (!file.type.startsWith("image/")) {
-    return { status: "unsupported", error: "Selected file is not an image." };
+/** Contrast-stretch the soft mask around a cut point, then optionally blur its edge. */
+export function refineMask(mask: Uint8Array, w: number, h: number, { strength, feather }: MaskRefine): Uint8Array {
+  const out = new Uint8Array(mask.length);
+  // strength 0 → keep mask as is; 100 → near-binary cut at 50%.
+  const s = Math.min(Math.max(strength, 0), 100) / 100;
+  const lo = 128 * s * 0.9;
+  const hi = 255 - 127 * s * 0.9;
+  for (let i = 0; i < mask.length; i++) {
+    const v = mask[i];
+    out[i] = v <= lo ? 0 : v >= hi ? 255 : Math.round(((v - lo) / (hi - lo)) * 255);
   }
+  const r = Math.round(Math.max(0, feather));
+  return r > 0 ? boxBlur(out, w, h, r) : out;
+}
 
-  return new Promise((resolve) => {
-    const img = new Image();
-    const reader = new FileReader();
+/** Separable box blur (two passes ≈ smooth enough for edge feathering). */
+export function boxBlur(src: Uint8Array, w: number, h: number, r: number): Uint8Array {
+  const tmp = new Uint8Array(src.length);
+  const out = new Uint8Array(src.length);
+  const size = r * 2 + 1;
+  for (let y = 0; y < h; y++) {
+    let sum = 0;
+    const row = y * w;
+    for (let x = -r; x <= r; x++) sum += src[row + clamp(x, 0, w - 1)];
+    for (let x = 0; x < w; x++) {
+      tmp[row + x] = Math.round(sum / size);
+      sum += src[row + clamp(x + r + 1, 0, w - 1)] - src[row + clamp(x - r, 0, w - 1)];
+    }
+  }
+  for (let x = 0; x < w; x++) {
+    let sum = 0;
+    for (let y = -r; y <= r; y++) sum += tmp[clamp(y, 0, h - 1) * w + x];
+    for (let y = 0; y < h; y++) {
+      out[y * w + x] = Math.round(sum / size);
+      sum += tmp[clamp(y + r + 1, 0, h - 1) * w + x] - tmp[clamp(y - r, 0, h - 1) * w + x];
+    }
+  }
+  return out;
+}
 
-    reader.onload = () => {
-      img.src = reader.result as string;
-    };
+/** Applies the mask as alpha. With a background colour the result is flattened onto it. */
+export function composite(rgba: Uint8ClampedArray, mask: Uint8Array, background: Rgb | null): Uint8ClampedArray {
+  const out = new Uint8ClampedArray(rgba.length);
+  for (let i = 0, p = 0; i < mask.length; i++, p += 4) {
+    const a = (mask[i] * rgba[p + 3]) / 255;
+    if (background) {
+      const t = a / 255;
+      out[p] = rgba[p] * t + background[0] * (1 - t);
+      out[p + 1] = rgba[p + 1] * t + background[1] * (1 - t);
+      out[p + 2] = rgba[p + 2] * t + background[2] * (1 - t);
+      out[p + 3] = 255;
+    } else {
+      out[p] = rgba[p];
+      out[p + 1] = rgba[p + 1];
+      out[p + 2] = rgba[p + 2];
+      out[p + 3] = a;
+    }
+  }
+  return out;
+}
 
-    reader.onerror = () => {
-      resolve({ status: "error", error: "Failed to read image file." });
-    };
-
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = img.naturalWidth || img.width;
-      canvas.height = img.naturalHeight || img.height;
-      const ctx = canvas.getContext("2d");
-
-      if (!ctx) {
-        resolve({ status: "error", error: "Unable to process image." });
-        return;
+/** Bounding box of mask pixels above `min`, or null when the mask is empty. */
+export function maskBounds(mask: Uint8Array, w: number, h: number, min = 128) {
+  let x0 = w, y0 = h, x1 = -1, y1 = -1;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (mask[y * w + x] >= min) {
+        if (x < x0) x0 = x;
+        if (x > x1) x1 = x;
+        if (y < y0) y0 = y;
+        if (y > y1) y1 = y;
       }
+    }
+  }
+  return x1 < 0 ? null : { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 };
+}
 
-      ctx.drawImage(img, 0, 0);
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const data = imageData.data;
-      const w = canvas.width;
-      const h = canvas.height;
+export function hexToRgb(hex: string): Rgb {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+  const n = m ? parseInt(m[1], 16) : 0xffffff;
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
 
-      // Determine keying color
-      let keyR = 0, keyG = 0, keyB = 0;
-      if (targetColor) {
-        keyR = targetColor.r;
-        keyG = targetColor.g;
-        keyB = targetColor.b;
-      } else {
-        // Sample border points
-        const corners = [
-          { x: 0, y: 0 },
-          { x: w - 1, y: 0 },
-          { x: 0, y: h - 1 },
-          { x: w - 1, y: h - 1 },
-          { x: Math.floor(w / 2), y: 0 },
-          { x: Math.floor(w / 2), y: h - 1 },
-        ];
-        for (const pt of corners) {
-          const idx = (pt.y * w + pt.x) * 4;
-          keyR += data[idx];
-          keyG += data[idx + 1];
-          keyB += data[idx + 2];
-        }
-        keyR = Math.round(keyR / corners.length);
-        keyG = Math.round(keyG / corners.length);
-        keyB = Math.round(keyB / corners.length);
-      }
-
-      // Parse replacement color if not transparent
-      let repR = 255, repG = 255, repB = 255;
-      if (replacement === "color" && replacementColor) {
-        const hex = replacementColor.replace("#", "");
-        repR = parseInt(hex.substring(0, 2), 16) || 255;
-        repG = parseInt(hex.substring(2, 4), 16) || 255;
-        repB = parseInt(hex.substring(4, 6), 16) || 255;
-      }
-
-      const featherDist = Math.max(1, feather * 1.5);
-
-      if (floodFillOnly) {
-        // Flood fill from borders
-        const visited = new Uint8Array(w * h);
-        const queue: number[] = [];
-
-        // Push border pixels
-        for (let x = 0; x < w; x++) {
-          queue.push(x, 0);
-          queue.push(x, h - 1);
-        }
-        for (let y = 1; y < h - 1; y++) {
-          queue.push(0, y);
-          queue.push(w - 1, y);
-        }
-
-        let head = 0;
-        while (head < queue.length) {
-          const px = queue[head++];
-          const py = queue[head++];
-          const pIndex = py * w + px;
-
-          if (visited[pIndex]) continue;
-          visited[pIndex] = 1;
-
-          const idx = pIndex * 4;
-          const r = data[idx];
-          const g = data[idx + 1];
-          const b = data[idx + 2];
-
-          const dist = Math.sqrt((r - keyR) ** 2 + (g - keyG) ** 2 + (b - keyB) ** 2);
-          if (dist <= tolerance) {
-            if (replacement === "transparent") {
-              data[idx + 3] = 0;
-            } else {
-              data[idx] = repR;
-              data[idx + 1] = repG;
-              data[idx + 2] = repB;
-              data[idx + 3] = 255;
-            }
-
-            // Push neighbors
-            if (px > 0 && !visited[pIndex - 1]) queue.push(px - 1, py);
-            if (px < w - 1 && !visited[pIndex + 1]) queue.push(px + 1, py);
-            if (py > 0 && !visited[pIndex - w]) queue.push(px, py - 1);
-            if (py < h - 1 && !visited[pIndex + w]) queue.push(px, py + 1);
-          }
-        }
-      } else {
-        // Global color distance keying with feathering
-        for (let i = 0; i < data.length; i += 4) {
-          const r = data[i];
-          const g = data[i + 1];
-          const b = data[i + 2];
-
-          const distance = Math.sqrt((r - keyR) ** 2 + (g - keyG) ** 2 + (b - keyB) ** 2);
-
-          if (distance < tolerance) {
-            if (replacement === "transparent") {
-              data[i + 3] = 0;
-            } else {
-              data[i] = repR;
-              data[i + 1] = repG;
-              data[i + 2] = repB;
-              data[i + 3] = 255;
-            }
-          } else if (distance < tolerance + featherDist && replacement === "transparent") {
-            const factor = (distance - tolerance) / featherDist;
-            data[i + 3] = Math.round(data[i + 3] * Math.min(1, factor));
-          }
-        }
-      }
-
-      ctx.putImageData(imageData, 0, 0);
-
-      canvas.toBlob(
-        (blob) => {
-          if (!blob) {
-            resolve({ status: "error", error: "Background removal export failed." });
-            return;
-          }
-
-          const url = URL.createObjectURL(blob);
-          const originalName = file.name.replace(/\.[^.]+$/, "");
-
-          resolve({
-            status: "success",
-            outputBlob: blob,
-            outputUrl: url,
-            message: `Background removed successfully`,
-            data: { downloadName: `${originalName}_nobg.png` },
-          });
-        },
-        "image/png"
-      );
-    };
-
-    img.onerror = () => {
-      resolve({ status: "error", error: "Failed to load image for background removal." });
-    };
-
-    reader.readAsDataURL(file);
-  });
+function clamp(v: number, a: number, b: number) {
+  return v < a ? a : v > b ? b : v;
 }

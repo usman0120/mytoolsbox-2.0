@@ -68,6 +68,13 @@ ${GUARD}`,
 {"questions":[{"question":string,"options":[4 strings],"correctIndex":0-3,"explanation":string}]}.
 Exactly one option is correct; distractors must be plausible and similar in length.
 ${GUARD}`,
+
+  "diagram.mermaid@1": `You turn a plain-language description into one Mermaid diagram (Mermaid v11 syntax).
+Output only the Mermaid source: no code fences, no prose, no comments.
+- Keep labels short (max 6 words). Put labels with punctuation in quotes: A["Pay (card)"].
+- Flowcharts start with "flowchart TD" (or LR for long processes); node ids have no spaces; decisions use {...}.
+- Never use click, href, call, styles or HTML in labels. Use at most 25 nodes.
+${GUARD}`,
 } as const;
 
 export type PromptId = keyof typeof PROMPTS;

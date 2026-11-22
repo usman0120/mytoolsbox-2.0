@@ -5,79 +5,101 @@ const manifest: ToolManifest = {
   "space": "create",
   "category": "diagrams",
   "slug": "diagram",
-  "name": "AI Diagram Generator",
-  "tagline": "AI-powered diagram creation with manual editing.",
+  "name": "Diagram Studio",
+  "tagline": "Whiteboard, flowcharts and diagrams from text, with optional AI.",
   "keywords": [
-    "ai diagram generator",
+    "diagram maker",
+    "flowchart maker",
+    "online whiteboard",
+    "mermaid editor",
     "text to diagram",
-    "flowchart generator",
-    "mind map maker",
-    "er diagram tool",
     "sequence diagram",
-    "architecture diagram",
-    "ai flowchart"
-  ],
-  "synonyms": [
-    "text to diagram",
-    "flowchart generator",
+    "er diagram",
     "mind map maker"
   ],
-  "jobs": [
-    "ai-powered diagram generation from text",
-    "5 diagram types: flowchart, mind map, er, sequence, architecture",
-    "full manual editing after generation"
+  "synonyms": [
+    "flowchart maker",
+    "whiteboard",
+    "text to diagram"
   ],
-  "template": "ai",
-  "input": [],
+  "jobs": [
+    "hand-drawn whiteboard",
+    "diagrams from text",
+    "describe a diagram and let AI draw it"
+  ],
+  "template": "editor",
+  "input": [
+    {
+      "type": "mermaid",
+      "accept": [
+        "text/plain"
+      ]
+    }
+  ],
   "output": [
     {
       "type": "image",
       "accept": [
+        "image/png",
         "image/svg+xml"
+      ]
+    },
+    {
+      "type": "mermaid",
+      "accept": [
+        "text/plain"
       ]
     }
   ],
-  "engine": "ai",
+  "engine": "client",
   "aiTask": "general",
   "seo": {
-    "title": "AI Diagram Generator – Create Diagrams from Text",
-    "description": "Generate flowcharts, mind maps, ER diagrams, sequence diagrams, and architecture diagrams from text descriptions using AI. Works on any device.",
-    "h1": "AI Diagram Generator"
+    "title": "Diagram Studio – Whiteboard, Flowchart & Mermaid Editor",
+    "description": "Draw on a whiteboard, write flowcharts, sequence and ER diagrams as text, or describe one and let AI draw it. Export PNG or SVG. Free, no sign-up.",
+    "h1": "Diagram Studio"
   },
   "howTo": [
-    "Describe what you need, or start from an example.",
-    "Generate the answer.",
-    "Copy it, refine your request or regenerate."
+    "Draw on the Whiteboard, or write a diagram as text in the Code tab.",
+    "Describe a diagram in plain words to have AI write it for you.",
+    "Turn code into editable shapes, then export PNG, SVG or the source."
   ],
   "faq": [
     {
-      "q": "What diagram types can I create?",
-      "a": "Flowcharts, mind maps, ER diagrams, sequence diagrams, and architecture diagrams. Describe what you need and AI generates it."
+      "q": "What is the Code tab?",
+      "a": "It uses Mermaid, a simple text format for diagrams. Write lines like A --> B and the diagram draws itself. Pick an example to start."
     },
     {
-      "q": "Can I edit the generated diagram?",
-      "a": "Yes! After AI generates the diagram, you can add, move, resize, recolor, and connect shapes manually. Full editing control."
+      "q": "How does the AI option work?",
+      "a": "Describe the diagram in plain words. The description is sent to our AI provider, which writes Mermaid code that you can edit. It counts toward your daily AI allowance."
+    },
+    {
+      "q": "Can I edit an AI diagram by hand?",
+      "a": "Yes. Edit the code, or choose Edit as shapes to move boxes and arrows freely on the whiteboard."
     },
     {
       "q": "Does it work offline?",
-      "a": "AI generation requires internet. When offline, smart templates are used based on your description keywords, and you can still edit everything manually."
+      "a": "The whiteboard and the Code tab work offline once the page has loaded. Only AI needs a connection."
     },
     {
-      "q": "Can I export my diagram?",
-      "a": "Yes, export as SVG for use in other applications, presentations, or documents."
+      "q": "Where is my diagram saved?",
+      "a": "In this browser, automatically. Signed-in users can also save diagrams to their account."
+    },
+    {
+      "q": "Which diagram types are supported?",
+      "a": "Flowcharts, sequence, class, entity relationship, state, Gantt, mind maps, pie charts and timelines."
     }
   ],
   "related": [
-    "media.photo-editor",
+    "create.design",
     "create.presentation-maker",
-    "create.barcode-generator",
-    "create.barcode-scanner"
+    "dev.json-formatter",
+    "ai.writer"
   ],
   "legacySlugs": [
     "ai-diagram-generator"
   ],
   "status": "live",
-  "offline": false
+  "offline": true
 };
 
 export default manifest;

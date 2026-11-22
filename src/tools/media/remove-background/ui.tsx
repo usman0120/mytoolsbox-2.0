@@ -1,452 +1,282 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
-import {
-  Upload,
-  Download,
-  Trash2,
-  Scissors,
-  Pipette,
-  Eye,
-  Sliders,
-  Layers,
-  Sparkles,
-} from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
-import {
-  removeBackground,
-  BackgroundRemoverOptions,
-} from "@/tools/media/remove-background/engine";
+import { FileDrop, Segmented } from "@/components/tools/file-drop";
+import { segment, type SegmentStatus } from "@/lib/ml/segment";
+import { SEGMENT_MODELS, type SegmentModel } from "@/lib/ml/segment-models";
+import { baseName, canvasFrom, download, formatBytes, loadBitmap, pixelsOf, toBlob } from "@/lib/image/canvas";
+import { composite, hexToRgb, maskBounds, refineMask } from "./engine";
 
-export function BackgroundRemoverEngine() {
+const SWATCHES = ["#ffffff", "#f2f2f2", "#000000", "#2563eb", "#dbeafe", "#16a34a", "#fde68a"];
+type Format = "png" | "jpg" | "webp";
+
+export function BackgroundRemover() {
   const [file, setFile] = useState<File | null>(null);
-  const [baseImage, setBaseImage] = useState<HTMLImageElement | null>(null);
-
-  // Settings
-  const [tolerance, setTolerance] = useState(50); // 5 to 120
-  const [feather, setFeather] = useState(10); // 0 to 30
-  const [floodFillOnly, setFloodFillOnly] = useState(false);
-  const [pickedColor, setPickedColor] = useState<{ r: number; g: number; b: number } | null>(null);
-  const [isEyedropperActive, setIsEyedropperActive] = useState(false);
-  const [bgMode, setBgMode] = useState<"transparent" | "white" | "custom">("transparent");
-  const [customColor, setCustomColor] = useState("#ffffff");
+  const [model, setModel] = useState<SegmentModel>("object");
+  const [status, setStatus] = useState<SegmentStatus | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [mask, setMask] = useState<{ data: Uint8Array; w: number; h: number } | null>(null);
+  const [bg, setBg] = useState<string | null>(null);
+  const [strength, setStrength] = useState(35);
+  const [feather, setFeather] = useState(1);
+  const [trim, setTrim] = useState(false);
+  const [format, setFormat] = useState<Format>("png");
   const [showOriginal, setShowOriginal] = useState(false);
+  const pixels = useRef<ImageData | null>(null);
+  const out = useRef<HTMLCanvasElement | null>(null);
+  const view = useRef<HTMLDivElement>(null);
+  const run = useRef(0);
 
-  // State
-  const [isProcessing, setIsProcessing] = useState(false);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const process = useCallback(async (f: File, m: SegmentModel) => {
+    const job = ++run.current;
+    setError(null);
+    setMask(null);
+    setStatus({ phase: "download", percent: 0 });
+    try {
+      const bitmap = await loadBitmap(f);
+      pixels.current = pixelsOf(bitmap);
+      bitmap.close();
+      const r = await segment(f, m, (s) => job === run.current && setStatus(s));
+      if (job !== run.current) return;
+      setMask({ data: r.mask, w: r.width, h: r.height });
+    } catch (e) {
+      if (job === run.current) setError(e instanceof Error ? e.message : "Something went wrong.");
+    } finally {
+      if (job === run.current) setStatus(null);
+    }
+  }, []);
 
-  const handleLoadFile = (f: File) => {
-    if (!f.type.startsWith("image/")) return;
+  const open = (f: File) => {
+    if (!f.type.startsWith("image/")) return setError("Choose a JPG, PNG or WebP image.");
     setFile(f);
-    setPickedColor(null);
-    const reader = new FileReader();
-    reader.onload = () => {
-      const img = new Image();
-      img.onload = () => setBaseImage(img);
-      img.src = reader.result as string;
-    };
-    reader.readAsDataURL(f);
+    void process(f, model);
   };
 
-  const renderCanvas = useCallback(() => {
-    if (!baseImage || !canvasRef.current) return;
-    const canvas = canvasRef.current;
-    canvas.width = baseImage.naturalWidth || baseImage.width;
-    canvas.height = baseImage.naturalHeight || baseImage.height;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    if (showOriginal) {
-      ctx.drawImage(baseImage, 0, 0);
-      return;
-    }
-
-    ctx.drawImage(baseImage, 0, 0);
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const data = imageData.data;
-    const w = canvas.width;
-    const h = canvas.height;
-
-    // Determine sample key color
-    let keyR = 0, keyG = 0, keyB = 0;
-    if (pickedColor) {
-      keyR = pickedColor.r;
-      keyG = pickedColor.g;
-      keyB = pickedColor.b;
-    } else {
-      // Default: sample corners
-      const corners = [
-        { x: 0, y: 0 },
-        { x: w - 1, y: 0 },
-        { x: 0, y: h - 1 },
-        { x: w - 1, y: h - 1 },
-      ];
-      for (const pt of corners) {
-        const idx = (pt.y * w + pt.x) * 4;
-        keyR += data[idx];
-        keyG += data[idx + 1];
-        keyB += data[idx + 2];
-      }
-      keyR = Math.round(keyR / 4);
-      keyG = Math.round(keyG / 4);
-      keyB = Math.round(keyB / 4);
-    }
-
-    let repR = 255, repG = 255, repB = 255;
-    if (bgMode === "white") {
-      repR = 255; repG = 255; repB = 255;
-    } else if (bgMode === "custom") {
-      const hex = customColor.replace("#", "");
-      repR = parseInt(hex.substring(0, 2), 16) || 255;
-      repG = parseInt(hex.substring(2, 4), 16) || 255;
-      repB = parseInt(hex.substring(4, 6), 16) || 255;
-    }
-
-    const featherDist = Math.max(1, feather * 1.5);
-
-    if (floodFillOnly) {
-      const visited = new Uint8Array(w * h);
-      const queue: number[] = [];
-
-      for (let x = 0; x < w; x++) {
-        queue.push(x, 0);
-        queue.push(x, h - 1);
-      }
-      for (let y = 1; y < h - 1; y++) {
-        queue.push(0, y);
-        queue.push(w - 1, y);
-      }
-
-      let head = 0;
-      while (head < queue.length) {
-        const px = queue[head++];
-        const py = queue[head++];
-        const pIndex = py * w + px;
-
-        if (visited[pIndex]) continue;
-        visited[pIndex] = 1;
-
-        const idx = pIndex * 4;
-        const r = data[idx];
-        const g = data[idx + 1];
-        const b = data[idx + 2];
-
-        const dist = Math.sqrt((r - keyR) ** 2 + (g - keyG) ** 2 + (b - keyB) ** 2);
-        if (dist <= tolerance) {
-          if (bgMode === "transparent") {
-            data[idx + 3] = 0;
-          } else {
-            data[idx] = repR;
-            data[idx + 1] = repG;
-            data[idx + 2] = repB;
-            data[idx + 3] = 255;
-          }
-
-          if (px > 0 && !visited[pIndex - 1]) queue.push(px - 1, py);
-          if (px < w - 1 && !visited[pIndex + 1]) queue.push(px + 1, py);
-          if (py > 0 && !visited[pIndex - w]) queue.push(px, py - 1);
-          if (py < h - 1 && !visited[pIndex + w]) queue.push(px, py + 1);
-        }
-      }
-    } else {
-      for (let i = 0; i < data.length; i += 4) {
-        const r = data[i];
-        const g = data[i + 1];
-        const b = data[i + 2];
-
-        const distance = Math.sqrt((r - keyR) ** 2 + (g - keyG) ** 2 + (b - keyB) ** 2);
-
-        if (distance < tolerance) {
-          if (bgMode === "transparent") {
-            data[i + 3] = 0;
-          } else {
-            data[i] = repR;
-            data[i + 1] = repG;
-            data[i + 2] = repB;
-            data[i + 3] = 255;
-          }
-        } else if (distance < tolerance + featherDist && bgMode === "transparent") {
-          const factor = (distance - tolerance) / featherDist;
-          data[i + 3] = Math.round(data[i + 3] * Math.min(1, factor));
-        }
-      }
-    }
-
-    ctx.putImageData(imageData, 0, 0);
-  }, [
-    baseImage,
-    pickedColor,
-    tolerance,
-    feather,
-    floodFillOnly,
-    bgMode,
-    customColor,
-    showOriginal,
-  ]);
-
+  // Recompose whenever the mask or an option changes.
   useEffect(() => {
-    renderCanvas();
-  }, [renderCanvas]);
+    const px = pixels.current;
+    if (!mask || !px) return;
+    const t = setTimeout(() => {
+      const refined = refineMask(mask.data, mask.w, mask.h, { strength, feather });
+      const rgba = composite(px.data, refined, bg ? hexToRgb(bg) : null);
+      let canvas = canvasFrom(rgba, mask.w, mask.h);
+      if (trim) {
+        const b = maskBounds(refined, mask.w, mask.h, 24);
+        if (b) {
+          const pad = Math.round(Math.max(b.w, b.h) * 0.03);
+          const x = Math.max(0, b.x - pad), y = Math.max(0, b.y - pad);
+          const w = Math.min(mask.w - x, b.w + pad * 2), h = Math.min(mask.h - y, b.h + pad * 2);
+          const c = document.createElement("canvas");
+          c.width = w;
+          c.height = h;
+          c.getContext("2d")!.drawImage(canvas, x, y, w, h, 0, 0, w, h);
+          canvas = c;
+        }
+      }
+      canvas.className = "max-h-[70vh] max-w-full object-contain";
+      out.current = canvas;
+      view.current?.replaceChildren(canvas);
+    }, 60);
+    return () => clearTimeout(t);
+  }, [mask, strength, feather, bg, trim]);
 
-  const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isEyedropperActive || !canvasRef.current || !baseImage) return;
-    const canvas = canvasRef.current;
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    const x = Math.floor((e.clientX - rect.left) * scaleX);
-    const y = Math.floor((e.clientY - rect.top) * scaleY);
+  // JPG can't hold transparency; fall back to PNG while the background is transparent.
+  const fmt: Format = !bg && format === "jpg" ? "png" : format;
 
-    const tempCanvas = document.createElement("canvas");
-    tempCanvas.width = canvas.width;
-    tempCanvas.height = canvas.height;
-    const tempCtx = tempCanvas.getContext("2d");
-    if (!tempCtx) return;
-
-    tempCtx.drawImage(baseImage, 0, 0);
-    const pixel = tempCtx.getImageData(x, y, 1, 1).data;
-    setPickedColor({ r: pixel[0], g: pixel[1], b: pixel[2] });
-    setIsEyedropperActive(false);
+  const save = async () => {
+    if (!out.current || !file) return;
+    const format = fmt;
+    const type = format === "jpg" ? "image/jpeg" : format === "webp" ? "image/webp" : "image/png";
+    const blob = await toBlob(out.current, type, format === "png" ? undefined : 0.92);
+    download(blob, `${baseName(file.name)}-no-bg.${format}`);
   };
 
-  const handleDownload = () => {
-    if (!canvasRef.current) return;
-    const a = document.createElement("a");
-    a.href = canvasRef.current.toDataURL("image/png");
-    const base = file?.name.replace(/\.[^.]+$/, "") || "transparent";
-    a.download = `${base}_nobg.png`;
-    a.click();
-  };
-
-  const handleReset = () => {
+  const reset = () => {
+    run.current++;
     setFile(null);
-    setBaseImage(null);
-    setPickedColor(null);
-    setTolerance(50);
-    setFeather(10);
-    setBgMode("transparent");
+    setMask(null);
+    setStatus(null);
+    setError(null);
+    pixels.current = null;
   };
+
+  const spec = SEGMENT_MODELS[model];
+  const originalUrl = useObjectUrl(file);
 
   return (
-    <div className="space-y-6">
-      {!file && (
-        <div
-          className="border-2 border-dashed rounded-2xl p-10 text-center transition-all cursor-pointer hover:border-primary/50 hover:bg-primary/5 border-muted-foreground/25"
-          onClick={() => fileInputRef.current?.click()}
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={(e) => {
-            e.preventDefault();
-            if (e.dataTransfer.files[0]) handleLoadFile(e.dataTransfer.files[0]);
-          }}
-        >
-          <div className="h-14 w-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mx-auto mb-4">
-            <Scissors className="h-7 w-7" />
-          </div>
-          <h3 className="font-semibold text-lg mb-1">Interactive Background Remover</h3>
-          <p className="text-sm text-muted-foreground max-w-sm mx-auto mb-4">
-            Cut out subjects, isolate products, and make images transparent with interactive tolerance and color picking.
-          </p>
-          <Button variant="outline" className="rounded-xl shadow-xs">
-            Browse Image
-          </Button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => e.target.files?.[0] && handleLoadFile(e.target.files[0])}
+    <div className="space-y-4">
+      {!file ? (
+        <>
+          <FileDrop
+            accept="image/jpeg,image/png,image/webp"
+            onFile={open}
+            title="Add a photo"
+            hint="People, products, pets or objects. The AI model runs in your browser, so the photo is never uploaded."
+            button="Choose photo"
           />
-        </div>
-      )}
-
-      {file && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Controls */}
-          <div className="lg:col-span-5 space-y-4">
-            <div className="p-5 rounded-2xl border bg-card/60 backdrop-blur-sm space-y-4">
-              <div>
-                <h4 className="font-semibold text-sm">Background Replacement</h4>
-                <p className="text-xs text-muted-foreground">Select output canvas background</p>
-              </div>
-
-              <div className="grid grid-cols-3 gap-1.5">
-                <Button
-                  size="sm"
-                  variant={bgMode === "transparent" ? "default" : "outline"}
-                  className="h-8 text-xs rounded-xl"
-                  onClick={() => setBgMode("transparent")}
-                >
-                  Transparent
-                </Button>
-                <Button
-                  size="sm"
-                  variant={bgMode === "white" ? "default" : "outline"}
-                  className="h-8 text-xs rounded-xl"
-                  onClick={() => setBgMode("white")}
-                >
-                  Pure White
-                </Button>
-                <Button
-                  size="sm"
-                  variant={bgMode === "custom" ? "default" : "outline"}
-                  className="h-8 text-xs rounded-xl"
-                  onClick={() => setBgMode("custom")}
-                >
-                  Custom
-                </Button>
-              </div>
-
-              {bgMode === "custom" && (
-                <div className="flex items-center gap-2 pt-1">
-                  <input
-                    type="color"
-                    value={customColor}
-                    onChange={(e) => setCustomColor(e.target.value)}
-                    className="h-8 w-10 rounded-lg cursor-pointer border p-0.5 bg-background"
-                  />
-                  <span className="text-xs text-muted-foreground uppercase">{customColor}</span>
-                </div>
+          {error && <p className="text-sm text-destructive">{error}</p>}
+        </>
+      ) : (
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
+          <div className="min-w-0">
+            <div className="checker relative flex min-h-[320px] items-center justify-center overflow-hidden rounded-xl border p-3" style={bg ? { background: "var(--muted)" } : undefined}>
+              <div ref={view} className={showOriginal || !mask ? "hidden" : "contents"} />
+              {(showOriginal || !mask) && originalUrl && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={originalUrl} alt="Original photo" className={`max-h-[70vh] max-w-full object-contain ${status ? "opacity-50" : ""}`} />
               )}
-
-              {/* Eyedropper color picker */}
-              <div className="space-y-2 pt-3 border-t">
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs font-medium flex items-center gap-1.5">
-                    <Pipette className="h-3.5 w-3.5" /> Sample Background Color
-                  </Label>
+              {status && <Progress status={status} sizeMb={spec.sizeMb} />}
+            </div>
+            <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
+              <span className="truncate">
+                {file.name} · {formatBytes(file.size)}
+                {mask && ` · ${mask.w}×${mask.h}`}
+              </span>
+              <div className="flex gap-2">
+                {mask && (
                   <Button
+                    variant="outline"
                     size="sm"
-                    variant={isEyedropperActive ? "default" : "outline"}
-                    className="h-7 text-xs rounded-lg gap-1"
-                    onClick={() => setIsEyedropperActive(!isEyedropperActive)}
+                    onPointerDown={() => setShowOriginal(true)}
+                    onPointerUp={() => setShowOriginal(false)}
+                    onPointerLeave={() => setShowOriginal(false)}
+                    onKeyDown={(e) => e.key === " " && setShowOriginal(true)}
+                    onKeyUp={() => setShowOriginal(false)}
                   >
-                    {isEyedropperActive ? "Click on Canvas..." : "Sample from Image"}
+                    Hold to compare
                   </Button>
-                </div>
-
-                {pickedColor && (
-                  <div className="flex items-center justify-between p-2 rounded-xl bg-muted/50 border text-xs">
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="h-4 w-4 rounded-full border border-black/20"
-                        style={{ backgroundColor: `rgb(${pickedColor.r},${pickedColor.g},${pickedColor.b})` }}
-                      />
-                      <span>rgb({pickedColor.r}, {pickedColor.g}, {pickedColor.b})</span>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setPickedColor(null)}
-                      className="h-5 text-[10px] text-muted-foreground"
-                    >
-                      Auto-Corners
-                    </Button>
-                  </div>
                 )}
-              </div>
-
-              {/* Sliders */}
-              <div className="space-y-3 pt-3 border-t">
-                <div>
-                  <div className="flex justify-between items-center mb-1">
-                    <Label className="text-xs font-medium">Color Tolerance</Label>
-                    <span className="text-xs text-muted-foreground">{tolerance}</span>
-                  </div>
-                  <Slider
-                    value={[tolerance]}
-                    min={5}
-                    max={120}
-                    step={1}
-                    onValueChange={(val) => setTolerance(Array.isArray(val) ? val[0] : (val as number))}
-                  />
-                </div>
-
-                <div>
-                  <div className="flex justify-between items-center mb-1">
-                    <Label className="text-xs font-medium">Edge Smooth & Feather</Label>
-                    <span className="text-xs text-muted-foreground">{feather}px</span>
-                  </div>
-                  <Slider
-                    value={[feather]}
-                    min={0}
-                    max={25}
-                    step={1}
-                    onValueChange={(val) => setFeather(Array.isArray(val) ? val[0] : (val as number))}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between pt-1">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="flood-fill-toggle" className="text-xs font-medium">
-                      Contiguous Outer Border Only
-                    </Label>
-                    <p className="text-[11px] text-muted-foreground">Preserves similar colors inside subject</p>
-                  </div>
-                  <Switch id="flood-fill-toggle" checked={floodFillOnly} onCheckedChange={setFloodFillOnly} />
-                </div>
-              </div>
-
-              <div className="pt-2 border-t">
-                <Button onClick={handleDownload} className="w-full gap-2 rounded-xl">
-                  <Download className="h-4 w-4" /> Download Transparent PNG
+                <FileDrop compact accept="image/jpeg,image/png,image/webp" onFile={open} title="" button="Replace" />
+                <Button variant="ghost" size="sm" onClick={reset}>
+                  Clear
                 </Button>
               </div>
             </div>
+            {error && (
+              <p className="mt-3 text-sm text-destructive">
+                {error}{" "}
+                <button type="button" className="underline underline-offset-4" onClick={() => process(file, model)}>
+                  Try again
+                </button>
+              </p>
+            )}
           </div>
 
-          {/* Canvas Live Preview */}
-          <div className="lg:col-span-7 flex flex-col space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-medium text-muted-foreground">
-                  Live Cutout Preview
-                </span>
-                <Button
-                  size="sm"
-                  variant={showOriginal ? "secondary" : "outline"}
-                  className="h-7 text-xs rounded-lg gap-1"
-                  onMouseDown={() => setShowOriginal(true)}
-                  onMouseUp={() => setShowOriginal(false)}
-                  onTouchStart={() => setShowOriginal(true)}
-                  onTouchEnd={() => setShowOriginal(false)}
-                  onClick={() => setShowOriginal(!showOriginal)}
-                >
-                  <Eye className="h-3.5 w-3.5" />
-                  {showOriginal ? "Original" : "Hold to Compare"}
-                </Button>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">
-                  {baseImage ? `${baseImage.naturalWidth} × ${baseImage.naturalHeight} px` : ""}
-                </span>
-                <Button variant="ghost" size="sm" onClick={handleReset} className="h-7 text-xs text-muted-foreground">
-                  <Trash2 className="h-3.5 w-3.5 mr-1" /> Reset
-                </Button>
-              </div>
-            </div>
-
-            <div
-              className={`relative border rounded-2xl overflow-hidden flex items-center justify-center p-4 min-h-[460px] max-h-[640px] shadow-xs ${
-                bgMode === "transparent" ? "bg-[url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAMklEQVQ4T2NkYPj/n4EBAwMDg4GBAdNgYmBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgAABqYgYCiQx1FQAAAABJRU5ErkJggg==')]" : ""
-              }`}
-            >
-              <canvas
-                ref={canvasRef}
-                onClick={handleCanvasClick}
-                className={`max-h-[580px] w-auto max-w-full object-contain rounded-lg shadow-md ${
-                  isEyedropperActive ? "cursor-crosshair ring-2 ring-primary" : ""
-                }`}
+          <aside className="space-y-5 rounded-xl border bg-card p-4" aria-label="Options">
+            <div className="space-y-2">
+              <Label>Subject</Label>
+              <Segmented
+                label="Subject"
+                value={model}
+                onChange={(m) => {
+                  setModel(m);
+                  void process(file, m);
+                }}
+                options={[
+                  { value: "object", label: "Any object" },
+                  { value: "person", label: "Person" },
+                ]}
               />
+              <p className="text-xs text-muted-foreground">
+                {model === "person" ? "Faster, best for portraits and selfies." : "Products, pets, cars and people."} Model downloads once ({spec.sizeMb} MB).
+              </p>
             </div>
-          </div>
+
+            <div className="space-y-2">
+              <Label>Background</Label>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  aria-label="Transparent"
+                  aria-pressed={bg === null}
+                  onClick={() => setBg(null)}
+                  className={`checker size-8 rounded-md border ${bg === null ? "ring-2 ring-foreground ring-offset-2 ring-offset-card" : ""}`}
+                />
+                {SWATCHES.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    aria-label={`Background ${c}`}
+                    aria-pressed={bg === c}
+                    onClick={() => setBg(c)}
+                    className={`size-8 rounded-md border ${bg === c ? "ring-2 ring-foreground ring-offset-2 ring-offset-card" : ""}`}
+                    style={{ background: c }}
+                  />
+                ))}
+                <label className="relative size-8 cursor-pointer overflow-hidden rounded-md border" title="Custom colour">
+                  <span className="sr-only">Custom colour</span>
+                  <input type="color" value={bg ?? "#ffffff"} onChange={(e) => setBg(e.target.value)} className="absolute -inset-2 size-12 cursor-pointer" />
+                </label>
+              </div>
+            </div>
+
+            <SliderRow label="Edge cleanup" value={strength} min={0} max={100} onChange={setStrength} suffix="%" />
+            <SliderRow label="Softness" value={feather} min={0} max={8} onChange={setFeather} suffix=" px" />
+
+            <div className="flex items-center justify-between">
+              <Label htmlFor="trim">Crop to subject</Label>
+              <Switch id="trim" checked={trim} onCheckedChange={setTrim} />
+            </div>
+
+            <div className="space-y-2 border-t pt-4">
+              <Segmented
+                label="Format"
+                value={fmt}
+                onChange={setFormat}
+                options={[
+                  { value: "png", label: "PNG" },
+                  ...(bg ? [{ value: "jpg" as Format, label: "JPG" }] : []),
+                  { value: "webp", label: "WebP" },
+                ]}
+              />
+              <Button className="w-full" disabled={!mask} onClick={save}>
+                Download {fmt.toUpperCase()}
+              </Button>
+              {!bg && <p className="text-xs text-muted-foreground">PNG and WebP keep the transparent background.</p>}
+            </div>
+          </aside>
         </div>
       )}
     </div>
   );
+}
+
+function Progress({ status, sizeMb }: { status: SegmentStatus; sizeMb: number }) {
+  const downloading = status.phase === "download";
+  return (
+    <div role="status" className="absolute inset-x-6 bottom-6 rounded-lg border bg-background/95 p-3 shadow-sm backdrop-blur">
+      <p className="text-sm font-medium">{downloading ? `Downloading the model (${sizeMb} MB, first time only)` : "Removing the background…"}</p>
+      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+        <div
+          className={`h-full rounded-full bg-foreground transition-[width] ${downloading ? "" : "w-1/3 animate-[indeterminate_1.2s_ease-in-out_infinite]"}`}
+          style={downloading ? { width: `${status.percent}%` } : undefined}
+        />
+      </div>
+    </div>
+  );
+}
+
+export function SliderRow({ label, value, min, max, step = 1, onChange, suffix = "" }: { label: string; value: number; min: number; max: number; step?: number; onChange: (v: number) => void; suffix?: string }) {
+  return (
+    <div className="space-y-2">
+      <div className="flex justify-between text-sm">
+        <Label>{label}</Label>
+        <span className="tabular text-muted-foreground">
+          {value}
+          {suffix}
+        </span>
+      </div>
+      <Slider aria-label={label} value={[value]} min={min} max={max} step={step} onValueChange={(v) => onChange(Array.isArray(v) ? v[0] : (v as number))} />
+    </div>
+  );
+}
+
+function useObjectUrl(blob: Blob | null) {
+  const url = useMemo(() => (blob ? URL.createObjectURL(blob) : null), [blob]);
+  useEffect(() => () => void (url && URL.revokeObjectURL(url)), [url]);
+  return url;
 }

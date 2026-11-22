@@ -288,6 +288,17 @@ export async function saveItem(uid: string, item: Pick<SavedItem, "kind" | "titl
   return ref.id;
 }
 
+export async function getItem(uid: string, id: string): Promise<SavedItem | null> {
+  const snap = await getDoc(doc(db(), "users", uid, "items", id));
+  return snap.exists() ? { id: snap.id, ...(snap.data() as Omit<SavedItem, "id">) } : null;
+}
+
+/** Overwrites the content of an item saved earlier (editors save to the same item again). */
+export async function updateItem(uid: string, id: string, patch: Pick<SavedItem, "title" | "content">): Promise<void> {
+  if (new Blob([patch.content]).size > MAX_ITEM_BYTES) throw new Error("That result is too large to save to your account (500 KB max).");
+  await setDoc(doc(db(), "users", uid, "items", id), { title: patch.title.slice(0, 200), content: patch.content, updatedAt: Date.now() }, { merge: true });
+}
+
 export async function deleteItem(uid: string, id: string): Promise<void> {
   await deleteDoc(doc(db(), "users", uid, "items", id));
 }
