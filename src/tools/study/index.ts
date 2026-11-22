@@ -9,6 +9,10 @@ import GpaCalculator from "./gpa-calculator/manifest";
 import PomodoroTimer from "./pomodoro-timer/manifest";
 import StudyTimer from "./study-timer/manifest";
 import StudyPlanner from "./study-planner/manifest";
+import GraphingCalculator from "./graphing-calculator/manifest";
+import PeriodicTable from "./periodic-table/manifest";
+import FormulaSheets from "./formula-sheets/manifest";
+import EssayOutline from "./essay-outline/manifest";
 
 export const STUDY_TOOLS = [
   EquationSolver,
@@ -21,4 +25,8 @@ export const STUDY_TOOLS = [
   PomodoroTimer,
   StudyTimer,
   StudyPlanner,
+  GraphingCalculator,
+  PeriodicTable,
+  FormulaSheets,
+  EssayOutline,
 ];

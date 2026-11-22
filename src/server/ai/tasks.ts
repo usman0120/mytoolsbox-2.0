@@ -206,14 +206,14 @@ const TASKS: AiTaskPreset[] = [
     tier: "cheap",
     output: "json",
     schema: quizSchema,
-    maxInputChars: 1000,
+    maxInputChars: 6000,
     maxTokens: 3000,
     temperature: 0.5,
     cost: 1,
     build: (input, o) => {
       const n = Math.min(Math.max(Number(o.count) || 10, 3), 20);
       const level = opt(o, "difficulty", ["Easy", "Medium", "Hard", "Mixed"], "Medium");
-      return `Write ${n} ${level.toLowerCase()} questions about this topic.\n${wrap(input)}`;
+      return `Write ${n} ${level.toLowerCase()} questions about this topic or these notes. When notes are given, only ask about what they contain.\n${wrap(input)}`;
     },
   },
   {
@@ -233,6 +233,45 @@ const TASKS: AiTaskPreset[] = [
     },
   },
 ];
+
+export const cardsSchema = z.object({
+  cards: z.array(z.object({ front: z.string().min(1).max(300), back: z.string().min(1).max(800) })).min(1).max(60),
+});
+
+TASKS.push(
+  {
+    id: "study.cards",
+    provider: "groq",
+    prompt: "study.cards@1",
+    tier: "cheap",
+    output: "json",
+    schema: cardsSchema,
+    maxInputChars: 6000,
+    maxTokens: 3000,
+    temperature: 0.3,
+    cost: 1,
+    build: (input, o) => {
+      const n = Math.min(Math.max(Number(o.count) || 15, 5), 40);
+      return `Make up to ${n} flashcards from these notes or this topic.\n${wrap(input)}`;
+    },
+  },
+  {
+    id: "essay.outline",
+    prompt: "essay.outline@1",
+    tier: "cheap",
+    output: "markdown",
+    maxInputChars: 2000,
+    maxTokens: 2500,
+    temperature: 0.5,
+    cost: 1,
+    build: (input, o) => {
+      const type = opt(o, "type", ["argumentative", "expository", "persuasive", "compare-contrast", "cause-effect", "narrative", "research"], "argumentative");
+      const level = opt(o, "level", ["school", "college", "university", "graduate"], "university");
+      const words = Math.min(Math.max(Number(o.words) || 1500, 300), 10000);
+      return `Essay type: ${type}. Level: ${level}. Target length: about ${words} words.\n${wrap(input)}`;
+    },
+  },
+);
 
 export function getTask(id: string): AiTaskPreset | undefined {
   return TASKS.find((t) => t.id === id);

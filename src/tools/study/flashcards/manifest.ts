@@ -5,14 +5,14 @@ const manifest: ToolManifest = {
   "space": "study",
   "category": "exam-prep",
   "slug": "flashcards",
-  "name": "Flashcard Creator",
-  "tagline": "Create and study with flashcards.",
+  "name": "Flashcards",
+  "tagline": "Flashcards with spaced repetition, decks and AI cards from notes.",
   "keywords": [
-    "flashcard creator",
     "flashcards",
-    "study cards",
-    "digital flashcards",
-    "make flashcards"
+    "flashcard maker",
+    "spaced repetition",
+    "online flashcards",
+    "study cards"
   ],
   "synonyms": [
     "flashcards",
@@ -20,9 +20,9 @@ const manifest: ToolManifest = {
     "digital flashcards"
   ],
   "jobs": [
-    "card creation",
-    "study mode",
-    "flip animation"
+    "spaced repetition review",
+    "cards from notes with AI",
+    "import and export CSV"
   ],
   "template": "text",
   "input": [],
@@ -36,38 +36,42 @@ const manifest: ToolManifest = {
   ],
   "engine": "client",
   "seo": {
-    "title": "Flashcard Creator – Make Digital Flashcards Online",
-    "description": "Create and study with digital flashcards. Study mode with flip animation, shuffle, and export. Free, private, no sign-up. Runs in your browser.",
-    "h1": "Flashcard Creator"
+    "title": "Flashcards with Spaced Repetition – Free Online",
+    "description": "Make flashcard decks, paste lists or import CSV, or create cards from notes with AI, then study with spaced repetition that shows cards right before you forget.",
+    "h1": "Flashcards"
   },
   "howTo": [
-    "Paste or type your input.",
-    "Pick the options you need.",
-    "Copy or download the result."
+    "Create a deck and add cards: type them, paste a list, import a CSV or make them from notes with AI.",
+    "Study: show the answer, then rate it Again, Hard, Good or Easy.",
+    "Come back when cards are due; the app schedules each card for you."
   ],
   "faq": [
     {
-      "q": "Can I export my flashcards?",
-      "a": "Yes! Export your flashcards as a tab-separated text file for use in other apps."
+      "q": "How does spaced repetition work?",
+      "a": "Each time you rate a card, its next review moves further away if you knew it and comes back soon if you didn't. It uses the SM-2 method, the basis of most flashcard apps."
     },
     {
-      "q": "How many cards can I create?",
-      "a": "There's no hard limit. Create as many flashcards as you need for your studies."
+      "q": "Where are my cards saved?",
+      "a": "In this browser on this device. Export a CSV to back them up or move them to another device."
     },
     {
-      "q": "Is my data uploaded?",
-      "a": "No. Flashcard Creator runs in your browser, so your files and text stay on your device."
+      "q": "Can I import cards from another app?",
+      "a": "Yes. Import a CSV with the front in the first column and the back in the second, or paste lines like term - definition."
+    },
+    {
+      "q": "Are there keyboard shortcuts?",
+      "a": "Space shows the answer; 1, 2, 3 and 4 rate it Again, Hard, Good and Easy."
     },
     {
       "q": "Is it free?",
-      "a": "Yes. There is no sign-up, no watermark and no daily limit."
+      "a": "Yes. No sign-up and no limits."
     }
   ],
   "related": [
     "study.quiz-maker",
-    "study.study-timer",
-    "study.citation-generator",
-    "study.equation-solver"
+    "study.periodic-table",
+    "ai.notes-generator",
+    "study.pomodoro-timer"
   ],
   "legacySlugs": [
     "flashcard-creator"

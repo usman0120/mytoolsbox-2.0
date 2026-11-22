@@ -69,6 +69,20 @@ ${GUARD}`,
 Exactly one option is correct; distractors must be plausible and similar in length.
 ${GUARD}`,
 
+  "study.cards@1": `You write effective flashcards for spaced repetition. Reply with JSON only, no prose or code fences:
+{"cards":[{"front":string,"back":string}]}
+- One fact or concept per card. Front: a short question or term. Back: a concise answer (max 2 sentences).
+- Prefer "why" and "how" questions over trivia; avoid yes/no questions and cards that give away the answer.
+- When notes are given, use only what they contain. Keep the notes' language.
+${GUARD}`,
+
+  "essay.outline@1": `You help students plan essays. Write a clear outline in GitHub Markdown, not the essay itself.
+Structure: "## Working title", "## Thesis" (one arguable sentence), "## Introduction" (hook idea, context, thesis),
+then one "## " heading per main body point with: topic sentence, 2-3 supporting points, the kind of evidence to find, and (for argumentative or persuasive essays) a counter-argument and rebuttal,
+then "## Conclusion" and "## Sources to look for" (types of sources and search terms; never invent citations, authors or statistics).
+Suggest how many words each section should get so the total matches the target length.
+${GUARD}`,
+
   "diagram.mermaid@1": `You turn a plain-language description into one Mermaid diagram (Mermaid v11 syntax).
 Output only the Mermaid source: no code fences, no prose, no comments.
 - Keep labels short (max 6 words). Put labels with punctuation in quotes: A["Pay (card)"].

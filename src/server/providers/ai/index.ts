@@ -9,6 +9,8 @@ type Caller = (req: AIRequest, model: string, key: string) => Promise<AIResponse
 /** A stalled provider must fail over instead of hanging the request. */
 const CALL_TIMEOUT = 30_000;
 const STREAM_TIMEOUT = 90_000;
+/** A model that hasn't started answering within this time is skipped for the next fallback. */
+const STREAM_OPEN_TIMEOUT = 12_000;
 
 interface Provider {
   id: "gemini" | "groq";
@@ -165,12 +167,12 @@ export async function runAi(req: AIRequest): Promise<AIResponse> {
 // convert its server-sent events into plain text chunks.
 // ---------------------------------------------------------------------------
 
-type Opener = (req: AIRequest, model: string, key: string) => Promise<Response>;
+type Opener = (req: AIRequest, model: string, key: string, signal: AbortSignal) => Promise<Response>;
 
-const openGemini: Opener = (req, model, key) =>
+const openGemini: Opener = (req, model, key, signal) =>
   fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse`, {
     method: "POST",
-    signal: AbortSignal.timeout(STREAM_TIMEOUT),
+    signal,
     headers: { "Content-Type": "application/json", "x-goog-api-key": key },
     body: JSON.stringify({
       ...(req.systemPrompt ? { systemInstruction: { parts: [{ text: req.systemPrompt }] } } : {}),
@@ -179,10 +181,10 @@ const openGemini: Opener = (req, model, key) =>
     }),
   });
 
-const openGroq: Opener = (req, model, key) =>
+const openGroq: Opener = (req, model, key, signal) =>
   fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
-    signal: AbortSignal.timeout(STREAM_TIMEOUT),
+    signal,
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
     body: JSON.stringify({
       model,
@@ -235,7 +237,14 @@ export async function streamAi(req: AIRequest): Promise<{ stream: ReadableStream
     if (!key || isOpen(p.id) || (req.images?.length && !p.vision)) continue;
     for (const model of p.models[tier]) {
       try {
-        const res = await OPENERS[p.id](req, model, key);
+        const opening = new AbortController();
+        const timer = setTimeout(() => opening.abort(new Error(`no response within ${STREAM_OPEN_TIMEOUT / 1000} s`)), STREAM_OPEN_TIMEOUT);
+        let res: Response;
+        try {
+          res = await OPENERS[p.id](req, model, key, AbortSignal.any([opening.signal, AbortSignal.timeout(STREAM_TIMEOUT)]));
+        } finally {
+          clearTimeout(timer);
+        }
         if (!res.ok || !res.body) throw new ProviderError(res.status, await res.text().catch(() => ""));
         failures.delete(p.id);
         return { stream: sseToText(res.body, p.id), provider: p.id, model };

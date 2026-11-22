@@ -565,3 +565,19 @@
 @utility checker-soft {
   background-color: var(--muted);
 }
+
+/* Print only the tool's printable area (formula sheets, results) */
+@media print {
+  body:has([data-print-area]) * {
+    visibility: hidden;
+  }
+  [data-print-area],
+  [data-print-area] * {
+    visibility: visible;
+  }
+  [data-print-area] {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+  }
+}

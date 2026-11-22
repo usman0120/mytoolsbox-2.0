@@ -5,7 +5,7 @@ import { getFirebaseAuth } from "@/lib/firebase";
 import { getDeviceId } from "./device-id";
 import type { AiQuota } from "./router";
 
-export type AiTaskId = "ask.intent" | "math.solve" | "math.read" | "farm.advise" | "farm.photo" | "ocr.read" | "project.ideas" | "study.notes" | "study.quiz" | "diagram.mermaid";
+export type AiTaskId = "ask.intent" | "math.solve" | "math.read" | "farm.advise" | "farm.photo" | "ocr.read" | "project.ideas" | "study.notes" | "study.quiz" | "diagram.mermaid" | "study.cards" | "essay.outline";
 
 export class AiTaskError extends Error {
   constructor(message: string, public code?: string) {
