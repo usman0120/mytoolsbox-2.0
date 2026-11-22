@@ -6,7 +6,7 @@ const manifest: ToolManifest = {
   "category": "audio",
   "slug": "extract-audio",
   "name": "Extract Audio from Video",
-  "tagline": "Pull audio from video files.",
+  "tagline": "Save the sound of a video as MP3, M4A, WAV or Ogg.",
   "keywords": [
     "extract audio",
     "video to audio",
@@ -29,8 +29,9 @@ const manifest: ToolManifest = {
       "type": "video",
       "accept": [
         "video/mp4",
+        "video/quicktime",
         "video/webm",
-        "video/quicktime"
+        "video/x-matroska"
       ]
     }
   ],
@@ -39,33 +40,39 @@ const manifest: ToolManifest = {
       "type": "audio",
       "accept": [
         "audio/mpeg",
-        "audio/wav"
+        "audio/mp4",
+        "audio/wav",
+        "audio/ogg"
       ]
     }
   ],
   "engine": "client",
   "seo": {
-    "title": "Audio Extractor – Extract Audio from Video Online",
-    "description": "Extract audio tracks from video files. Save as MP3 or WAV - all processing in your browser. Free, private, no sign-up. Runs in your browser.",
+    "title": "Extract Audio from Video – MP3, M4A, WAV, Free",
+    "description": "Extract the audio from MP4, MOV, WebM or MKV videos and save it as MP3, M4A, WAV or Ogg. Trim it first if you like. Free, private, runs on your device.",
     "h1": "Extract Audio from Video"
   },
   "howTo": [
-    "Add your file, or drop it on the page.",
-    "Adjust the options if you need to.",
-    "Download the result."
+    "Add a video, or drop it on the page.",
+    "Choose the audio format and quality. Trim the start and end if needed.",
+    "Extract, listen, then download."
   ],
   "faq": [
     {
-      "q": "What video formats are supported?",
-      "a": "You can extract audio from MP4, WebM, and MOV video files."
+      "q": "Which format should I choose?",
+      "a": "MP3 plays everywhere. M4A (AAC) is smaller at the same quality. WAV is lossless but large. Ogg suits web apps."
     },
     {
-      "q": "Can I choose the output format?",
-      "a": "Yes! Export as MP3 (compressed) or WAV (lossless)."
+      "q": "Which videos work?",
+      "a": "MP4, MOV, WebM and MKV videos with a sound track."
     },
     {
-      "q": "Is my data uploaded?",
-      "a": "No. Extract Audio from Video runs in your browser, so your files and text stay on your device."
+      "q": "What audio quality should I pick?",
+      "a": "128 kbps is plenty for speech and podcasts; 192 kbps or higher for music."
+    },
+    {
+      "q": "Is my video uploaded?",
+      "a": "No. Extract Audio runs in your browser using your device's media hardware. The file never leaves your device."
     },
     {
       "q": "Is it free?",
@@ -74,9 +81,9 @@ const manifest: ToolManifest = {
   ],
   "related": [
     "media.mp4-to-mp3",
-    "media.audio-converter",
+    "media.speech-to-text",
     "media.audio-cutter",
-    "media.speech-to-text"
+    "media.audio-converter"
   ],
   "legacySlugs": [
     "extract-audio-from-video"

@@ -6,23 +6,26 @@ const manifest: ToolManifest = {
   "category": "audio",
   "slug": "speech-to-text",
   "name": "Speech to Text",
-  "tagline": "Convert speech to written text.",
+  "tagline": "Transcribe recordings and videos on your device, with subtitles.",
   "keywords": [
     "speech to text",
-    "voice to text",
+    "transcribe audio",
+    "audio to text",
+    "video to text",
     "transcription",
-    "dictation",
-    "audio to text"
+    "voice to text",
+    "srt subtitles",
+    "whisper"
   ],
   "synonyms": [
-    "voice to text",
-    "transcription",
-    "dictation"
+    "transcribe audio",
+    "audio to text",
+    "voice to text"
   ],
   "jobs": [
-    "live recording",
-    "file upload",
-    "real-time transcription"
+    "transcribe a recording",
+    "subtitles as SRT or VTT",
+    "translate speech to English"
   ],
   "template": "file",
   "input": [
@@ -30,8 +33,18 @@ const manifest: ToolManifest = {
       "type": "audio",
       "accept": [
         "audio/mpeg",
+        "audio/mp4",
         "audio/wav",
+        "audio/ogg",
         "audio/webm"
+      ]
+    },
+    {
+      "type": "video",
+      "accept": [
+        "video/mp4",
+        "video/quicktime",
+        "video/webm"
       ]
     }
   ],
@@ -45,38 +58,50 @@ const manifest: ToolManifest = {
   ],
   "engine": "client",
   "seo": {
-    "title": "Speech to Text – Voice Transcription Online",
-    "description": "Convert speech to text. Record live or upload audio files - all transcription happens in your browser. Free, private, no sign-up. Runs in your browser.",
+    "title": "Speech to Text – Transcribe Audio and Video, Free, Private",
+    "description": "Transcribe voice notes, lectures, meetings and videos in 25+ languages with Whisper on your device. Export TXT, SRT or VTT. Free, no upload, no sign-up.",
     "h1": "Speech to Text"
   },
   "howTo": [
-    "Add your file, or drop it on the page.",
-    "Adjust the options if you need to.",
-    "Download the result."
+    "Add an audio or video file, or record from your microphone.",
+    "Choose the spoken language (or detect it) and Fast or Accurate.",
+    "Transcribe, edit the text, then copy it or download TXT, SRT or VTT."
   ],
   "faq": [
     {
-      "q": "What languages are supported?",
-      "a": "The tool uses your browser's built-in speech recognition, which supports the languages installed on your device."
+      "q": "Is my recording uploaded?",
+      "a": "No. Transcription runs with the Whisper model inside your browser. The audio never leaves your device."
     },
     {
-      "q": "Do I need an internet connection?",
-      "a": "Live recording works offline in supported browsers. File upload transcription requires a modern browser."
+      "q": "Which languages are supported?",
+      "a": "Whisper understands about 100 languages. The list covers the most common; choose Detect automatically for others. Accurate gives better results for non-English speech."
     },
     {
-      "q": "Is my data uploaded?",
-      "a": "No. Speech to Text runs in your browser, so your files and text stay on your device."
+      "q": "Why does it download a model?",
+      "a": "The speech model (41 MB for Fast, 77 MB for Accurate) downloads once and is kept by your browser, so later transcriptions start immediately and work offline."
+    },
+    {
+      "q": "How long does it take?",
+      "a": "On a laptop, roughly a few minutes per hour of audio with Fast, longer with Accurate. Phones are slower."
+    },
+    {
+      "q": "Can I make subtitles?",
+      "a": "Yes. Download SRT or VTT files with timestamps for video players and editors."
+    },
+    {
+      "q": "Can it translate?",
+      "a": "Turn on Translate to English to get an English transcript of speech in another language."
     },
     {
       "q": "Is it free?",
-      "a": "Yes. There is no sign-up, no watermark and no daily limit."
+      "a": "Yes. No sign-up, no limits."
     }
   ],
   "related": [
+    "media.extract-audio",
     "media.text-to-speech",
-    "work.summarizer",
-    "work.grammar-checker",
-    "media.audio-converter"
+    "media.audio-converter",
+    "media.mp4-to-mp3"
   ],
   "legacySlugs": [
     "speech-to-text"

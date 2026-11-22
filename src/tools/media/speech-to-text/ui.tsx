@@ -1,340 +1,280 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import {
-  Mic,
-  MicOff,
-  Copy,
-  CheckCircle2,
-  Trash2,
-  Download,
-  Volume2,
-  Globe,
-  Radio,
-} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { FileDrop, Segmented } from "@/components/tools/file-drop";
+import { baseName, download, formatBytes } from "@/lib/image/canvas";
+import { formatTime } from "@/lib/media/plan";
+import { fromChunks, toParagraphs, toSrt, toVtt, type Segment } from "@/lib/media/subtitles";
+import { cancelTranscription, decodeTo16k, transcribe, type WhisperStatus } from "@/lib/ml/whisper";
+import { LANGUAGES, WHISPER_MODELS, type WhisperModel } from "@/lib/ml/whisper-models";
 
-interface SpeechRecognitionEvent {
-  resultIndex: number;
-  results: {
-    length: number;
-    [index: number]: {
-      isFinal: boolean;
-      [index: number]: { transcript: string; confidence: number };
-    };
-  };
-}
+// Phrases Whisper tends to invent for silence, music or noise.
+const NO_SPEECH = /^s*(thank you( very much)?|thanks for watching|you|bye|.+|[?(music|silence|blank_audio)]?)[.!s]*$/i;
 
-interface SpeechRecognitionErrorEvent {
-  error: string;
-  message?: string;
-}
-
-interface ISpeechRecognition extends EventTarget {
-  continuous: boolean;
-  interimResults: boolean;
-  lang: string;
-  start: () => void;
-  stop: () => void;
-  abort: () => void;
-  onresult: ((event: SpeechRecognitionEvent) => void) | null;
-  onerror: ((event: SpeechRecognitionErrorEvent) => void) | null;
-  onend: (() => void) | null;
-}
-
-const LANGUAGES = [
-  { code: "en-US", label: "English (United States)" },
-  { code: "en-GB", label: "English (United Kingdom)" },
-  { code: "es-ES", label: "Spanish (Spain)" },
-  { code: "es-MX", label: "Spanish (Mexico)" },
-  { code: "fr-FR", label: "French (France)" },
-  { code: "de-DE", label: "German (Germany)" },
-  { code: "zh-CN", label: "Chinese (Mandarin Simplified)" },
-  { code: "ja-JP", label: "Japanese" },
-  { code: "ar-SA", label: "Arabic (Saudi Arabia)" },
-  { code: "ur-PK", label: "Urdu (Pakistan)" },
-  { code: "hi-IN", label: "Hindi (India)" },
-  { code: "pt-BR", label: "Portuguese (Brazil)" },
-];
+const ACCEPT = "audio/*,video/mp4,video/quicktime,video/webm,video/x-matroska,.m4a,.mp3,.wav,.ogg,.opus,.flac,.mkv,.mov";
 
 export function SpeechToTextEngine() {
+  const [source, setSource] = useState<"file" | "record">("file");
+  const [file, setFile] = useState<File | null>(null);
+  const [model, setModel] = useState<WhisperModel>("fast");
+  const [language, setLanguage] = useState("");
+  const [translate, setTranslate] = useState(false);
+  const [status, setStatus] = useState<WhisperStatus | { phase: "decoding" } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [segments, setSegments] = useState<Segment[] | null>(null);
   const [text, setText] = useState("");
-  const [interimText, setInterimText] = useState("");
-  const [isListening, setIsListening] = useState(false);
-  const [selectedLang, setSelectedLang] = useState("en-US");
-  const [isSupported, setIsSupported] = useState(true);
-  const [copied, setCopied] = useState(false);
+  const [showTimes, setShowTimes] = useState(false);
+  const player = useRef<HTMLAudioElement & HTMLVideoElement>(null);
 
-  const recognitionRef = useRef<ISpeechRecognition | null>(null);
+  const url = useMemo(() => (file ? URL.createObjectURL(file) : null), [file]);
+  useEffect(() => () => void (url && URL.revokeObjectURL(url)), [url]);
+  useEffect(() => () => cancelTranscription(), []);
 
-  useEffect(() => {
-    // Check Web Speech API support
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const win = window as any;
-    const SpeechClass = win.SpeechRecognition || win.webkitSpeechRecognition;
-
-    if (!SpeechClass) {
-      setIsSupported(false);
-    }
-  }, []);
-
-  const startListening = useCallback(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const win = window as any;
-    const SpeechClass = win.SpeechRecognition || win.webkitSpeechRecognition;
-
-    if (!SpeechClass) {
-      toast.error("Web Speech API is not supported in this browser. Please use Chrome, Edge, or Safari.");
-      return;
-    }
-
-    try {
-      const recognition = new SpeechClass() as ISpeechRecognition;
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.lang = selectedLang;
-
-      recognition.onresult = (event: SpeechRecognitionEvent) => {
-        let interim = "";
-        let finalChunk = "";
-
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const res = event.results[i];
-          const transcript = res[0].transcript;
-          if (res.isFinal) {
-            finalChunk += transcript + " ";
-          } else {
-            interim += transcript;
-          }
-        }
-
-        if (finalChunk) {
-          setText((prev) => (prev ? prev + " " + finalChunk.trim() : finalChunk.trim()));
-          setInterimText("");
-        } else {
-          setInterimText(interim);
-        }
-      };
-
-      recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-        if (event.error === "no-speech") return;
-        toast.error(`Recognition error: ${event.error}`);
-        setIsListening(false);
-      };
-
-      recognition.onend = () => {
-        setIsListening(false);
-        setInterimText("");
-      };
-
-      recognition.start();
-      recognitionRef.current = recognition;
-      setIsListening(true);
-      toast.success("Microphone listening... Speak clearly.");
-    } catch (err) {
-      toast.error("Could not start microphone listener. Check browser permissions.");
-      setIsListening(false);
-    }
-  }, [selectedLang]);
-
-  const stopListening = useCallback(() => {
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-      recognitionRef.current = null;
-    }
-    setIsListening(false);
-    setInterimText("");
-    toast.info("Microphone stopped.");
-  }, []);
-
-  const handleCopy = useCallback(async () => {
-    const full = (text + (interimText ? " " + interimText : "")).trim();
-    if (!full) return;
-    await navigator.clipboard.writeText(full);
-    setCopied(true);
-    toast.success("Transcript copied to clipboard!");
-    setTimeout(() => setCopied(false), 2000);
-  }, [text, interimText]);
-
-  const handleDownload = () => {
-    const full = (text + (interimText ? " " + interimText : "")).trim();
-    if (!full) return;
-    const blob = new Blob([full], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `transcript-${Date.now()}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success("Downloaded transcript!");
-  };
-
-  const handleClear = () => {
+  const open = (f: File) => {
+    setFile(f);
+    setSegments(null);
     setText("");
-    setInterimText("");
+    setError(null);
   };
 
-  const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
-  const charCount = text.length;
+  const run = async () => {
+    if (!file) return;
+    setError(null);
+    setSegments(null);
+    setText("");
+    setStatus({ phase: "decoding" });
+    try {
+      const audio = await decodeTo16k(file);
+      const duration = audio.length / 16000;
+      if (duration < 0.3) throw new Error("This file has no audible sound.");
+      const r = await transcribe(audio, { model, language, task: translate ? "translate" : "transcribe" }, setStatus);
+      if (!r.text.trim() || NO_SPEECH.test(r.text)) throw new Error("No clear speech was found in this recording. Check that the file has spoken words, or pick the language.");
+      const segs = fromChunks(r.chunks, duration);
+      setSegments(segs);
+      setText(segs.length ? toParagraphs(segs) : r.text);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Transcription failed.";
+      if (msg !== "Stopped.") setError(/decode|Unable/i.test(msg) ? "This file couldn't be read. Use MP3, M4A, WAV, Ogg, MP4, MOV or WebM." : msg);
+    } finally {
+      setStatus(null);
+    }
+  };
+
+  const running = status !== null;
+  const live = status?.phase === "running" ? status.text : "";
+  const name = file ? baseName(file.name) : "transcript";
 
   return (
-    <div className="space-y-6">
-      {/* Control Ribbon */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-4 bg-muted/40 rounded-xl border">
-        <div className="flex items-center gap-3">
-          <Globe className="h-4 w-4 text-muted-foreground" />
-          <div className="w-56">
-            <Select
-              value={selectedLang}
-              onValueChange={(v) => {
-                if (isListening) stopListening();
-                setSelectedLang(v || "en-US");
-              }}
-            >
-              <SelectTrigger className="h-8 text-xs bg-background">
-                <SelectValue placeholder="Select language" />
-              </SelectTrigger>
-              <SelectContent>
-                {LANGUAGES.map((lang) => (
-                  <SelectItem key={lang.code} value={lang.code} className="text-xs">
-                    {lang.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {isListening ? (
-            <Badge className="bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20 gap-1.5 animate-pulse text-xs">
-              <Radio className="h-3 w-3 text-rose-500" /> Live Dictation Active
-            </Badge>
+    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="min-w-0 space-y-3">
+        {!file ? (
+          source === "file" ? (
+            <FileDrop accept={ACCEPT} onFile={open} title="Add a recording" hint="Voice notes, lectures, meetings, interviews or videos. Transcribed on your device; nothing is uploaded." button="Choose file" />
           ) : (
-            <Badge variant="outline" className="text-xs text-muted-foreground">
-              Ready to Dictate
-            </Badge>
-          )}
-        </div>
+            <Recorder onDone={(f) => open(f)} />
+          )
+        ) : (
+          <>
+            <div className="rounded-xl border bg-card p-3">
+              {url && (file.type.startsWith("video/") ? <video ref={player} src={url} controls playsInline className="max-h-[40vh] w-full rounded-lg bg-black" /> : <audio ref={player} src={url} controls className="w-full" />)}
+              <div className="mt-2 flex items-center justify-between gap-2 text-sm text-muted-foreground">
+                <span className="min-w-0 truncate">
+                  {file.name} · {formatBytes(file.size)}
+                </span>
+                <Button variant="ghost" size="sm" disabled={running} onClick={() => (setFile(null), setSegments(null), setText(""))}>
+                  Change
+                </Button>
+              </div>
+            </div>
+
+            {(segments || live) && (
+              <div className="rounded-xl border bg-card">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b px-3 py-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Switch id="times" checked={showTimes} onCheckedChange={setShowTimes} disabled={!segments?.length} />
+                    <Label htmlFor="times">Timestamps</Label>
+                  </div>
+                  {segments && (
+                    <div className="flex flex-wrap gap-1">
+                      <Button size="sm" variant="ghost" onClick={() => navigator.clipboard.writeText(text).then(() => toast.success("Copied"))}>
+                        Copy
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => download(new Blob([text], { type: "text/plain" }), `${name}.txt`)}>
+                        TXT
+                      </Button>
+                      <Button size="sm" variant="ghost" disabled={!segments.length} onClick={() => download(new Blob([toSrt(segments)], { type: "application/x-subrip" }), `${name}.srt`)}>
+                        SRT
+                      </Button>
+                      <Button size="sm" variant="ghost" disabled={!segments.length} onClick={() => download(new Blob([toVtt(segments)], { type: "text/vtt" }), `${name}.vtt`)}>
+                        VTT
+                      </Button>
+                    </div>
+                  )}
+                </div>
+                {!segments ? (
+                  <p aria-live="polite" className="max-h-[50vh] overflow-auto p-4 leading-7 whitespace-pre-wrap text-muted-foreground">
+                    {live}
+                  </p>
+                ) : showTimes ? (
+                  <ol className="max-h-[50vh] divide-y overflow-auto">
+                    {segments.map((s, i) => (
+                      <li key={i}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (player.current) {
+                              player.current.currentTime = s.start;
+                              void player.current.play();
+                            }
+                          }}
+                          className="flex w-full gap-3 px-4 py-2 text-left hover:bg-muted/60"
+                        >
+                          <span className="tabular w-14 shrink-0 text-xs leading-6 text-muted-foreground">{formatTime(s.start)}</span>
+                          <span className="leading-6">{s.text.trim()}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ol>
+                ) : (
+                  <textarea value={text} onChange={(e) => setText(e.target.value)} aria-label="Transcript" className="block min-h-64 w-full resize-y bg-transparent p-4 leading-7 outline-none" />
+                )}
+              </div>
+            )}
+          </>
+        )}
+        {error && <p className="text-sm text-destructive">{error}</p>}
       </div>
 
-      {!isSupported && (
-        <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs text-amber-700 dark:text-amber-300">
-          ⚠️ Note: Direct browser speech recognition is supported in Google Chrome, Microsoft Edge, and Safari.
+      <aside className="space-y-5 self-start rounded-xl border bg-card p-4" aria-label="Options">
+        {!file && (
+          <Segmented
+            label="Source"
+            value={source}
+            onChange={setSource}
+            options={[
+              { value: "file", label: "Upload a file" },
+              { value: "record", label: "Record" },
+            ]}
+          />
+        )}
+        <div className="space-y-2">
+          <Label htmlFor="lang">Spoken language</Label>
+          <select id="lang" value={language} onChange={(e) => setLanguage(e.target.value)} className="h-9 w-full rounded-lg border bg-background px-2 text-sm">
+            {LANGUAGES.map(([code, label]) => (
+              <option key={code} value={code}>
+                {label}
+              </option>
+            ))}
+          </select>
         </div>
-      )}
+        <div className="space-y-2">
+          <Label>Model</Label>
+          <Segmented
+            label="Model"
+            value={model}
+            onChange={setModel}
+            options={[
+              { value: "fast", label: `Fast · ${WHISPER_MODELS.fast.sizeMb} MB` },
+              { value: "accurate", label: `Accurate · ${WHISPER_MODELS.accurate.sizeMb} MB` },
+            ]}
+          />
+          <p className="text-xs text-muted-foreground">Downloads once, then works offline. Accurate is better for accents, noise and non-English speech.</p>
+        </div>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="translate">Translate to English</Label>
+          <Switch id="translate" checked={translate} onCheckedChange={setTranslate} />
+        </div>
 
-      {/* Main Microphone Button & Waveform Box */}
-      <div className="flex flex-col items-center justify-center p-8 rounded-2xl border bg-card shadow-xs text-center space-y-4">
-        <div className="relative">
-          {isListening && (
-            <span className="absolute -inset-2 rounded-full bg-rose-500/20 animate-ping" />
+        <div className="space-y-2 border-t pt-4">
+          {!running ? (
+            <Button className="w-full" disabled={!file} onClick={run}>
+              {translate ? "Transcribe and translate" : "Transcribe"}
+            </Button>
+          ) : (
+            <div role="status" className="space-y-2">
+              <p className="text-sm">
+                {status.phase === "decoding"
+                  ? "Reading the audio…"
+                  : status.phase === "download"
+                    ? `Downloading the model (${WHISPER_MODELS[model].sizeMb} MB, first time only)… ${status.percent}%`
+                    : `Transcribing… part ${Math.min(status.done + 1, status.total)} of ${status.total}`}
+              </p>
+              <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full bg-foreground transition-[width]"
+                  style={{ width: `${status.phase === "download" ? status.percent : status.phase === "running" ? Math.round((status.done / status.total) * 100) : 5}%` }}
+                />
+              </div>
+              <Button variant="outline" size="sm" className="w-full" onClick={cancelTranscription}>
+                Stop
+              </Button>
+            </div>
           )}
-          <Button
-            onClick={isListening ? stopListening : startListening}
-            size="lg"
-            variant={isListening ? "destructive" : "default"}
-            className="rounded-full h-20 w-20 shadow-md relative z-10 transition-transform active:scale-95"
-          >
-            {isListening ? <MicOff className="h-8 w-8" /> : <Mic className="h-8 w-8" />}
+          <p className="text-xs text-muted-foreground">Runs on your device. A one-hour recording can take several minutes on a laptop.</p>
+        </div>
+      </aside>
+    </div>
+  );
+}
+
+function Recorder({ onDone }: { onDone: (f: File) => void }) {
+  const [rec, setRec] = useState<MediaRecorder | null>(null);
+  const [seconds, setSeconds] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!rec) return;
+    const started = Date.now();
+    const t = setInterval(() => setSeconds((Date.now() - started) / 1000), 250);
+    return () => clearInterval(t);
+  }, [rec]);
+
+  const start = async () => {
+    setError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+      const r = new MediaRecorder(stream);
+      const parts: Blob[] = [];
+      r.ondataavailable = (e) => e.data.size && parts.push(e.data);
+      r.onstop = () => {
+        stream.getTracks().forEach((t) => t.stop());
+        const type = r.mimeType || "audio/webm";
+        onDone(new File(parts, `recording-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-")}.${type.includes("mp4") ? "m4a" : "webm"}`, { type }));
+      };
+      r.start(1000);
+      setSeconds(0);
+      setRec(r);
+    } catch {
+      setError("Microphone access was blocked. Allow it in the browser's address bar and try again.");
+    }
+  };
+
+  return (
+    <div className="flex min-h-64 flex-col items-center justify-center rounded-xl border border-dashed bg-card px-6 py-10 text-center">
+      {rec ? (
+        <>
+          <p className="tabular text-4xl font-semibold">{formatTime(seconds).replace(/\.\d$/, "")}</p>
+          <p className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
+            <span className="size-2 animate-pulse rounded-full bg-red-500" /> Recording
+          </p>
+          <Button className="mt-5" onClick={() => (rec.stop(), setRec(null))}>
+            Stop and use recording
           </Button>
-        </div>
-
-        <div>
-          <h3 className="font-semibold text-base">
-            {isListening ? "Listening to your voice..." : "Click to Start Speaking"}
-          </h3>
-          <p className="text-xs text-muted-foreground mt-1">
-            {isListening
-              ? "Speak into your microphone. Transcribed words will stream in real-time."
-              : "Continuous speech-to-text dictation with automatic sentence punctuation."}
-          </p>
-        </div>
-
-        {isListening && (
-          <div className="flex items-center gap-1 h-6">
-            <span className="w-1 h-3 bg-rose-500 rounded-full animate-pulse" />
-            <span className="w-1 h-6 bg-rose-500 rounded-full animate-pulse delay-75" />
-            <span className="w-1 h-4 bg-rose-500 rounded-full animate-pulse delay-150" />
-            <span className="w-1 h-8 bg-rose-500 rounded-full animate-pulse delay-100" />
-            <span className="w-1 h-5 bg-rose-500 rounded-full animate-pulse delay-200" />
-          </div>
-        )}
-      </div>
-
-      {/* Live Transcript Card */}
-      <div className="rounded-xl border bg-card p-5 shadow-xs space-y-3">
-        <div className="flex items-center justify-between pb-3 border-b">
-          <div className="flex items-center gap-2">
-            <Volume2 className="h-4 w-4 text-primary" />
-            <span className="text-sm font-semibold">Real-Time Transcription</span>
-            <span className="text-xs text-muted-foreground font-mono ml-2">
-              {wordCount} words • {charCount} characters
-            </span>
-          </div>
-
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleCopy}
-              disabled={!text && !interimText}
-              className="gap-1 h-8 text-xs"
-            >
-              {copied ? (
-                <>
-                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> Copied
-                </>
-              ) : (
-                <>
-                  <Copy className="h-3.5 w-3.5" /> Copy
-                </>
-              )}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleDownload}
-              disabled={!text && !interimText}
-              className="gap-1 h-8 text-xs"
-            >
-              <Download className="h-3.5 w-3.5" /> Download .txt
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleClear}
-              disabled={!text && !interimText}
-              className="gap-1 h-8 text-xs text-muted-foreground hover:text-destructive"
-            >
-              <Trash2 className="h-3.5 w-3.5" /> Clear
-            </Button>
-          </div>
-        </div>
-
-        <Textarea
-          value={text + (interimText ? (text ? " " : "") + interimText : "")}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="Your speech transcript will be typed here live as you speak..."
-          className="min-h-52 font-mono text-sm leading-relaxed resize-y bg-muted/20"
-        />
-        {interimText && (
-          <p className="text-xs text-primary font-mono animate-pulse">
-            Listening: &ldquo;{interimText}&rdquo;
-          </p>
-        )}
-      </div>
+        </>
+      ) : (
+        <>
+          <p className="text-lg font-semibold">Record from your microphone</p>
+          <p className="mt-1 max-w-md text-sm text-muted-foreground">The recording stays on this device and is transcribed here.</p>
+          <Button className="mt-5" onClick={start}>
+            Start recording
+          </Button>
+        </>
+      )}
+      {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
     </div>
   );
 }

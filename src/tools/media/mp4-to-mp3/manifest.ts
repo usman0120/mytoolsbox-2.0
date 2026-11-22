@@ -6,7 +6,7 @@ const manifest: ToolManifest = {
   "category": "audio",
   "slug": "mp4-to-mp3",
   "name": "MP4 to MP3 Converter",
-  "tagline": "Convert MP4 video to MP3 audio.",
+  "tagline": "Turn an MP4 video into an MP3 file.",
   "keywords": [
     "mp4 to mp3",
     "extract audio",
@@ -29,7 +29,10 @@ const manifest: ToolManifest = {
     {
       "type": "video",
       "accept": [
-        "video/mp4"
+        "video/mp4",
+        "video/quicktime",
+        "video/webm",
+        "video/x-matroska"
       ]
     }
   ],
@@ -43,27 +46,31 @@ const manifest: ToolManifest = {
   ],
   "engine": "client",
   "seo": {
-    "title": "MP4 to MP3 Converter – Extract Audio Online",
-    "description": "Convert MP4 videos to MP3 audio files. All processing happens in your browser - no uploads needed. Free, private, no sign-up. Runs in your browser.",
+    "title": "MP4 to MP3 Converter – Free, Private, No Upload",
+    "description": "Convert MP4 videos to MP3 audio at 128 to 320 kbps. Also works with MOV, WebM and MKV. Trim before saving. Free, private, runs on your device.",
     "h1": "MP4 to MP3 Converter"
   },
   "howTo": [
-    "Add your file, or drop it on the page.",
-    "Adjust the options if you need to.",
-    "Download the result."
+    "Add an MP4 video, or drop it on the page.",
+    "Pick the MP3 quality and trim if needed.",
+    "Convert, listen, then download the MP3."
   ],
   "faq": [
     {
       "q": "Is there a file size limit?",
-      "a": "Since processing is done in your browser, limits depend on your device's memory. For best results, keep files under 500MB."
+      "a": "No fixed limit. Very long videos depend on your device's memory; on phones keep them under about 300 MB."
     },
     {
-      "q": "What quality is the output MP3?",
-      "a": "You can choose between standard (128kbps), high (192kbps), and premium (320kbps) quality."
+      "q": "What MP3 quality should I choose?",
+      "a": "128 kbps for speech, 192 kbps for music, 320 kbps for the highest quality."
     },
     {
-      "q": "Is my data uploaded?",
-      "a": "No. MP4 to MP3 Converter runs in your browser, so your files and text stay on your device."
+      "q": "Does it work with other video formats?",
+      "a": "Yes. MOV, WebM and MKV videos work too, and M4A audio."
+    },
+    {
+      "q": "Is my video uploaded?",
+      "a": "No. MP4 to MP3 runs in your browser using your device's media hardware. The file never leaves your device."
     },
     {
       "q": "Is it free?",
@@ -71,9 +78,9 @@ const manifest: ToolManifest = {
     }
   ],
   "related": [
+    "media.extract-audio",
     "media.audio-cutter",
     "media.audio-converter",
-    "media.extract-audio",
     "media.speech-to-text"
   ],
   "legacySlugs": [

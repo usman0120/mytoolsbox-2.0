@@ -3,7 +3,7 @@
  * - Hashed build assets, pdf.js and fonts are cache-first (they never change under the same URL).
  * - Files shared from the phone's share sheet go straight into the File Tray (IndexedDB) on this device.
  * Bump VERSION to drop old caches on deploy. */
-const VERSION = "v1";
+const VERSION = "v2";
 const SHELL = `mtb-shell-${VERSION}`;
 const PAGES = `mtb-pages-${VERSION}`;
 const ASSETS = `mtb-assets-${VERSION}`;
@@ -44,13 +44,21 @@ async function networkFirstPage(request) {
 
 async function cacheFirst(request) {
   const hit = await caches.match(request);
-  if (hit) return hit;
+  if (hit) return forWorker(request, hit);
   const response = await fetch(request);
   if (response.ok) {
     const copy = response.clone();
     caches.open(ASSETS).then((c) => c.put(request, copy));
   }
   return response;
+}
+
+/* Bundler worker bootstraps share one URL and read their config from the URL fragment. A cached response keeps the
+ * URL (with fragment) it was first fetched for, which would start the wrong worker. A fresh Response has no URL,
+ * so the worker keeps its own. */
+function forWorker(request, response) {
+  if (request.destination !== "worker" && request.destination !== "sharedworker") return response;
+  return new Response(response.body, { status: response.status, statusText: response.statusText, headers: response.headers });
 }
 
 async function staleWhileRevalidate(request) {

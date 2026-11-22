@@ -25,6 +25,7 @@ function getWorker(): Worker {
     else if (msg.type === "running") job.onStatus?.({ phase: "running" });
     else {
       pending.delete(msg.id);
+      if (msg.type === "error") console.warn("Segmentation model error:", msg.message);
       if (msg.type === "done") job.resolve({ mask: msg.mask, width: msg.width, height: msg.height });
       else job.reject(new Error(friendly(msg.message)));
     }

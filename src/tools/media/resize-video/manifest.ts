@@ -6,7 +6,7 @@ const manifest: ToolManifest = {
   "category": "video",
   "slug": "resize-video",
   "name": "Video Resizer",
-  "tagline": "Change video dimensions online.",
+  "tagline": "Change resolution, or reframe to 9:16, 1:1 or 4:5 for social media.",
   "keywords": [
     "video resizer",
     "resize video",
@@ -30,7 +30,9 @@ const manifest: ToolManifest = {
       "type": "video",
       "accept": [
         "video/mp4",
-        "video/webm"
+        "video/quicktime",
+        "video/webm",
+        "video/x-matroska"
       ]
     }
   ],
@@ -45,27 +47,35 @@ const manifest: ToolManifest = {
   ],
   "engine": "client",
   "seo": {
-    "title": "Video Resizer – Resize Videos Online",
-    "description": "Resize video dimensions online. Scale by percentage or set exact dimensions. Free, private, no sign-up. Runs in your browser. Works on any device.",
-    "h1": "Video Resizer"
+    "title": "Resize Video – 9:16, 1:1, 4:5 and 720p, Free Online",
+    "description": "Resize videos to 1080p, 720p or 480p, or reframe them for stories, reels and feeds in 9:16, 1:1 or 4:5. Runs on your device. Free, no upload.",
+    "h1": "Resize Video"
   },
   "howTo": [
-    "Add your file, or drop it on the page.",
-    "Adjust the options if you need to.",
-    "Download the result."
+    "Add a video, or drop it on the page.",
+    "Pick a resolution, or an aspect ratio with Crop to fill or Fit with bars.",
+    "Resize, preview, then download."
   ],
   "faq": [
     {
-      "q": "What dimensions can I resize to?",
-      "a": "You can choose from common presets (1080p, 720p, 480p) or set custom dimensions."
+      "q": "What is the difference between Crop to fill and Fit with bars?",
+      "a": "Crop to fill fills the new frame and trims the edges. Fit with bars keeps the whole picture and adds black bars."
     },
     {
-      "q": "Will resizing affect quality?",
-      "a": "Downscaling maintains good quality. Upscaling may result in some quality loss."
+      "q": "Which sizes should I use for social media?",
+      "a": "9:16 for stories, reels and shorts; 1:1 or 4:5 for feed posts; 16:9 for regular video sites."
     },
     {
-      "q": "Is my data uploaded?",
-      "a": "No. Video Resizer runs in your browser, so your files and text stay on your device."
+      "q": "Will it upscale small videos?",
+      "a": "No. Resolutions larger than the original are disabled, because upscaling adds file size without adding detail."
+    },
+    {
+      "q": "How long does it take?",
+      "a": "Usually much faster than the video's length on a laptop, because it uses the device's video hardware. Long or 4K videos take longer on phones."
+    },
+    {
+      "q": "Is my video uploaded?",
+      "a": "No. Resize Video runs in your browser using your device's media hardware. The file never leaves your device."
     },
     {
       "q": "Is it free?",
@@ -74,8 +84,8 @@ const manifest: ToolManifest = {
   ],
   "related": [
     "media.compress-video",
-    "media.merge-videos",
-    "media.screen-recorder",
+    "media.trim-video",
+    "media.convert-video",
     "media.video-editor"
   ],
   "legacySlugs": [

@@ -12,6 +12,9 @@ import ConvertImage from "./convert-image/manifest";
 import ImageToText from "./image-to-text/manifest";
 import RemoveBackground from "./remove-background/manifest";
 import PassportPhoto from "./passport-photo/manifest";
+import TrimVideo from "./trim-video/manifest";
+import ConvertVideo from "./convert-video/manifest";
+import MuteVideo from "./mute-video/manifest";
 import VideoToGif from "./video-to-gif/manifest";
 import CompressVideo from "./compress-video/manifest";
 import ResizeVideo from "./resize-video/manifest";
@@ -40,6 +43,9 @@ export const MEDIA_TOOLS = [
   ImageToText,
   RemoveBackground,
   PassportPhoto,
+  TrimVideo,
+  ConvertVideo,
+  MuteVideo,
   VideoToGif,
   CompressVideo,
   ResizeVideo,
